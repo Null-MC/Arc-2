@@ -31,7 +31,7 @@ void iris_emitFragment() {
     iris_modifyBase(mUV, mColor, mLight);
 
     vec4 albedo = iris_sampleBaseTex(mUV);
-    if (iris_discardFragment(albedo)) {discard; return;}
+    //if (iris_discardFragment(albedo)) {discard; return;}
 
     albedo *= mColor;
     albedo.rgb = RgbToLinear(albedo.rgb);
@@ -40,7 +40,8 @@ void iris_emitFragment() {
         albedo.rgb = vec3(1.0);
     #endif
 
-    float emission = (material & 8) != 0 ? 1.0 : 0.0;
+    // float emission = (material & 8) != 0 ? 1.0 : 0.0;
+    const float emission = 0.0;
 
     vec2 lmcoord = clamp((mLight - (0.5/16.0)) / (15.0/16.0), 0.0, 1.0);
     lmcoord = pow(lmcoord, vec2(3.0));

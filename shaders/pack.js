@@ -149,10 +149,17 @@ function setupShader() {
     // TODO: sky-textured?
 
     registerGeometryShader(new GamePass("terrain")
+        .usage(USAGE_BASIC)
         .vertex("program/main.vsh")
         .fragment("program/main.fsh")
         .addTarget(0, texFinal)
-        .usage(USAGE_BASIC)
+        .build());
+
+    registerGeometryShader(new GamePass("water")
+        .usage(USAGE_TERRAIN_TRANSLUCENT)
+        .vertex("program/main.vsh")
+        .fragment("program/translucent.fsh")
+        .addTarget(0, texFinal)
         .build());
 
     registerGeometryShader(new GamePass("shadow")

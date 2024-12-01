@@ -20,7 +20,7 @@ uniform sampler2DArray solidShadowMap;
 
 
 const int VL_MaxSamples = 32;
-const float VL_Scatter = 0.003;
+const float VL_Scatter = 0.006;
 const float VL_Transmit = 0.002;
 
 
@@ -44,10 +44,9 @@ void main() {
 
     vec3 localViewDir = normalize(localPos);
     float VoL = dot(localViewDir, localSunDir);
-    float phase = HG(VoL, 0.68);
+    float phase = HG(VoL, 0.46);
 
     float stepDist = length(stepLocal);
-    // float stepAbsorb = exp(-stepDist * VL_Transmit);
 
     for (int i = 0; i < VL_MaxSamples; i++) {
         vec3 shadowViewPos = shadowViewStep*(i+dither) + shadowViewStart;
@@ -71,10 +70,10 @@ void main() {
 
         float sampleY = sampleLocalPos.y + cameraPos.y;
         float sampleDensity = clamp((sampleY - SEA_LEVEL) / (ATMOSPHERE_MAX - SEA_LEVEL), 0.0, 1.0);
-        sampleDensity = pow(1.0 - sampleDensity, 8.0);
+        sampleDensity = stepDist * pow(1.0 - sampleDensity, 8.0);
 
-        color *= exp(-stepDist * sampleDensity * VL_Transmit);
-        color += sampleColor * (phase * stepDist * sampleDensity * VL_Scatter);
+        color *= exp(-sampleDensity * VL_Transmit);
+        color += sampleColor * (phase * sampleDensity * VL_Scatter);
     }
 
     outColor = vec4(color, 1.0);

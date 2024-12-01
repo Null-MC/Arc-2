@@ -76,6 +76,7 @@ void main() {
     vec3 skyPos = getSkyPosition(vec3(0.0));
     float height = length(skyPos);
     vec3 up = skyPos / height;
+    
     float horizonAngle = safeacos(sqrt(height * height - groundRadiusMM * groundRadiusMM) / height) - 0.5*PI;
     float altitudeAngle = adjV*0.5*PI - horizonAngle;
     

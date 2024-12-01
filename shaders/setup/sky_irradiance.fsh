@@ -21,6 +21,8 @@ vec3 CalculateIrradiance(const in vec3 normal) {
     vec3 right = normalize(cross(up, normal));
     up         = normalize(cross(normal, right));
 
+    mat3 tbn = mat3(right, up, normal);
+
     vec3 skyPos = getSkyPosition(vec3(0.0));
     vec3 sunDir = normalize(mul3(playerModelViewInverse, sunPosition));
 
@@ -41,17 +43,12 @@ vec3 CalculateIrradiance(const in vec3 normal) {
                 cos_theta);
 
             // tangent space to world
-            vec3 sampleVec =
-                tangentSample.x * right +
-                tangentSample.y * up +
-                tangentSample.z * normal;
-
-            sampleVec = normalize(sampleVec);
+            vec3 sampleVec = normalize(tbn * tangentSample);
 
             // vec2 uv = DirectionToUV(sampleVec);
             // vec3 skyColor = textureLod(texSkyView, uv, 0).rgb;
 
-            vec3 skyColor = getValFromSkyLUT(texSkyView, skyPos, sampleVec, sunDir);
+            vec3 skyColor = 20.0 * getValFromSkyLUT(texSkyView, skyPos, sampleVec, sunDir);
 
             irradiance += skyColor * (cos_theta * sin_theta);
             nrSamples++;
@@ -65,5 +62,5 @@ void main() {
     vec3 viewDir = DirectionFromUV(uv);
     vec3 irradiance = CalculateIrradiance(viewDir);
 
-    outColor = vec4(20.0 * irradiance, 1.0);
+    outColor = vec4(irradiance, 1.0);
 }

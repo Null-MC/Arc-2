@@ -49,6 +49,8 @@ void main() {
 
     float stepDist = length(stepLocal);
 
+    vec3 transmittance = vec3(1.0);
+
     for (int i = 0; i < VL_MaxSamples; i++) {
         vec3 shadowViewPos = shadowViewStep*(i+dither) + shadowViewStart;
 
@@ -77,6 +79,16 @@ void main() {
 
         color *= exp(-sampleDensity * VL_Transmit);
         color += sampleColor * (phase * sampleDensity * VL_Scatter);
+
+
+        // vec3 inScattering = sampleColor * (phase * sampleDensity * VL_Scatter);
+        // float sampleTransmittance = exp(-sampleDensity * VL_Transmit);
+
+        // vec3 scatteringIntegral = (inScattering - inScattering * sampleTransmittance) / VL_Transmit;
+
+        // color *= sampleTransmittance;
+        // color += scatteringIntegral * transmittance;
+        // transmittance *= sampleTransmittance;
     }
 
     outColor = vec4(color, 1.0);

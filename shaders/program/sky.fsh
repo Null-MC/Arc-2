@@ -2,7 +2,7 @@
 
 layout(location = 0) out vec4 outColor;
 
-in vec2 uv;
+// in vec2 uv;
 
 uniform sampler2D texSkyTransmit;
 uniform sampler2D texSkyView;
@@ -32,6 +32,7 @@ vec3 sun(vec3 rayDir, vec3 sunDir) {
 void iris_emitFragment() {
     vec3 sunDir = normalize(mul3(playerModelViewInverse, sunPosition));
     
+    vec2 uv = gl_FragCoord.xy / screenSize;
     vec3 ndcPos = vec3(uv, 1.0) * 2.0 - 1.0;
     vec3 viewPos = unproject(playerProjectionInverse, ndcPos);
     vec3 localPos = mul3(playerModelViewInverse, viewPos);

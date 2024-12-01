@@ -76,9 +76,10 @@ void main() {
         sampleDensity = stepDist * pow(1.0 - sampleDensity, 8.0);
 
         sampleDensity *= VL_RainDensity*rainStrength + 1.0;
+        float sampleTransmit = exp(-sampleDensity * VL_Transmit);
 
-        color *= exp(-sampleDensity * VL_Transmit);
-        color += sampleColor * (phase * sampleDensity * VL_Scatter);
+        color *= sampleTransmit;
+        color += sampleColor * (phase * sampleDensity * VL_Scatter * sampleTransmit);
 
 
         // vec3 inScattering = sampleColor * (phase * sampleDensity * VL_Scatter);

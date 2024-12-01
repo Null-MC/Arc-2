@@ -1,3 +1,7 @@
+const float ShadowBias[] = float[](
+    0.000012, 0.000024, 0.000064, 0.000256);
+
+
 float SampleShadows() {
     vec3 shadowPos;
     int shadowCascade;
@@ -24,7 +28,7 @@ float SampleShadows() {
         vec3 shadowCoord = vec3(shadowPos.xy + pixelOffset, shadowCascade);
 
         float shadowDepth = textureLod(solidShadowMap, shadowCoord, 0).r;
-        float shadowSample = step(shadowPos.z - 0.000006, shadowDepth);
+        float shadowSample = step(shadowPos.z - ShadowBias[shadowCascade], shadowDepth);
         shadowFinal += shadowSample;
     }
 

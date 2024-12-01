@@ -35,13 +35,13 @@ flat out int material;
 
 
 void iris_emitVertex(inout VertexData data) {
-	localPos = (playerModelViewInverse * (iris_modelViewMatrix * data.pos)).xyz;
+	localPos = (playerModelViewInverse * (iris_modelViewMatrix * data.modelPos)).xyz;
 
 	shadowViewPos = mul3(shadowModelView, localPos);
 
 	localNormal = mat3(playerModelViewInverse) * (mat3(iris_modelViewMatrix) * data.normal);
 
-    data.pos = iris_projectionMatrix * (iris_modelViewMatrix * data.pos);
+    data.clipPos = iris_projectionMatrix * (iris_modelViewMatrix * data.modelPos);
 }
 
 void iris_sendParameters(in VertexData data) {

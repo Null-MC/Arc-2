@@ -40,7 +40,10 @@ void iris_emitFragment() {
         albedo.rgb = vec3(1.0);
     #endif
 
-    float emission = (material & 8) != 0 ? 1.0 : 0.0;
+    float emission = 0.0;
+    #ifndef RENDER_TRANSLUCENT
+        emission = (material & 8) != 0 ? 1.0 : 0.0;
+    #endif
 
     vec2 lmcoord = clamp((mLight - (0.5/16.0)) / (15.0/16.0), 0.0, 1.0);
     lmcoord = pow(lmcoord, vec2(3.0));
@@ -54,7 +57,7 @@ void iris_emitFragment() {
 
     vec3 skyPos = getSkyPosition(localPos);
     vec3 sunDir = normalize((playerModelViewInverse * vec4(sunPosition, 1.0)).xyz);
-    vec3 skyLighting = getValFromTLUT(texSkyTransmit, skyPos, sunDir) + 0.02;
+    vec3 skyLighting = getValFromTLUT(texSkyTransmit, skyPos, sunDir);
     skyLighting *= lmcoord.y * NoLm * shadowSample;
 
     vec2 skyIrradianceCoord = DirectionToUV(_localNormal);
@@ -64,6 +67,10 @@ void iris_emitFragment() {
 
     vec4 finalColor = albedo;
     finalColor.rgb *= (5.0 * skyLighting) + (3.0 * blockLighting) + (12.0 * emission) + 0.002;
+
+    float viewDist = length(localPos);
+    float fogF = smoothstep(fogStart, fogEnd, viewDist);
+    finalColor = mix(finalColor, vec4(fogColor.rgb, 1.0), fogF);
 
     outColor = finalColor;
 }

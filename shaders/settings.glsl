@@ -8,3 +8,4 @@ const int SHADOW_PCF_SAMPLES = 8;
 
 const float shadowMapResolution = 1024.0;
 const float sunPathRotation = 25.0;
+const float cloudHeight = 192.0;

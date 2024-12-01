@@ -6,17 +6,17 @@ in vec2 uv;
 in vec2 light;
 in vec4 color;
 in vec3 localPos;
-in vec3 localNormal;
+// in vec3 localNormal;
 in vec3 shadowViewPos;
-flat in int material;
+// flat in int material;
 
 uniform sampler2D texSkyTransmit;
-uniform sampler2D texSkyIrradiance;
+// uniform sampler2D texSkyIrradiance;
 uniform sampler2DArray solidShadowMap;
 
 #include "/settings.glsl"
 #include "/lib/common.glsl"
-#include "/lib/erp.glsl"
+// #include "/lib/erp.glsl"
 #include "/lib/csm.glsl"
 
 #include "/lib/sky/common.glsl"
@@ -30,8 +30,10 @@ void iris_emitFragment() {
     vec4 mColor = color;
     iris_modifyBase(mUV, mColor, mLight);
 
+    if (localPos.y + cameraPos.y > cloudHeight) {discard; return;}
+
     vec4 albedo = iris_sampleBaseTex(mUV);
-    //if (iris_discardFragment(albedo)) {discard; return;}
+    // if (iris_discardFragment(albedo)) {discard; return;}
 
     albedo *= mColor;
     albedo.rgb = RgbToLinear(albedo.rgb);
@@ -46,25 +48,29 @@ void iris_emitFragment() {
     vec2 lmcoord = clamp((mLight - (0.5/16.0)) / (15.0/16.0), 0.0, 1.0);
     lmcoord = pow(lmcoord, vec2(3.0));
 
-    vec3 _localNormal = normalize(localNormal);
+    // vec3 _localNormal = normalize(localNormal);
 
     float shadowSample = SampleShadows();
 
     vec3 localLightDir = normalize(mul3(playerModelViewInverse, shadowLightPosition));
-    float NoLm = step(0.0, dot(localLightDir, _localNormal));
+    const float NoLm = 1.0; //step(0.0, dot(localLightDir, _localNormal));
 
     vec3 skyPos = getSkyPosition(localPos);
     vec3 sunDir = normalize((playerModelViewInverse * vec4(sunPosition, 1.0)).xyz);
-    vec3 skyLighting = getValFromTLUT(texSkyTransmit, skyPos, sunDir) + 0.02;
+    vec3 skyLighting = getValFromTLUT(texSkyTransmit, skyPos, sunDir);
     skyLighting *= lmcoord.y * NoLm * shadowSample;
 
-    vec2 skyIrradianceCoord = DirectionToUV(_localNormal);
-    skyLighting += 0.3 * lmcoord.y * textureLod(texSkyIrradiance, skyIrradianceCoord, 0).rgb;
+    // vec2 skyIrradianceCoord = DirectionToUV(_localNormal);
+    // skyLighting += 0.3 * lmcoord.y * textureLod(texSkyIrradiance, skyIrradianceCoord, 0).rgb;
 
     vec3 blockLighting = vec3(lmcoord.x);
 
     vec4 finalColor = albedo;
     finalColor.rgb *= (5.0 * skyLighting) + (3.0 * blockLighting) + (12.0 * emission) + 0.002;
+
+    float viewDist = length(localPos);
+    float fogF = smoothstep(fogStart, fogEnd, viewDist);
+    finalColor.rgb = mix(finalColor.rgb, fogColor.rgb, fogF);
 
     outColor = finalColor;
 }

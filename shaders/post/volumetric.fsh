@@ -22,6 +22,7 @@ uniform sampler2DArray solidShadowMap;
 const int VL_MaxSamples = 32;
 const float VL_Scatter = 0.006;
 const float VL_Transmit = 0.002;
+const float VL_RainDensity = 6.0;
 
 
 void main() {
@@ -71,6 +72,8 @@ void main() {
         float sampleY = sampleLocalPos.y + cameraPos.y;
         float sampleDensity = clamp((sampleY - SEA_LEVEL) / (ATMOSPHERE_MAX - SEA_LEVEL), 0.0, 1.0);
         sampleDensity = stepDist * pow(1.0 - sampleDensity, 8.0);
+
+        sampleDensity *= VL_RainDensity*rainStrength + 1.0;
 
         color *= exp(-sampleDensity * VL_Transmit);
         color += sampleColor * (phase * sampleDensity * VL_Scatter);

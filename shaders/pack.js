@@ -158,7 +158,15 @@ function setupShader() {
     registerGeometryShader(new GamePass("water")
         .usage(USAGE_TERRAIN_TRANSLUCENT)
         .vertex("program/main.vsh")
-        .fragment("program/translucent.fsh")
+        .fragment("program/main.fsh")
+        .addTarget(0, texFinal)
+        .define("RENDER_TRANSLUCENT", "1")
+        .build());
+
+    registerGeometryShader(new GamePass("weather")
+        .usage(USAGE_WEATHER)
+        .vertex("program/main.vsh")
+        .fragment("program/weather.fsh")
         .addTarget(0, texFinal)
         .build());
 
@@ -198,10 +206,11 @@ function setupShader() {
 
     useUniform("shadowLightPosition",
         "fogColor",
-        "skyColor",
         "fogStart",
-        "cameraPos",
         "fogEnd",
+        "skyColor",
+        // "cloudHeight",
+        "cameraPos",
         "screenSize",
         "frameCounter",
         "worldTime",

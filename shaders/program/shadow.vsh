@@ -9,7 +9,7 @@ out vec4 lColor;
 
 
 void iris_emitVertex(inout VertexData data) {
-    data.pos = iris_projectionMatrix * (iris_modelViewMatrix * data.pos);
+    data.clipPos = iris_projectionMatrix * (iris_modelViewMatrix * data.modelPos);
 }
 
 void iris_sendParameters(in VertexData data) {

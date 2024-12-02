@@ -12,7 +12,7 @@ uniform sampler2DArray solidShadowMap;
 
 #include "/settings.glsl"
 #include "/lib/common.glsl"
-#include "/lib/noise/ign.glsl"
+#include "/lib/ign.glsl"
 #include "/lib/hg.glsl"
 #include "/lib/csm.glsl"
 #include "/lib/sky/common.glsl"
@@ -40,7 +40,12 @@ void main() {
     vec3 shadowViewEnd = mul3(shadowModelView, localPos);
     vec3 shadowViewStep = (shadowViewEnd - shadowViewStart) * stepScale;
 
-    float dither = InterleavedGradientNoise(gl_FragCoord.xy);
+    #ifdef EFFECT_TAA_ENABLED
+        float dither = InterleavedGradientNoiseTime(gl_FragCoord.xy);
+    #else
+        float dither = InterleavedGradientNoise(gl_FragCoord.xy);
+    #endif
+    
     vec3 localSunDir = normalize((playerModelViewInverse * vec4(sunPosition, 1.0)).xyz);
 
     vec3 localViewDir = normalize(localPos);

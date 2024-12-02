@@ -1,6 +1,8 @@
-const ENABLE_Bloom = true;
-const ENABLE_TAA = false;
-const ENABLE_VL = true;
+const FEATURE = {
+    Bloom: true,
+    TAA: true,
+    VL: true
+};
 
 
 function setupSky() {
@@ -132,6 +134,11 @@ function setupShader() {
         .clear(true)
         .build());
 
+    let texFinalPrevious = registerTexture(new Texture("texFinalPrevious")
+        .format(RGBA16F)
+        .clear(false)
+        .build());
+
     // let texShadowColor = registerTexture(new Texture("texShadowColor")
     //     // .format("rgba8")
     //     // .clear([ 1.0, 1.0, 1.0, 1.0 ])
@@ -148,12 +155,15 @@ function setupShader() {
 
     // TODO: sky-textured?
 
-    registerGeometryShader(new GamePass("terrain")
+    let terrainShader = new GamePass("terrain")
         .usage(USAGE_BASIC)
         .vertex("program/main.vsh")
         .fragment("program/main.fsh")
-        .addTarget(0, texFinal)
-        .build());
+        .addTarget(0, texFinal);
+
+    if (FEATURE.TAA) terrainShader.define("EFFECT_TAA_ENABLED", "1");
+
+    registerGeometryShader(terrainShader.build());
 
     registerGeometryShader(new GamePass("water")
         .usage(USAGE_TERRAIN_TRANSLUCENT)
@@ -178,15 +188,27 @@ function setupShader() {
         .usage(USAGE_SHADOW)
         .build());
 
-    if (ENABLE_VL) {
-        registerComposite(new CompositePass(POST_RENDER, "volumetric")
+    if (FEATURE.VL) {
+        let vlShader = new CompositePass(POST_RENDER, "volumetric")
             .vertex("post/bufferless.vsh")
             .fragment("post/volumetric.fsh")
+            .addTarget(0, texFinal);
+
+        if (FEATURE.TAA) vlShader.define("EFFECT_TAA_ENABLED", "1");
+
+        registerComposite(vlShader.build());
+    }
+
+    if (FEATURE.TAA) {
+        registerComposite(new CompositePass(POST_RENDER, "TAA")
+            .vertex("post/bufferless.vsh")
+            .fragment("post/taa.fsh")
             .addTarget(0, texFinal)
+            .addTarget(1, texFinalPrevious)
             .build());
     }
 
-    if (ENABLE_Bloom)
+    if (FEATURE.Bloom)
         setupBloom(texFinal);
 
     registerComposite(new CompositePass(POST_RENDER, "tonemap")
@@ -194,14 +216,6 @@ function setupShader() {
         .fragment("post/tonemap.fsh")
         .addTarget(0, texFinal)
         .build());
-
-    if (ENABLE_TAA) {
-        registerComposite(new CompositePass(POST_RENDER, "TAA")
-            .vertex("post/bufferless.vsh")
-            .fragment("post/taa.fsh")
-            .addTarget(0, texFinal)
-            .build());
-    }
 
     setCombinationPass("post/final.fsh")
 

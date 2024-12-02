@@ -18,13 +18,13 @@ uniform sampler2DArray solidShadowMap;
 
 #include "/settings.glsl"
 #include "/lib/common.glsl"
+#include "/lib/ign.glsl"
 #include "/lib/erp.glsl"
 #include "/lib/fresnel.glsl"
 #include "/lib/csm.glsl"
 
 #include "/lib/sky/common.glsl"
 #include "/lib/sky/view.glsl"
-#include "/lib/noise/ign.glsl"
 #include "/lib/shadow/sample.glsl"
 #include "/lib/water_waves.glsl"
 

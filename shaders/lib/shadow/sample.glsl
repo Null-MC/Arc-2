@@ -8,7 +8,12 @@ float SampleShadows() {
     GetShadowProjection(shadowViewPos, shadowCascade, shadowPos);
     shadowPos = shadowPos * 0.5 + 0.5;
 
-    float dither = InterleavedGradientNoise(gl_FragCoord.xy);
+    // #ifdef EFFECT_TAA_ENABLED
+        float dither = InterleavedGradientNoiseTime(gl_FragCoord.xy);
+    // #else
+    //     float dither = InterleavedGradientNoise(gl_FragCoord.xy);
+    // #endif
+
     float angle = fract(dither) * TAU;
     float s = sin(angle), c = cos(angle);
     mat2 rotation = mat2(c, -s, s, c);

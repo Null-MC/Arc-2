@@ -3,15 +3,17 @@
 layout(location = 0) out vec4 outColor;
 layout(location = 1) out vec4 outColorPrev;
 
-uniform sampler2D texFinal;
-uniform sampler2D texFinalPrev;
-uniform sampler2D depthtex1;
-
 in vec2 uv;
+
+uniform sampler2D texFinal;
+uniform sampler2D texFinalPrevious;
+uniform sampler2D depthtex1;
 
 #include "/lib/common.glsl"
 #include "/lib/taa_jitter.glsl"
 
+
+const int EFFECT_TAA_MAX_ACCUM = 16;
 
 vec3 encodePalYuv(vec3 rgb) {
     // rgb = RGBToLinear(rgb);
@@ -35,6 +37,11 @@ vec3 decodePalYuv(vec3 yuv) {
 }
 
 vec3 getReprojectedClipPos(const in vec2 texcoord, const in float depthNow, const in vec3 velocity) {
+    // WARN: temporary fallback for missing uniforms
+    mat4 playerPreviousProjection = playerProjection;
+    mat4 playerPreviousModelView = playerModelView;
+    vec3 previousCameraPosition = cameraPos;
+
     vec3 clipPos = vec3(texcoord, depthNow) * 2.0 - 1.0;
 
     vec3 viewPos = unproject(playerProjectionInverse, clipPos);
@@ -68,7 +75,7 @@ void main() {
     #ifdef EFFECT_TAA_SHARPEN
         vec4 lastColor = sampleHistoryCatmullRom(uvLast);
     #else
-        vec4 lastColor = textureLod(texFinalPrev, uvLast, 0);
+        vec4 lastColor = textureLod(texFinalPrevious, uvLast, 0);
     #endif
     // lastColor.rgb *= exposureF;
 
@@ -79,7 +86,7 @@ void main() {
     //     mixRate = 0.0;
     // #endif
 
-    if (saturate(uvLast) != uvLast)
+    if (clamp(uvLast, 0.0, 1.0) != uvLast)
         mixRate = 1.0;
     
     vec3 in0 = textureLod(texFinal, uv, 0).rgb;// * exposureF;

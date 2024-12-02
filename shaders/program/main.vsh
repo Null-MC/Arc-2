@@ -44,7 +44,7 @@ void iris_emitVertex(inout VertexData data) {
 	localPos = mul3(playerModelViewInverse, viewPos);
 	localOffset = vec3(0.0);
 
-	#ifdef RENDER_TRANSLUCENT
+	#if defined RENDER_TRANSLUCENT && defined ENABLE_WATER_WAVES
         bool isWater = bitfieldExtract(blockMask, 6, 1) != 0;
 
         if (isWater) {

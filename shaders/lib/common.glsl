@@ -1,5 +1,6 @@
 const float PI = 3.14159265358;
 const float TAU = PI * 2.0;
+const float EPSILON = 1e-6;
 
 const vec3 luma_factor = vec3(0.2126, 0.7152, 0.0722);
 

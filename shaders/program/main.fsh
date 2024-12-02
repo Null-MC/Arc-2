@@ -19,6 +19,7 @@ uniform sampler2DArray solidShadowMap;
 #include "/settings.glsl"
 #include "/lib/common.glsl"
 #include "/lib/erp.glsl"
+#include "/lib/fresnel.glsl"
 #include "/lib/csm.glsl"
 
 #include "/lib/sky/common.glsl"
@@ -37,26 +38,29 @@ void iris_emitFragment() {
     bool isWater = false;
     float emission = 0.0;
     vec3 _localNormal = normalize(localNormal);
+    vec3 localViewDir = normalize(localPos);
 
     #ifdef RENDER_TRANSLUCENT
         isWater = (material & 64) != 0;
 
-        if (isWater) {
-            // albedo.rgb = vec3(0.0, 0.2, 0.8);
+        #ifdef ENABLE_WATER_WAVES
+            if (isWater) {
+                // albedo.rgb = vec3(0.0, 0.2, 0.8);
 
-            const float lmcoord_y = 1.0;
+                const float lmcoord_y = 1.0;
 
-            vec3 waveOffset = GetWaveHeight(localPos + cameraPos, lmcoord_y, timeCounter, 24);
+                vec3 waveOffset = GetWaveHeight(localPos + cameraPos, lmcoord_y, timeCounter, 24);
 
-            // mUV += 0.1*waveOffset.xz;
+                // mUV += 0.1*waveOffset.xz;
 
-            vec3 wavePos = localPos;
-            wavePos.y += waveOffset.y - localOffset.y;
+                vec3 wavePos = localPos;
+                wavePos.y += waveOffset.y - localOffset.y;
 
-            vec3 dX = dFdx(wavePos);
-            vec3 dY = dFdy(wavePos);
-            _localNormal = normalize(cross(dX, dY));
-        }
+                vec3 dX = dFdx(wavePos);
+                vec3 dY = dFdy(wavePos);
+                _localNormal = normalize(cross(dX, dY));
+            }
+        #endif
     #else
         emission = (material & 8) != 0 ? 1.0 : 0.0;
     #endif
@@ -94,16 +98,18 @@ void iris_emitFragment() {
 
     if (isWater) {
         // TODO: specular
-        vec3 localViewDir = normalize(localPos);
         vec3 localReflectDir = reflect(localViewDir, _localNormal);
 
         // vec3 skyPos = getSkyPosition(localPos);
         vec3 skyReflectColor = 20.0 * getValFromSkyLUT(texSkyView, skyPos, localReflectDir, sunDir);
         finalColor.rgb = skyReflectColor;
 
+        float NoVm = max(dot(_localNormal, -localViewDir), 0.0);
+        float F = F_schlick(NoVm, 0.02, 1.0);
+
         float specular = max(dot(localReflectDir, localLightDir), 0.0);
         finalColor.rgb += 20.0 * NoLm * skyTransmit * shadowSample * pow(specular, 64.0);
-
+        finalColor.a = F * 0.5 + 0.5;
     }
 
     float viewDist = length(localPos);

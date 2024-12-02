@@ -161,6 +161,7 @@ function setupShader() {
         .fragment("program/main.fsh")
         .addTarget(0, texFinal)
         .define("RENDER_TRANSLUCENT", "1")
+        .define("ENABLE_WATER_WAVES", "1")
         .build());
 
     registerGeometryShader(new GamePass("weather")

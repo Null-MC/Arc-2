@@ -1,13 +1,12 @@
 #version 430 core
 
-layout(location = 0) out vec4 outColor;
+layout(location = 0) out vec3 outScatter;
+layout(location = 1) out vec3 outTransmit;
 
 in vec2 uv;
 
-uniform sampler2D texFinal;
 uniform sampler2D texSkyTransmit;
-uniform sampler2D solidDepthTex;
-// uniform sampler2D shadowtex0;
+uniform sampler2D mainDepthTex;
 uniform sampler2DArray solidShadowMap;
 
 #include "/settings.glsl"
@@ -17,20 +16,13 @@ uniform sampler2DArray solidShadowMap;
 #include "/lib/csm.glsl"
 #include "/lib/sky/common.glsl"
 #include "/lib/sky/transmittance.glsl"
-
-
-const int VL_MaxSamples = 32;
-const float VL_Scatter = 0.006;
-const float VL_Transmit = 0.002;
-const float VL_RainDensity = 6.0;
+#include "/lib/volumetric.glsl"
 
 
 void main() {
-    vec3 color = textureLod(texFinal, uv, 0).rgb;
+    const float stepScale = 1.0 / VL_MaxSamples;
 
-    float stepScale = 1.0 / VL_MaxSamples;
-
-    float depth = textureLod(solidDepthTex, uv, 0).r;
+    float depth = textureLod(mainDepthTex, uv, 0).r;
     vec3 ndcPos = vec3(uv, depth) * 2.0 - 1.0;
     vec3 viewPos = unproject(playerProjectionInverse, ndcPos);
     vec3 localPos = mul3(playerModelViewInverse, viewPos);
@@ -50,10 +42,23 @@ void main() {
 
     vec3 localViewDir = normalize(localPos);
     float VoL = dot(localViewDir, localSunDir);
-    float phase = HG(VoL, 0.46);
 
     float stepDist = length(stepLocal);
 
+    float phase;
+    vec3 scatterF, transmitF;
+    if (isEyeInWater == 1) {
+        scatterF = VL_WaterScatter;
+        transmitF = VL_WaterTransmit;
+        phase = HG(VoL, 0.36);
+    }
+    else {
+        scatterF = vec3(VL_Scatter);
+        transmitF = vec3(VL_Transmit);
+        phase = HG(VoL, 0.54);
+    }
+
+    vec3 scattering = vec3(0.0);
     vec3 transmittance = vec3(1.0);
 
     for (int i = 0; i < VL_MaxSamples; i++) {
@@ -76,26 +81,21 @@ void main() {
         vec3 skyLighting = getValFromTLUT(texSkyTransmit, skyPos, localSunDir);
         vec3 sampleColor = 5.0 * skyLighting * shadowSample;
 
-        float sampleY = sampleLocalPos.y + cameraPos.y;
-        float sampleDensity = clamp((sampleY - SEA_LEVEL) / (ATMOSPHERE_MAX - SEA_LEVEL), 0.0, 1.0);
-        sampleDensity = stepDist * pow(1.0 - sampleDensity, 8.0);
+        float sampleDensity = stepDist;
+        if (isEyeInWater == 0) {
+            float sampleY = sampleLocalPos.y + cameraPos.y;
+            sampleDensity = clamp((sampleY - SEA_LEVEL) / (ATMOSPHERE_MAX - SEA_LEVEL), 0.0, 1.0);
+            sampleDensity = stepDist * pow(1.0 - sampleDensity, 8.0);
 
-        sampleDensity *= VL_RainDensity*rainStrength + 1.0;
-        float sampleTransmit = exp(-sampleDensity * VL_Transmit);
+            sampleDensity *= VL_RainDensity*rainStrength + 1.0;
+        }
 
-        color *= sampleTransmit;
-        color += sampleColor * (phase * sampleDensity * VL_Scatter * sampleTransmit);
+        vec3 sampleTransmit = exp(-sampleDensity * transmitF);
 
-
-        // vec3 inScattering = sampleColor * (phase * sampleDensity * VL_Scatter);
-        // float sampleTransmittance = exp(-sampleDensity * VL_Transmit);
-
-        // vec3 scatteringIntegral = (inScattering - inScattering * sampleTransmittance) / VL_Transmit;
-
-        // color *= sampleTransmittance;
-        // color += scatteringIntegral * transmittance;
-        // transmittance *= sampleTransmittance;
+        transmittance *= sampleTransmit;
+        scattering += sampleColor * scatterF * transmittance * (phase * sampleDensity);
     }
 
-    outColor = vec4(color, 1.0);
+    outScatter = scattering;
+    outTransmit = transmittance;
 }

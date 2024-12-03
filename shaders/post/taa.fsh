@@ -7,7 +7,7 @@ in vec2 uv;
 
 uniform sampler2D texFinal;
 uniform sampler2D texFinalPrevious;
-uniform sampler2D depthtex1;
+uniform sampler2D solidDepthTex;
 
 #include "/lib/common.glsl"
 #include "/lib/taa_jitter.glsl"
@@ -16,8 +16,6 @@ uniform sampler2D depthtex1;
 const int EFFECT_TAA_MAX_ACCUM = 16;
 
 vec3 encodePalYuv(vec3 rgb) {
-    // rgb = RGBToLinear(rgb);
-
     return vec3(
         dot(rgb, vec3(0.299, 0.587, 0.114)),
         dot(rgb, vec3(-0.14713, -0.28886, 0.436)),
@@ -32,52 +30,41 @@ vec3 decodePalYuv(vec3 yuv) {
         dot(yuv, vec3(1.0, 2.03211, 0.0))
     );
 
-    // return LinearToRGB(rgb);
     return rgb;
 }
 
 vec3 getReprojectedClipPos(const in vec2 texcoord, const in float depthNow, const in vec3 velocity) {
-    // WARN: temporary fallback for missing uniforms
-    mat4 playerPreviousProjection = playerProjection;
-    mat4 playerPreviousModelView = playerModelView;
-    vec3 previousCameraPosition = cameraPos;
-
     vec3 clipPos = vec3(texcoord, depthNow) * 2.0 - 1.0;
 
     vec3 viewPos = unproject(playerProjectionInverse, clipPos);
 
     vec3 localPos = mul3(playerModelViewInverse, viewPos);
 
-    vec3 localPosPrev = localPos - velocity + (cameraPos - previousCameraPosition);
+    vec3 localPosPrev = localPos - velocity + (cameraPos - lastCameraPos);
 
-    vec3 viewPosPrev = mul3(playerPreviousModelView, localPosPrev);
+    vec3 viewPosPrev = mul3(lastPlayerModelView, localPosPrev);
 
-    vec3 clipPosPrev = unproject(playerPreviousProjection, viewPosPrev);
+    vec3 clipPosPrev = unproject(lastPlayerProjection, viewPosPrev);
 
     return clipPosPrev * 0.5 + 0.5;
 }
 
 void main() {
-    // vec3 colorFinal = ApplyTAA(uv);
-
     vec2 uv2 = uv;
 
-    uv2 += getJitterOffset(frameCounter);
+    // uv2 += getJitterOffset(frameCounter);
 
-    float depth = textureLod(depthtex1, uv, 0).r;
+    float depth = textureLod(solidDepthTex, uv, 0).r;
 
     // TODO: add velocity buffer
     vec3 velocity = vec3(0.0); //textureLod(BUFFER_VELOCITY, uv, 0).xyz;
     vec2 uvLast = getReprojectedClipPos(uv, depth, velocity).xy;
-
-    // const float exposureF = exp2(POST_EXPOSURE);
 
     #ifdef EFFECT_TAA_SHARPEN
         vec4 lastColor = sampleHistoryCatmullRom(uvLast);
     #else
         vec4 lastColor = textureLod(texFinalPrevious, uvLast, 0);
     #endif
-    // lastColor.rgb *= exposureF;
 
     vec3 antialiased = lastColor.rgb;
     // float mixRate = min(lastColor.a, 0.5);
@@ -89,24 +76,21 @@ void main() {
     if (clamp(uvLast, 0.0, 1.0) != uvLast)
         mixRate = 1.0;
     
-    vec3 in0 = textureLod(texFinal, uv, 0).rgb;// * exposureF;
-    // return vec4(in0, 1.0);
-    // return vec4(lastColor.rgb, 1.0);
+    vec3 in0 = textureLod(texFinal, uv, 0).rgb;
     
     antialiased = mix(antialiased * antialiased, in0 * in0, mixRate);
     antialiased = sqrt(antialiased);
 
-    // vec2 viewSize = vec2(viewWidth, viewHeight);
     vec2 pixelSize = 1.0 / screenSize;
     
-    vec3 in1 = textureLod(texFinal, uv2 + vec2(+pixelSize.x, 0.0), 0).rgb;// * exposureF;
-    vec3 in2 = textureLod(texFinal, uv2 + vec2(-pixelSize.x, 0.0), 0).rgb;// * exposureF;
-    vec3 in3 = textureLod(texFinal, uv2 + vec2(0.0, +pixelSize.y), 0).rgb;// * exposureF;
-    vec3 in4 = textureLod(texFinal, uv2 + vec2(0.0, -pixelSize.y), 0).rgb;// * exposureF;
-    vec3 in5 = textureLod(texFinal, uv2 + vec2(+pixelSize.x, +pixelSize.y), 0).rgb;// * exposureF;
-    vec3 in6 = textureLod(texFinal, uv2 + vec2(-pixelSize.x, +pixelSize.y), 0).rgb;// * exposureF;
-    vec3 in7 = textureLod(texFinal, uv2 + vec2(+pixelSize.x, -pixelSize.y), 0).rgb;// * exposureF;
-    vec3 in8 = textureLod(texFinal, uv2 + vec2(-pixelSize.x, -pixelSize.y), 0).rgb;// * exposureF;
+    vec3 in1 = textureLod(texFinal, uv2 + vec2(+pixelSize.x, 0.0), 0).rgb;
+    vec3 in2 = textureLod(texFinal, uv2 + vec2(-pixelSize.x, 0.0), 0).rgb;
+    vec3 in3 = textureLod(texFinal, uv2 + vec2(0.0, +pixelSize.y), 0).rgb;
+    vec3 in4 = textureLod(texFinal, uv2 + vec2(0.0, -pixelSize.y), 0).rgb;
+    vec3 in5 = textureLod(texFinal, uv2 + vec2(+pixelSize.x, +pixelSize.y), 0).rgb;
+    vec3 in6 = textureLod(texFinal, uv2 + vec2(-pixelSize.x, +pixelSize.y), 0).rgb;
+    vec3 in7 = textureLod(texFinal, uv2 + vec2(+pixelSize.x, -pixelSize.y), 0).rgb;
+    vec3 in8 = textureLod(texFinal, uv2 + vec2(-pixelSize.x, -pixelSize.y), 0).rgb;
     
     antialiased = encodePalYuv(antialiased);
     in0 = encodePalYuv(in0);
@@ -147,9 +131,7 @@ void main() {
     mixRate = clamp(mixRate, weightMax, 1.0);
     
     antialiased = decodePalYuv(antialiased);
-        
-    // return vec4(antialiased, mixRate);
-
+    
     outColor = vec4(antialiased, 1.0);
     outColorPrev = vec4(antialiased, mixRate);
 }

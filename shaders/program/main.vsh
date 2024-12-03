@@ -48,7 +48,7 @@ void iris_emitVertex(inout VertexData data) {
 	localPos = mul3(playerModelViewInverse, viewPos);
 	localOffset = vec3(0.0);
 
-	#if defined RENDER_TRANSLUCENT && defined ENABLE_WATER_WAVES
+	#if defined RENDER_TRANSLUCENT && defined WATER_WAVES_ENABLED
         bool isWater = bitfieldExtract(blockMask, 6, 1) != 0;
 
         if (isWater) {
@@ -80,5 +80,4 @@ void iris_sendParameters(in VertexData data) {
     color = data.color;
 
     material = blockMask;
-    // emission = (blockMask & 8) != 0;
 }

@@ -2,7 +2,6 @@
 
 layout(location = 0) out vec4 outColor;
 
-uniform sampler2D TEX_DOWN;
 uniform sampler2D TEX_SRC;
 
 in vec2 uv;
@@ -37,11 +36,7 @@ vec3 BloomUp(in sampler2D texColor, const in float scale) {
 }
 
 void main() {
-    vec3 downColor = textureLod(TEX_DOWN, uv, 0).rgb;
-
     vec3 upColor = BloomUp(TEX_SRC, TEX_SCALE);
 
-    vec3 finalColor = downColor + upColor;
-
-    outColor = vec4(finalColor, 1.0);
+    outColor = vec4(upColor, 1.0);
 }

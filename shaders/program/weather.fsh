@@ -29,10 +29,13 @@ void iris_emitFragment() {
     vec4 mColor = color;
     iris_modifyBase(mUV, mColor, mLight);
 
-    if (localPos.y + cameraPos.y > cloudHeight) {discard; return;}
+    // if (localPos.y + cameraPos.y > cloudHeight) {discard; return;}
 
     vec4 albedo = iris_sampleBaseTex(mUV);
-    // if (iris_discardFragment(albedo)) {discard; return;}
+
+    albedo.a *= 1.0 - smoothstep(cloudHeight - 16.0, cloudHeight + 32.0, localPos.y + cameraPos.y);
+
+    if (iris_discardFragment(albedo)) {discard; return;}
 
     albedo *= mColor;
     albedo.rgb = RgbToLinear(albedo.rgb);
@@ -49,7 +52,7 @@ void iris_emitFragment() {
 
     // vec3 _localNormal = normalize(localNormal);
 
-    float shadowSample = SampleShadows();
+    float shadowSample = SampleShadows(shadowViewPos);
 
     vec3 localLightDir = normalize(mul3(playerModelViewInverse, shadowLightPosition));
     const float NoLm = 1.0; //step(0.0, dot(localLightDir, _localNormal));

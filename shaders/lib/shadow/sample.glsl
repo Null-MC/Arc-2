@@ -2,11 +2,13 @@ const float ShadowBias[] = float[](
     0.000012, 0.000024, 0.000064, 0.000256);
 
 
-float SampleShadows() {
+float SampleShadows(const in vec3 shadowViewPos) {
     vec3 shadowPos;
     int shadowCascade;
     GetShadowProjection(shadowViewPos, shadowCascade, shadowPos);
     shadowPos = shadowPos * 0.5 + 0.5;
+
+    if (clamp(shadowPos, 0.0, 1.0) != shadowPos) return 1.0;
 
     // #ifdef EFFECT_TAA_ENABLED
         float dither = InterleavedGradientNoiseTime(gl_FragCoord.xy);

@@ -1,8 +1,13 @@
 const FEATURE = {
+    WaterWaves: false,
     Bloom: true,
     TAA: true,
     VL: true
 };
+
+// WARN: temporarily hard-coded
+const viewWidth = 1920;
+const viewHeight = 1080;
 
 
 function setupSky() {
@@ -60,10 +65,6 @@ function setupSky() {
 }
 
 function setupBloom(texFinal) {
-    // WARN: temporarily hard-coded
-    const viewWidth = 1920;
-    const viewHeight = 1080;
-
     let maxLod = Math.log2(Math.min(viewWidth, viewHeight));
     maxLod = Math.max(Math.min(maxLod, 8), 0);
 
@@ -103,18 +104,19 @@ function setupBloom(texFinal) {
             ? texFinal
             : texBloomArray[i-1];
 
-        let texDown = i == 0
-            ? "texFinal"
-            : `texBloom_${i-1}`
+        // let texDown = i == 0
+        //     ? "texFinal"
+        //     : `texBloom_${i-1}`
 
         registerComposite(new CompositePass(POST_RENDER, `bloom-up-${i}`)
             .vertex("post/bufferless.vsh")
             .fragment("post/bloom/up.fsh")
-            .define("TEX_DOWN", texDown)
+            // .define("TEX_DOWN", texDown)
             .define("TEX_SRC", `texBloom_${i}`)
             .define("TEX_SCALE", Math.pow(2, i+1).toString())
             .define("BLOOM_INDEX", i.toString())
             .addTarget(0, texOut)
+            .blendFunc(0, FUNC_ONE, FUNC_ONE, FUNC_ONE, FUNC_ONE)
             .build());
     }
 }
@@ -129,6 +131,10 @@ function setupShader() {
     worldSettings.moon = true;
     worldSettings.sun = false;
 
+    if (FEATURE.WaterWaves) defineGlobally("WATER_WAVES_ENABLED", "1");
+    if (FEATURE.TAA) defineGlobally("EFFECT_TAA_ENABLED", "1");
+    if (FEATURE.VL) defineGlobally("EFFECT_VL_ENABLED", "1");
+
     let texFinal = registerTexture(new Texture("texFinal")
         .format(RGBA16F)
         .clear(true)
@@ -139,47 +145,51 @@ function setupShader() {
         .clear(false)
         .build());
 
+    let texParticles = registerTexture(new Texture("texParticles")
+        .format(RGBA16F)
+        .clearColor(0.0, 0.0, 0.0, 0.0)
+        .build());
+
+    let texDeferredOpaque_Color = registerTexture(new Texture("texDeferredOpaque_Color")
+        .format(RGBA8)
+        .clearColor(0.0, 0.0, 0.0, 0.0)
+        .build());
+
+    let texDeferredOpaque_Data = registerTexture(new Texture("texDeferredOpaque_Data")
+        .format(RG32UI)
+        .clearColor(0.0, 0.0, 0.0, 0.0)
+        .build());
+
+    let texDeferredTrans_Color = registerTexture(new Texture("texDeferredTrans_Color")
+        .format(RGBA8)
+        .clearColor(0.0, 0.0, 0.0, 0.0)
+        .build());
+
+    let texDeferredTrans_Data = registerTexture(new Texture("texDeferredTrans_Data")
+        .format(RG32UI)
+        .clearColor(0.0, 0.0, 0.0, 0.0)
+        .build());
+
+    let texScatterVL = registerTexture(new Texture("texScatterVL")
+        .format(RGB16F)
+        .width(Math.ceil(viewWidth / 2.0))
+        .height(Math.ceil(viewHeight / 2.0))
+        .clear(false)
+        .build());
+
+    let texTransmitVL = registerTexture(new Texture("texTransmitVL")
+        .format(RGB16F)
+        .width(Math.ceil(viewWidth / 2.0))
+        .height(Math.ceil(viewHeight / 2.0))
+        .clear(false)
+        .build());
+
     // let texShadowColor = registerTexture(new Texture("texShadowColor")
     //     // .format("rgba8")
     //     // .clear([ 1.0, 1.0, 1.0, 1.0 ])
     //     .build());
 
     setupSky();
-
-    registerGeometryShader(new GamePass("sky-color")
-        .vertex("program/sky.vsh")
-        .fragment("program/sky.fsh")
-        .usage(USAGE_SKYBOX)
-        .addTarget(0, texFinal)
-        .build());
-
-    // TODO: sky-textured?
-
-    let terrainShader = new GamePass("terrain")
-        .usage(USAGE_BASIC)
-        .vertex("program/main.vsh")
-        .fragment("program/main.fsh")
-        .addTarget(0, texFinal);
-
-    if (FEATURE.TAA) terrainShader.define("EFFECT_TAA_ENABLED", "1");
-
-    registerGeometryShader(terrainShader.build());
-
-    registerGeometryShader(new GamePass("water")
-        .usage(USAGE_TERRAIN_TRANSLUCENT)
-        .vertex("program/main.vsh")
-        .fragment("program/main.fsh")
-        .addTarget(0, texFinal)
-        .define("RENDER_TRANSLUCENT", "1")
-        .define("ENABLE_WATER_WAVES", "1")
-        .build());
-
-    registerGeometryShader(new GamePass("weather")
-        .usage(USAGE_WEATHER)
-        .vertex("program/main.vsh")
-        .fragment("program/weather.fsh")
-        .addTarget(0, texFinal)
-        .build());
 
     registerGeometryShader(new GamePass("shadow")
         .vertex("program/shadow.vsh")
@@ -188,16 +198,73 @@ function setupShader() {
         .usage(USAGE_SHADOW)
         .build());
 
+    registerGeometryShader(new GamePass("sky-color")
+        .vertex("program/sky.vsh")
+        .fragment("program/sky.fsh")
+        .usage(USAGE_SKYBOX)
+        .addTarget(0, texFinal)
+        // .blendFunc(0, FUNC_ONE, FUNC_ZERO, FUNC_ONE, FUNC_ZERO)
+        .build());
+
+    // TODO: sky-textured?
+
+    registerGeometryShader(new GamePass("terrain")
+        .usage(USAGE_BASIC)
+        .vertex("program/main.vsh")
+        .fragment("program/main.fsh")
+        .addTarget(0, texDeferredOpaque_Color)
+        // .blendFunc(0, FUNC_SRC_ALPHA, FUNC_ONE_MINUS_SRC_ALPHA, FUNC_ONE, FUNC_ZERO)
+        .addTarget(1, texDeferredOpaque_Data)
+        // .blendFunc(1, FUNC_ONE, FUNC_ZERO, FUNC_ONE, FUNC_ZERO)
+        .build());
+
+    registerGeometryShader(new GamePass("water")
+        .usage(USAGE_TERRAIN_TRANSLUCENT)
+        .vertex("program/main.vsh")
+        .fragment("program/main.fsh")
+        .define("RENDER_TRANSLUCENT", "1")
+        .addTarget(0, texDeferredTrans_Color)
+        // .blendFunc(0, FUNC_SRC_ALPHA, FUNC_ONE_MINUS_SRC_ALPHA, FUNC_ONE, FUNC_ZERO)
+        .addTarget(1, texDeferredTrans_Data)
+        // .blendFunc(1, FUNC_ONE, FUNC_ZERO, FUNC_ONE, FUNC_ZERO)
+        .build());
+
+    registerGeometryShader(new GamePass("weather")
+        .usage(USAGE_WEATHER)
+        .vertex("program/main.vsh")
+        .fragment("program/weather.fsh")
+        .addTarget(0, texParticles)
+        .build());
+
     if (FEATURE.VL) {
-        let vlShader = new CompositePass(POST_RENDER, "volumetric")
+        registerComposite(new CompositePass(POST_RENDER, "volumetric-far")
             .vertex("post/bufferless.vsh")
-            .fragment("post/volumetric.fsh")
-            .addTarget(0, texFinal);
-
-        if (FEATURE.TAA) vlShader.define("EFFECT_TAA_ENABLED", "1");
-
-        registerComposite(vlShader.build());
+            .fragment("post/volumetric-far.fsh")
+            .addTarget(0, texScatterVL)
+            .addTarget(1, texTransmitVL)
+            .build());
     }
+
+    registerComposite(new CompositePass(POST_RENDER, "composite-opaque")
+        .vertex("post/bufferless.vsh")
+        .fragment("post/composite-opaque.fsh")
+        .addTarget(0, texFinal)
+        .build());
+
+    if (FEATURE.VL) {
+        registerComposite(new CompositePass(POST_RENDER, "volumetric-near")
+            .vertex("post/bufferless.vsh")
+            .fragment("post/volumetric-near.fsh")
+            .addTarget(0, texScatterVL)
+            .addTarget(1, texTransmitVL)
+            .build());
+    }
+
+    registerComposite(new CompositePass(POST_RENDER, "composite-translucent")
+        .vertex("post/bufferless.vsh")
+        .fragment("post/composite-trans.fsh")
+        .addTarget(0, texFinal)
+        .build());
 
     if (FEATURE.TAA) {
         registerComposite(new CompositePass(POST_RENDER, "TAA")
@@ -225,7 +292,9 @@ function setupShader() {
         "fogEnd",
         "skyColor",
         // "cloudHeight",
+        "isEyeInWater",
         "cameraPos",
+        "lastCameraPos",
         "screenSize",
         "frameCounter",
         "worldTime",
@@ -235,8 +304,10 @@ function setupShader() {
         "nearPlane",
         "renderDistance",
         "playerModelView",
+        "lastPlayerModelView",
         "playerModelViewInverse",
         "playerProjection",
+        "lastPlayerProjection",
         "playerProjectionInverse",
         "sunPosition",
         "shadowModelView",

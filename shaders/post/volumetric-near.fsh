@@ -102,6 +102,10 @@ void main() {
         float sampleDensity = stepDist;
         if (isEyeInWater == 0) {
             sampleDensity = stepDist * GetSkyDensity(sampleLocalPos);
+
+            float worldY = sampleLocalPos.y + cameraPos.y;
+            float lightAtmosDist = max(SEA_LEVEL + 200.0 - worldY, 0.0) / localLightDir.y;
+            sampleColor *= exp2(-0.16 * lightAtmosDist * transmitF);
         }
 
         vec3 sampleTransmit = exp(-sampleDensity * transmitF);

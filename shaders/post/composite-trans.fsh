@@ -5,11 +5,13 @@ layout(location = 0) out vec4 outColor;
 in vec2 uv;
 
 uniform sampler2D texFinalOpaque;
-uniform sampler2D texParticles;
 uniform sampler2D mainDepthTex;
 uniform sampler2D solidDepthTex;
 uniform sampler2D texDeferredTrans_Color;
 uniform usampler2D texDeferredTrans_Data;
+
+uniform sampler2D texParticles;
+uniform sampler2D texClouds;
 
 uniform sampler2D texSkyView;
 uniform sampler2D texSkyTransmit;
@@ -147,6 +149,9 @@ void main() {
             colorFinal *= mix(vec3(1.0), colorTrans.rgb, sqrt(colorTrans.a));
         }
     }
+
+    vec4 clouds = textureLod(texClouds, uv, 0);
+    colorFinal = mix(colorFinal, clouds.rgb, clouds.a);
 
     #ifdef EFFECT_VL_ENABLED
         vec3 vlScatter = textureLod(texScatterVL, uv, 0).rgb;

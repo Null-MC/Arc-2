@@ -136,17 +136,22 @@ function setupShader() {
     let texFinal = registerTexture(new Texture("texFinal")
         .imageName("imgFinal")
         .format(RGBA16F)
-        .clear(true)
+        .clearColor(0.0, 0.0, 0.0, 0.0)
         .build());
 
     let texFinalOpaque = registerTexture(new Texture("texFinalOpaque")
         .format(RGBA16F)
-        .clear(true)
+        .clearColor(0.0, 0.0, 0.0, 0.0)
         .build());
 
     let texFinalPrevious = registerTexture(new Texture("texFinalPrevious")
         .format(RGBA16F)
         .clear(false)
+        .build());
+
+    let texClouds = registerTexture(new Texture("texClouds")
+        .format(RGBA16F)
+        .clearColor(0.0, 0.0, 0.0, 0.0)
         .build());
 
     let texParticles = registerTexture(new Texture("texParticles")
@@ -194,7 +199,6 @@ function setupShader() {
         .width(256)
         .height(1)
         .clearColor(0.0, 0.0, 0.0, 0.0)
-        .clear(true)
         .build());
 
     // let texShadowColor = registerTexture(new Texture("texShadowColor")
@@ -227,7 +231,7 @@ function setupShader() {
         .usage(USAGE_CLOUDS)
         .vertex("program/main.vsh")
         .fragment("program/clouds.fsh")
-        .addTarget(0, texParticles)
+        .addTarget(0, texClouds)
         .build());
 
     registerGeometryShader(new GamePass("terrain")

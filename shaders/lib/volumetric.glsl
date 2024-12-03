@@ -1,4 +1,4 @@
-const int VL_MaxSamples = 32;
+const int VL_MaxSamples = 48;
 
 const float VL_Phase = 0.78;
 const float VL_Scatter  = 0.0120;
@@ -15,9 +15,9 @@ vec3 VL_WaterTransmit = RgbToLinear(1.0 - vec3(0.051, 0.545, 0.588));
 
 float GetSkyDensity(const in vec3 localPos) {
     float sampleY = localPos.y + cameraPos.y;
-    float sampleDensity = clamp((sampleY - SEA_LEVEL) / (200), 0.0, 1.0);
+    float sampleDensity = clamp((sampleY - SEA_LEVEL) / (200.0), 0.0, 1.0);
 
-    float p = mix(2.0, 12.0, rainStrength);
+    float p = mix(9.0, 2.0, rainStrength);
     sampleDensity = pow(1.0 - sampleDensity, p);
 
     return sampleDensity;

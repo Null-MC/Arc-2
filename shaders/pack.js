@@ -136,6 +136,11 @@ function setupShader() {
         .clear(true)
         .build());
 
+    let texFinalOpaque = registerTexture(new Texture("texFinalOpaque")
+        .format(RGBA16F)
+        .clear(true)
+        .build());
+
     let texFinalPrevious = registerTexture(new Texture("texFinalPrevious")
         .format(RGBA16F)
         .clear(false)
@@ -152,7 +157,7 @@ function setupShader() {
         .build());
 
     let texDeferredOpaque_Data = registerTexture(new Texture("texDeferredOpaque_Data")
-        .format(RG32UI)
+        .format(RGB32UI)
         .clearColor(0.0, 0.0, 0.0, 0.0)
         .build());
 
@@ -162,7 +167,7 @@ function setupShader() {
         .build());
 
     let texDeferredTrans_Data = registerTexture(new Texture("texDeferredTrans_Data")
-        .format(RG32UI)
+        .format(RGB32UI)
         .clearColor(0.0, 0.0, 0.0, 0.0)
         .build());
 
@@ -198,7 +203,7 @@ function setupShader() {
         .vertex("program/sky.vsh")
         .fragment("program/sky.fsh")
         .usage(USAGE_SKYBOX)
-        .addTarget(0, texFinal)
+        .addTarget(0, texFinalOpaque)
         // .blendFunc(0, FUNC_ONE, FUNC_ZERO, FUNC_ONE, FUNC_ZERO)
         .build());
 
@@ -251,7 +256,7 @@ function setupShader() {
     registerComposite(new CompositePass(POST_RENDER, "composite-opaque")
         .vertex("post/bufferless.vsh")
         .fragment("post/composite-opaque.fsh")
-        .addTarget(0, texFinal)
+        .addTarget(0, texFinalOpaque)
         .build());
 
     if (FEATURE.VL) {

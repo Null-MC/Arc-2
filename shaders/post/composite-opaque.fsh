@@ -46,7 +46,7 @@ void main() {
     vec3 sunDir = normalize(mul3(playerModelViewInverse, sunPosition));
 
     if (colorOpaque.a > EPSILON) {
-        uvec2 data = texelFetch(texDeferredOpaque_Data, iuv, 0).rg;
+        uvec3 data = texelFetch(texDeferredOpaque_Data, iuv, 0).rgb;
         float depth = texelFetch(solidDepthTex, iuv, 0).r;
 
         vec3 ndcPos = vec3(uv, depth) * 2.0 - 1.0;

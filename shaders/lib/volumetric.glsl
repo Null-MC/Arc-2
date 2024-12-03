@@ -7,7 +7,6 @@ const float VL_Transmit = 0.0002;
 const float VL_RainPhase = 0.48;
 const float VL_RainScatter  = 0.10;
 const float VL_RainTransmit = 0.05;
-// const float VL_RainDensity = 6.0;
 
 const float VL_WaterPhase = 0.36;
 vec3 VL_WaterScatter = 0.5*RgbToLinear(vec3(0.263, 0.380, 0.376));
@@ -21,6 +20,5 @@ float GetSkyDensity(const in vec3 localPos) {
     float p = mix(2.0, 12.0, rainStrength);
     sampleDensity = pow(1.0 - sampleDensity, p);
 
-    // sampleDensity *= VL_RainDensity*rainStrength + 1.0;
     return sampleDensity;
 }

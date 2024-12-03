@@ -1,7 +1,7 @@
 #version 430
 
 layout(location = 0) out vec4 outColor;
-layout(location = 1) out uvec2 outData;
+layout(location = 1) out uvec3 outData;
 
 in vec2 uv;
 in vec2 light;
@@ -27,7 +27,9 @@ void iris_emitFragment() {
     vec4 mColor = color;
     iris_modifyBase(mUV, mColor, mLight);
 
-    vec3 _localNormal = normalize(localNormal);
+    vec3 localGeoNormal = normalize(localNormal);
+    vec3 localTexNormal = localGeoNormal;
+
     vec2 lmcoord = clamp((mLight - (0.5/16.0)) / (15.0/16.0), 0.0, 1.0);
 
     vec4 albedo = iris_sampleBaseTex(mUV);
@@ -47,7 +49,7 @@ void iris_emitFragment() {
 
                 vec3 dX = dFdx(wavePos);
                 vec3 dY = dFdy(wavePos);
-                _localNormal = normalize(cross(dX, dY));
+                localTexNormal = normalize(cross(dX, dY));
             #endif
 
             // vec3 localViewDir = normalize(localPos);
@@ -72,6 +74,7 @@ void iris_emitFragment() {
 
     outColor = albedo;
 
-    outData.r = packUnorm4x8(vec4(_localNormal * 0.5 + 0.5, (material + 0.5) / 255.0));
+    outData.r = packUnorm4x8(vec4(localGeoNormal * 0.5 + 0.5, (material + 0.5) / 255.0));
     outData.g = packUnorm4x8(vec4(lmcoord, isWater ? 1.0 : 0.0, 0.0));
+    outData.b = packUnorm4x8(vec4(localTexNormal * 0.5 + 0.5, 0.0));
 }

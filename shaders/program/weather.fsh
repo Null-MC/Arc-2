@@ -11,12 +11,13 @@ in vec3 shadowViewPos;
 // flat in int material;
 
 uniform sampler2D texSkyTransmit;
-// uniform sampler2D texSkyIrradiance;
+uniform sampler2D texSkyIrradiance;
 uniform sampler2DArray solidShadowMap;
 
 #include "/settings.glsl"
 #include "/lib/common.glsl"
 #include "/lib/ign.glsl"
+#include "/lib/erp.glsl"
 #include "/lib/csm.glsl"
 
 #include "/lib/sky/common.glsl"
@@ -29,11 +30,9 @@ void iris_emitFragment() {
     vec4 mColor = color;
     iris_modifyBase(mUV, mColor, mLight);
 
-    // if (localPos.y + cameraPos.y > cloudHeight) {discard; return;}
-
     vec4 albedo = iris_sampleBaseTex(mUV);
 
-    albedo.a *= 1.0 - smoothstep(cloudHeight - 16.0, cloudHeight + 32.0, localPos.y + cameraPos.y);
+    albedo.a *= 1.0 - smoothstep(cloudHeight - 16.0, cloudHeight + 16.0, localPos.y + cameraPos.y);
 
     if (iris_discardFragment(albedo)) {discard; return;}
 
@@ -62,8 +61,8 @@ void iris_emitFragment() {
     vec3 skyLighting = getValFromTLUT(texSkyTransmit, skyPos, sunDir);
     skyLighting *= lmcoord.y * NoLm * shadowSample;
 
-    // vec2 skyIrradianceCoord = DirectionToUV(_localNormal);
-    // skyLighting += 0.3 * lmcoord.y * textureLod(texSkyIrradiance, skyIrradianceCoord, 0).rgb;
+    vec2 skyIrradianceCoord = DirectionToUV(vec3(0.0, 1.0, 0.0));
+    skyLighting += 0.2 * lmcoord.y * textureLod(texSkyIrradiance, skyIrradianceCoord, 0).rgb;
 
     vec3 blockLighting = vec3(lmcoord.x);
 

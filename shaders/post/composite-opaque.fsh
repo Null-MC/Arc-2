@@ -4,11 +4,11 @@ layout(location = 0) out vec4 outColor;
 
 in vec2 uv;
 
-uniform sampler2D texFinal;
 uniform sampler2D solidDepthTex;
 uniform sampler2D texDeferredOpaque_Color;
 uniform usampler2D texDeferredOpaque_Data;
 
+uniform sampler2D texSkyView;
 uniform sampler2D texSkyTransmit;
 uniform sampler2D texSkyIrradiance;
 uniform sampler2DArray solidShadowMap;
@@ -24,18 +24,35 @@ uniform sampler2DArray solidShadowMap;
 #include "/lib/erp.glsl"
 #include "/lib/csm.glsl"
 
+#include "/lib/utility/blackbody.glsl"
+#include "/lib/utility/matrix.glsl"
+
 #include "/lib/sky/common.glsl"
+#include "/lib/sky/view.glsl"
 #include "/lib/shadow/sample.glsl"
+#include "/lib/sky/stars.glsl"
 
 #ifdef EFFECT_TAA_ENABLED
     #include "/lib/taa_jitter.glsl"
 #endif
 
 
+vec3 sun(vec3 rayDir, vec3 sunDir) {
+    const float sunSolidAngle = SUN_SIZE * (PI/180.0);
+    const float minSunCosTheta = cos(sunSolidAngle);
+
+    float cosTheta = dot(rayDir, sunDir);
+    if (cosTheta >= minSunCosTheta) return vec3(1.0);
+    
+    return vec3(0.0);
+}
+
 void main() {
     ivec2 iuv = ivec2(gl_FragCoord.xy);
-    vec3 colorFinal = texelFetch(texFinal, iuv, 0).rgb;
+    vec3 colorFinal;// = texelFetch(texFinal, iuv, 0).rgb;
     vec4 colorOpaque = texelFetch(texDeferredOpaque_Color, iuv, 0);
+
+    vec3 sunDir = normalize(mul3(playerModelViewInverse, sunPosition));
 
     if (colorOpaque.a > EPSILON) {
         uvec2 data = texelFetch(texDeferredOpaque_Data, iuv, 0).rg;
@@ -69,7 +86,6 @@ void main() {
         float NoLm = step(0.0, dot(localLightDir, localNormal));
 
         vec3 skyPos = getSkyPosition(localPos);
-        vec3 sunDir = normalize((playerModelViewInverse * vec4(sunPosition, 1.0)).xyz);
         vec3 skyTransmit = getValFromTLUT(texSkyTransmit, skyPos, sunDir);
         vec3 skyLighting = lmCoord.y * NoLm * skyTransmit * shadowSample;
 
@@ -84,6 +100,27 @@ void main() {
         // float viewDist = length(localPos);
         // float fogF = smoothstep(fogStart, fogEnd, viewDist);
         // colorFinal = mix(colorFinal, fogColor.rgb, fogF);
+    }
+    else {
+        vec2 uv = gl_FragCoord.xy / screenSize;
+        vec3 ndcPos = vec3(uv, 1.0) * 2.0 - 1.0;
+        vec3 viewPos = unproject(playerProjectionInverse, ndcPos);
+        vec3 localPos = mul3(playerModelViewInverse, viewPos);
+        vec3 localViewDir = normalize(localPos);
+        
+        vec3 skyPos = getSkyPosition(vec3(0.0));
+        colorFinal = 20.0 * getValFromSkyLUT(texSkyView, skyPos, localViewDir, sunDir);
+
+        if (rayIntersectSphere(skyPos, localViewDir, groundRadiusMM) < 0.0) {
+            vec3 sunLum = 800.0 * sun(localViewDir, sunDir);
+
+            vec3 starViewDir = getStarViewDir(localViewDir);
+            vec3 starLight = 0.4 * GetStarLight(starViewDir);
+
+            vec3 skyTransmit = getValFromTLUT(texSkyTransmit, skyPos, localViewDir);
+
+            colorFinal += (sunLum + starLight) * skyTransmit;
+        }
     }
 
     #ifdef EFFECT_VL_ENABLED

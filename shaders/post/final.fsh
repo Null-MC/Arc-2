@@ -8,6 +8,7 @@ uniform sampler2D texFinal;
 in vec2 uv;
 
 #include "/lib/common.glsl"
+#include "/lib/bayer.glsl"
 
 
 void main() {
@@ -24,6 +25,9 @@ void main() {
     // }
 
     color = LinearToRgb(color);
+
+    float dither = GetBayerValue(ivec2(gl_FragCoord.xy));
+    color += (dither - 0.5) * (1.0/255.0);
 
     outColor = vec4(color, 1.0);
 }

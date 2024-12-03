@@ -8,6 +8,7 @@ uniform sampler2D texFinal;
 
 // #include "/settings.glsl"
 #include "/lib/common.glsl"
+#include "/lib/exposure.glsl"
 
 
 vec3 tonemap_jodieReinhard(vec3 c) {
@@ -39,10 +40,10 @@ void main() {
     ivec2 uv = ivec2(gl_FragCoord.xy);
     vec3 color = texelFetch(texFinal, uv, 0).rgb;
     
-    color = tonemap_jodieReinhard(color);
-    // color = LinearToRgb(color);
+    ApplyAutoExposure(color);
 
-    // TODO: dither?
+    // color = tonemap_jodieReinhard(color);
+    color = tonemap_ACESFit2(color);
 
     outColor = vec4(color, 1.0);
 }

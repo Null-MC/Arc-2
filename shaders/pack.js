@@ -201,6 +201,14 @@ function setupShader() {
         .clearColor(0.0, 0.0, 0.0, 0.0)
         .build());
 
+    let texExposure = registerTexture(new Texture("texExposure")
+        .imageName("imgExposure")
+        .format(R32F)
+        .width(1)
+        .height(1)
+        .clear(false)
+        .build());
+
     // let texShadowColor = registerTexture(new Texture("texShadowColor")
     //     // .format("rgba8")
     //     // .clear([ 1.0, 1.0, 1.0, 1.0 ])
@@ -291,6 +299,10 @@ function setupShader() {
         .fragment("post/composite-trans.fsh")
         .addTarget(0, texFinal)
         .build());
+
+    // registerComposite(new CompositePass(POST_RENDER, "histogram")
+    //     .compute("post/histogram.csh")
+    //     .build());
 
     // registerComposite(new CompositePass(POST_RENDER, "exposure")
     //     .compute("post/exposure.csh")

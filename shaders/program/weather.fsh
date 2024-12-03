@@ -12,7 +12,10 @@ in vec3 shadowViewPos;
 
 uniform sampler2D texSkyTransmit;
 uniform sampler2D texSkyIrradiance;
-uniform sampler2DArray solidShadowMap;
+
+#ifdef SHADOWS_ENABLED
+    uniform sampler2DArray solidShadowMap;
+#endif
 
 #include "/settings.glsl"
 #include "/lib/common.glsl"
@@ -21,7 +24,10 @@ uniform sampler2DArray solidShadowMap;
 #include "/lib/csm.glsl"
 
 #include "/lib/sky/common.glsl"
-#include "/lib/shadow/sample.glsl"
+
+#ifdef SHADOWS_ENABLED
+    #include "/lib/shadow/sample.glsl"
+#endif
 
 
 void iris_emitFragment() {
@@ -51,7 +57,10 @@ void iris_emitFragment() {
 
     // vec3 _localNormal = normalize(localNormal);
 
-    float shadowSample = SampleShadows(shadowViewPos);
+    float shadowSample = 1.0;
+    #ifdef SHADOWS_ENABLED
+        shadowSample = SampleShadows(shadowViewPos);
+    #endif
 
     vec3 localLightDir = normalize(mul3(playerModelViewInverse, shadowLightPosition));
     const float NoLm = 1.0; //step(0.0, dot(localLightDir, _localNormal));

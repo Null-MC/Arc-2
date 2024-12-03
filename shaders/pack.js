@@ -1,5 +1,6 @@
 const FEATURE = {
     WaterWaves: true,
+    Shadows: true,
     Bloom: true,
     TAA: true,
     VL: true
@@ -128,6 +129,7 @@ function setupShader() {
     worldSettings.sun = false;
 
     if (FEATURE.WaterWaves) defineGlobally("WATER_WAVES_ENABLED", "1");
+    if (FEATURE.Shadows) defineGlobally("SHADOWS_ENABLED", "1");
     if (FEATURE.TAA) defineGlobally("EFFECT_TAA_ENABLED", "1");
     if (FEATURE.VL) defineGlobally("EFFECT_VL_ENABLED", "1");
 

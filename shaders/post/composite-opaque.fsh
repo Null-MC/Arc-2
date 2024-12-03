@@ -30,8 +30,11 @@ uniform sampler2DArray solidShadowMap;
 #include "/lib/sky/common.glsl"
 #include "/lib/sky/view.glsl"
 #include "/lib/sky/sun.glsl"
-#include "/lib/shadow/sample.glsl"
 #include "/lib/sky/stars.glsl"
+
+#ifdef SHADOWS_ENABLED
+    #include "/lib/shadow/sample.glsl"
+#endif
 
 #ifdef EFFECT_TAA_ENABLED
     #include "/lib/taa_jitter.glsl"
@@ -70,8 +73,11 @@ void main() {
         // TODO: bitfieldExtract()
         float emission = (material & 8) != 0 ? 1.0 : 0.0;
 
-        vec3 shadowViewPos = mul3(shadowModelView, localPos);
-        float shadowSample = SampleShadows(shadowViewPos);
+        float shadowSample = 1.0;
+        #ifdef SHADOWS_ENABLED
+            vec3 shadowViewPos = mul3(shadowModelView, localPos);
+            shadowSample = SampleShadows(shadowViewPos);
+        #endif
 
         vec3 localLightDir = normalize(mul3(playerModelViewInverse, shadowLightPosition));
         float NoLm = step(0.0, dot(localLightDir, localNormal));

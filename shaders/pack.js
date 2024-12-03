@@ -194,12 +194,14 @@ function setupShader() {
 
     setupSky();
 
-    registerGeometryShader(new GamePass("shadow")
-        .vertex("program/shadow.vsh")
-        .fragment("program/shadow.fsh")
-        // .addTarget(0, texShadowColor)
-        .usage(USAGE_SHADOW)
-        .build());
+    if (FEATURE.Shadows) {
+        registerGeometryShader(new GamePass("shadow")
+            .vertex("program/shadow.vsh")
+            .fragment("program/shadow.fsh")
+            // .addTarget(0, texShadowColor)
+            .usage(USAGE_SHADOW)
+            .build());
+    }
 
     registerGeometryShader(new GamePass("sky-color")
         .vertex("program/sky.vsh")

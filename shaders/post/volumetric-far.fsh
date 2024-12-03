@@ -67,10 +67,11 @@ void main() {
             float dither = InterleavedGradientNoise(gl_FragCoord.xy);
         #endif
         
-        vec3 localSunDir = normalize((playerModelViewInverse * vec4(sunPosition, 1.0)).xyz);
+        vec3 localSunDir = normalize(mat3(playerModelViewInverse) * sunPosition);
+        vec3 localLightDir = normalize(mat3(playerModelViewInverse) * shadowLightPosition);
 
         vec3 localViewDir = normalize(localPosOpaque);
-        float VoL = dot(localViewDir, localSunDir);
+        float VoL = dot(localViewDir, localLightDir);
 
         float stepDist = length(stepLocal);
 
@@ -94,6 +95,8 @@ void main() {
             phase = HG(VoL, mix(VL_Phase, VL_RainPhase, rainStrength));
         }
 
+        float lightStrength = localSunDir.y > 0.0 ? 5.0 : 0.04;
+
         for (int i = 0; i < VL_MaxSamples; i++) {
             float shadowSample = 1.0;
             #ifdef SHADOWS_ENABLED
@@ -114,8 +117,8 @@ void main() {
             vec3 sampleLocalPos = (i+dither) * stepLocal + localPosTrans;
 
             vec3 skyPos = getSkyPosition(sampleLocalPos);
-            vec3 skyLighting = getValFromTLUT(texSkyTransmit, skyPos, localSunDir);
-            vec3 sampleColor = 5.0 * skyLighting * shadowSample;
+            vec3 skyLighting = getValFromTLUT(texSkyTransmit, skyPos, localLightDir);
+            vec3 sampleColor = lightStrength * skyLighting * shadowSample;
 
             float sampleDensity = stepDist;
             if (!isWater) {

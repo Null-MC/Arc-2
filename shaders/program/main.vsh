@@ -28,7 +28,7 @@ out vec4 color;
 out vec3 localPos;
 out vec3 localOffset;
 out vec3 localNormal;
-out vec3 shadowViewPos;
+// out vec3 shadowViewPos;
 flat out int material;
 
 #include "/settings.glsl"
@@ -62,7 +62,7 @@ void iris_emitVertex(inout VertexData data) {
         }
 	#endif
 
-	shadowViewPos = mul3(shadowModelView, localPos);
+	// shadowViewPos = mul3(shadowModelView, localPos);
 
 	vec3 viewNormal = mat3(iris_modelViewMatrix) * data.normal;
 	localNormal = mat3(playerModelViewInverse) * viewNormal;

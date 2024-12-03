@@ -104,14 +104,9 @@ function setupBloom(texFinal) {
             ? texFinal
             : texBloomArray[i-1];
 
-        // let texDown = i == 0
-        //     ? "texFinal"
-        //     : `texBloom_${i-1}`
-
         registerComposite(new CompositePass(POST_RENDER, `bloom-up-${i}`)
             .vertex("post/bufferless.vsh")
             .fragment("post/bloom/up.fsh")
-            // .define("TEX_DOWN", texDown)
             .define("TEX_SRC", `texBloom_${i}`)
             .define("TEX_SCALE", Math.pow(2, i+1).toString())
             .define("BLOOM_INDEX", i.toString())
@@ -127,6 +122,7 @@ function setupShader() {
     worldSettings.sunPathRotation = 25.0;
     worldSettings.shadowMapResolution = 1024;
     worldSettings.vignette = false;
+    worldSettings.clouds = false;
     worldSettings.stars = false;
     worldSettings.moon = true;
     worldSettings.sun = false;
@@ -207,6 +203,13 @@ function setupShader() {
         .build());
 
     // TODO: sky-textured?
+
+    registerGeometryShader(new GamePass("clouds")
+        .usage(USAGE_CLOUDS)
+        .vertex("program/main.vsh")
+        .fragment("program/clouds.fsh")
+        .addTarget(0, texParticles)
+        .build());
 
     registerGeometryShader(new GamePass("terrain")
         .usage(USAGE_BASIC)

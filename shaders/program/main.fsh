@@ -9,13 +9,16 @@ in vec4 color;
 in vec3 localPos;
 in vec3 localOffset;
 in vec3 localNormal;
-in vec3 shadowViewPos;
+// in vec3 shadowViewPos;
 flat in int material;
 
 #include "/settings.glsl"
 #include "/lib/common.glsl"
-#include "/lib/fresnel.glsl"
-#include "/lib/water_waves.glsl"
+
+#ifdef RENDER_TRANSLUCENT
+    #include "/lib/fresnel.glsl"
+    #include "/lib/water_waves.glsl"
+#endif
 
 
 void iris_emitFragment() {

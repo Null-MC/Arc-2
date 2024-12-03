@@ -1,14 +1,10 @@
-const int EFFECT_TAA_MAX_FRAMES = 8;
+const int EFFECT_TAA_MAX_FRAMES = 4;
 
-const vec2 taa_offsets[8] = vec2[](
-	vec2(0.5625, 0.3125),
-	vec2(0.4375, 0.6875),
-	vec2(0.8125, 0.5625),
-	vec2(0.3125, 0.1875),
-	vec2(0.1875, 0.8125),
-	vec2(0.0625, 0.4375),
-	vec2(0.6875, 0.9375),
-	vec2(0.9375, 0.0625));
+const vec2 taa_offsets[4] = vec2[](
+	vec2(0.375, 0.125),
+	vec2(0.875, 0.375),
+	vec2(0.125, 0.625),
+	vec2(0.625, 0.875));
 
 
 vec2 getJitterOffset(const in int frameOffset) {

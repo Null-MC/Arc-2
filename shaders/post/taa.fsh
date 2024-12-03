@@ -10,6 +10,7 @@ uniform sampler2D texFinalPrevious;
 uniform sampler2D solidDepthTex;
 
 #include "/lib/common.glsl"
+#include "/lib/catmull_rom.glsl"
 #include "/lib/taa_jitter.glsl"
 
 
@@ -52,7 +53,7 @@ vec3 getReprojectedClipPos(const in vec2 texcoord, const in float depthNow, cons
 void main() {
     vec2 uv2 = uv;
 
-    // uv2 += getJitterOffset(frameCounter);
+    uv2 += getJitterOffset(frameCounter);
 
     float depth = textureLod(solidDepthTex, uv, 0).r;
 
@@ -60,11 +61,11 @@ void main() {
     vec3 velocity = vec3(0.0); //textureLod(BUFFER_VELOCITY, uv, 0).xyz;
     vec2 uvLast = getReprojectedClipPos(uv, depth, velocity).xy;
 
-    #ifdef EFFECT_TAA_SHARPEN
-        vec4 lastColor = sampleHistoryCatmullRom(uvLast);
-    #else
-        vec4 lastColor = textureLod(texFinalPrevious, uvLast, 0);
-    #endif
+    // #ifdef EFFECT_TAA_SHARPEN
+        vec4 lastColor = sampleHistoryCatmullRom(texFinalPrevious, uvLast);
+    // #else
+    //     vec4 lastColor = textureLod(texFinalPrevious, uvLast, 0);
+    // #endif
 
     vec3 antialiased = lastColor.rgb;
     // float mixRate = min(lastColor.a, 0.5);
@@ -73,11 +74,13 @@ void main() {
     //     mixRate = 0.0;
     // #endif
 
+    // mixRate = 0.0; // WARN: FOR TESTING
+
     if (clamp(uvLast, 0.0, 1.0) != uvLast)
         mixRate = 1.0;
     
     vec3 in0 = textureLod(texFinal, uv, 0).rgb;
-    
+
     antialiased = mix(antialiased * antialiased, in0 * in0, mixRate);
     antialiased = sqrt(antialiased);
 
@@ -106,11 +109,14 @@ void main() {
     vec3 minColor = min(min(min(in0, in1), min(in2, in3)), in4);
     vec3 maxColor = max(max(max(in0, in1), max(in2, in3)), in4);
 
-    minColor = mix(minColor,
-       min(min(min(in5, in6), min(in7, in8)), minColor), 0.5);
+    // minColor = mix(minColor,
+    //    min(min(min(in5, in6), min(in7, in8)), minColor), 0.5);
 
-    maxColor = mix(maxColor,
-       max(max(max(in5, in6), max(in7, in8)), maxColor), 0.5);
+    // maxColor = mix(maxColor,
+    //    max(max(max(in5, in6), max(in7, in8)), maxColor), 0.5);
+
+    minColor = min(min(min(in5, in6), min(in7, in8)), minColor);
+    maxColor = max(max(max(in5, in6), max(in7, in8)), maxColor);
     
     vec3 preclamping = antialiased;
     vec3 clamped = clamp(antialiased, minColor, maxColor);

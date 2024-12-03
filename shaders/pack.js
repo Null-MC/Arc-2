@@ -134,6 +134,7 @@ function setupShader() {
     if (FEATURE.VL) defineGlobally("EFFECT_VL_ENABLED", "1");
 
     let texFinal = registerTexture(new Texture("texFinal")
+        .imageName("imgFinal")
         .format(RGBA16F)
         .clear(true)
         .build());
@@ -185,6 +186,15 @@ function setupShader() {
         .width(Math.ceil(viewWidth / 2.0))
         .height(Math.ceil(viewHeight / 2.0))
         .clear(false)
+        .build());
+
+    let texHistogram = registerTexture(new Texture("texHistogram")
+        .imageName("imgHistogram")
+        .format(R32UI)
+        .width(256)
+        .height(1)
+        .clearColor(0.0, 0.0, 0.0, 0.0)
+        .clear(true)
         .build());
 
     // let texShadowColor = registerTexture(new Texture("texShadowColor")
@@ -277,6 +287,10 @@ function setupShader() {
         .fragment("post/composite-trans.fsh")
         .addTarget(0, texFinal)
         .build());
+
+    // registerComposite(new CompositePass(POST_RENDER, "exposure")
+    //     .compute("post/exposure.csh")
+    //     .build());
 
     if (FEATURE.TAA) {
         registerComposite(new CompositePass(POST_RENDER, "TAA")

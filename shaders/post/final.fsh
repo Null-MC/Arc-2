@@ -3,7 +3,7 @@
 layout(location = 0) out vec4 outColor;
 
 uniform sampler2D texFinal;
-// uniform sampler2D texSkyView;
+// uniform usampler2D texHistogram;
 
 in vec2 uv;
 
@@ -19,7 +19,8 @@ void main() {
     
     // vec2 previewCoord = (uv - 0.02) / 0.3;
     // if (clamp(previewCoord, 0.0, 1.0) == previewCoord) {
-    //     color = textureLod(texSkyView, previewCoord, 0).rgb;
+    //     uint sampleVal = textureLod(texHistogram, previewCoord, 0).r;
+    //     color = vec3(1.0 / (sampleVal+1.0));
     // }
 
     color = LinearToRgb(color);

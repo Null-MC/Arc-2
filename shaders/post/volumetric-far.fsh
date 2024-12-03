@@ -38,6 +38,12 @@ void main() {
         vec3 ndcPos = vec3(uv, depthOpaque) * 2.0 - 1.0;
         vec3 viewPos = unproject(playerProjectionInverse, ndcPos);
         vec3 localPosOpaque = mul3(playerModelViewInverse, viewPos);
+        
+        float len = length(localPosOpaque);
+        float far = farPlane * 0.25;
+        
+        if (len > far)
+            localPosOpaque = localPosOpaque / len * far;
 
         ndcPos = vec3(uv, depthTrans) * 2.0 - 1.0;
         viewPos = unproject(playerProjectionInverse, ndcPos);
@@ -75,12 +81,12 @@ void main() {
         if (isWater) {
             scatterF = VL_WaterScatter;
             transmitF = VL_WaterTransmit;
-            phase = HG(VoL, 0.36);
+            phase = HG(VoL, VL_WaterPhase);
         }
         else {
-            scatterF = vec3(VL_Scatter);
-            transmitF = vec3(VL_Transmit);
-            phase = HG(VoL, 0.54);
+            scatterF = vec3(mix(VL_Scatter, VL_RainScatter, rainStrength));
+            transmitF = vec3(mix(VL_Transmit, VL_RainTransmit, rainStrength));
+            phase = HG(VoL, mix(VL_Phase, VL_RainPhase, rainStrength));
         }
 
         for (int i = 0; i < VL_MaxSamples; i++) {
@@ -105,13 +111,13 @@ void main() {
 
             float sampleDensity = stepDist;
             if (!isWater) {
-                sampleDensity = GetSkyDensity(sampleLocalPos);
+                sampleDensity = stepDist * GetSkyDensity(sampleLocalPos);
             }
 
             vec3 sampleTransmit = exp(-sampleDensity * transmitF);
 
-            transmittance *= sampleTransmit;
             scattering += sampleColor * scatterF * transmittance * (phase * sampleDensity);
+            transmittance *= sampleTransmit;
         }
     }
 

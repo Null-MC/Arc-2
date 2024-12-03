@@ -305,6 +305,7 @@ function setupShader() {
         "timeCounter",
         "rainStrength",
         "nearPlane",
+        "farPlane",
         "renderDistance",
         "playerModelView",
         "lastPlayerModelView",

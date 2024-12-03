@@ -100,8 +100,6 @@ void main() {
             // vec3 ssr_posStrength = ssr();
             // vec3 reflectColor = textureLod(texFinalPrev, );
 
-            // float specular = max(dot(localReflectDir, localLightDir), 0.0);
-            // specular = 20.0 * pow(specular, 64.0) * shadowSample;
             float specular = 80.0 * shadowSample * sun(localReflectDir, sunDir);
 
             finalColor.rgb += specular * skyTransmit;

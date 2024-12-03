@@ -26,6 +26,13 @@ void main() {
     vec3 ndcPos = vec3(uv, depth) * 2.0 - 1.0;
     vec3 viewPos = unproject(playerProjectionInverse, ndcPos);
     vec3 localPos = mul3(playerModelViewInverse, viewPos);
+
+    float len = length(localPos);
+    float far = farPlane * 0.25;
+
+    if (len > far)
+        localPos = localPos / len * far;
+
     vec3 stepLocal = localPos * stepScale;
 
     vec3 shadowViewStart = mul3(shadowModelView, vec3(0.0));
@@ -50,12 +57,12 @@ void main() {
     if (isEyeInWater == 1) {
         scatterF = VL_WaterScatter;
         transmitF = VL_WaterTransmit;
-        phase = HG(VoL, 0.36);
+        phase = HG(VoL, VL_WaterPhase);
     }
     else {
-        scatterF = vec3(VL_Scatter);
-        transmitF = vec3(VL_Transmit);
-        phase = HG(VoL, 0.54);
+        scatterF = vec3(mix(VL_Scatter, VL_RainScatter, rainStrength));
+        transmitF = vec3(mix(VL_Transmit, VL_RainTransmit, rainStrength));
+        phase = HG(VoL, mix(VL_Phase, VL_RainPhase, rainStrength));
     }
 
     vec3 scattering = vec3(0.0);
@@ -88,8 +95,8 @@ void main() {
 
         vec3 sampleTransmit = exp(-sampleDensity * transmitF);
 
-        transmittance *= sampleTransmit;
         scattering += sampleColor * scatterF * transmittance * (phase * sampleDensity);
+        transmittance *= sampleTransmit;
     }
 
     outScatter = scattering;

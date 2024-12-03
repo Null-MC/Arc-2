@@ -29,6 +29,7 @@ uniform sampler2DArray solidShadowMap;
 
 #include "/lib/sky/common.glsl"
 #include "/lib/sky/view.glsl"
+#include "/lib/sky/sun.glsl"
 #include "/lib/shadow/sample.glsl"
 #include "/lib/sky/stars.glsl"
 
@@ -36,16 +37,6 @@ uniform sampler2DArray solidShadowMap;
     #include "/lib/taa_jitter.glsl"
 #endif
 
-
-vec3 sun(vec3 rayDir, vec3 sunDir) {
-    const float sunSolidAngle = SUN_SIZE * (PI/180.0);
-    const float minSunCosTheta = cos(sunSolidAngle);
-
-    float cosTheta = dot(rayDir, sunDir);
-    if (cosTheta >= minSunCosTheta) return vec3(1.0);
-    
-    return vec3(0.0);
-}
 
 void main() {
     ivec2 iuv = ivec2(gl_FragCoord.xy);
@@ -112,7 +103,7 @@ void main() {
         colorFinal = 20.0 * getValFromSkyLUT(texSkyView, skyPos, localViewDir, sunDir);
 
         if (rayIntersectSphere(skyPos, localViewDir, groundRadiusMM) < 0.0) {
-            vec3 sunLum = 800.0 * sun(localViewDir, sunDir);
+            float sunLum = 800.0 * sun(localViewDir, sunDir);
 
             vec3 starViewDir = getStarViewDir(localViewDir);
             vec3 starLight = 0.4 * GetStarLight(starViewDir);

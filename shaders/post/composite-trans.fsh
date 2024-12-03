@@ -6,7 +6,7 @@ in vec2 uv;
 
 uniform sampler2D texFinal;
 uniform sampler2D texParticles;
-uniform sampler2D translucentDepthTex;
+uniform sampler2D mainDepthTex;
 uniform sampler2D texDeferredTrans_Color;
 uniform usampler2D texDeferredTrans_Data;
 
@@ -29,6 +29,7 @@ uniform sampler2DArray solidShadowMap;
 
 #include "/lib/sky/common.glsl"
 #include "/lib/sky/view.glsl"
+#include "/lib/sky/sun.glsl"
 #include "/lib/shadow/sample.glsl"
 
 #ifdef EFFECT_TAA_ENABLED
@@ -43,7 +44,7 @@ void main() {
 
     if (colorTrans.a > EPSILON) {
         uvec2 data = texelFetch(texDeferredTrans_Data, iuv, 0).rg;
-        float depth = texelFetch(translucentDepthTex, iuv, 0).r;
+        float depth = texelFetch(mainDepthTex, iuv, 0).r;
 
         vec3 ndcPos = vec3(uv, depth) * 2.0 - 1.0;
 
@@ -95,9 +96,16 @@ void main() {
             float NoVm = max(dot(localNormal, -localViewDir), 0.0);
             float F = F_schlick(NoVm, 0.02, 1.0);
 
-            float specular = max(dot(localReflectDir, localLightDir), 0.0);
-            finalColor.rgb += 20.0 * NoLm * skyTransmit * shadowSample * pow(specular, 64.0);
-            finalColor.a = F;
+            // TODO: SSR?
+            // vec3 ssr_posStrength = ssr();
+            // vec3 reflectColor = textureLod(texFinalPrev, );
+
+            // float specular = max(dot(localReflectDir, localLightDir), 0.0);
+            // specular = 20.0 * pow(specular, 64.0) * shadowSample;
+            float specular = 80.0 * shadowSample * sun(localReflectDir, sunDir);
+
+            finalColor.rgb += specular * skyTransmit;
+            finalColor.a = min(F + specular, 1.0);
         }
 
         // float viewDist = length(localPos);

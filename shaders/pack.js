@@ -1,5 +1,5 @@
 const FEATURE = {
-    WaterWaves: false,
+    WaterWaves: true,
     Bloom: true,
     TAA: true,
     VL: true

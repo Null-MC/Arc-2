@@ -28,6 +28,7 @@ void iris_emitFragment() {
     iris_modifyBase(mUV, mColor, mLight);
 
     vec3 _localNormal = normalize(localNormal);
+    vec2 lmcoord = clamp((mLight - (0.5/16.0)) / (15.0/16.0), 0.0, 1.0);
 
     vec4 albedo = iris_sampleBaseTex(mUV);
 
@@ -37,9 +38,7 @@ void iris_emitFragment() {
 
         if (isWater) {
             #ifdef WATER_WAVES_ENABLED
-                const float lmcoord_y = 1.0;
-
-                vec3 waveOffset = GetWaveHeight(localPos + cameraPos, lmcoord_y, timeCounter, 24);
+                vec3 waveOffset = GetWaveHeight(localPos + cameraPos, lmcoord.y, timeCounter, 24);
 
                 // mUV += 0.1*waveOffset.xz;
 
@@ -66,8 +65,6 @@ void iris_emitFragment() {
     #ifdef DEBUG_WHITE_WORLD
         albedo.rgb = vec3(1.0);
     #endif
-
-    vec2 lmcoord = clamp((mLight - (0.5/16.0)) / (15.0/16.0), 0.0, 1.0);
 
     #ifndef RENDER_TRANSLUCENT
         albedo.a = 1.0;

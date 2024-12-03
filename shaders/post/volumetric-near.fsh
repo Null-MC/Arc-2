@@ -83,11 +83,7 @@ void main() {
 
         float sampleDensity = stepDist;
         if (isEyeInWater == 0) {
-            float sampleY = sampleLocalPos.y + cameraPos.y;
-            sampleDensity = clamp((sampleY - SEA_LEVEL) / (ATMOSPHERE_MAX - SEA_LEVEL), 0.0, 1.0);
-            sampleDensity = stepDist * pow(1.0 - sampleDensity, 8.0);
-
-            sampleDensity *= VL_RainDensity*rainStrength + 1.0;
+            sampleDensity = stepDist * GetSkyDensity(sampleLocalPos);
         }
 
         vec3 sampleTransmit = exp(-sampleDensity * transmitF);

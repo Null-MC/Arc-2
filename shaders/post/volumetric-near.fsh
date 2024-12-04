@@ -33,6 +33,30 @@ void main() {
     const float stepScale = 1.0 / VL_MaxSamples;
 
     float depth = textureLod(mainDepthTex, uv, 0).r;
+
+    #ifdef EFFECT_TAA_ENABLED
+        float dither = InterleavedGradientNoiseTime(gl_FragCoord.xy);
+    #else
+        float dither = InterleavedGradientNoise(gl_FragCoord.xy);
+    #endif
+
+    vec3 localSunDir = normalize(mat3(playerModelViewInverse) * sunPosition);
+    vec3 localLightDir = normalize(mat3(playerModelViewInverse) * shadowLightPosition);
+    float lightStrength = localSunDir.y > 0.0 ? 5.0 : 0.04;
+    
+    float phase_g;
+    vec3 scatterF, transmitF;
+    if (isEyeInWater == 1) {
+        scatterF = VL_WaterScatter;
+        transmitF = VL_WaterTransmit;
+        phase_g = VL_WaterPhase;
+    }
+    else {
+        scatterF = vec3(mix(VL_Scatter, VL_RainScatter, rainStrength));
+        transmitF = vec3(mix(VL_Transmit, VL_RainTransmit, rainStrength));
+        phase_g = mix(VL_Phase, VL_RainPhase, rainStrength);
+    }
+
     vec3 ndcPos = vec3(uv, depth) * 2.0 - 1.0;
     vec3 viewPos = unproject(playerProjectionInverse, ndcPos);
     vec3 localPos = mul3(playerModelViewInverse, viewPos);
@@ -44,39 +68,15 @@ void main() {
         localPos = localPos / len * far;
 
     vec3 stepLocal = localPos * stepScale;
+    float stepDist = length(stepLocal);
+
+    vec3 localViewDir = normalize(localPos);
+    float VoL = dot(localViewDir, localLightDir);
+    float phase = HG(VoL, phase_g);
 
     vec3 shadowViewStart = mul3(shadowModelView, vec3(0.0));
     vec3 shadowViewEnd = mul3(shadowModelView, localPos);
     vec3 shadowViewStep = (shadowViewEnd - shadowViewStart) * stepScale;
-
-    #ifdef EFFECT_TAA_ENABLED
-        float dither = InterleavedGradientNoiseTime(gl_FragCoord.xy);
-    #else
-        float dither = InterleavedGradientNoise(gl_FragCoord.xy);
-    #endif
-    
-    vec3 localSunDir = normalize(mat3(playerModelViewInverse) * sunPosition);
-    vec3 localLightDir = normalize(mat3(playerModelViewInverse) * shadowLightPosition);
-
-    vec3 localViewDir = normalize(localPos);
-    float VoL = dot(localViewDir, localLightDir);
-
-    float stepDist = length(stepLocal);
-
-    float phase;
-    vec3 scatterF, transmitF;
-    if (isEyeInWater == 1) {
-        scatterF = VL_WaterScatter;
-        transmitF = VL_WaterTransmit;
-        phase = HG(VoL, VL_WaterPhase);
-    }
-    else {
-        scatterF = vec3(mix(VL_Scatter, VL_RainScatter, rainStrength));
-        transmitF = vec3(mix(VL_Transmit, VL_RainTransmit, rainStrength));
-        phase = HG(VoL, mix(VL_Phase, VL_RainPhase, rainStrength));
-    }
-
-    float lightStrength = localSunDir.y > 0.0 ? 5.0 : 0.04;
 
     vec3 scattering = vec3(0.0);
     vec3 transmittance = vec3(1.0);

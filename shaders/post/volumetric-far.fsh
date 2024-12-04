@@ -53,18 +53,22 @@ void main() {
         
         vec3 localSunDir = normalize(mat3(playerModelViewInverse) * sunPosition);
         vec3 localLightDir = normalize(mat3(playerModelViewInverse) * shadowLightPosition);
+        float lightStrength = localSunDir.y > 0.0 ? 5.0 : 0.04;
 
-        float phase;
+        bool isWater = unpackUnorm4x8(data_g).z > 0.5
+            && isEyeInWater != 1;
+
+        float phase_g;
         vec3 scatterF, transmitF;
         if (isWater) {
             scatterF = VL_WaterScatter;
             transmitF = VL_WaterTransmit;
-            phase = HG(VoL, VL_WaterPhase);
+            phase_g = VL_WaterPhase;
         }
         else {
             scatterF = vec3(mix(VL_Scatter, VL_RainScatter, rainStrength));
             transmitF = vec3(mix(VL_Transmit, VL_RainTransmit, rainStrength));
-            phase = HG(VoL, mix(VL_Phase, VL_RainPhase, rainStrength));
+            phase_g = mix(VL_Phase, VL_RainPhase, rainStrength);
         }
 
         vec3 ndcPos = vec3(uv, depthOpaque) * 2.0 - 1.0;
@@ -83,6 +87,7 @@ void main() {
 
         vec3 localRay = localPosOpaque - localPosTrans;
         vec3 stepLocal = localRay * stepScale;
+        float stepDist = length(stepLocal);
 
         vec3 shadowViewStart = mul3(shadowModelView, localPosTrans);
         vec3 shadowViewEnd = mul3(shadowModelView, localPosOpaque);
@@ -90,17 +95,11 @@ void main() {
 
         vec3 localViewDir = normalize(localPosOpaque);
         float VoL = dot(localViewDir, localLightDir);
-
-        float stepDist = length(stepLocal);
+        float phase = HG(VoL, phase_g);
 
         // int material = int(unpackUnorm4x8(data_r).w * 255.0 + 0.5);
         // bool isWater = bitfieldExtract(material, 6, 1) != 0
         //     && isEyeInWater != 1;
-
-        bool isWater = unpackUnorm4x8(data_g).z > 0.5
-            && isEyeInWater != 1;
-
-        float lightStrength = localSunDir.y > 0.0 ? 5.0 : 0.04;
 
         for (int i = 0; i < VL_MaxSamples; i++) {
             float shadowSample = 1.0;

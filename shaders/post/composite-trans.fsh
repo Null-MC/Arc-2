@@ -29,6 +29,8 @@ uniform sampler2DArray solidShadowMap;
 #include "/lib/erp.glsl"
 #include "/lib/fresnel.glsl"
 
+#include "/lib/utility/blackbody.glsl"
+
 #include "/lib/sky/common.glsl"
 #include "/lib/sky/view.glsl"
 #include "/lib/sky/sun.glsl"

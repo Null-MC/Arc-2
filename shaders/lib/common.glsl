@@ -8,6 +8,9 @@ const float IOR_WATER = 1.33;
 const vec3 luma_factor = vec3(0.2126, 0.7152, 0.0722);
 
 
+float maxOf(const in vec2 vec) {return max(vec[0], vec[1]);}
+float maxOf(const in vec3 vec) {return max(max(vec[0], vec[1]), vec[2]);}
+
 vec3 LinearToRgb(const in vec3 color) {return pow(color, vec3(1.0 / 2.2));}
 
 vec3 RgbToLinear(const in vec3 color) {return pow(color, vec3(2.2));}

@@ -27,6 +27,7 @@ uniform sampler2DArray solidShadowMap;
 #include "/lib/common.glsl"
 #include "/lib/ign.glsl"
 #include "/lib/erp.glsl"
+#include "/lib/depth.glsl"
 #include "/lib/fresnel.glsl"
 
 #include "/lib/utility/blackbody.glsl"
@@ -34,6 +35,8 @@ uniform sampler2DArray solidShadowMap;
 #include "/lib/sky/common.glsl"
 #include "/lib/sky/view.glsl"
 #include "/lib/sky/sun.glsl"
+
+#include "/lib/ssr.glsl"
 
 #ifdef SHADOWS_ENABLED
     #include "/lib/shadow/csm.glsl"
@@ -106,20 +109,32 @@ void main() {
         finalColor.rgb *= (5.0 * skyLighting) + (2.0 * blockLighting) + (4.0 * emission) + 0.003;
 
         if (isWater) {
-            vec3 localViewDir = normalize(localPosTrans);
-            vec3 localReflectDir = reflect(localViewDir, localTexNormal);
+            float viewDist = length(localPosTrans);
+            vec3 localViewDir = localPosTrans / viewDist;
+            vec3 reflectLocalDir = reflect(localViewDir, localTexNormal);
+            vec3 reflectViewDir = mat3(playerModelView) * reflectLocalDir;
 
-            vec3 skyReflectColor = 20.0 * getValFromSkyLUT(texSkyView, skyPos, localReflectDir, sunDir);
-            finalColor.rgb = lmCoord.y * skyReflectColor;
+            vec3 skyReflectColor = 20.0 * lmCoord.y * getValFromSkyLUT(texSkyView, skyPos, reflectLocalDir, sunDir);
 
             float NoVm = max(dot(localTexNormal, -localViewDir), 0.0);
             float F = F_schlick(NoVm, 0.02, 1.0);
 
             // TODO: SSR?
-            // vec3 ssr_posStrength = ssr();
-            // vec3 reflectColor = textureLod(texFinalPrev, );
 
-            float specular = 80.0 * shadowSample * sun(localReflectDir, sunDir);
+            vec3 reflectViewPos = viewPosTrans + 0.5*viewDist*reflectViewDir;
+            vec3 reflectClipPos = unproject(playerProjection, reflectViewPos) * 0.5 + 0.5;
+
+            vec3 clipPos = ndcPosTrans * 0.5 + 0.5;
+            vec3 reflectRay = normalize(reflectClipPos - clipPos);
+
+            vec4 reflection = GetReflectionPosition(mainDepthTex, clipPos, reflectRay);
+            vec3 reflectColor = GetRelectColor(texFinalOpaque, reflection.xy, reflection.a, 0.0);
+
+            skyReflectColor = mix(skyReflectColor, reflectColor, reflection.a);
+
+            finalColor.rgb = F * skyReflectColor;
+
+            float specular = 80.0 * shadowSample * sun(reflectLocalDir, sunDir);
 
             finalColor.rgb += specular * skyTransmit;
             finalColor.a = min(F + specular, 1.0);

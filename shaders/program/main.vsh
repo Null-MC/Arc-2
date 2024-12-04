@@ -54,7 +54,7 @@ void iris_emitVertex(inout VertexData data) {
         if (isWater) {
 			const float lmcoord_y = 1.0;
 
-            vec3 waveOffset = GetWaveHeight(localPos + cameraPos, lmcoord_y, timeCounter, 12);
+            vec3 waveOffset = GetWaveHeight(localPos + cameraPos, lmcoord_y, timeCounter, WaterWaveOctaveMin);
             localOffset.y += waveOffset.y;
 
             localPos += localOffset;

@@ -3,6 +3,7 @@
 layout(location = 0) out vec4 outColor;
 
 uniform sampler2D texFinal;
+uniform sampler2D texExposure;
 
 // in vec2 uv;
 
@@ -40,7 +41,7 @@ void main() {
     ivec2 uv = ivec2(gl_FragCoord.xy);
     vec3 color = texelFetch(texFinal, uv, 0).rgb;
     
-    ApplyAutoExposure(color);
+    ApplyAutoExposure(color, texExposure);
 
     // color = tonemap_jodieReinhard(color);
     color = tonemap_ACESFit2(color);

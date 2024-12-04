@@ -3,6 +3,8 @@
 const float DRAG_MULT = 0.09;
 
 const float WaterWaveSurfaceOffset = 0.6;
+const int WaterWaveOctaveMin = 6;
+const int WaterWaveOctaveMax = 12;
 
 const vec3 WaterWaveScaleF = vec3(0.5, 0.9, 0.5);
 

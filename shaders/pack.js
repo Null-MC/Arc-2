@@ -6,10 +6,6 @@ const FEATURE = {
     VL: true
 };
 
-// WARN: temporarily hard-coded
-const viewWidth = 1920;
-const viewHeight = 1080;
-
 
 function setupSky() {
     let texSkyTransmit = registerTexture(new Texture("texSkyTransmit")
@@ -66,7 +62,7 @@ function setupSky() {
 }
 
 function setupBloom(texFinal) {
-    let maxLod = Math.log2(Math.min(viewWidth, viewHeight));
+    let maxLod = Math.log2(Math.min(screenWidth, screenHeight));
     maxLod = Math.max(Math.min(maxLod, 8), 0);
 
     print(`Bloom enabled with ${maxLod} LODs`);
@@ -74,8 +70,8 @@ function setupBloom(texFinal) {
     let texBloomArray = [];
     for (let i = 0; i < maxLod; i++) {
         let scale = Math.pow(2, i+1);
-        let bufferWidth = Math.ceil(viewWidth / scale);
-        let bufferHeight = Math.ceil(viewHeight / scale);
+        let bufferWidth = Math.ceil(screenWidth / scale);
+        let bufferHeight = Math.ceil(screenHeight / scale);
 
         texBloomArray[i] = registerTexture(new Texture(`texBloom_${i}`)
             .format(RGB16F)
@@ -181,15 +177,15 @@ function setupShader() {
 
     let texScatterVL = registerTexture(new Texture("texScatterVL")
         .format(RGB16F)
-        .width(Math.ceil(viewWidth / 2.0))
-        .height(Math.ceil(viewHeight / 2.0))
+        .width(Math.ceil(screenWidth / 2.0))
+        .height(Math.ceil(screenHeight / 2.0))
         .clear(false)
         .build());
 
     let texTransmitVL = registerTexture(new Texture("texTransmitVL")
         .format(RGB16F)
-        .width(Math.ceil(viewWidth / 2.0))
-        .height(Math.ceil(viewHeight / 2.0))
+        .width(Math.ceil(screenWidth / 2.0))
+        .height(Math.ceil(screenHeight / 2.0))
         .clear(false)
         .build());
 
@@ -198,12 +194,22 @@ function setupShader() {
         .format(R32UI)
         .width(256)
         .height(1)
-        .clearColor(0.0, 0.0, 0.0, 0.0)
+        // .clearColor(0.0, 0.0, 0.0, 0.0)
+        .clear(false)
+        .build());
+
+    let texHistogram_debug = registerTexture(new Texture("texHistogram_debug")
+        .imageName("imgHistogram_debug")
+        .format(R32UI)
+        .width(256)
+        .height(1)
+        // .clearColor(0.0, 0.0, 0.0, 0.0)
+        .clear(false)
         .build());
 
     let texExposure = registerTexture(new Texture("texExposure")
         .imageName("imgExposure")
-        .format(R32F)
+        .format(R16F)
         .width(1)
         .height(1)
         .clear(false)
@@ -300,14 +306,6 @@ function setupShader() {
         .addTarget(0, texFinal)
         .build());
 
-    // registerComposite(new CompositePass(POST_RENDER, "histogram")
-    //     .compute("post/histogram.csh")
-    //     .build());
-
-    // registerComposite(new CompositePass(POST_RENDER, "exposure")
-    //     .compute("post/exposure.csh")
-    //     .build());
-
     if (FEATURE.TAA) {
         registerComposite(new CompositePass(POST_RENDER, "TAA")
             .vertex("post/bufferless.vsh")
@@ -316,6 +314,18 @@ function setupShader() {
             .addTarget(1, texFinalPrevious)
             .build());
     }
+
+    registerComposite(new ComputePass(POST_RENDER, "histogram")
+        .barrier(true)
+        .location("post/histogram.csh")
+        .groupSize(Math.ceil(screenWidth / 16), Math.ceil(screenHeight / 16), 1)
+        .build());
+
+    registerComposite(new ComputePass(POST_RENDER, "exposure")
+        .barrier(true)
+        .location("post/exposure.csh")
+        .groupSize(1, 1, 1)
+        .build());
 
     if (FEATURE.Bloom)
         setupBloom(texFinal);

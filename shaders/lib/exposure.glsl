@@ -8,6 +8,11 @@ const mat3 XYZ_TO_RGB = mat3(
     -1.5371385, 1.8760108,-0.2040259,
     -0.4985314, 0.0415560, 1.0572252);
 
+const float Exposure_minLogLum = -2.0;
+const float Exposure_logLumRange = 1.0 / 3.0;
+float Exposure_timeCoeff = 0.01; //timeCounter;
+float Exposure_numPixels = screenSize.x * screenSize.y;
+
 
 vec3 xyz_to_xyY(vec3 xyz) {
 	float sum = xyz.x + xyz.y + xyz.z;
@@ -19,18 +24,25 @@ vec3 xyY_to_xyz(vec3 xyY) {
     return vec3(xyY.z * xz.xy / xyY.y, xyY.z).xzy;
 }
 
+float reinhard(const in float color) {
+    return color / (1.0 + color);
+}
+
 float reinhard2(const in float color, const in float L_white) {
     return (color * (1.0 + color / (L_white * L_white))) / (1.0 + color);
 }
 
-void ApplyAutoExposure(inout vec3 rgb) {
+void ApplyAutoExposure(inout vec3 rgb, const in sampler2D texExposure) {
 	vec3 xyY = xyz_to_xyY(RGB_TO_XYZ * rgb);
 
-	float avgLum = 0.2; //texelFetch(texExposure, ivec2(0.0), 0).r;
+	float avgLum = texelFetch(texExposure, ivec2(0.0), 0).r;
+    // avgLum = clamp(avgLum, 0.00001, 0.99999);
+
 	float lp = xyY.z / (9.6 * avgLum + 0.0001);
 
 	const float whitePoint = 1.0;
-	xyY.z = reinhard2(lp, whitePoint);
+    xyY.z = reinhard2(lp, whitePoint);
+	// xyY.z = reinhard(lp);//, whitePoint);
 
 	rgb = XYZ_TO_RGB * xyY_to_xyz(xyY);
 }

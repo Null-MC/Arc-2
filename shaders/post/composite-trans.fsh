@@ -101,7 +101,7 @@ void main() {
         vec3 blockLighting = vec3(lmCoord.x);
 
         vec4 finalColor = colorTrans;
-        finalColor.rgb *= (5.0 * skyLighting) + (3.0 * blockLighting) + (12.0 * emission) + 0.002;
+        finalColor.rgb *= (5.0 * skyLighting) + (2.0 * blockLighting) + (4.0 * emission) + 0.003;
 
         if (isWater) {
             vec3 localViewDir = normalize(localPosTrans);

@@ -72,6 +72,7 @@ void main() {
 
         // TODO: bitfieldExtract()
         float emission = (material & 8) != 0 ? 1.0 : 0.0;
+        emission *= lmCoord.x;
 
         float shadowSample = 1.0;
         #ifdef SHADOWS_ENABLED
@@ -89,10 +90,10 @@ void main() {
         vec2 skyIrradianceCoord = DirectionToUV(localNormal);
         skyLighting += 0.3 * lmCoord.y * textureLod(texSkyIrradiance, skyIrradianceCoord, 0).rgb;
 
-        vec3 blockLighting = vec3(lmCoord.x);
+        vec3 blockLighting = blackbody(3600) * lmCoord.x;
 
         colorFinal = colorOpaque.rgb;
-        colorFinal *= (5.0 * skyLighting) + (3.0 * blockLighting) + (12.0 * emission) + 0.002;
+        colorFinal *= (5.0 * skyLighting) + (2.0 * blockLighting) + (4.0 * emission) + 0.003;
 
         // float viewDist = length(localPos);
         // float fogF = smoothstep(fogStart, fogEnd, viewDist);

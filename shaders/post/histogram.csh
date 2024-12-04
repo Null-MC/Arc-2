@@ -5,9 +5,7 @@ layout (local_size_x = 16, local_size_y = 16, local_size_z = 1) in;
 layout(rgba16f) uniform readonly image2D imgFinal;
 layout(r32ui) uniform uimage2D imgHistogram;
 
-#define GROUP_SIZE 256
-
-shared uint histogramShared[GROUP_SIZE];
+shared uint histogramShared[256];
 
 #include "/lib/common.glsl"
 #include "/lib/exposure.glsl"

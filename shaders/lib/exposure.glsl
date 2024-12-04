@@ -8,8 +8,8 @@ const mat3 XYZ_TO_RGB = mat3(
     -1.5371385, 1.8760108,-0.2040259,
     -0.4985314, 0.0415560, 1.0572252);
 
-const float Exposure_minLogLum = -2.0;
-const float Exposure_logLumRange = 1.0 / 3.0;
+const float Exposure_minLogLum = -6.0;
+const float Exposure_logLumRange = 1.0 / 9.0;
 float Exposure_timeCoeff = 0.01; //timeCounter;
 float Exposure_numPixels = screenSize.x * screenSize.y;
 
@@ -40,9 +40,9 @@ void ApplyAutoExposure(inout vec3 rgb, const in sampler2D texExposure) {
 
 	float lp = xyY.z / (9.6 * avgLum + 0.0001);
 
-	const float whitePoint = 1.0;
+	const float whitePoint = 0.65;
     xyY.z = reinhard2(lp, whitePoint);
-	// xyY.z = reinhard(lp);//, whitePoint);
+	// xyY.z = reinhard(lp);
 
 	rgb = XYZ_TO_RGB * xyY_to_xyz(xyY);
 }

@@ -6,6 +6,8 @@ const FEATURE = {
     VL: true
 };
 
+const DEBUG_HISTOGRAM = true;
+
 
 function setupSky() {
     let texSkyTransmit = registerTexture(new Texture("texSkyTransmit")
@@ -129,6 +131,8 @@ function setupShader() {
     if (FEATURE.TAA) defineGlobally("EFFECT_TAA_ENABLED", "1");
     if (FEATURE.VL) defineGlobally("EFFECT_VL_ENABLED", "1");
 
+    if (DEBUG_HISTOGRAM) defineGlobally("DEBUG_HISTOGRAM", "1");
+
     let texFinal = registerTexture(new Texture("texFinal")
         .imageName("imgFinal")
         .format(RGBA16F)
@@ -198,14 +202,16 @@ function setupShader() {
         .clear(false)
         .build());
 
-    let texHistogram_debug = registerTexture(new Texture("texHistogram_debug")
-        .imageName("imgHistogram_debug")
-        .format(R32UI)
-        .width(256)
-        .height(1)
-        // .clearColor(0.0, 0.0, 0.0, 0.0)
-        .clear(false)
-        .build());
+    if (DEBUG_HISTOGRAM) {
+        let texHistogram_debug = registerTexture(new Texture("texHistogram_debug")
+            .imageName("imgHistogram_debug")
+            .format(R32UI)
+            .width(256)
+            .height(1)
+            // .clearColor(0.0, 0.0, 0.0, 0.0)
+            .clear(false)
+            .build());
+    }
 
     let texExposure = registerTexture(new Texture("texExposure")
         .imageName("imgExposure")
@@ -336,7 +342,7 @@ function setupShader() {
         .addTarget(0, texFinal)
         .build());
 
-    setCombinationPass("post/final.fsh")
+    setCombinationPass("post/final.fsh");
 
     useUniform("shadowLightPosition",
         "fogColor",

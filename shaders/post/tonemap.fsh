@@ -5,7 +5,11 @@ layout(location = 0) out vec4 outColor;
 uniform sampler2D texFinal;
 uniform sampler2D texExposure;
 
-// in vec2 uv;
+#ifdef DEBUG_HISTOGRAM
+    uniform usampler2D texHistogram_debug;
+#endif
+
+in vec2 uv;
 
 // #include "/settings.glsl"
 #include "/lib/common.glsl"
@@ -38,13 +42,21 @@ vec3 tonemap_ACESFit2(const in vec3 color) {
 
 
 void main() {
-    ivec2 uv = ivec2(gl_FragCoord.xy);
-    vec3 color = texelFetch(texFinal, uv, 0).rgb;
+    ivec2 iuv = ivec2(gl_FragCoord.xy);
+    vec3 color = texelFetch(texFinal, iuv, 0).rgb;
     
     ApplyAutoExposure(color, texExposure);
 
     // color = tonemap_jodieReinhard(color);
     color = tonemap_ACESFit2(color);
+
+    #ifdef DEBUG_HISTOGRAM
+        vec2 previewCoord = (uv - 0.01) / vec2(0.2, 0.1);
+        if (clamp(previewCoord, 0.0, 1.0) == previewCoord) {
+            uint sampleVal = textureLod(texHistogram_debug, previewCoord, 0).r;
+            color = vec3(step(previewCoord.y*previewCoord.y, sampleVal / (screenSize.x*screenSize.y)));
+        }
+    #endif
 
     outColor = vec4(color, 1.0);
 }

@@ -27,7 +27,6 @@ uniform sampler2DArray solidShadowMap;
 #include "/lib/common.glsl"
 #include "/lib/ign.glsl"
 #include "/lib/erp.glsl"
-#include "/lib/csm.glsl"
 #include "/lib/fresnel.glsl"
 
 #include "/lib/sky/common.glsl"
@@ -35,6 +34,7 @@ uniform sampler2DArray solidShadowMap;
 #include "/lib/sky/sun.glsl"
 
 #ifdef SHADOWS_ENABLED
+    #include "/lib/shadow/csm.glsl"
     #include "/lib/shadow/sample.glsl"
 #endif
 
@@ -98,7 +98,7 @@ void main() {
         vec2 skyIrradianceCoord = DirectionToUV(localTexNormal);
         skyLighting += 0.3 * lmCoord.y * textureLod(texSkyIrradiance, skyIrradianceCoord, 0).rgb;
 
-        vec3 blockLighting = vec3(lmCoord.x);
+        vec3 blockLighting = blackbody(BLOCKLIGHT_TEMP) * lmCoord.x;
 
         vec4 finalColor = colorTrans;
         finalColor.rgb *= (5.0 * skyLighting) + (2.0 * blockLighting) + (4.0 * emission) + 0.003;

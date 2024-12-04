@@ -133,67 +133,79 @@ function setupShader() {
 
     if (DEBUG_HISTOGRAM) defineGlobally("DEBUG_HISTOGRAM", "1");
 
-    let texFinal = registerTexture(new Texture("texFinal")
+    let texFinal = registerTexture(
+        new Texture("texFinal")
         .imageName("imgFinal")
         .format(RGBA16F)
         .clearColor(0.0, 0.0, 0.0, 0.0)
         .build());
 
-    let texFinalOpaque = registerTexture(new Texture("texFinalOpaque")
+    let texFinalOpaque = registerTexture(
+        new Texture("texFinalOpaque")
         .format(RGBA16F)
         .clearColor(0.0, 0.0, 0.0, 0.0)
         .build());
 
-    let texFinalPrevious = registerTexture(new Texture("texFinalPrevious")
+    let texFinalPrevious = registerTexture(
+        new Texture("texFinalPrevious")
         .format(RGBA16F)
         .clear(false)
         .build());
 
-    let texClouds = registerTexture(new Texture("texClouds")
+    let texClouds = registerTexture(
+        new Texture("texClouds")
         .format(RGBA16F)
         .clearColor(0.0, 0.0, 0.0, 0.0)
         .build());
 
-    let texParticles = registerTexture(new Texture("texParticles")
+    let texParticles = registerTexture(
+        new Texture("texParticles")
         .format(RGBA16F)
         .clearColor(0.0, 0.0, 0.0, 0.0)
         .build());
 
-    let texDeferredOpaque_Color = registerTexture(new Texture("texDeferredOpaque_Color")
+    let texDeferredOpaque_Color = registerTexture(
+        new Texture("texDeferredOpaque_Color")
         .format(RGBA8)
         .clearColor(0.0, 0.0, 0.0, 0.0)
         .build());
 
-    let texDeferredOpaque_Data = registerTexture(new Texture("texDeferredOpaque_Data")
+    let texDeferredOpaque_Data = registerTexture(
+        new Texture("texDeferredOpaque_Data")
         .format(RGB32UI)
         .clearColor(0.0, 0.0, 0.0, 0.0)
         .build());
 
-    let texDeferredTrans_Color = registerTexture(new Texture("texDeferredTrans_Color")
+    let texDeferredTrans_Color = registerTexture(
+        new Texture("texDeferredTrans_Color")
         .format(RGBA8)
         .clearColor(0.0, 0.0, 0.0, 0.0)
         .build());
 
-    let texDeferredTrans_Data = registerTexture(new Texture("texDeferredTrans_Data")
+    let texDeferredTrans_Data = registerTexture(
+        new Texture("texDeferredTrans_Data")
         .format(RGB32UI)
         .clearColor(0.0, 0.0, 0.0, 0.0)
         .build());
 
-    let texScatterVL = registerTexture(new Texture("texScatterVL")
+    let texScatterVL = registerTexture(
+        new Texture("texScatterVL")
         .format(RGB16F)
         .width(Math.ceil(screenWidth / 2.0))
         .height(Math.ceil(screenHeight / 2.0))
         .clear(false)
         .build());
 
-    let texTransmitVL = registerTexture(new Texture("texTransmitVL")
+    let texTransmitVL = registerTexture(
+        new Texture("texTransmitVL")
         .format(RGB16F)
         .width(Math.ceil(screenWidth / 2.0))
         .height(Math.ceil(screenHeight / 2.0))
         .clear(false)
         .build());
 
-    let texHistogram = registerTexture(new Texture("texHistogram")
+    let texHistogram = registerTexture(
+        new Texture("texHistogram")
         .imageName("imgHistogram")
         .format(R32UI)
         .width(256)
@@ -203,7 +215,8 @@ function setupShader() {
         .build());
 
     if (DEBUG_HISTOGRAM) {
-        let texHistogram_debug = registerTexture(new Texture("texHistogram_debug")
+        let texHistogram_debug = registerTexture(
+            new Texture("texHistogram_debug")
             .imageName("imgHistogram_debug")
             .format(R32UI)
             .width(256)
@@ -213,13 +226,19 @@ function setupShader() {
             .build());
     }
 
-    let texExposure = registerTexture(new Texture("texExposure")
+    let texExposure = registerTexture(
+        new Texture("texExposure")
         .imageName("imgExposure")
         .format(R16F)
         .width(1)
         .height(1)
         .clear(false)
         .build());
+
+    // let histogramExposureBuffer = registerBuffer(
+    //     new Buffer("histogramExposureBuffer", 1028)
+    //     .clear(false)
+    //     .build());
 
     // let texShadowColor = registerTexture(new Texture("texShadowColor")
     //     // .format("rgba8")
@@ -325,12 +344,14 @@ function setupShader() {
         .barrier(true)
         .location("post/histogram.csh")
         .groupSize(Math.ceil(screenWidth / 16), Math.ceil(screenHeight / 16), 1)
+        // .ssbo(0, histogramExposureBuffer)
         .build());
 
     registerComposite(new ComputePass(POST_RENDER, "exposure")
         .barrier(true)
         .location("post/exposure.csh")
         .groupSize(1, 1, 1)
+        // .ssbo(0, histogramExposureBuffer)
         .build());
 
     if (FEATURE.Bloom)

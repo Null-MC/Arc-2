@@ -21,11 +21,11 @@ uniform sampler2D texSkyIrradiance;
 #include "/lib/common.glsl"
 #include "/lib/ign.glsl"
 #include "/lib/erp.glsl"
-#include "/lib/csm.glsl"
 
 #include "/lib/sky/common.glsl"
 
 #ifdef SHADOWS_ENABLED
+    #include "/lib/shadow/csm.glsl"
     #include "/lib/shadow/sample.glsl"
 #endif
 

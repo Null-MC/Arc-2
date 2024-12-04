@@ -16,12 +16,17 @@ uniform sampler2D mainDepthTex;
 #include "/lib/common.glsl"
 #include "/lib/ign.glsl"
 #include "/lib/hg.glsl"
-#include "/lib/csm.glsl"
+
+#ifdef SHADOWS_ENABLED
+    #include "/lib/shadow/csm.glsl"
+#endif
 
 #include "/lib/sky/common.glsl"
 #include "/lib/sky/transmittance.glsl"
 
 #include "/lib/volumetric.glsl"
+
+const int VL_MaxSamples = 32;
 
 
 void main() {

@@ -22,7 +22,6 @@ uniform sampler2DArray solidShadowMap;
 #include "/lib/common.glsl"
 #include "/lib/ign.glsl"
 #include "/lib/erp.glsl"
-#include "/lib/csm.glsl"
 
 #include "/lib/utility/blackbody.glsl"
 #include "/lib/utility/matrix.glsl"
@@ -33,6 +32,7 @@ uniform sampler2DArray solidShadowMap;
 #include "/lib/sky/stars.glsl"
 
 #ifdef SHADOWS_ENABLED
+    #include "/lib/shadow/csm.glsl"
     #include "/lib/shadow/sample.glsl"
 #endif
 
@@ -43,10 +43,10 @@ uniform sampler2DArray solidShadowMap;
 
 void main() {
     ivec2 iuv = ivec2(gl_FragCoord.xy);
-    vec3 colorFinal;// = texelFetch(texFinal, iuv, 0).rgb;
     vec4 colorOpaque = texelFetch(texDeferredOpaque_Color, iuv, 0);
+    vec3 colorFinal;
 
-    vec3 sunDir = normalize(mul3(playerModelViewInverse, sunPosition));
+    vec3 sunDir = normalize(mat3(playerModelViewInverse) * sunPosition);
 
     if (colorOpaque.a > EPSILON) {
         uvec3 data = texelFetch(texDeferredOpaque_Data, iuv, 0).rgb;
@@ -80,7 +80,7 @@ void main() {
             shadowSample = SampleShadows(shadowViewPos);
         #endif
 
-        vec3 localLightDir = normalize(mul3(playerModelViewInverse, shadowLightPosition));
+        vec3 localLightDir = normalize(mat3(playerModelViewInverse) * shadowLightPosition);
         float NoLm = step(0.0, dot(localLightDir, localNormal));
 
         vec3 skyPos = getSkyPosition(localPos);
@@ -90,7 +90,7 @@ void main() {
         vec2 skyIrradianceCoord = DirectionToUV(localNormal);
         skyLighting += 0.3 * lmCoord.y * textureLod(texSkyIrradiance, skyIrradianceCoord, 0).rgb;
 
-        vec3 blockLighting = blackbody(3600) * lmCoord.x;
+        vec3 blockLighting = blackbody(BLOCKLIGHT_TEMP) * lmCoord.x;
 
         colorFinal = colorOpaque.rgb;
         colorFinal *= (5.0 * skyLighting) + (2.0 * blockLighting) + (4.0 * emission) + 0.003;

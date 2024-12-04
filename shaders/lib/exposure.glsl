@@ -8,8 +8,10 @@ const mat3 XYZ_TO_RGB = mat3(
     -1.5371385, 1.8760108,-0.2040259,
     -0.4985314, 0.0415560, 1.0572252);
 
-const float Exposure_minLogLum = -6.0;
-const float Exposure_logLumRange = 1.0 / 9.0;
+const ivec2 exposure_uv = ivec2(0);
+
+const float Exposure_minLogLum = -11.0;
+const float Exposure_logLumRange = 1.0 / 22.0;
 float Exposure_timeCoeff = 0.01; //timeCounter;
 float Exposure_numPixels = screenSize.x * screenSize.y;
 
@@ -35,7 +37,7 @@ float reinhard2(const in float color, const in float L_white) {
 void ApplyAutoExposure(inout vec3 rgb, const in sampler2D texExposure) {
 	vec3 xyY = xyz_to_xyY(RGB_TO_XYZ * rgb);
 
-	float avgLum = texelFetch(texExposure, ivec2(0.0), 0).r;
+	float avgLum = texelFetch(texExposure, exposure_uv, 0).r;
     // avgLum = clamp(avgLum, 0.00001, 0.99999);
 
 	float lp = xyY.z / (9.6 * avgLum + 0.0001);

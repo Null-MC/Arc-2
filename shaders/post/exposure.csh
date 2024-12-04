@@ -3,27 +3,32 @@
 layout (local_size_x = 256, local_size_y = 1, local_size_z = 1) in;
 
 layout(r32ui) uniform uimage2D imgHistogram;
-layout(r32ui) uniform uimage2D imgHistogram_debug;
 layout(r16f) uniform image2D imgExposure;
+
+#ifdef DEBUG_HISTOGRAM
+	layout(r32ui) uniform uimage2D imgHistogram_debug;
+#endif
 
 shared uint histogramShared[256];
 
 #include "/lib/common.glsl"
+#include "/lib/buffers/histogram_exposure.glsl"
 #include "/lib/exposure.glsl"
 
 
 void main() {
-	// Get the count from the histogram buffer
-	uint countForThisBin = imageLoad(imgHistogram, ivec2(gl_LocalInvocationIndex, 0)).r;
+	ivec2 histogram_uv = ivec2(gl_LocalInvocationIndex, 0);
 
-	imageStore(imgHistogram_debug, ivec2(gl_LocalInvocationIndex, 0), uvec4(countForThisBin, 0.0, 0.0, 0.0));
-
+	uint countForThisBin = imageLoad(imgHistogram, histogram_uv).r;
 	histogramShared[gl_LocalInvocationIndex] = countForThisBin * gl_LocalInvocationIndex;
 
 	barrier();
 
-	// Reset the count stored in the buffer in anticipation of the next pass
-	imageStore(imgHistogram, ivec2(gl_LocalInvocationIndex, 0), uvec4(0u));
+	#ifdef DEBUG_HISTOGRAM
+		imageStore(imgHistogram_debug, histogram_uv, uvec4(countForThisBin));
+	#endif
+
+	imageStore(imgHistogram, histogram_uv, uvec4(0u));
 
 	// This loop will perform a weighted count of the luminance range
 	for (uint cutoff = (256u >> 1u); cutoff > 0u; cutoff >>= 1u) {
@@ -34,7 +39,6 @@ void main() {
 		barrier();
 	}
 
-	// We only need to calculate this once, so only a single thread is needed.
 	if (gl_LocalInvocationIndex == 0) {
 		// Here we take our weighted sum and divide it by the number of pixels
 		// that had luminance greater than zero (since the index == 0, we can
@@ -48,11 +52,9 @@ void main() {
 		// imageStore(imgExposure, ivec2(0, 0), vec4(weightedAvgLum));
 		// return;
 
-		// The new stored value will be interpolated using the last frames value
-		// to prevent sudden shifts in the exposure.
-		float lumLastFrame = imageLoad(imgExposure, ivec2(0, 0)).r;
+		float lumLastFrame = imageLoad(imgExposure, exposure_uv).r;
 		float adaptedLum = lumLastFrame + (weightedLogAverage - lumLastFrame) * Exposure_timeCoeff;
 
-		imageStore(imgExposure, ivec2(0, 0), vec4(adaptedLum));
+		imageStore(imgExposure, exposure_uv, vec4(adaptedLum));
 	}
 }

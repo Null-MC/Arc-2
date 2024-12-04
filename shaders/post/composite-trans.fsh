@@ -92,11 +92,11 @@ void main() {
             shadowSample = SampleShadows(shadowViewPos);
         #endif
 
-        vec3 localLightDir = normalize(mul3(playerModelViewInverse, shadowLightPosition));
+        vec3 localLightDir = normalize(mat3(playerModelViewInverse) * shadowLightPosition);
         float NoLm = step(0.0, dot(localLightDir, localTexNormal));
 
         vec3 skyPos = getSkyPosition(localPosTrans);
-        vec3 sunDir = normalize((playerModelViewInverse * vec4(sunPosition, 1.0)).xyz);
+        vec3 sunDir = normalize(mat3(playerModelViewInverse) * sunPosition);
         vec3 skyTransmit = getValFromTLUT(texSkyTransmit, skyPos, sunDir);
         vec3 skyLighting = lmCoord.y * NoLm * skyTransmit * shadowSample;
 
@@ -119,8 +119,7 @@ void main() {
             float NoVm = max(dot(localTexNormal, -localViewDir), 0.0);
             float F = F_schlick(NoVm, 0.02, 1.0);
 
-            // TODO: SSR?
-
+            // SSR
             vec3 reflectViewPos = viewPosTrans + 0.5*viewDist*reflectViewDir;
             vec3 reflectClipPos = unproject(playerProjection, reflectViewPos) * 0.5 + 0.5;
 
@@ -140,6 +139,7 @@ void main() {
             finalColor.a = min(F + specular, 1.0);
         }
 
+        // Refraction
         vec3 refractViewNormal = mat3(playerModelView) * (localTexNormal - localGeoNormal);
 
         const float refractEta = (IOR_AIR/IOR_WATER);
@@ -155,6 +155,7 @@ void main() {
         // TODO: replace simple refract with SS march
         colorFinal = textureLod(texFinalOpaque, uv + refraction, 0).rgb;
 
+        // Fog
         // float viewDist = length(localPosTrans);
         // float fogF = smoothstep(fogStart, fogEnd, viewDist);
         // finalColor = mix(finalColor, vec4(fogColor.rgb, 1.0), fogF);

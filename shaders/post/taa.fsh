@@ -14,24 +14,24 @@ uniform sampler2D solidDepthTex;
 #include "/lib/taa_jitter.glsl"
 
 
-const int EFFECT_TAA_MAX_ACCUM = 16;
+// const int EFFECT_TAA_MAX_ACCUM = 16;
 
 vec3 encodePalYuv(vec3 rgb) {
-    return vec3(
-        dot(rgb, vec3(0.299, 0.587, 0.114)),
-        dot(rgb, vec3(-0.14713, -0.28886, 0.436)),
-        dot(rgb, vec3(0.615, -0.51499, -0.10001))
-    );
+    const mat3 m = mat3(
+        vec3(0.29900, -0.14713,  0.61500),
+        vec3(0.58700, -0.28886, -0.51499),
+        vec3(0.11400,  0.43600, -0.10001));
+
+    return m * rgb;
 }
 
 vec3 decodePalYuv(vec3 yuv) {
-    vec3 rgb = vec3(
-        dot(yuv, vec3(1.0, 0.0, 1.13983)),
-        dot(yuv, vec3(1.0, -0.39465, -0.58060)),
-        dot(yuv, vec3(1.0, 2.03211, 0.0))
-    );
+    const mat3 m = mat3(
+        vec3(1.00000,  1.00000, 1.00000),
+        vec3(0.00000, -0.39465, 2.03211),
+        vec3(1.13983, -0.58060, 0.00000));
 
-    return rgb;
+    return m * yuv;
 }
 
 vec3 getReprojectedClipPos(const in vec2 texcoord, const in float depthNow, const in vec3 velocity) {
@@ -120,18 +120,18 @@ void main() {
     
     vec3 preclamping = antialiased;
     vec3 clamped = clamp(antialiased, minColor, maxColor);
-    #ifdef EFFECT_TAA_ACCUM
-        antialiased = mix(antialiased, clamped, mixRate);
-    #else
+    // #ifdef EFFECT_TAA_ACCUM
+    //     antialiased = mix(antialiased, clamped, mixRate);
+    // #else
         antialiased = clamped;
-    #endif
+    // #endif
     
     mixRate = 1.0 / (1.0 / mixRate + 1.0);
     
     vec3 diff = antialiased - preclamping;
     float clampAmount = dot(diff, diff);
     
-    const float weightMax = 1.0 / EFFECT_TAA_MAX_ACCUM;
+    const float weightMax = 0.1;//1.0 / EFFECT_TAA_MAX_ACCUM;
 
     mixRate += clampAmount;// * 4.0;
     mixRate = clamp(mixRate, weightMax, 1.0);

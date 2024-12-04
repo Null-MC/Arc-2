@@ -26,10 +26,6 @@ vec3 xyY_to_xyz(vec3 xyY) {
     return vec3(xyY.z * xz.xy / xyY.y, xyY.z).xzy;
 }
 
-float reinhard(const in float color) {
-    return color / (1.0 + color);
-}
-
 float reinhard2(const in float color, const in float L_white) {
     return (color * (1.0 + color / (L_white * L_white))) / (1.0 + color);
 }
@@ -38,13 +34,11 @@ void ApplyAutoExposure(inout vec3 rgb, const in sampler2D texExposure) {
 	vec3 xyY = xyz_to_xyY(RGB_TO_XYZ * rgb);
 
 	float avgLum = texelFetch(texExposure, exposure_uv, 0).r;
-    // avgLum = clamp(avgLum, 0.00001, 0.99999);
 
 	float lp = xyY.z / (9.6 * avgLum + 0.0001);
 
 	const float whitePoint = 0.65;
     xyY.z = reinhard2(lp, whitePoint);
-	// xyY.z = reinhard(lp);
 
 	rgb = XYZ_TO_RGB * xyY_to_xyz(xyY);
 }

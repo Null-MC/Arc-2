@@ -6,7 +6,7 @@ const FEATURE = {
     VL: true
 };
 
-const DEBUG_HISTOGRAM = true;
+const DEBUG_HISTOGRAM = false;
 
 
 function setupSky() {

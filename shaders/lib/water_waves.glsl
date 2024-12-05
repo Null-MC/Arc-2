@@ -6,7 +6,7 @@ const float WaterWaveSurfaceOffset = 0.6;
 const int WaterWaveOctaveMin = 6;
 const int WaterWaveOctaveMax = 12;
 
-const vec3 WaterWaveScaleF = vec3(0.75, 1.0, 0.75);
+const vec3 WaterWaveScaleF = vec3(1.5, 2.0, 1.5);
 
 vec2 waveDx(const in vec2 position, const in vec2 direction, const in float frequency, const in float timeshift) {
     float x = dot(direction, position) * frequency + timeshift;

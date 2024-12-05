@@ -25,7 +25,7 @@ vec4 GetReflectionPosition(const in sampler2D depthtex, const in vec3 clipPos, c
     vec3 rayY = screenRay * pixelRay.y;
     screenRay = mix(rayX, rayY, screenRayAbs.y);
 
-    screenRay *= 6.0;
+    screenRay *= 20.0;
 
     vec3 lastTracePos = screenRay * (1.0 + dither) + clipPos;
     vec3 lastVisPos = lastTracePos;
@@ -38,6 +38,37 @@ vec4 GetReflectionPosition(const in sampler2D depthtex, const in vec3 clipPos, c
     vec3 tracePos;
 
     for (int i = 0; i < SSR_MAXSTEPS; i++) {
+        tracePos = screenRay + lastTracePos;
+
+        vec3 t = clamp(tracePos, clipMin, clipMax);
+        if (t != tracePos) {
+            lastVisPos = t;
+
+            // allow sky reflection
+            if (tracePos.z >= 1.0 && t.xy == tracePos.xy) alpha = 1.0;
+
+            break;
+        }
+
+        float sampleDepth = textureLod(depthtex, tracePos.xy, 0).r;
+        float sampleDepthL = linearizeDepth(sampleDepth, nearPlane, farPlane);
+        float traceDepthL = linearizeDepth(tracePos.z, nearPlane, farPlane);
+
+        if (traceDepthL < sampleDepthL + 0.002) {
+            lastTracePos = tracePos;
+            continue;
+        }
+
+        lastVisPos = tracePos;
+        alpha = 1.0;
+        break;
+    }
+
+    const int SSR_REFINE_STEPS = 8;
+
+    screenRay /= SSR_REFINE_STEPS;
+
+    for (int i = 0; i < SSR_REFINE_STEPS; i++) {
         tracePos = screenRay + lastTracePos;
 
         vec3 t = clamp(tracePos, clipMin, clipMax);

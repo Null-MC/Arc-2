@@ -165,8 +165,19 @@ void main() {
         refractMax.x *= screenSize.x / screenSize.y;
         vec2 refraction = clamp(vec2(0.025 * linearDist), -refractMax, refractMax) * refractDir.xy;
 
-        // TODO: replace simple refract with SS march
-        colorFinal = textureLod(texFinalOpaque, uv + refraction, 0).rgb;
+        const int REFRACTION_STEPS = 8;
+        vec2 refractStep = refraction / REFRACTION_STEPS;
+        vec2 refract_uv = uv;
+
+        for (int i = 0; i < REFRACTION_STEPS; i++) {
+            vec2 sample_uv = refract_uv + refractStep;
+            float sample_depth = textureLod(solidDepthTex, sample_uv, 0).r;
+
+            if (depthTrans > sample_depth) break;
+            refract_uv = sample_uv;
+        }
+
+        colorFinal = textureLod(texFinalOpaque, refract_uv, 0).rgb;
 
         // Fog
         // float viewDist = length(localPosTrans);

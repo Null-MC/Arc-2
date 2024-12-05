@@ -84,7 +84,7 @@ void main() {
             // sampleWeight = pow(sampleWeight, 4.0);
             sampleWeight = 1.0 - sampleWeight;
 
-            illumination += sampleColor * sampleNoLm * (sampleWeight*sampleWeight);
+            illumination += sampleColor * sampleNoLm * sampleWeight;//(sampleWeight*sampleWeight);
             occlusion += sampleNoLm * sampleWeight;
             maxWeight += sampleWeight;
         }

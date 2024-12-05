@@ -4,10 +4,12 @@ layout(location = 0) out vec4 outColor;
 
 in vec2 uv;
 
+uniform sampler2D mainDepthTex;
 uniform sampler2D solidDepthTex;
+uniform sampler2DArray solidShadowMap;
 uniform sampler2D texDeferredOpaque_Color;
 uniform usampler2D texDeferredOpaque_Data;
-uniform sampler2DArray solidShadowMap;
+uniform usampler2D texDeferredTrans_Data;
 
 uniform sampler2D texSkyView;
 uniform sampler2D texSkyTransmit;
@@ -45,17 +47,18 @@ uniform sampler2D texSSGIAO_final;
 
 void main() {
     ivec2 iuv = ivec2(gl_FragCoord.xy);
+    float depthTrans = texelFetch(mainDepthTex, iuv, 0).r;
     vec4 colorOpaque = texelFetch(texDeferredOpaque_Color, iuv, 0);
     vec3 colorFinal;
 
     vec3 sunDir = normalize(mat3(playerModelViewInverse) * sunPosition);
 
-    float depth = 1.0;
+    float depthOpaque = 1.0;
     if (colorOpaque.a > EPSILON) {
-        depth = texelFetch(solidDepthTex, iuv, 0).r;
+        depthOpaque = texelFetch(solidDepthTex, iuv, 0).r;
     }
 
-    vec3 ndcPos = vec3(uv, depth) * 2.0 - 1.0;
+    vec3 ndcPos = vec3(uv, depthOpaque) * 2.0 - 1.0;
 
     #ifdef EFFECT_TAA_ENABLED
         unjitter(ndcPos);
@@ -66,6 +69,7 @@ void main() {
 
     if (colorOpaque.a > EPSILON) {
         uvec3 data = texelFetch(texDeferredOpaque_Data, iuv, 0).rgb;
+        uint data_trans_g = texelFetch(texDeferredTrans_Data, iuv, 0).g;
 
         #ifdef EFFECT_GIAO_ENABLED
             vec4 gi_ao = textureLod(texSSGIAO_final, uv, 0);
@@ -74,6 +78,13 @@ void main() {
         #endif
 
         colorOpaque.rgb = RgbToLinear(colorOpaque.rgb);
+
+        float data_trans_water = unpackUnorm4x8(data_trans_g).b;
+        bool isWet = isEyeInWater == 1
+            ? depthTrans >= depthOpaque
+            : depthTrans < depthOpaque && data_trans_water > 0.5;
+
+        if (isWet) colorOpaque.rgb = pow(colorOpaque.rgb, vec3(1.8));
 
         vec4 normalMaterial = unpackUnorm4x8(data.r);
         vec3 localNormal = normalize(normalMaterial.xyz * 2.0 - 1.0);

@@ -92,9 +92,6 @@ void main() {
 	ivec2 uv = ivec2(gl_GlobalInvocationID.xy);
 
     populateSharedBuffer();
-    
-    // memoryBarrierShared();
-    // memoryBarrier();
     barrier();
 
 	if (any(greaterThanEqual(uv, ivec2(screenSize/2.0)))) return;

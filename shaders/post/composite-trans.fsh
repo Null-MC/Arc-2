@@ -95,23 +95,27 @@ void main() {
         #endif
 
         vec3 localLightDir = normalize(mat3(playerModelViewInverse) * shadowLightPosition);
-        float NoLm = step(0.0, dot(localLightDir, localTexNormal));
+        // float NoLm = step(0.0, dot(localLightDir, localTexNormal));
+        float NoLm = max(dot(localLightDir, localGeoNormal), 0.0);
 
         vec3 skyPos = getSkyPosition(localPosTrans);
         vec3 sunDir = normalize(mat3(playerModelViewInverse) * sunPosition);
         vec3 sunTransmit = getValFromTLUT(texSkyTransmit, skyPos, sunDir);
         vec3 moonTransmit = getValFromTLUT(texSkyTransmit, skyPos, -sunDir);
         vec3 skyLighting = SUN_BRIGHTNESS * sunTransmit + MOON_BRIGHTNESS * moonTransmit;
-        skyLighting *= lmCoord.y * NoLm * shadowSample;
+        skyLighting *= NoLm * shadowSample;
 
         vec2 skyIrradianceCoord = DirectionToUV(localTexNormal);
         vec3 skyIrradiance = textureLod(texSkyIrradiance, skyIrradianceCoord, 0).rgb;
-        skyLighting += (0.3 * lmCoord.y * SKY_BRIGHTNESS) * skyIrradiance;
+        skyLighting += (SKY_AMBIENT * lmCoord.y * SKY_BRIGHTNESS) * skyIrradiance;
 
         vec3 blockLighting = blackbody(BLOCKLIGHT_TEMP) * lmCoord.x;
 
         vec4 finalColor = colorTrans;
-        finalColor.rgb *= (skyLighting) + (2.0 * blockLighting) + (3.0 * emission) + 0.003;
+        finalColor.rgb *= skyLighting
+            + (BLOCKLIGHT_BRIGHTNESS * blockLighting)
+            + (EMISSION_BRIGHTNESS * emission)
+            + 0.003;
 
         if (isWater) {
             float viewDist = length(localPosTrans);

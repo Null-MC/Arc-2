@@ -30,6 +30,9 @@ uniform sampler2D texSSGIAO_final;
 #include "/lib/utility/blackbody.glsl"
 #include "/lib/utility/matrix.glsl"
 
+#include "/lib/fresnel.glsl"
+#include "/lib/light/diffuse.glsl"
+
 #include "/lib/sky/common.glsl"
 #include "/lib/sky/view.glsl"
 #include "/lib/sky/sun.glsl"
@@ -67,6 +70,8 @@ void main() {
     vec3 viewPos = unproject(playerProjectionInverse, ndcPos);
     vec3 localPos = mul3(playerModelViewInverse, viewPos);
 
+    vec3 localViewDir = normalize(localPos);
+
     if (colorOpaque.a > EPSILON) {
         uvec3 data = texelFetch(texDeferredOpaque_Data, iuv, 0).rgb;
         uint data_trans_g = texelFetch(texDeferredTrans_Data, iuv, 0).g;
@@ -91,38 +96,59 @@ void main() {
         int material = int(normalMaterial.w * 255.0 + 0.5);
 
         vec2 lmCoord = unpackUnorm4x8(data.g).xy;
-        lmCoord = lmCoord*lmCoord; //pow(lmCoord, vec2(3.0));
-        lmCoord = lmCoord*lmCoord;
+        lmCoord = lmCoord*lmCoord*lmCoord; //pow(lmCoord, vec2(3.0));
+        // lmCoord = lmCoord*lmCoord;
 
         // TODO: bitfieldExtract()
-        float emission = (material & 8) != 0 ? 1.0 : 0.0;
+        float sss = 0.0;//bitfieldExtract(material, 2, 1) != 0 ? 1.0 : 0.0;
+        float emission = bitfieldExtract(material, 3, 1) != 0 ? 1.0 : 0.0;
         emission *= lmCoord.x;
+
+        // colorOpaque.rgb = vec3(material / 255.0);
+        // colorOpaque.rgb = vec3(emission, sss, 0.0);
 
         float shadowSample = 1.0;
         #ifdef SHADOWS_ENABLED
             vec3 shadowViewPos = mul3(shadowModelView, localPos);
+
+            float dither = InterleavedGradientNoiseTime(ivec2(gl_FragCoord.xy));
+            shadowViewPos.z += sss * dither;
+
             shadowSample = SampleShadows(shadowViewPos);
         #endif
 
         vec3 localLightDir = normalize(mat3(playerModelViewInverse) * shadowLightPosition);
-        float NoLm = step(0.0, dot(localLightDir, localNormal));
+        // float NoLm = step(0.0, dot(localLightDir, localNormal));
+
+        vec3 H = normalize(localLightDir + -localViewDir);
+
+        float NoLm = max(dot(localNormal, localLightDir), 0.0);
+        float LoHm = max(dot(localLightDir, H), 0.0);
+        float NoVm = max(dot(localNormal, -localViewDir), 0.0);
+
+        NoLm = mix(NoLm, 1.0, sss);
+
+        const float roughL = 0.9;
 
         vec3 skyPos = getSkyPosition(localPos);
         vec3 sunTransmit = getValFromTLUT(texSkyTransmit, skyPos, sunDir);
         vec3 moonTransmit = getValFromTLUT(texSkyTransmit, skyPos, -sunDir);
         vec3 skyLighting = SUN_BRIGHTNESS * sunTransmit + MOON_BRIGHTNESS * moonTransmit;
-        skyLighting *= NoLm * shadowSample;
+        skyLighting *= NoLm * shadowSample * diffuse(NoVm, NoLm, LoHm, roughL);
 
         vec2 skyIrradianceCoord = DirectionToUV(localNormal);
         vec3 skyIrradiance = textureLod(texSkyIrradiance, skyIrradianceCoord, 0).rgb;
-        skyLighting += (0.3 * lmCoord.y * SKY_BRIGHTNESS) * skyIrradiance * gi_ao.w;
+        skyLighting += (SKY_AMBIENT * lmCoord.y * SKY_BRIGHTNESS) * skyIrradiance * gi_ao.w;
 
         skyLighting += gi_ao.rgb;
 
         vec3 blockLighting = blackbody(BLOCKLIGHT_TEMP) * lmCoord.x;
 
         colorFinal = colorOpaque.rgb;
-        colorFinal *= (skyLighting) + (2.0 * blockLighting) + (3.0 * emission) + 0.003;
+        colorFinal *= skyLighting
+            + (BLOCKLIGHT_BRIGHTNESS * blockLighting)
+            + (EMISSION_BRIGHTNESS * emission)
+            + 0.003;
 
         // float viewDist = length(localPos);
         // float fogF = smoothstep(fogStart, fogEnd, viewDist);
@@ -130,8 +156,6 @@ void main() {
     }
     else {
         // vec3 moonDir = normalize(mat3(playerModelViewInverse) * moonPosition);
-
-        vec3 localViewDir = normalize(localPos);
         
         vec3 skyPos = getSkyPosition(vec3(0.0));
         colorFinal = SKY_LUMINANCE * getValFromSkyLUT(texSkyView, skyPos, localViewDir, sunDir);

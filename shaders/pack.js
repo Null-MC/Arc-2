@@ -413,6 +413,12 @@ function setupShader() {
         .addTarget(0, texFinal)
         .build());
 
+    registerComposite(new CompositePass(POST_RENDER, "debug")
+        .vertex("post/bufferless.vsh")
+        .fragment("post/debug.fsh")
+        .addTarget(0, texFinal)
+        .build());
+
     setCombinationPass("post/final.fsh");
 
     useUniform("shadowLightPosition",

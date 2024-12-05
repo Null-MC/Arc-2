@@ -12,8 +12,9 @@ in vec2 uv;
 #include "/lib/common.glsl"
 #include "/lib/ign.glsl"
 
-const int SSGIAO_SAMPLES = 16;
-const float SSGIAO_RADIUS = 3.0;
+const int SSGIAO_SAMPLES = 24;
+const float SSGIAO_RADIUS = 6.0;
+const float GI_RADIUS = 12.0;
 
 const float GOLDEN_ANGLE = 2.39996323;
 
@@ -84,7 +85,10 @@ void main() {
             // sampleWeight = pow(sampleWeight, 4.0);
             sampleWeight = 1.0 - sampleWeight;
 
-            illumination += sampleColor * sampleNoLm * sampleWeight;//(sampleWeight*sampleWeight);
+            // float gi_weight = 1.0 - saturate(sampleDist / GI_RADIUS);
+            float gi_weight = 1.0 / (1.0 + sampleDist);
+
+            illumination += sampleColor * sampleNoLm * gi_weight;//(sampleWeight*sampleWeight);
             occlusion += sampleNoLm * sampleWeight;
             maxWeight += sampleWeight;
         }

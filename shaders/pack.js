@@ -123,7 +123,7 @@ function setupShader() {
     worldSettings.vignette = false;
     worldSettings.clouds = false;
     worldSettings.stars = false;
-    worldSettings.moon = true;
+    worldSettings.moon = false;
     worldSettings.sun = false;
 
     if (FEATURE.WaterWaves) defineGlobally("WATER_WAVES_ENABLED", "1");

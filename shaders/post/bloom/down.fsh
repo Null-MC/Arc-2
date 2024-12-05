@@ -9,8 +9,8 @@ in vec2 uv;
 #include "/lib/common.glsl"
 
 
-const float bloomPower = 1.5;
-const float bloomStrength = 0.1;
+const float bloomPower = 1.3;
+const float bloomStrength = 0.08;
 
 void ScaleInput(inout vec3 color) {
     float lum = luminance(color);

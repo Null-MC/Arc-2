@@ -48,19 +48,22 @@ void main() {
 
     vec3 sunDir = normalize(mat3(playerModelViewInverse) * sunPosition);
 
+    float depth = 1.0;
+    if (colorOpaque.a > EPSILON) {
+        depth = texelFetch(solidDepthTex, iuv, 0).r;
+    }
+
+    vec3 ndcPos = vec3(uv, depth) * 2.0 - 1.0;
+
+    #ifdef EFFECT_TAA_ENABLED
+        unjitter(ndcPos);
+    #endif
+
+    vec3 viewPos = unproject(playerProjectionInverse, ndcPos);
+    vec3 localPos = mul3(playerModelViewInverse, viewPos);
+
     if (colorOpaque.a > EPSILON) {
         uvec3 data = texelFetch(texDeferredOpaque_Data, iuv, 0).rgb;
-        float depth = texelFetch(solidDepthTex, iuv, 0).r;
-
-        vec3 ndcPos = vec3(uv, depth) * 2.0 - 1.0;
-
-        #ifdef EFFECT_TAA_ENABLED
-            unjitter(ndcPos);
-        #endif
-
-        vec3 viewPos = unproject(playerProjectionInverse, ndcPos);
-        vec3 localPos = mul3(playerModelViewInverse, viewPos);
-
         colorOpaque.rgb = RgbToLinear(colorOpaque.rgb);
 
         vec4 normalMaterial = unpackUnorm4x8(data.r);
@@ -68,7 +71,8 @@ void main() {
         int material = int(normalMaterial.w * 255.0 + 0.5);
 
         vec2 lmCoord = unpackUnorm4x8(data.g).xy;
-        lmCoord = pow(lmCoord, vec2(3.0));
+        lmCoord = lmCoord*lmCoord; //pow(lmCoord, vec2(3.0));
+        lmCoord = lmCoord*lmCoord;
 
         // TODO: bitfieldExtract()
         float emission = (material & 8) != 0 ? 1.0 : 0.0;
@@ -84,40 +88,42 @@ void main() {
         float NoLm = step(0.0, dot(localLightDir, localNormal));
 
         vec3 skyPos = getSkyPosition(localPos);
-        vec3 skyTransmit = getValFromTLUT(texSkyTransmit, skyPos, sunDir);
-        vec3 skyLighting = lmCoord.y * NoLm * skyTransmit * shadowSample;
+        vec3 sunTransmit = getValFromTLUT(texSkyTransmit, skyPos, sunDir);
+        vec3 moonTransmit = getValFromTLUT(texSkyTransmit, skyPos, -sunDir);
+        vec3 skyLighting = SUN_BRIGHTNESS * sunTransmit + MOON_BRIGHTNESS * moonTransmit;
+        skyLighting *= lmCoord.y * NoLm * shadowSample;
 
         vec2 skyIrradianceCoord = DirectionToUV(localNormal);
-        skyLighting += 0.3 * lmCoord.y * textureLod(texSkyIrradiance, skyIrradianceCoord, 0).rgb;
+        vec3 skyIrradiance = textureLod(texSkyIrradiance, skyIrradianceCoord, 0).rgb;
+        skyLighting += (0.3 * lmCoord.y * SKY_BRIGHTNESS) * skyIrradiance;
 
         vec3 blockLighting = blackbody(BLOCKLIGHT_TEMP) * lmCoord.x;
 
         colorFinal = colorOpaque.rgb;
-        colorFinal *= (5.0 * skyLighting) + (2.0 * blockLighting) + (4.0 * emission) + 0.003;
+        colorFinal *= (skyLighting) + (2.0 * blockLighting) + (3.0 * emission) + 0.003;
 
         // float viewDist = length(localPos);
         // float fogF = smoothstep(fogStart, fogEnd, viewDist);
         // colorFinal = mix(colorFinal, fogColor.rgb, fogF);
     }
     else {
-        vec2 uv = gl_FragCoord.xy / screenSize;
-        vec3 ndcPos = vec3(uv, 1.0) * 2.0 - 1.0;
-        vec3 viewPos = unproject(playerProjectionInverse, ndcPos);
-        vec3 localPos = mul3(playerModelViewInverse, viewPos);
+        // vec3 moonDir = normalize(mat3(playerModelViewInverse) * moonPosition);
+
         vec3 localViewDir = normalize(localPos);
         
         vec3 skyPos = getSkyPosition(vec3(0.0));
-        colorFinal = 20.0 * getValFromSkyLUT(texSkyView, skyPos, localViewDir, sunDir);
+        colorFinal = SKY_LUMINANCE * getValFromSkyLUT(texSkyView, skyPos, localViewDir, sunDir);
 
         if (rayIntersectSphere(skyPos, localViewDir, groundRadiusMM) < 0.0) {
-            float sunLum = 800.0 * sun(localViewDir, sunDir);
+            float sunLum = SUN_LUMINANCE * sun(localViewDir, sunDir);
+            float moonLum = MOON_LUMINANCE * moon(localViewDir, -sunDir);
 
             vec3 starViewDir = getStarViewDir(localViewDir);
-            vec3 starLight = 0.4 * GetStarLight(starViewDir);
+            vec3 starLight = STAR_LUMINANCE * GetStarLight(starViewDir);
 
             vec3 skyTransmit = getValFromTLUT(texSkyTransmit, skyPos, localViewDir);
 
-            colorFinal += (sunLum + starLight) * skyTransmit;
+            colorFinal += (sunLum + moonLum + starLight) * skyTransmit;
         }
     }
 

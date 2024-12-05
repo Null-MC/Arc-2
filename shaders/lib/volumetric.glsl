@@ -1,7 +1,7 @@
 // const int VL_MaxSamples = 48;
 
 const float VL_Phase = 0.78;
-const float VL_Scatter  = 0.0120;
+const float VL_Scatter  = 0.0060;
 const float VL_Transmit = 0.0002;
 
 const float VL_RainPhase = 0.42;

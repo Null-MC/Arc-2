@@ -31,10 +31,12 @@ uniform sampler2DArray solidShadowMap;
 #include "/lib/fresnel.glsl"
 
 #include "/lib/utility/blackbody.glsl"
+#include "/lib/utility/matrix.glsl"
 
 #include "/lib/sky/common.glsl"
 #include "/lib/sky/view.glsl"
 #include "/lib/sky/sun.glsl"
+#include "/lib/sky/stars.glsl"
 
 #include "/lib/ssr.glsl"
 
@@ -97,16 +99,19 @@ void main() {
 
         vec3 skyPos = getSkyPosition(localPosTrans);
         vec3 sunDir = normalize(mat3(playerModelViewInverse) * sunPosition);
-        vec3 skyTransmit = getValFromTLUT(texSkyTransmit, skyPos, sunDir);
-        vec3 skyLighting = lmCoord.y * NoLm * skyTransmit * shadowSample;
+        vec3 sunTransmit = getValFromTLUT(texSkyTransmit, skyPos, sunDir);
+        vec3 moonTransmit = getValFromTLUT(texSkyTransmit, skyPos, -sunDir);
+        vec3 skyLighting = SUN_BRIGHTNESS * sunTransmit + MOON_BRIGHTNESS * moonTransmit;
+        skyLighting *= lmCoord.y * NoLm * shadowSample;
 
         vec2 skyIrradianceCoord = DirectionToUV(localTexNormal);
-        skyLighting += 0.3 * lmCoord.y * textureLod(texSkyIrradiance, skyIrradianceCoord, 0).rgb;
+        vec3 skyIrradiance = textureLod(texSkyIrradiance, skyIrradianceCoord, 0).rgb;
+        skyLighting += (0.3 * lmCoord.y * SKY_BRIGHTNESS) * skyIrradiance;
 
         vec3 blockLighting = blackbody(BLOCKLIGHT_TEMP) * lmCoord.x;
 
         vec4 finalColor = colorTrans;
-        finalColor.rgb *= (5.0 * skyLighting) + (2.0 * blockLighting) + (4.0 * emission) + 0.003;
+        finalColor.rgb *= (skyLighting) + (2.0 * blockLighting) + (3.0 * emission) + 0.003;
 
         if (isWater) {
             float viewDist = length(localPosTrans);
@@ -114,7 +119,11 @@ void main() {
             vec3 reflectLocalDir = reflect(localViewDir, localTexNormal);
             vec3 reflectViewDir = mat3(playerModelView) * reflectLocalDir;
 
-            vec3 skyReflectColor = 20.0 * lmCoord.y * getValFromSkyLUT(texSkyView, skyPos, reflectLocalDir, sunDir);
+            vec3 skyReflectColor = lmCoord.y * SKY_LUMINANCE * getValFromSkyLUT(texSkyView, skyPos, reflectLocalDir, sunDir);
+
+            vec3 starViewDir = getStarViewDir(reflectLocalDir);
+            vec3 starLight = STAR_LUMINANCE * GetStarLight(starViewDir);
+            skyReflectColor += starLight;
 
             float NoVm = max(dot(localTexNormal, -localViewDir), 0.0);
             float F = F_schlick(NoVm, 0.02, 1.0);
@@ -133,10 +142,14 @@ void main() {
 
             finalColor.rgb = F * skyReflectColor;
 
-            float specular = 80.0 * shadowSample * sun(reflectLocalDir, sunDir);
+            // vec3 moonTransmit = getValFromTLUT(texSkyTransmit, skyPos, -sunDir);
 
-            finalColor.rgb += specular * skyTransmit;
-            finalColor.a = min(F + specular, 1.0);
+            vec3 reflectSun = SUN_LUMINANCE * sun(reflectLocalDir, sunDir) * sunTransmit;
+            vec3 reflectMoon = MOON_LUMINANCE * moon(reflectLocalDir, -sunDir) * moonTransmit;
+            vec3 specular = shadowSample * (reflectSun + reflectMoon);
+
+            finalColor.rgb += F * specular;
+            finalColor.a = min(F + maxOf(specular), 1.0);
         }
 
         // Refraction

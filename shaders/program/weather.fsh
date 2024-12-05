@@ -22,6 +22,8 @@ uniform sampler2D texSkyIrradiance;
 #include "/lib/ign.glsl"
 #include "/lib/erp.glsl"
 
+#include "/lib/utility/blackbody.glsl"
+
 #include "/lib/sky/common.glsl"
 
 #ifdef SHADOWS_ENABLED
@@ -73,10 +75,10 @@ void iris_emitFragment() {
     vec2 skyIrradianceCoord = DirectionToUV(vec3(0.0, 1.0, 0.0));
     skyLighting += 0.2 * lmcoord.y * textureLod(texSkyIrradiance, skyIrradianceCoord, 0).rgb;
 
-    vec3 blockLighting = vec3(lmcoord.x);
+    vec3 blockLighting = blackbody(BLOCKLIGHT_TEMP) * lmcoord.x;
 
     vec4 finalColor = albedo;
-    finalColor.rgb *= (5.0 * skyLighting) + (3.0 * blockLighting) + (12.0 * emission) + 0.002;
+    finalColor.rgb *= (SKY_BRIGHTNESS * skyLighting) + (3.0 * blockLighting) + (12.0 * emission) + 0.002;
 
     float viewDist = length(localPos);
     float fogF = smoothstep(fogStart, fogEnd, viewDist);

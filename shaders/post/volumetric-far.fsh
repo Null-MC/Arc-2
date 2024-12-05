@@ -53,7 +53,7 @@ void main() {
         
         vec3 localSunDir = normalize(mat3(playerModelViewInverse) * sunPosition);
         vec3 localLightDir = normalize(mat3(playerModelViewInverse) * shadowLightPosition);
-        float lightStrength = localSunDir.y > 0.0 ? 5.0 : 0.04;
+        float lightStrength = localSunDir.y > 0.0 ? SUN_BRIGHTNESS : MOON_BRIGHTNESS;
 
         bool isWater = unpackUnorm4x8(data_g).z > 0.5
             && isEyeInWater != 1;

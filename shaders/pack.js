@@ -2,11 +2,15 @@ const FEATURE = {
     WaterWaves: true,
     Shadows: true,
     Bloom: true,
+    GI_AO: true,
     TAA: true,
     VL: true
 };
 
 const DEBUG_HISTOGRAM = false;
+
+const _screenWidth = 1920;
+const _screenHeight = 1080;
 
 
 function setupSky() {
@@ -64,7 +68,7 @@ function setupSky() {
 }
 
 function setupBloom(texFinal) {
-    let maxLod = Math.log2(Math.min(screenWidth, screenHeight));
+    let maxLod = Math.log2(Math.min(_screenWidth, _screenHeight));
     maxLod = Math.max(Math.min(maxLod, 8), 0);
 
     print(`Bloom enabled with ${maxLod} LODs`);
@@ -72,8 +76,8 @@ function setupBloom(texFinal) {
     let texBloomArray = [];
     for (let i = 0; i < maxLod; i++) {
         let scale = Math.pow(2, i+1);
-        let bufferWidth = Math.ceil(screenWidth / scale);
-        let bufferHeight = Math.ceil(screenHeight / scale);
+        let bufferWidth = Math.ceil(_screenWidth / scale);
+        let bufferHeight = Math.ceil(_screenHeight / scale);
 
         texBloomArray[i] = registerTexture(new Texture(`texBloom_${i}`)
             .format(RGB16F)
@@ -118,6 +122,8 @@ function setupBloom(texFinal) {
 function setupShader() {
     print("Setting up shader");
 
+    print(`SCREEN width: ${_screenWidth} height: ${_screenHeight}`);
+
     worldSettings.sunPathRotation = 25.0;
     worldSettings.shadowMapResolution = 1024;
     worldSettings.vignette = false;
@@ -128,6 +134,7 @@ function setupShader() {
 
     if (FEATURE.WaterWaves) defineGlobally("WATER_WAVES_ENABLED", "1");
     if (FEATURE.Shadows) defineGlobally("SHADOWS_ENABLED", "1");
+    if (FEATURE.GI_AO) defineGlobally("EFFECT_GIAO_ENABLED", "1");
     if (FEATURE.TAA) defineGlobally("EFFECT_TAA_ENABLED", "1");
     if (FEATURE.VL) defineGlobally("EFFECT_VL_ENABLED", "1");
 
@@ -188,19 +195,40 @@ function setupShader() {
         .clearColor(0.0, 0.0, 0.0, 0.0)
         .build());
 
+    let texSSGIAO = null;
+    let texSSGIAO_final = null;
+    if (FEATURE.GI_AO) {
+        texSSGIAO = registerTexture(
+            new Texture("texSSGIAO")
+            .format(RGBA16F)
+            .width(Math.ceil(_screenWidth / 2.0))
+            .height(Math.ceil(_screenHeight / 2.0))
+            .clear(false)
+            .build());
+
+        texSSGIAO_final = registerTexture(
+            new Texture("texSSGIAO_final")
+            .imageName("imgSSGIAO_final")
+            .format(RGBA16F)
+            .width(Math.ceil(_screenWidth / 2.0))
+            .height(Math.ceil(_screenHeight / 2.0))
+            .clear(false)
+            .build());
+    }
+
     let texScatterVL = registerTexture(
         new Texture("texScatterVL")
         .format(RGB16F)
-        .width(Math.ceil(screenWidth / 2.0))
-        .height(Math.ceil(screenHeight / 2.0))
+        .width(Math.ceil(_screenWidth / 2.0))
+        .height(Math.ceil(_screenHeight / 2.0))
         .clear(false)
         .build());
 
     let texTransmitVL = registerTexture(
         new Texture("texTransmitVL")
         .format(RGB16F)
-        .width(Math.ceil(screenWidth / 2.0))
-        .height(Math.ceil(screenHeight / 2.0))
+        .width(Math.ceil(_screenWidth / 2.0))
+        .height(Math.ceil(_screenHeight / 2.0))
         .clear(false)
         .build());
 
@@ -210,7 +238,6 @@ function setupShader() {
         .format(R32UI)
         .width(256)
         .height(1)
-        // .clearColor(0.0, 0.0, 0.0, 0.0)
         .clear(false)
         .build());
 
@@ -221,7 +248,6 @@ function setupShader() {
             .format(R32UI)
             .width(256)
             .height(1)
-            // .clearColor(0.0, 0.0, 0.0, 0.0)
             .clear(false)
             .build());
     }
@@ -301,6 +327,22 @@ function setupShader() {
         .addTarget(0, texParticles)
         .build());
 
+    if (FEATURE.GI_AO) {
+        registerComposite(new CompositePass(POST_RENDER, "ssgiao-opaque")
+            .vertex("post/bufferless.vsh")
+            .fragment("post/ssgiao.fsh")
+            .addTarget(0, texSSGIAO)
+            .build());
+
+        registerComposite(new ComputePass(POST_RENDER, "ssgiao-filter-opaque")
+            .barrier(true)
+            .location("post/ssgiao_filter.csh")
+            .groupSize(Math.ceil(_screenWidth/2.0 / 16.0), Math.ceil(screenHeight/2.0 / 16.0), 1)
+            .build());
+
+        print(`SSGIAO width: ${Math.ceil(_screenWidth/2.0 / 16.0)} height: ${Math.ceil(screenHeight/2.0 / 16.0)}`);
+    }
+
     if (FEATURE.VL) {
         registerComposite(new CompositePass(POST_RENDER, "volumetric-far")
             .vertex("post/bufferless.vsh")
@@ -339,11 +381,19 @@ function setupShader() {
             .addTarget(1, texFinalPrevious)
             .build());
     }
+    else {
+        registerComposite(new CompositePass(POST_RENDER, "copy-prev")
+            .vertex("post/bufferless.vsh")
+            .fragment("post/copy.fsh")
+            .define("TEX_SRC", "texFinal")
+            .addTarget(0, texFinalPrevious)
+            .build());
+    }
 
     registerComposite(new ComputePass(POST_RENDER, "histogram")
         .barrier(true)
         .location("post/histogram.csh")
-        .groupSize(Math.ceil(screenWidth / 16), Math.ceil(screenHeight / 16), 1)
+        .groupSize(Math.ceil(_screenWidth / 16.0), Math.ceil(screenHeight / 16.0), 1)
         // .ssbo(0, histogramExposureBuffer)
         .build());
 

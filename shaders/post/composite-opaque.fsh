@@ -7,11 +7,13 @@ in vec2 uv;
 uniform sampler2D solidDepthTex;
 uniform sampler2D texDeferredOpaque_Color;
 uniform usampler2D texDeferredOpaque_Data;
+uniform sampler2DArray solidShadowMap;
 
 uniform sampler2D texSkyView;
 uniform sampler2D texSkyTransmit;
 uniform sampler2D texSkyIrradiance;
-uniform sampler2DArray solidShadowMap;
+
+uniform sampler2D texSSGIAO_final;
 
 #ifdef EFFECT_VL_ENABLED
     uniform sampler2D texScatterVL;
@@ -64,6 +66,13 @@ void main() {
 
     if (colorOpaque.a > EPSILON) {
         uvec3 data = texelFetch(texDeferredOpaque_Data, iuv, 0).rgb;
+
+        #ifdef EFFECT_GIAO_ENABLED
+            vec4 gi_ao = textureLod(texSSGIAO_final, uv, 0);
+        #else
+            const vec4 gi_ao = vec4(vec3(0.0), 1.0);
+        #endif
+
         colorOpaque.rgb = RgbToLinear(colorOpaque.rgb);
 
         vec4 normalMaterial = unpackUnorm4x8(data.r);
@@ -91,11 +100,13 @@ void main() {
         vec3 sunTransmit = getValFromTLUT(texSkyTransmit, skyPos, sunDir);
         vec3 moonTransmit = getValFromTLUT(texSkyTransmit, skyPos, -sunDir);
         vec3 skyLighting = SUN_BRIGHTNESS * sunTransmit + MOON_BRIGHTNESS * moonTransmit;
-        skyLighting *= lmCoord.y * NoLm * shadowSample;
+        skyLighting *= NoLm * shadowSample;
 
         vec2 skyIrradianceCoord = DirectionToUV(localNormal);
         vec3 skyIrradiance = textureLod(texSkyIrradiance, skyIrradianceCoord, 0).rgb;
-        skyLighting += (0.3 * lmCoord.y * SKY_BRIGHTNESS) * skyIrradiance;
+        skyLighting += (0.3 * lmCoord.y * SKY_BRIGHTNESS) * skyIrradiance * gi_ao.w;
+
+        skyLighting += gi_ao.rgb;
 
         vec3 blockLighting = blackbody(BLOCKLIGHT_TEMP) * lmCoord.x;
 

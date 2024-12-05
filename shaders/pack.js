@@ -38,13 +38,13 @@ function setupSky() {
         .height(32)
         .build());
 
-    registerComposite(new CompositePass(PRE_RENDER, "sky-transmit")
+    registerComposite(new CompositePass(SCREEN_SETUP, "sky-transmit")
         .vertex("post/bufferless.vsh")
         .fragment("setup/sky_transmit.fsh")
         .addTarget(0, texSkyTransmit)
         .build())
 
-    registerComposite(new CompositePass(PRE_RENDER, "sky-multi-scatter")
+    registerComposite(new CompositePass(SCREEN_SETUP, "sky-multi-scatter")
         .vertex("post/bufferless.vsh")
         .fragment("setup/sky_multi_scatter.fsh")
         .addTarget(0, texSkyMultiScatter)

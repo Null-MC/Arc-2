@@ -115,7 +115,7 @@ void main() {
         finalColor.rgb *= skyLighting
             + (BLOCKLIGHT_BRIGHTNESS * blockLighting)
             + (EMISSION_BRIGHTNESS * emission)
-            + 0.003;
+            + 0.0016;
 
         if (isWater) {
             float viewDist = length(localPosTrans);

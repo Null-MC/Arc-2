@@ -132,6 +132,8 @@ function setupShader() {
     worldSettings.moon = false;
     worldSettings.sun = false;
 
+    defineGlobally("SHADOW_SCREEN", "1");
+
     if (FEATURE.WaterWaves) defineGlobally("WATER_WAVES_ENABLED", "1");
     if (FEATURE.Shadows) defineGlobally("SHADOWS_ENABLED", "1");
     if (FEATURE.GI_AO) defineGlobally("EFFECT_GIAO_ENABLED", "1");
@@ -195,6 +197,23 @@ function setupShader() {
         .clearColor(0.0, 0.0, 0.0, 0.0)
         .build());
 
+    let texShadow = null;
+    let texShadow_final = null;
+    if (FEATURE.Shadows) {
+        texShadow = registerTexture(
+            new Texture("texShadow")
+            .format(R16F)
+            .clear(false)
+            .build());
+
+        texShadow_final = registerTexture(
+            new Texture("texShadow_final")
+            .imageName("imgShadow_final")
+            .format(R16F)
+            .clear(false)
+            .build());
+    }
+
     let texSSGIAO = null;
     let texSSGIAO_final = null;
     if (FEATURE.GI_AO) {
@@ -216,21 +235,25 @@ function setupShader() {
             .build());
     }
 
-    let texScatterVL = registerTexture(
-        new Texture("texScatterVL")
-        .format(RGB16F)
-        .width(Math.ceil(_screenWidth / 2.0))
-        .height(Math.ceil(_screenHeight / 2.0))
-        .clear(false)
-        .build());
+    let texScatterVL = null;
+    let texTransmitVL = null;
+    if (FEATURE.VL) {
+        texScatterVL = registerTexture(
+            new Texture("texScatterVL")
+            .format(RGB16F)
+            .width(Math.ceil(_screenWidth / 2.0))
+            .height(Math.ceil(_screenHeight / 2.0))
+            .clear(false)
+            .build());
 
-    let texTransmitVL = registerTexture(
-        new Texture("texTransmitVL")
-        .format(RGB16F)
-        .width(Math.ceil(_screenWidth / 2.0))
-        .height(Math.ceil(_screenHeight / 2.0))
-        .clear(false)
-        .build());
+        texTransmitVL = registerTexture(
+            new Texture("texTransmitVL")
+            .format(RGB16F)
+            .width(Math.ceil(_screenWidth / 2.0))
+            .height(Math.ceil(_screenHeight / 2.0))
+            .clear(false)
+            .build());
+    }
 
     let texHistogram = registerTexture(
         new Texture("texHistogram")
@@ -336,7 +359,7 @@ function setupShader() {
 
         registerComposite(new ComputePass(POST_RENDER, "ssgiao-filter-opaque")
             .barrier(true)
-            .location("post/ssgiao_filter.csh")
+            .location("post/ssgiao-filter-opaque.csh")
             .groupSize(Math.ceil(_screenWidth/2.0 / 16.0), Math.ceil(screenHeight/2.0 / 16.0), 1)
             .build());
 
@@ -349,6 +372,20 @@ function setupShader() {
             .fragment("post/volumetric-far.fsh")
             .addTarget(0, texScatterVL)
             .addTarget(1, texTransmitVL)
+            .build());
+    }
+
+    if (FEATURE.Shadows) {
+        registerComposite(new CompositePass(POST_RENDER, "shadow-opaque")
+            .vertex("post/bufferless.vsh")
+            .fragment("post/shadow-opaque.fsh")
+            .addTarget(0, texShadow)
+            .build());
+
+        registerComposite(new ComputePass(POST_RENDER, "shadow-filter-opaque")
+            .barrier(true)
+            .location("post/shadow-filter-opaque.csh")
+            .groupSize(Math.ceil(_screenWidth / 16.0), Math.ceil(screenHeight / 16.0), 1)
             .build());
     }
 

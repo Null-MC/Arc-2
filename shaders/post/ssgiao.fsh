@@ -12,9 +12,12 @@ in vec2 uv;
 #include "/lib/common.glsl"
 #include "/lib/ign.glsl"
 
-const int SSGIAO_SAMPLES = 24;
+const int SSGIAO_SAMPLES = 16;
 const float SSGIAO_RADIUS = 6.0;
-const float GI_RADIUS = 12.0;
+// const float GI_RADIUS = 12.0;
+
+const bool SSGIAO_TRACE_ENABLED = true;
+const int SSGIAO_TRACE_SAMPLES = 3;
 
 const float GOLDEN_ANGLE = 2.39996323;
 
@@ -71,37 +74,47 @@ void main() {
             vec3 sampleColor = textureLod(texFinalPrevious, sampleClipPos.xy, 0).rgb;
 
             sampleClipPos.z = sampleClipDepth;
-            sampleViewPos = unproject(playerProjectionInverse, sampleClipPos * 2.0 - 1.0);
+            sampleClipPos = sampleClipPos * 2.0 - 1.0;
+            sampleViewPos = unproject(playerProjectionInverse, sampleClipPos);
+
+            float gi_weight = 1.0;
+            if (SSGIAO_TRACE_ENABLED) {
+                vec3 traceRay = sampleClipPos - clipPos;
+                vec3 traceStep = traceRay / (SSGIAO_TRACE_SAMPLES+1);
+                vec3 tracePos = clipPos;
+
+                for (int t = 0; t < SSGIAO_TRACE_SAMPLES; t++) {
+                    tracePos += traceStep;
+                    float traceSampleDepth = textureLod(solidDepthTex, tracePos.xy * 0.5 + 0.5, 0.0).r * 2.0 - 1.0;
+
+                    if (tracePos.z >= traceSampleDepth) {
+                        gi_weight = 0.0;
+                        break;
+                    }
+                }
+            }
 
             vec3 diff = sampleViewPos - viewPos;
             float sampleDist = length(diff);
             vec3 sampleNormal = diff / sampleDist;
 
-            // float sampleNoLm = max(dot(viewNormal, sampleNormal) - SSAO_bias, 0.0) / (1.0 - SSAO_bias);
             float sampleNoLm = max(dot(viewNormal, sampleNormal), 0.0);
 
             float sampleWeight = saturate(sampleDist / SSGIAO_RADIUS);
 
-            // sampleWeight = pow(sampleWeight, 4.0);
             sampleWeight = 1.0 - sampleWeight;
 
-            // float gi_weight = 1.0 - saturate(sampleDist / GI_RADIUS);
-            float gi_weight = 1.0 / (1.0 + sampleDist);
+            gi_weight *= 1.0 / (1.0 + sampleDist);
 
-            illumination += sampleColor * sampleNoLm * gi_weight;//(sampleWeight*sampleWeight);
+            illumination += sampleColor * sampleNoLm * gi_weight;
             occlusion += sampleNoLm * sampleWeight;
             maxWeight += sampleWeight;
         }
 
-        // ao = ao / max(maxWeight, 1.0) * EFFECT_SSAO_STRENGTH;
-        // ao = ao / (ao + rcp(EFFECT_SSAO_STRENGTH));
-
-        // illumination = illumination / max(maxWeight, 1.0);
         occlusion = occlusion / max(maxWeight, 1.0);
     }
 
-    // illumination *= 3.0;
-    occlusion *= 2.0;
+    // occlusion *= 2.0;
 
     vec3 gi = illumination;
     float ao = 1.0 - min(occlusion, 1.0);

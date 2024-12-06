@@ -1,12 +1,10 @@
-// const int VL_MaxSamples = 48;
-
 const float VL_Phase = 0.78;
-const float VL_Scatter  = 0.0060;
+const float VL_Scatter  = 0.0024;
 const float VL_Transmit = 0.0002;
 
 const float VL_RainPhase = 0.42;
-const float VL_RainScatter  = 0.09;
-const float VL_RainTransmit = 0.03;
+const float VL_RainScatter  = 0.090;
+const float VL_RainTransmit = 0.014;
 
 const float VL_WaterPhase = 0.36;
 vec3 VL_WaterScatter = 0.5*RgbToLinear(vec3(0.263, 0.380, 0.376));

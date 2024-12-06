@@ -6,7 +6,7 @@ in vec2 uv;
 
 uniform sampler2D mainDepthTex;
 uniform sampler2D solidDepthTex;
-uniform sampler2DArray solidShadowMap;
+
 uniform sampler2D texDeferredOpaque_Color;
 uniform usampler2D texDeferredOpaque_Data;
 uniform usampler2D texDeferredTrans_Data;
@@ -15,6 +15,7 @@ uniform sampler2D texSkyView;
 uniform sampler2D texSkyTransmit;
 uniform sampler2D texSkyIrradiance;
 
+uniform sampler2D texShadow_final;
 uniform sampler2D texSSGIAO_final;
 
 #ifdef EFFECT_VL_ENABLED
@@ -24,7 +25,6 @@ uniform sampler2D texSSGIAO_final;
 
 #include "/settings.glsl"
 #include "/lib/common.glsl"
-#include "/lib/ign.glsl"
 #include "/lib/erp.glsl"
 
 #include "/lib/utility/blackbody.glsl"
@@ -38,10 +38,7 @@ uniform sampler2D texSSGIAO_final;
 #include "/lib/sky/sun.glsl"
 #include "/lib/sky/stars.glsl"
 
-#ifdef SHADOWS_ENABLED
-    #include "/lib/shadow/csm.glsl"
-    #include "/lib/shadow/sample.glsl"
-#endif
+#include "/lib/volumetric.glsl"
 
 #ifdef EFFECT_TAA_ENABLED
     #include "/lib/taa_jitter.glsl"
@@ -107,16 +104,6 @@ void main() {
         // colorOpaque.rgb = vec3(material / 255.0);
         // colorOpaque.rgb = vec3(emission, sss, 0.0);
 
-        float shadowSample = 1.0;
-        #ifdef SHADOWS_ENABLED
-            vec3 shadowViewPos = mul3(shadowModelView, localPos);
-
-            float dither = InterleavedGradientNoiseTime(ivec2(gl_FragCoord.xy));
-            shadowViewPos.z += sss * dither;
-
-            shadowSample = SampleShadows(shadowViewPos);
-        #endif
-
         vec3 localLightDir = normalize(mat3(playerModelViewInverse) * shadowLightPosition);
         // float NoLm = step(0.0, dot(localLightDir, localNormal));
 
@@ -128,13 +115,26 @@ void main() {
 
         NoLm = mix(NoLm, 1.0, sss);
 
+        float shadowSample = NoLm;
+        #ifdef SHADOWS_ENABLED
+            shadowSample = textureLod(texShadow_final, uv, 0).r;
+        #endif
+
         const float roughL = 0.9;
 
         vec3 skyPos = getSkyPosition(localPos);
         vec3 sunTransmit = getValFromTLUT(texSkyTransmit, skyPos, sunDir);
         vec3 moonTransmit = getValFromTLUT(texSkyTransmit, skyPos, -sunDir);
         vec3 skyLighting = SUN_BRIGHTNESS * sunTransmit + MOON_BRIGHTNESS * moonTransmit;
-        skyLighting *= NoLm * shadowSample * diffuse(NoVm, NoLm, LoHm, roughL);
+
+
+        float worldY = localPos.y + cameraPos.y;
+        float transmitF = mix(VL_Transmit, VL_RainTransmit, rainStrength);
+        float lightAtmosDist = max(SEA_LEVEL + 200.0 - worldY, 0.0) / localLightDir.y;
+        skyLighting *= exp2(-lightAtmosDist * transmitF);
+
+
+        skyLighting *= shadowSample * diffuse(NoVm, NoLm, LoHm, roughL);
 
         vec2 skyIrradianceCoord = DirectionToUV(localNormal);
         vec3 skyIrradiance = textureLod(texSkyIrradiance, skyIrradianceCoord, 0).rgb;
@@ -148,7 +148,7 @@ void main() {
         colorFinal *= skyLighting
             + (BLOCKLIGHT_BRIGHTNESS * blockLighting)
             + (EMISSION_BRIGHTNESS * emission)
-            + 0.003;
+            + 0.0016;
 
         // float viewDist = length(localPos);
         // float fogF = smoothstep(fogStart, fogEnd, viewDist);

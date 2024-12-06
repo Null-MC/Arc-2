@@ -67,7 +67,7 @@ void main() {
     if (len > far)
         localPos = localPos / len * far;
 
-    vec3 stepLocal = localPos * stepScale;
+    vec3 stepLocal = localPos / (1 + VL_MaxSamples);
     float stepDist = length(stepLocal);
 
     vec3 localViewDir = normalize(localPos);
@@ -110,7 +110,7 @@ void main() {
 
             float worldY = sampleLocalPos.y + cameraPos.y;
             float lightAtmosDist = max(SEA_LEVEL + 200.0 - worldY, 0.0) / localLightDir.y;
-            sampleColor *= exp2(-0.16 * lightAtmosDist * transmitF);
+            sampleColor *= exp2(-lightAtmosDist * transmitF);
         }
 
         vec3 sampleTransmit = exp(-sampleDensity * transmitF);

@@ -61,7 +61,9 @@ void iris_emitFragment() {
 
     float shadowSample = 1.0;
     #ifdef SHADOWS_ENABLED
-        shadowSample = SampleShadows(shadowViewPos);
+        int shadowCascade;
+        vec3 shadowPos = GetShadowSamplePos(shadowViewPos, shadowCascade);
+        shadowSample = SampleShadows(shadowPos, shadowCascade);
     #endif
 
     vec3 localLightDir = normalize(mul3(playerModelViewInverse, shadowLightPosition));

@@ -13,7 +13,7 @@ in vec2 uv;
 #include "/lib/ign.glsl"
 
 const int SSGIAO_SAMPLES = 16;
-const float SSGIAO_RADIUS = 6.0;
+const float SSGIAO_RADIUS = 3.0;
 // const float GI_RADIUS = 12.0;
 
 const bool SSGIAO_TRACE_ENABLED = true;
@@ -30,7 +30,7 @@ void main() {
     float occlusion = 0.0;
 
     if (depth < 1.0) {
-        #ifdef EFFECT_TAA_ENABLED
+        #if defined EFFECT_TAA_ENABLED || defined ACCUM_ENABLED
             float dither = InterleavedGradientNoiseTime(ivec2(gl_FragCoord.xy));
         #else
             float dither = InterleavedGradientNoise(ivec2(gl_FragCoord.xy));
@@ -38,13 +38,13 @@ void main() {
 
         const float rStep = SSGIAO_RADIUS / SSGIAO_SAMPLES;
 
+        vec2 pixelSize = 1.0 / screenSize;
+
         float rotatePhase = dither * TAU;
-        float radius = rStep;
+        float radius = rStep * dither;
 
         vec3 clipPos = vec3(uv, depth) * 2.0 - 1.0;
         vec3 viewPos = unproject(playerProjectionInverse, clipPos);
-
-        vec2 pixelSize = 1.0 / screenSize;
 
         uint data_r = texelFetch(texDeferredOpaque_Data, iuv, 0).r;
         vec3 data_normal = unpackUnorm4x8(data_r).xyz;
@@ -93,6 +93,8 @@ void main() {
                     }
                 }
             }
+
+            // if (abs(sampleViewPos.z - viewPos.z) > SSGIAO_RADIUS) gi_weight = 0.0;
 
             vec3 diff = sampleViewPos - viewPos;
             float sampleDist = length(diff);

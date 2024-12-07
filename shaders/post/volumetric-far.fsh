@@ -60,15 +60,21 @@ void main() {
 
         float phase_g;
         vec3 scatterF, transmitF;
+        vec3 sampleAmbient = vec3(0.0);
+
         if (isWater) {
             scatterF = VL_WaterScatter;
             transmitF = VL_WaterTransmit;
             phase_g = VL_WaterPhase;
+
+            sampleAmbient = VL_WaterAmbient;
         }
         else {
             scatterF = vec3(mix(VL_Scatter, VL_RainScatter, rainStrength));
             transmitF = vec3(mix(VL_Transmit, VL_RainTransmit, rainStrength));
             phase_g = mix(VL_Phase, VL_RainPhase, rainStrength);
+
+            sampleAmbient = vec3(VL_AmbientF);
         }
 
         vec3 ndcPos = vec3(uv, depthOpaque) * 2.0 - 1.0;
@@ -133,9 +139,10 @@ void main() {
                 sampleColor *= exp2(-0.16 * lightAtmosDist * transmitF);
             }
 
+            vec3 sampleLit = phase * sampleColor + phaseIso * sampleAmbient;
             vec3 sampleTransmit = exp(-sampleDensity * transmitF);
 
-            scattering += sampleColor * scatterF * transmittance * (phase * sampleDensity);
+            scattering += scatterF * transmittance * sampleLit * sampleDensity;
             transmittance *= sampleTransmit;
         }
     }

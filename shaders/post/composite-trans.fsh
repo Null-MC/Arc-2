@@ -91,7 +91,10 @@ void main() {
         float shadowSample = 1.0;
         #ifdef SHADOWS_ENABLED
             vec3 shadowViewPos = mul3(shadowModelView, localPosTrans);
-            shadowSample = SampleShadows(shadowViewPos);
+
+            int shadowCascade;
+            vec3 shadowPos = GetShadowSamplePos(shadowViewPos, shadowCascade);
+            shadowSample = SampleShadows(shadowPos, shadowCascade);
         #endif
 
         vec3 localLightDir = normalize(mat3(playerModelViewInverse) * shadowLightPosition);

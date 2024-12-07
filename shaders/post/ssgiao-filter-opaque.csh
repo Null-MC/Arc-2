@@ -20,12 +20,12 @@ uniform sampler2D solidDepthTex;
 #include "/lib/gaussian.glsl"
 
 
-const float g_sigmaXY = 9.0;
-const float g_sigmaV = 0.9;
+const float g_sigmaXY = 3.0;
+const float g_sigmaV = 0.1;
 
 void populateSharedBuffer() {
     if (gl_LocalInvocationIndex < 5)
-        gaussianBuffer[gl_LocalInvocationIndex] = 1.0;//Gaussian(g_sigmaXY, gl_LocalInvocationIndex - 2);
+        gaussianBuffer[gl_LocalInvocationIndex] = Gaussian(g_sigmaXY, gl_LocalInvocationIndex - 2);
     
     uint i_base = uint(gl_LocalInvocationIndex) * 2u;
     if (i_base >= sharedBufferSize) return;
@@ -45,9 +45,9 @@ void populateSharedBuffer() {
 
         float depthL = farPlane;
         vec4 occlusion = vec4(vec3(0.0), 1.0);
-	    if (all(greaterThanEqual(uv, ivec2(0))) && all(lessThan(uv, ivec2(screenSize/2.0 + 0.5)))) {
-	    	occlusion = texelFetch(texSSGIAO, uv, 0);
-	    	float depth = texelFetch(solidDepthTex, uv * 2, 0).r;
+	    if (all(greaterThanEqual(uv, ivec2(0))) && all(lessThan(uv, ivec2(screenSize + 0.5)))) {
+	    	occlusion = texelFetch(texSSGIAO, uv/2, 0);
+	    	float depth = texelFetch(solidDepthTex, uv, 0).r;
 	    	depthL = linearizeDepth(depth, nearPlane, farPlane);
 	    }
 
@@ -94,7 +94,7 @@ void main() {
     populateSharedBuffer();
     barrier();
 
-	if (any(greaterThanEqual(uv, ivec2(screenSize/2.0)))) return;
+	if (any(greaterThanEqual(uv, ivec2(screenSize)))) return;
 
     ivec2 uv_shared = ivec2(gl_LocalInvocationID.xy) + 2;
     int i_shared = uv_shared.y * sharedBufferRes + uv_shared.x;

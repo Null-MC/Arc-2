@@ -68,8 +68,9 @@ void main() {
         
         shadowViewPos.z += sss * dither;
 
-        shadowSample *= SampleShadows(shadowViewPos);
-
+        int shadowCascade;
+        vec3 shadowPos = GetShadowSamplePos(shadowViewPos, shadowCascade);
+        shadowSample *= SampleShadows(shadowPos, shadowCascade);
 
         #ifdef SHADOW_SCREEN
             float viewDist = length(viewPos);
@@ -98,13 +99,19 @@ void main() {
             // traceScreenStep /= (traceScreenDirAbs.y > 0.5 * aspectRatio ? traceScreenDirAbs.y : traceScreenDirAbs.x);
             traceScreenStep /= mix(traceScreenDirAbs.x, traceScreenDirAbs.y, traceScreenDirAbs.y);
 
-            traceScreenStep *= 3.0;
+            traceScreenStep *= 2.0;
 
             vec3 traceScreenPos = traceScreenStep * dither + clipPos;
 
+            int stepCount = 4;
+            if (clamp(shadowPos, 0.0, 1.0) != shadowPos) {
+                stepCount = 16;
+                traceScreenStep *= 2.0;
+            }
+
             float traceDist = 0.0;
             float shadowTrace = 1.0;
-            for (uint i = 0; i < SHADOW_SCREEN_STEPS; i++) {
+            for (uint i = 0; i < stepCount; i++) {
                 if (shadowTrace < EPSILON) break;
                 // if (all(lessThan(shadowTrace * shadowFinal, EPSILON3))) break;
 

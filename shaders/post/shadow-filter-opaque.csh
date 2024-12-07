@@ -20,12 +20,12 @@ uniform sampler2D solidDepthTex;
 #include "/lib/gaussian.glsl"
 
 
-const float g_sigmaXY = 9.0;
-const float g_sigmaV = 0.1;
+const float g_sigmaXY = 3.0;
+const float g_sigmaV = 3.0;
 
 void populateSharedBuffer() {
     if (gl_LocalInvocationIndex < 5)
-        gaussianBuffer[gl_LocalInvocationIndex] = Gaussian(g_sigmaXY, gl_LocalInvocationIndex - 2);
+        gaussianBuffer[gl_LocalInvocationIndex] = Gaussian(g_sigmaXY, abs(gl_LocalInvocationIndex - 2));
     
     uint i_base = uint(gl_LocalInvocationIndex) * 2u;
     if (i_base >= sharedBufferSize) return;
@@ -74,7 +74,7 @@ float sampleSharedBuffer(const in float depthL) {
             float sampleValue = sharedShadowBuffer[i_shared];
             float sampleDepthL = sharedDepthBuffer[i_shared];
             
-            float depthDiff = sampleDepthL - depthL;
+            float depthDiff = abs(sampleDepthL - depthL);
             float fv = Gaussian(g_sigmaV, depthDiff);
             
             float weight = fx*fy*fv;

@@ -1,12 +1,15 @@
 const FEATURE = {
+    Accumulation: false,
     WaterWaves: true,
     Shadows: true,
+    ShadowFilter: false,
     Bloom: true,
-    GI_AO: true,
+    GI_AO: false,
     TAA: true,
     VL: true
 };
 
+const DEBUG_SSGIAO = false;
 const DEBUG_HISTOGRAM = false;
 
 const _screenWidth = 1920;
@@ -134,12 +137,14 @@ function setupShader() {
 
     defineGlobally("SHADOW_SCREEN", "1");
 
+    if (FEATURE.Accumulation) defineGlobally("ACCUM_ENABLED", "1");
     if (FEATURE.WaterWaves) defineGlobally("WATER_WAVES_ENABLED", "1");
     if (FEATURE.Shadows) defineGlobally("SHADOWS_ENABLED", "1");
-    if (FEATURE.GI_AO) defineGlobally("EFFECT_GIAO_ENABLED", "1");
+    if (FEATURE.GI_AO) defineGlobally("SSGIAO_ENABLED", "1");
     if (FEATURE.TAA) defineGlobally("EFFECT_TAA_ENABLED", "1");
     if (FEATURE.VL) defineGlobally("EFFECT_VL_ENABLED", "1");
 
+    if (DEBUG_SSGIAO) defineGlobally("DEBUG_SSGIAO", "1");
     if (DEBUG_HISTOGRAM) defineGlobally("DEBUG_HISTOGRAM", "1");
 
     let texFinal = registerTexture(
@@ -225,12 +230,34 @@ function setupShader() {
             .clear(false)
             .build());
 
-        texSSGIAO_final = registerTexture(
-            new Texture("texSSGIAO_final")
-            .imageName("imgSSGIAO_final")
+        // texSSGIAO_final = registerTexture(
+        //     new Texture("texSSGIAO_final")
+        //     .imageName("imgSSGIAO_final")
+        //     .format(RGBA16F)
+        //     .width(_screenWidth)
+        //     .height(_screenHeight)
+        //     .clear(false)
+        //     .build());
+    }
+
+    let texDiffuseAccum = null;
+    let texDiffuseAccumPrevious = null;
+    if (FEATURE.Accumulation) {
+        texDiffuseAccum = registerTexture(
+            new Texture("texDiffuseAccum")
+            .imageName("imgDiffuseAccum")
             .format(RGBA16F)
-            .width(Math.ceil(_screenWidth / 2.0))
-            .height(Math.ceil(_screenHeight / 2.0))
+            .width(_screenWidth)
+            .height(_screenHeight)
+            .clear(false)
+            .build());
+
+        texDiffuseAccumPrevious = registerTexture(
+            new Texture("texDiffuseAccumPrevious")
+            .imageName("imgDiffuseAccumPrevious")
+            .format(RGBA16F)
+            .width(_screenWidth)
+            .height(_screenHeight)
             .clear(false)
             .build());
     }
@@ -357,13 +384,20 @@ function setupShader() {
             .addTarget(0, texSSGIAO)
             .build());
 
-        registerComposite(new ComputePass(POST_RENDER, "ssgiao-filter-opaque")
-            .barrier(true)
-            .location("post/ssgiao-filter-opaque.csh")
-            .groupSize(Math.ceil(_screenWidth/2.0 / 16.0), Math.ceil(screenHeight/2.0 / 16.0), 1)
-            .build());
+        // registerComposite(new ComputePass(POST_RENDER, "ssgiao-filter-opaque")
+        //     .barrier(true)
+        //     .location("post/ssgiao-filter-opaque.csh")
+        //     .groupSize(Math.ceil(_screenWidth / 16.0), Math.ceil(screenHeight / 16.0), 1)
+        //     .build());
+    }
 
-        print(`SSGIAO width: ${Math.ceil(_screenWidth/2.0 / 16.0)} height: ${Math.ceil(screenHeight/2.0 / 16.0)}`);
+    if (FEATURE.Accumulation) {
+        registerComposite(new CompositePass(POST_RENDER, "diffuse-accum-opaque")
+            .vertex("post/bufferless.vsh")
+            .fragment("post/diffuse-accum-opaque.fsh")
+            .addTarget(0, texDiffuseAccum)
+            .addTarget(1, texDiffuseAccumPrevious)
+            .build());
     }
 
     if (FEATURE.VL) {
@@ -382,17 +416,23 @@ function setupShader() {
             .addTarget(0, texShadow)
             .build());
 
-        registerComposite(new ComputePass(POST_RENDER, "shadow-filter-opaque")
-            .barrier(true)
-            .location("post/shadow-filter-opaque.csh")
-            .groupSize(Math.ceil(_screenWidth / 16.0), Math.ceil(screenHeight / 16.0), 1)
-            .build());
+        if (FEATURE.ShadowFilter) {
+            registerComposite(new ComputePass(POST_RENDER, "shadow-filter-opaque")
+                .barrier(true)
+                .location("post/shadow-filter-opaque.csh")
+                .groupSize(Math.ceil(_screenWidth / 16.0), Math.ceil(screenHeight / 16.0), 1)
+                .build());
+        }
     }
+
+    let texShadow_src = FEATURE.ShadowFilter ? "texShadow_final" : "texShadow";
 
     registerComposite(new CompositePass(POST_RENDER, "composite-opaque")
         .vertex("post/bufferless.vsh")
         .fragment("post/composite-opaque.fsh")
         .addTarget(0, texFinalOpaque)
+        .define("TEX_SHADOW", texShadow_src)
+        .define("TEX_SSGIAO", "texSSGIAO")
         .build());
 
     if (FEATURE.VL) {
@@ -454,6 +494,7 @@ function setupShader() {
         .vertex("post/bufferless.vsh")
         .fragment("post/debug.fsh")
         .addTarget(0, texFinal)
+        .define("TEX_SSGIAO", "texSSGIAO")
         .build());
 
     setCombinationPass("post/final.fsh");

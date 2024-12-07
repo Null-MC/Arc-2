@@ -15,12 +15,16 @@ uniform sampler2D texSkyView;
 uniform sampler2D texSkyTransmit;
 uniform sampler2D texSkyIrradiance;
 
-uniform sampler2D texShadow_final;
-uniform sampler2D texSSGIAO_final;
+uniform sampler2D TEX_SHADOW;
+uniform sampler2D TEX_SSGIAO;
 
 #ifdef EFFECT_VL_ENABLED
     uniform sampler2D texScatterVL;
     uniform sampler2D texTransmitVL;
+#endif
+
+#ifdef ACCUM_ENABLED
+    uniform sampler2D texDiffuseAccum;
 #endif
 
 #include "/settings.glsl"
@@ -73,11 +77,11 @@ void main() {
         uvec3 data = texelFetch(texDeferredOpaque_Data, iuv, 0).rgb;
         uint data_trans_g = texelFetch(texDeferredTrans_Data, iuv, 0).g;
 
-        #ifdef EFFECT_GIAO_ENABLED
-            vec4 gi_ao = textureLod(texSSGIAO_final, uv, 0);
-        #else
-            const vec4 gi_ao = vec4(vec3(0.0), 1.0);
-        #endif
+        // #ifdef SSGIAO_ENABLED
+        //     vec4 gi_ao = textureLod(TEX_SSGIAO, uv, 0);
+        // #else
+        //     const vec4 gi_ao = vec4(vec3(0.0), 1.0);
+        // #endif
 
         colorOpaque.rgb = RgbToLinear(colorOpaque.rgb);
 
@@ -117,7 +121,7 @@ void main() {
 
         float shadowSample = NoLm;
         #ifdef SHADOWS_ENABLED
-            shadowSample = textureLod(texShadow_final, uv, 0).r;
+            shadowSample = textureLod(TEX_SHADOW, uv, 0).r;
         #endif
 
         const float roughL = 0.9;
@@ -133,22 +137,35 @@ void main() {
         float lightAtmosDist = max(SEA_LEVEL + 200.0 - worldY, 0.0) / localLightDir.y;
         skyLighting *= exp2(-lightAtmosDist * transmitF);
 
+        float occlusion = 1.0;
+        #if defined SSGIAO_ENABLED && !defined ACCUM_ENABLED
+            vec4 gi_ao = textureLod(TEX_SSGIAO, uv, 0);
+            occlusion = gi_ao.a;
+        #endif
 
         skyLighting *= shadowSample * diffuse(NoVm, NoLm, LoHm, roughL);
 
         vec2 skyIrradianceCoord = DirectionToUV(localNormal);
         vec3 skyIrradiance = textureLod(texSkyIrradiance, skyIrradianceCoord, 0).rgb;
-        skyLighting += (SKY_AMBIENT * lmCoord.y * SKY_BRIGHTNESS) * skyIrradiance * gi_ao.w;
+        skyLighting += (SKY_AMBIENT * lmCoord.y * SKY_BRIGHTNESS) * skyIrradiance * occlusion;
 
-        skyLighting += gi_ao.rgb;
+        #if defined SSGIAO_ENABLED && !defined ACCUM_ENABLED
+            skyLighting += gi_ao.rgb;
+        #endif
 
         vec3 blockLighting = blackbody(BLOCKLIGHT_TEMP) * lmCoord.x;
 
-        colorFinal = colorOpaque.rgb;
-        colorFinal *= skyLighting
+        vec3 diffuse = skyLighting
             + (BLOCKLIGHT_BRIGHTNESS * blockLighting)
             + (EMISSION_BRIGHTNESS * emission)
             + 0.0016;
+
+        #ifdef ACCUM_ENABLED
+            diffuse += textureLod(texDiffuseAccum, uv, 0).rgb;
+        #endif
+
+        colorFinal = colorOpaque.rgb;
+        colorFinal *= diffuse;
 
         // float viewDist = length(localPos);
         // float fogF = smoothstep(fogStart, fogEnd, viewDist);

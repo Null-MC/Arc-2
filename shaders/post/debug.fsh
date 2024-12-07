@@ -3,7 +3,7 @@
 layout(location = 0) out vec4 outColor;
 
 uniform sampler2D texFinal;
-uniform sampler2D texShadow_final;
+uniform sampler2D texDiffuseAccum;
 
 #ifdef DEBUG_HISTOGRAM
     uniform usampler2D texHistogram_debug;
@@ -11,7 +11,7 @@ uniform sampler2D texShadow_final;
 
 #ifdef DEBUG_SSGIAO
     uniform sampler2D texExposure;
-    uniform sampler2D texSSGIAO_final;
+    uniform sampler2D TEX_SSGIAO;
 #endif
 
 in vec2 uv;
@@ -29,6 +29,7 @@ void main() {
     vec3 color = texelFetch(texFinal, iuv, 0).rgb;
 
     // color = textureLod(texShadow_final, uv, 0).rrr;
+    // color = color / (1.0 + color);
     
     if (!guiHidden) {
         #ifdef DEBUG_HISTOGRAM
@@ -40,23 +41,23 @@ void main() {
         #endif
         
         #ifdef DEBUG_SSGIAO
-            vec2 previewCoord = (uv - 0.01) / vec2(0.2);
+            vec2 previewCoord = (uv - 0.01) / vec2(0.25);
             if (clamp(previewCoord, 0.0, 1.0) == previewCoord) {
-                color = textureLod(texSSGIAO_final, previewCoord, 0).rgb;
+                color = textureLod(TEX_SSGIAO, previewCoord, 0).rgb;
 
                 ApplyAutoExposure(color, texExposure);
                 color = tonemap_ACESFit2(color);
             }
 
-            previewCoord = (uv - vec2(0.22, 0.01)) / vec2(0.2);
+            previewCoord = (uv - vec2(0.27, 0.01)) / vec2(0.25);
             if (clamp(previewCoord, 0.0, 1.0) == previewCoord) {
-                color = textureLod(texSSGIAO_final, previewCoord, 0).aaa;
+                color = textureLod(TEX_SSGIAO, previewCoord, 0).aaa;
             }
         #endif
 
-        // vec2 previewCoord = (uv - 0.01) / vec2(0.2);
+        // vec2 previewCoord = (uv - 0.01) / vec2(0.25);
         // if (clamp(previewCoord, 0.0, 1.0) == previewCoord) {
-        //     color = textureLod(texShadow, previewCoord, 0).rgb;
+        //     color = textureLod(texDiffuseAccum, previewCoord, 0).rgb;
         // }
     }
 

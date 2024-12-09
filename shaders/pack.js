@@ -1,10 +1,10 @@
 const FEATURE = {
-    Accumulation: true,
+    Accumulation: false,
     WaterWaves: true,
     Shadows: true,
     ShadowFilter: false,
     Bloom: true,
-    GI_AO: true,
+    GI_AO: false,
     TAA: true,
     VL: true
 };
@@ -153,6 +153,7 @@ function setupShader() {
         "skyColor",
         // "cloudHeight",
         "isEyeInWater",
+        "eyeBrightness",
         "cameraPos",
         "lastCameraPos",
         "screenSize",
@@ -357,6 +358,13 @@ function setupShader() {
         .build());
 
     setupSky(sceneBuffer);
+
+    registerPost(Stage.PRE_RENDER, new Compute("scene-begin")
+        .barrier(true)
+        .workGroups(1, 1, 1)
+        .location("setup/scene-begin.csh")
+        .ssbo(0, sceneBuffer)
+        .build());
 
     if (FEATURE.Shadows) {
         registerShader(new ObjectShader("shadow", Usage.SHADOW)

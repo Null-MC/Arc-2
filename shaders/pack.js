@@ -1,10 +1,10 @@
 const FEATURE = {
-    Accumulation: false,
+    Accumulation: true,
     WaterWaves: true,
     Shadows: true,
     ShadowFilter: false,
     Bloom: true,
-    GI_AO: false,
+    GI_AO: true,
     TAA: true,
     VL: true
 };
@@ -42,26 +42,26 @@ function setupSky(sceneBuffer) {
         .height(32)
         .build();
 
-    registerPost(Stage.SCREEN_SETUP, new Composite("sky-transmit")
+    registerShader(Stage.SCREEN_SETUP, new Composite("sky-transmit")
         .vertex("post/bufferless.vsh")
         .fragment("setup/sky_transmit.fsh")
         .target(0, texSkyTransmit)
         .build())
 
-    registerPost(Stage.SCREEN_SETUP, new Composite("sky-multi-scatter")
+    registerShader(Stage.SCREEN_SETUP, new Composite("sky-multi-scatter")
         .vertex("post/bufferless.vsh")
         .fragment("setup/sky_multi_scatter.fsh")
         .target(0, texSkyMultiScatter)
         .build())
 
-    registerPost(Stage.PRE_RENDER, new Composite("sky-view")
+    registerShader(Stage.PRE_RENDER, new Composite("sky-view")
         .vertex("post/bufferless.vsh")
         .fragment("setup/sky_view.fsh")
         .target(0, texSkyView)
         .ssbo(0, sceneBuffer)
         .build())
 
-    registerPost(Stage.PRE_RENDER, new Composite("sky-irradiance")
+    registerShader(Stage.PRE_RENDER, new Composite("sky-irradiance")
         .vertex("post/bufferless.vsh")
         .fragment("setup/sky_irradiance.fsh")
         .target(0, texSkyIrradiance)
@@ -94,7 +94,7 @@ function setupBloom(texFinal) {
             ? "texFinal"
             : `texBloom_${i-1}`
 
-        registerPost(Stage.POST_RENDER, new Composite(`bloom-down-${i}`)
+        registerShader(Stage.POST_RENDER, new Composite(`bloom-down-${i}`)
             .vertex("post/bufferless.vsh")
             .fragment("post/bloom/down.fsh")
             .target(0, texBloomArray[i])
@@ -109,7 +109,7 @@ function setupBloom(texFinal) {
             ? texFinal
             : texBloomArray[i-1];
 
-        registerPost(Stage.POST_RENDER, new Composite(`bloom-up-${i}`)
+        registerShader(Stage.POST_RENDER, new Composite(`bloom-up-${i}`)
             .vertex("post/bufferless.vsh")
             .fragment("post/bloom/up.fsh")
             .define("TEX_SRC", `texBloom_${i}`)
@@ -343,14 +343,14 @@ function setupShader() {
     //     // .clear([ 1.0, 1.0, 1.0, 1.0 ])
     //     .build();
 
-    registerPost(Stage.SCREEN_SETUP, new Compute("scene-setup")
+    registerShader(Stage.SCREEN_SETUP, new Compute("scene-setup")
         .barrier(true)
         .workGroups(1, 1, 1)
         .location("setup/scene-setup.csh")
         .ssbo(0, sceneBuffer)
         .build());
 
-    registerPost(Stage.PRE_RENDER, new Compute("scene-prepare")
+    registerShader(Stage.PRE_RENDER, new Compute("scene-prepare")
         .barrier(true)
         .workGroups(1, 1, 1)
         .location("setup/scene-prepare.csh")
@@ -359,7 +359,7 @@ function setupShader() {
 
     setupSky(sceneBuffer);
 
-    registerPost(Stage.PRE_RENDER, new Compute("scene-begin")
+    registerShader(Stage.PRE_RENDER, new Compute("scene-begin")
         .barrier(true)
         .workGroups(1, 1, 1)
         .location("setup/scene-begin.csh")
@@ -416,13 +416,13 @@ function setupShader() {
         .build());
 
     if (FEATURE.GI_AO) {
-        registerPost(Stage.POST_RENDER, new Composite("ssgiao-opaque")
+        registerShader(Stage.POST_RENDER, new Composite("ssgiao-opaque")
             .vertex("post/bufferless.vsh")
             .fragment("post/ssgiao.fsh")
             .target(0, texSSGIAO)
             .build());
 
-        // registerPost(new Compute(POST_RENDER, "ssgiao-filter-opaque")
+        // registerShader(new Compute(POST_RENDER, "ssgiao-filter-opaque")
         //     .barrier(true)
         //     .location("post/ssgiao-filter-opaque.csh")
         //     .workGroups(Math.ceil(screenWidth / 16.0), Math.ceil(screenHeight / 16.0), 1)
@@ -430,13 +430,13 @@ function setupShader() {
     }
 
     if (FEATURE.Accumulation) {
-        registerPost(Stage.POST_RENDER, new Compute("diffuse-accum-opaque")
+        registerShader(Stage.POST_RENDER, new Compute("diffuse-accum-opaque")
             .barrier(true)
             .location("post/diffuse-accum-opaque.csh")
             .workGroups(Math.ceil(screenWidth / 16.0), Math.ceil(screenHeight / 16.0), 1)
             .build());
 
-        registerPost(Stage.POST_RENDER, new Composite("diffuse-accum-copy-prev")
+        registerShader(Stage.POST_RENDER, new Composite("diffuse-accum-copy-prev")
             .vertex("post/bufferless.vsh")
             .fragment("post/copy.fsh")
             .target(0, texDiffuseAccumPrevious)
@@ -445,7 +445,7 @@ function setupShader() {
     }
 
     if (FEATURE.VL) {
-        registerPost(Stage.POST_RENDER, new Composite("volumetric-far")
+        registerShader(Stage.POST_RENDER, new Composite("volumetric-far")
             .vertex("post/bufferless.vsh")
             .fragment("post/volumetric-far.fsh")
             .target(0, texScatterVL)
@@ -455,14 +455,14 @@ function setupShader() {
     }
 
     if (FEATURE.Shadows) {
-        registerPost(Stage.POST_RENDER, new Composite("shadow-opaque")
+        registerShader(Stage.POST_RENDER, new Composite("shadow-opaque")
             .vertex("post/bufferless.vsh")
             .fragment("post/shadow-opaque.fsh")
             .target(0, texShadow)
             .build());
 
         if (FEATURE.ShadowFilter) {
-            registerPost(Stage.POST_RENDER, new Compute("shadow-filter-opaque")
+            registerShader(Stage.POST_RENDER, new Compute("shadow-filter-opaque")
                 .barrier(true)
                 .location("post/shadow-filter-opaque.csh")
                 .workGroups(Math.ceil(screenWidth / 16.0), Math.ceil(screenHeight / 16.0), 1)
@@ -472,7 +472,7 @@ function setupShader() {
 
     let texShadow_src = FEATURE.ShadowFilter ? "texShadow_final" : "texShadow";
 
-    registerPost(Stage.POST_RENDER, new Composite("composite-opaque")
+    registerShader(Stage.POST_RENDER, new Composite("composite-opaque")
         .vertex("post/bufferless.vsh")
         .fragment("post/composite-opaque.fsh")
         .target(0, texFinalOpaque)
@@ -482,7 +482,7 @@ function setupShader() {
         .build());
 
     if (FEATURE.VL) {
-        registerPost(Stage.POST_RENDER, new Composite("volumetric-near")
+        registerShader(Stage.POST_RENDER, new Composite("volumetric-near")
             .vertex("post/bufferless.vsh")
             .fragment("post/volumetric-near.fsh")
             .target(0, texScatterVL)
@@ -491,14 +491,14 @@ function setupShader() {
             .build());
     }
 
-    registerPost(Stage.POST_RENDER, new Composite("composite-translucent")
+    registerShader(Stage.POST_RENDER, new Composite("composite-translucent")
         .vertex("post/bufferless.vsh")
         .fragment("post/composite-trans.fsh")
         .target(0, texFinal)
         .build());
 
     if (FEATURE.TAA) {
-        registerPost(Stage.POST_RENDER, new Composite("TAA")
+        registerShader(Stage.POST_RENDER, new Composite("TAA")
             .vertex("post/bufferless.vsh")
             .fragment("post/taa.fsh")
             .target(0, texFinal)
@@ -506,7 +506,7 @@ function setupShader() {
             .build());
     }
     else {
-        registerPost(Stage.POST_RENDER, new Composite("copy-prev")
+        registerShader(Stage.POST_RENDER, new Composite("copy-prev")
             .vertex("post/bufferless.vsh")
             .fragment("post/copy.fsh")
             .define("TEX_SRC", "texFinal")
@@ -514,13 +514,13 @@ function setupShader() {
             .build());
     }
 
-    registerPost(Stage.POST_RENDER, new Compute("histogram")
+    registerShader(Stage.POST_RENDER, new Compute("histogram")
         .barrier(true)
         .location("post/histogram.csh")
         .workGroups(Math.ceil(screenWidth / 16.0), Math.ceil(screenHeight / 16.0), 1)
         .build());
 
-    registerPost(Stage.POST_RENDER, new Compute("exposure")
+    registerShader(Stage.POST_RENDER, new Compute("exposure")
         .barrier(true)
         .workGroups(1, 1, 1)
         .location("post/exposure.csh")
@@ -530,14 +530,14 @@ function setupShader() {
     if (FEATURE.Bloom)
         setupBloom(texFinal);
 
-    registerPost(Stage.POST_RENDER, new Composite("tonemap")
+    registerShader(Stage.POST_RENDER, new Composite("tonemap")
         .vertex("post/bufferless.vsh")
         .fragment("post/tonemap.fsh")
         .ssbo(0, sceneBuffer)
         .target(0, texFinal)
         .build());
 
-    registerPost(Stage.POST_RENDER, new Composite("debug")
+    registerShader(Stage.POST_RENDER, new Composite("debug")
         .vertex("post/bufferless.vsh")
         .fragment("post/debug.fsh")
         .target(0, texFinal)

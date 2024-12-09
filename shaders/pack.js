@@ -259,6 +259,7 @@ function setupShader() {
 
     let texDiffuseAccum = null;
     let texDiffuseAccumPrevious = null;
+    // let texDiffuseAccumPrevious_alt = null;
     if (FEATURE.Accumulation) {
         texDiffuseAccum = new Texture("texDiffuseAccum")
             .imageName("imgDiffuseAccum")
@@ -275,6 +276,14 @@ function setupShader() {
             .height(screenHeight)
             .clear(false)
             .build();
+
+        // texDiffuseAccumPrevious_alt = new Texture("texDiffuseAccumPrevious_alt")
+        //     .imageName("imgDiffuseAccumPrevious_alt")
+        //     .format(RGBA16F)
+        //     .width(screenWidth)
+        //     .height(screenHeight)
+        //     .clear(false)
+        //     .build();
     }
 
     let texScatterVL = null;
@@ -400,7 +409,13 @@ function setupShader() {
             .vertex("post/bufferless.vsh")
             .fragment("post/diffuse-accum-opaque.fsh")
             .target(0, texDiffuseAccum)
-            .target(1, texDiffuseAccumPrevious)
+            .build());
+
+        registerPost(Stage.POST_RENDER, new Composite("diffuse-accum-copy-prev")
+            .vertex("post/bufferless.vsh")
+            .fragment("post/copy.fsh")
+            .target(0, texDiffuseAccumPrevious)
+            .define("TEX_SRC", "texDiffuseAccum")
             .build());
     }
 

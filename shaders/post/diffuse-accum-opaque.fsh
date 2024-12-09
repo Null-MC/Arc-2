@@ -1,7 +1,6 @@
 #version 430 core
 
 layout(location = 0) out vec4 outDiffuse;
-layout(location = 1) out vec4 outDiffusePrevious;
 
 uniform sampler2D solidDepthTex;
 uniform sampler2D texDiffuseAccumPrevious;
@@ -54,6 +53,5 @@ void main() {
     float counter = clamp(previous.a + 1.0, 1.0, 30.0);
     vec3 diffuseFinal = mix(previous.rgb, diffuse, 1.0 / counter);
 
-    outDiffuse = vec4(diffuseFinal, 1.0);
-    outDiffusePrevious = vec4(diffuseFinal, counter);
+    outDiffuse = vec4(diffuseFinal, counter);
 }

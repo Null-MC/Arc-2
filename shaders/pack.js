@@ -1,10 +1,10 @@
 const FEATURE = {
-    Accumulation: false,
+    Accumulation: true,
     WaterWaves: true,
     Shadows: true,
     ShadowFilter: false,
     Bloom: true,
-    GI_AO: false,
+    GI_AO: true,
     TAA: true,
     VL: true
 };
@@ -12,66 +12,63 @@ const FEATURE = {
 const DEBUG_SSGIAO = false;
 const DEBUG_HISTOGRAM = false;
 
-const _screenWidth = 1920;
-const _screenHeight = 1080;
-
 
 function setupSky() {
-    let texSkyTransmit = registerTexture(new Texture("texSkyTransmit")
+    let texSkyTransmit = new Texture("texSkyTransmit")
         .format(RGB16F)
         .clear(false)
         .width(256)
         .height(64)
-        .build());
+        .build();
 
-    let texSkyMultiScatter = registerTexture(new Texture("texSkyMultiScatter")
+    let texSkyMultiScatter = new Texture("texSkyMultiScatter")
         .format(RGB16F)
         .clear(false)
         .width(32)
         .height(32)
-        .build());
+        .build();
 
-    let texSkyView = registerTexture(new Texture("texSkyView")
+    let texSkyView = new Texture("texSkyView")
         .format(RGB16F)
         .clear(false)
         .width(256)
         .height(256)
-        .build());
+        .build();
 
-    let texSkyIrradiance = registerTexture(new Texture("texSkyIrradiance")
+    let texSkyIrradiance = new Texture("texSkyIrradiance")
         .format(RGB16F)
         .clear(false)
         .width(32)
         .height(32)
-        .build());
+        .build();
 
-    registerComposite(new CompositePass(SCREEN_SETUP, "sky-transmit")
+    registerPost(Stage.SCREEN_SETUP, new Composite("sky-transmit")
         .vertex("post/bufferless.vsh")
         .fragment("setup/sky_transmit.fsh")
-        .addTarget(0, texSkyTransmit)
+        .target(0, texSkyTransmit)
         .build())
 
-    registerComposite(new CompositePass(SCREEN_SETUP, "sky-multi-scatter")
+    registerPost(Stage.SCREEN_SETUP, new Composite("sky-multi-scatter")
         .vertex("post/bufferless.vsh")
         .fragment("setup/sky_multi_scatter.fsh")
-        .addTarget(0, texSkyMultiScatter)
+        .target(0, texSkyMultiScatter)
         .build())
 
-    registerComposite(new CompositePass(PRE_RENDER, "sky-view")
+    registerPost(Stage.PRE_RENDER, new Composite("sky-view")
         .vertex("post/bufferless.vsh")
         .fragment("setup/sky_view.fsh")
-        .addTarget(0, texSkyView)
+        .target(0, texSkyView)
         .build())
 
-    registerComposite(new CompositePass(PRE_RENDER, "sky-irradiance")
+    registerPost(Stage.PRE_RENDER, new Composite("sky-irradiance")
         .vertex("post/bufferless.vsh")
         .fragment("setup/sky_irradiance.fsh")
-        .addTarget(0, texSkyIrradiance)
+        .target(0, texSkyIrradiance)
         .build())
 }
 
 function setupBloom(texFinal) {
-    let maxLod = Math.log2(Math.min(_screenWidth, _screenHeight));
+    let maxLod = Math.log2(Math.min(screenWidth, screenHeight));
     maxLod = Math.max(Math.min(maxLod, 8), 0);
 
     print(`Bloom enabled with ${maxLod} LODs`);
@@ -79,15 +76,15 @@ function setupBloom(texFinal) {
     let texBloomArray = [];
     for (let i = 0; i < maxLod; i++) {
         let scale = Math.pow(2, i+1);
-        let bufferWidth = Math.ceil(_screenWidth / scale);
-        let bufferHeight = Math.ceil(_screenHeight / scale);
+        let bufferWidth = Math.ceil(screenWidth / scale);
+        let bufferHeight = Math.ceil(screenHeight / scale);
 
-        texBloomArray[i] = registerTexture(new Texture(`texBloom_${i}`)
+        texBloomArray[i] = new Texture(`texBloom_${i}`)
             .format(RGB16F)
             .width(bufferWidth)
             .height(bufferHeight)
             .clear(false)
-            .build());
+            .build();
     }
 
     for (let i = 0; i < maxLod; i++) {
@@ -95,10 +92,10 @@ function setupBloom(texFinal) {
             ? "texFinal"
             : `texBloom_${i-1}`
 
-        registerComposite(new CompositePass(POST_RENDER, `bloom-down-${i}`)
+        registerPost(Stage.POST_RENDER, new Composite(`bloom-down-${i}`)
             .vertex("post/bufferless.vsh")
             .fragment("post/bloom/down.fsh")
-            .addTarget(0, texBloomArray[i])
+            .target(0, texBloomArray[i])
             .define("TEX_SRC", texSrc)
             .define("TEX_SCALE", Math.pow(2, i).toString())
             .define("BLOOM_INDEX", i.toString())
@@ -110,14 +107,14 @@ function setupBloom(texFinal) {
             ? texFinal
             : texBloomArray[i-1];
 
-        registerComposite(new CompositePass(POST_RENDER, `bloom-up-${i}`)
+        registerPost(Stage.POST_RENDER, new Composite(`bloom-up-${i}`)
             .vertex("post/bufferless.vsh")
             .fragment("post/bloom/up.fsh")
             .define("TEX_SRC", `texBloom_${i}`)
             .define("TEX_SCALE", Math.pow(2, i+1).toString())
             .define("BLOOM_INDEX", i.toString())
-            .addTarget(0, texOut)
-            .blendFunc(0, FUNC_ONE, FUNC_ONE, FUNC_ONE, FUNC_ONE)
+            .target(0, texOut)
+            .blendFunc(0, Func.ONE, Func.ONE, Func.ONE, Func.ONE)
             .build());
     }
 }
@@ -125,7 +122,7 @@ function setupBloom(texFinal) {
 function setupShader() {
     print("Setting up shader");
 
-    print(`SCREEN width: ${_screenWidth} height: ${_screenHeight}`);
+    print(`SCREEN width: ${screenWidth} height: ${screenHeight}`);
 
     worldSettings.sunPathRotation = 25.0;
     worldSettings.shadowMapResolution = 1024;
@@ -147,359 +144,7 @@ function setupShader() {
     if (DEBUG_SSGIAO) defineGlobally("DEBUG_SSGIAO", "1");
     if (DEBUG_HISTOGRAM) defineGlobally("DEBUG_HISTOGRAM", "1");
 
-    let texFinal = registerTexture(
-        new Texture("texFinal")
-        .imageName("imgFinal")
-        .format(RGBA16F)
-        .clearColor(0.0, 0.0, 0.0, 0.0)
-        .build());
-
-    let texFinalOpaque = registerTexture(
-        new Texture("texFinalOpaque")
-        .format(RGBA16F)
-        .clearColor(0.0, 0.0, 0.0, 0.0)
-        .build());
-
-    let texFinalPrevious = registerTexture(
-        new Texture("texFinalPrevious")
-        .format(RGBA16F)
-        .clear(false)
-        .build());
-
-    let texClouds = registerTexture(
-        new Texture("texClouds")
-        .format(RGBA16F)
-        .clearColor(0.0, 0.0, 0.0, 0.0)
-        .build());
-
-    let texParticles = registerTexture(
-        new Texture("texParticles")
-        .format(RGBA16F)
-        .clearColor(0.0, 0.0, 0.0, 0.0)
-        .build());
-
-    let texDeferredOpaque_Color = registerTexture(
-        new Texture("texDeferredOpaque_Color")
-        .format(RGBA8)
-        .clearColor(0.0, 0.0, 0.0, 0.0)
-        .build());
-
-    let texDeferredOpaque_Data = registerTexture(
-        new Texture("texDeferredOpaque_Data")
-        .format(RGB32UI)
-        .clearColor(0.0, 0.0, 0.0, 0.0)
-        .build());
-
-    let texDeferredTrans_Color = registerTexture(
-        new Texture("texDeferredTrans_Color")
-        .format(RGBA8)
-        .clearColor(0.0, 0.0, 0.0, 0.0)
-        .build());
-
-    let texDeferredTrans_Data = registerTexture(
-        new Texture("texDeferredTrans_Data")
-        .format(RGB32UI)
-        .clearColor(0.0, 0.0, 0.0, 0.0)
-        .build());
-
-    let texShadow = null;
-    let texShadow_final = null;
-    if (FEATURE.Shadows) {
-        texShadow = registerTexture(
-            new Texture("texShadow")
-            .format(R16F)
-            .clear(false)
-            .build());
-
-        texShadow_final = registerTexture(
-            new Texture("texShadow_final")
-            .imageName("imgShadow_final")
-            .format(R16F)
-            .clear(false)
-            .build());
-    }
-
-    let texSSGIAO = null;
-    let texSSGIAO_final = null;
-    if (FEATURE.GI_AO) {
-        texSSGIAO = registerTexture(
-            new Texture("texSSGIAO")
-            .format(RGBA16F)
-            .width(Math.ceil(_screenWidth / 2.0))
-            .height(Math.ceil(_screenHeight / 2.0))
-            .clear(false)
-            .build());
-
-        // texSSGIAO_final = registerTexture(
-        //     new Texture("texSSGIAO_final")
-        //     .imageName("imgSSGIAO_final")
-        //     .format(RGBA16F)
-        //     .width(_screenWidth)
-        //     .height(_screenHeight)
-        //     .clear(false)
-        //     .build());
-    }
-
-    let texDiffuseAccum = null;
-    let texDiffuseAccumPrevious = null;
-    if (FEATURE.Accumulation) {
-        texDiffuseAccum = registerTexture(
-            new Texture("texDiffuseAccum")
-            .imageName("imgDiffuseAccum")
-            .format(RGBA16F)
-            .width(_screenWidth)
-            .height(_screenHeight)
-            .clear(false)
-            .build());
-
-        texDiffuseAccumPrevious = registerTexture(
-            new Texture("texDiffuseAccumPrevious")
-            .imageName("imgDiffuseAccumPrevious")
-            .format(RGBA16F)
-            .width(_screenWidth)
-            .height(_screenHeight)
-            .clear(false)
-            .build());
-    }
-
-    let texScatterVL = null;
-    let texTransmitVL = null;
-    if (FEATURE.VL) {
-        texScatterVL = registerTexture(
-            new Texture("texScatterVL")
-            .format(RGB16F)
-            .width(Math.ceil(_screenWidth / 2.0))
-            .height(Math.ceil(_screenHeight / 2.0))
-            .clear(false)
-            .build());
-
-        texTransmitVL = registerTexture(
-            new Texture("texTransmitVL")
-            .format(RGB16F)
-            .width(Math.ceil(_screenWidth / 2.0))
-            .height(Math.ceil(_screenHeight / 2.0))
-            .clear(false)
-            .build());
-    }
-
-    let texHistogram = registerTexture(
-        new Texture("texHistogram")
-        .imageName("imgHistogram")
-        .format(R32UI)
-        .width(256)
-        .height(1)
-        .clear(false)
-        .build());
-
-    if (DEBUG_HISTOGRAM) {
-        let texHistogram_debug = registerTexture(
-            new Texture("texHistogram_debug")
-            .imageName("imgHistogram_debug")
-            .format(R32UI)
-            .width(256)
-            .height(1)
-            .clear(false)
-            .build());
-    }
-
-    let texExposure = registerTexture(
-        new Texture("texExposure")
-        .imageName("imgExposure")
-        .format(R16F)
-        .width(1)
-        .height(1)
-        .clear(false)
-        .build());
-
-    // let histogramExposureBuffer = registerBuffer(
-    //     new Buffer("histogramExposureBuffer", 1028)
-    //     .clear(false)
-    //     .build());
-
-    // let texShadowColor = registerTexture(new Texture("texShadowColor")
-    //     // .format("rgba8")
-    //     // .clear([ 1.0, 1.0, 1.0, 1.0 ])
-    //     .build());
-
-    setupSky();
-
-    if (FEATURE.Shadows) {
-        registerGeometryShader(new GamePass("shadow")
-            .vertex("program/shadow.vsh")
-            .fragment("program/shadow.fsh")
-            // .addTarget(0, texShadowColor)
-            .usage(USAGE_SHADOW)
-            .build());
-    }
-
-    registerGeometryShader(new GamePass("sky-color")
-        .vertex("program/sky.vsh")
-        .fragment("program/sky.fsh")
-        .usage(USAGE_SKYBOX)
-        .addTarget(0, texFinalOpaque)
-        // .blendFunc(0, FUNC_ONE, FUNC_ZERO, FUNC_ONE, FUNC_ZERO)
-        .build());
-
-    // TODO: sky-textured?
-
-    registerGeometryShader(new GamePass("clouds")
-        .usage(USAGE_CLOUDS)
-        .vertex("program/main.vsh")
-        .fragment("program/clouds.fsh")
-        .addTarget(0, texClouds)
-        .build());
-
-    registerGeometryShader(new GamePass("terrain")
-        .usage(USAGE_BASIC)
-        .vertex("program/main.vsh")
-        .fragment("program/main.fsh")
-        .addTarget(0, texDeferredOpaque_Color)
-        // .blendFunc(0, FUNC_SRC_ALPHA, FUNC_ONE_MINUS_SRC_ALPHA, FUNC_ONE, FUNC_ZERO)
-        .addTarget(1, texDeferredOpaque_Data)
-        // .blendFunc(1, FUNC_ONE, FUNC_ZERO, FUNC_ONE, FUNC_ZERO)
-        .build());
-
-    registerGeometryShader(new GamePass("water")
-        .usage(USAGE_TERRAIN_TRANSLUCENT)
-        .vertex("program/main.vsh")
-        .fragment("program/main.fsh")
-        .define("RENDER_TRANSLUCENT", "1")
-        .addTarget(0, texDeferredTrans_Color)
-        // .blendFunc(0, FUNC_SRC_ALPHA, FUNC_ONE_MINUS_SRC_ALPHA, FUNC_ONE, FUNC_ZERO)
-        .addTarget(1, texDeferredTrans_Data)
-        // .blendFunc(1, FUNC_ONE, FUNC_ZERO, FUNC_ONE, FUNC_ZERO)
-        .build());
-
-    registerGeometryShader(new GamePass("weather")
-        .usage(USAGE_WEATHER)
-        .vertex("program/main.vsh")
-        .fragment("program/weather.fsh")
-        .addTarget(0, texParticles)
-        .build());
-
-    if (FEATURE.GI_AO) {
-        registerComposite(new CompositePass(POST_RENDER, "ssgiao-opaque")
-            .vertex("post/bufferless.vsh")
-            .fragment("post/ssgiao.fsh")
-            .addTarget(0, texSSGIAO)
-            .build());
-
-        // registerComposite(new ComputePass(POST_RENDER, "ssgiao-filter-opaque")
-        //     .barrier(true)
-        //     .location("post/ssgiao-filter-opaque.csh")
-        //     .groupSize(Math.ceil(_screenWidth / 16.0), Math.ceil(screenHeight / 16.0), 1)
-        //     .build());
-    }
-
-    if (FEATURE.Accumulation) {
-        registerComposite(new CompositePass(POST_RENDER, "diffuse-accum-opaque")
-            .vertex("post/bufferless.vsh")
-            .fragment("post/diffuse-accum-opaque.fsh")
-            .addTarget(0, texDiffuseAccum)
-            .addTarget(1, texDiffuseAccumPrevious)
-            .build());
-    }
-
-    if (FEATURE.VL) {
-        registerComposite(new CompositePass(POST_RENDER, "volumetric-far")
-            .vertex("post/bufferless.vsh")
-            .fragment("post/volumetric-far.fsh")
-            .addTarget(0, texScatterVL)
-            .addTarget(1, texTransmitVL)
-            .build());
-    }
-
-    if (FEATURE.Shadows) {
-        registerComposite(new CompositePass(POST_RENDER, "shadow-opaque")
-            .vertex("post/bufferless.vsh")
-            .fragment("post/shadow-opaque.fsh")
-            .addTarget(0, texShadow)
-            .build());
-
-        if (FEATURE.ShadowFilter) {
-            registerComposite(new ComputePass(POST_RENDER, "shadow-filter-opaque")
-                .barrier(true)
-                .location("post/shadow-filter-opaque.csh")
-                .groupSize(Math.ceil(_screenWidth / 16.0), Math.ceil(screenHeight / 16.0), 1)
-                .build());
-        }
-    }
-
-    let texShadow_src = FEATURE.ShadowFilter ? "texShadow_final" : "texShadow";
-
-    registerComposite(new CompositePass(POST_RENDER, "composite-opaque")
-        .vertex("post/bufferless.vsh")
-        .fragment("post/composite-opaque.fsh")
-        .addTarget(0, texFinalOpaque)
-        .define("TEX_SHADOW", texShadow_src)
-        .define("TEX_SSGIAO", "texSSGIAO")
-        .build());
-
-    if (FEATURE.VL) {
-        registerComposite(new CompositePass(POST_RENDER, "volumetric-near")
-            .vertex("post/bufferless.vsh")
-            .fragment("post/volumetric-near.fsh")
-            .addTarget(0, texScatterVL)
-            .addTarget(1, texTransmitVL)
-            .build());
-    }
-
-    registerComposite(new CompositePass(POST_RENDER, "composite-translucent")
-        .vertex("post/bufferless.vsh")
-        .fragment("post/composite-trans.fsh")
-        .addTarget(0, texFinal)
-        .build());
-
-    if (FEATURE.TAA) {
-        registerComposite(new CompositePass(POST_RENDER, "TAA")
-            .vertex("post/bufferless.vsh")
-            .fragment("post/taa.fsh")
-            .addTarget(0, texFinal)
-            .addTarget(1, texFinalPrevious)
-            .build());
-    }
-    else {
-        registerComposite(new CompositePass(POST_RENDER, "copy-prev")
-            .vertex("post/bufferless.vsh")
-            .fragment("post/copy.fsh")
-            .define("TEX_SRC", "texFinal")
-            .addTarget(0, texFinalPrevious)
-            .build());
-    }
-
-    registerComposite(new ComputePass(POST_RENDER, "histogram")
-        .barrier(true)
-        .location("post/histogram.csh")
-        .groupSize(Math.ceil(_screenWidth / 16.0), Math.ceil(screenHeight / 16.0), 1)
-        // .ssbo(0, histogramExposureBuffer)
-        .build());
-
-    registerComposite(new ComputePass(POST_RENDER, "exposure")
-        .barrier(true)
-        .location("post/exposure.csh")
-        .groupSize(1, 1, 1)
-        // .ssbo(0, histogramExposureBuffer)
-        .build());
-
-    if (FEATURE.Bloom)
-        setupBloom(texFinal);
-
-    registerComposite(new CompositePass(POST_RENDER, "tonemap")
-        .vertex("post/bufferless.vsh")
-        .fragment("post/tonemap.fsh")
-        .addTarget(0, texFinal)
-        .build());
-
-    registerComposite(new CompositePass(POST_RENDER, "debug")
-        .vertex("post/bufferless.vsh")
-        .fragment("post/debug.fsh")
-        .addTarget(0, texFinal)
-        .define("TEX_SSGIAO", "texSSGIAO")
-        .build());
-
-    setCombinationPass("post/final.fsh");
-
-    useUniform("shadowLightPosition",
+    registerUniforms("shadowLightPosition",
         "fogColor",
         "fogStart",
         "fogEnd",
@@ -530,7 +175,335 @@ function setupShader() {
         "cascadeSize",
         "guiHidden");
 
-    addUniform("gamingTime", "bool", function(state) {
-        return true;
-    });
+    finalizeUniforms();
+
+    let texFinal = new Texture("texFinal")
+        .imageName("imgFinal")
+        .format(RGBA16F)
+        .clearColor(0.0, 0.0, 0.0, 0.0)
+        .build();
+
+    let texFinalOpaque = new Texture("texFinalOpaque")
+        .format(RGBA16F)
+        .clearColor(0.0, 0.0, 0.0, 0.0)
+        .build();
+
+    let texFinalPrevious = new Texture("texFinalPrevious")
+        .format(RGBA16F)
+        .clear(false)
+        .build();
+
+    let texClouds = new Texture("texClouds")
+        .format(RGBA16F)
+        .clearColor(0.0, 0.0, 0.0, 0.0)
+        .build();
+
+    let texParticles = new Texture("texParticles")
+        .format(RGBA16F)
+        .clearColor(0.0, 0.0, 0.0, 0.0)
+        .build();
+
+    let texDeferredOpaque_Color = new Texture("texDeferredOpaque_Color")
+        .format(RGBA8)
+        .clearColor(0.0, 0.0, 0.0, 0.0)
+        .build();
+
+    let texDeferredOpaque_Data = new Texture("texDeferredOpaque_Data")
+        .format(RGB32UI)
+        .clearColor(0.0, 0.0, 0.0, 0.0)
+        .build();
+
+    let texDeferredTrans_Color = new Texture("texDeferredTrans_Color")
+        .format(RGBA8)
+        .clearColor(0.0, 0.0, 0.0, 0.0)
+        .build();
+
+    let texDeferredTrans_Data = new Texture("texDeferredTrans_Data")
+        .format(RGB32UI)
+        .clearColor(0.0, 0.0, 0.0, 0.0)
+        .build();
+
+    let texShadow = null;
+    let texShadow_final = null;
+    if (FEATURE.Shadows) {
+        texShadow = new Texture("texShadow")
+            .format(R16F)
+            .clear(false)
+            .build();
+
+        texShadow_final = new Texture("texShadow_final")
+            .imageName("imgShadow_final")
+            .format(R16F)
+            .clear(false)
+            .build();
+    }
+
+    let texSSGIAO = null;
+    let texSSGIAO_final = null;
+    if (FEATURE.GI_AO) {
+        texSSGIAO = new Texture("texSSGIAO")
+            .format(RGBA16F)
+            .width(Math.ceil(screenWidth / 2.0))
+            .height(Math.ceil(screenHeight / 2.0))
+            .clear(false)
+            .build();
+
+        // texSSGIAO_final = new Texture("texSSGIAO_final")
+        //     .imageName("imgSSGIAO_final")
+        //     .format(RGBA16F)
+        //     .width(screenWidth)
+        //     .height(screenHeight)
+        //     .clear(false)
+        //     .build();
+    }
+
+    let texDiffuseAccum = null;
+    let texDiffuseAccumPrevious = null;
+    if (FEATURE.Accumulation) {
+        texDiffuseAccum = new Texture("texDiffuseAccum")
+            .imageName("imgDiffuseAccum")
+            .format(RGBA16F)
+            .width(screenWidth)
+            .height(screenHeight)
+            .clear(false)
+            .build();
+
+        texDiffuseAccumPrevious = new Texture("texDiffuseAccumPrevious")
+            .imageName("imgDiffuseAccumPrevious")
+            .format(RGBA16F)
+            .width(screenWidth)
+            .height(screenHeight)
+            .clear(false)
+            .build();
+    }
+
+    let texScatterVL = null;
+    let texTransmitVL = null;
+    if (FEATURE.VL) {
+        texScatterVL = new Texture("texScatterVL")
+            .format(RGB16F)
+            .width(Math.ceil(screenWidth / 2.0))
+            .height(Math.ceil(screenHeight / 2.0))
+            .clear(false)
+            .build();
+
+        texTransmitVL = new Texture("texTransmitVL")
+            .format(RGB16F)
+            .width(Math.ceil(screenWidth / 2.0))
+            .height(Math.ceil(screenHeight / 2.0))
+            .clear(false)
+            .build();
+    }
+
+    let texHistogram = new Texture("texHistogram")
+        .imageName("imgHistogram")
+        .format(R32UI)
+        .width(256)
+        .height(1)
+        .clear(false)
+        .build();
+
+    if (DEBUG_HISTOGRAM) {
+        let texHistogram_debug = new Texture("texHistogram_debug")
+            .imageName("imgHistogram_debug")
+            .format(R32UI)
+            .width(256)
+            .height(1)
+            .clear(false)
+            .build();
+    }
+
+    let texExposure = new Texture("texExposure")
+        .imageName("imgExposure")
+        .format(R16F)
+        .width(1)
+        .height(1)
+        .clear(false)
+        .build();
+
+    // let histogramExposureBuffer = registerBuffer(
+    //     new Buffer("histogramExposureBuffer", 1028)
+    //     .clear(false)
+    //     .build());
+
+    // let texShadowColor = new Texture("texShadowColor")
+    //     // .format("rgba8")
+    //     // .clear([ 1.0, 1.0, 1.0, 1.0 ])
+    //     .build();
+
+    setupSky();
+
+    if (FEATURE.Shadows) {
+        registerShader(new ObjectShader("shadow", Usage.SHADOW)
+            .vertex("program/shadow.vsh")
+            .fragment("program/shadow.fsh")
+            // .target(0, texShadowColor)
+            .build());
+    }
+
+    registerShader(new ObjectShader("sky-color", Usage.SKYBOX)
+        .vertex("program/sky.vsh")
+        .fragment("program/sky.fsh")
+        .target(0, texFinalOpaque)
+        // .blendFunc(0, FUNC_ONE, FUNC_ZERO, FUNC_ONE, FUNC_ZERO)
+        .build());
+
+    // TODO: sky-textured?
+
+    registerShader(new ObjectShader("clouds", Usage.CLOUDS)
+        .vertex("program/main.vsh")
+        .fragment("program/clouds.fsh")
+        .target(0, texClouds)
+        .build());
+
+    registerShader(new ObjectShader("terrain", Usage.BASIC)
+        .vertex("program/main.vsh")
+        .fragment("program/main.fsh")
+        .target(0, texDeferredOpaque_Color)
+        // .blendFunc(0, FUNC_SRC_ALPHA, FUNC_ONE_MINUS_SRC_ALPHA, FUNC_ONE, FUNC_ZERO)
+        .target(1, texDeferredOpaque_Data)
+        // .blendFunc(1, FUNC_ONE, FUNC_ZERO, FUNC_ONE, FUNC_ZERO)
+        .build());
+
+    registerShader(new ObjectShader("water", Usage.TERRAIN_TRANSLUCENT)
+        .vertex("program/main.vsh")
+        .fragment("program/main.fsh")
+        .define("RENDER_TRANSLUCENT", "1")
+        .target(0, texDeferredTrans_Color)
+        // .blendFunc(0, FUNC_SRC_ALPHA, FUNC_ONE_MINUS_SRC_ALPHA, FUNC_ONE, FUNC_ZERO)
+        .target(1, texDeferredTrans_Data)
+        // .blendFunc(1, FUNC_ONE, FUNC_ZERO, FUNC_ONE, FUNC_ZERO)
+        .build());
+
+    registerShader(new ObjectShader("weather", Usage.WEATHER)
+        .vertex("program/main.vsh")
+        .fragment("program/weather.fsh")
+        .target(0, texParticles)
+        .build());
+
+    if (FEATURE.GI_AO) {
+        registerPost(Stage.POST_RENDER, new Composite("ssgiao-opaque")
+            .vertex("post/bufferless.vsh")
+            .fragment("post/ssgiao.fsh")
+            .target(0, texSSGIAO)
+            .build());
+
+        // registerPost(new Compute(POST_RENDER, "ssgiao-filter-opaque")
+        //     .barrier(true)
+        //     .location("post/ssgiao-filter-opaque.csh")
+        //     .workGroups(Math.ceil(screenWidth / 16.0), Math.ceil(screenHeight / 16.0), 1)
+        //     .build());
+    }
+
+    if (FEATURE.Accumulation) {
+        registerPost(Stage.POST_RENDER, new Composite("diffuse-accum-opaque")
+            .vertex("post/bufferless.vsh")
+            .fragment("post/diffuse-accum-opaque.fsh")
+            .target(0, texDiffuseAccum)
+            .target(1, texDiffuseAccumPrevious)
+            .build());
+    }
+
+    if (FEATURE.VL) {
+        registerPost(Stage.POST_RENDER, new Composite("volumetric-far")
+            .vertex("post/bufferless.vsh")
+            .fragment("post/volumetric-far.fsh")
+            .target(0, texScatterVL)
+            .target(1, texTransmitVL)
+            .build());
+    }
+
+    if (FEATURE.Shadows) {
+        registerPost(Stage.POST_RENDER, new Composite("shadow-opaque")
+            .vertex("post/bufferless.vsh")
+            .fragment("post/shadow-opaque.fsh")
+            .target(0, texShadow)
+            .build());
+
+        if (FEATURE.ShadowFilter) {
+            registerPost(Stage.POST_RENDER, new Compute("shadow-filter-opaque")
+                .barrier(true)
+                .location("post/shadow-filter-opaque.csh")
+                .workGroups(Math.ceil(screenWidth / 16.0), Math.ceil(screenHeight / 16.0), 1)
+                .build());
+        }
+    }
+
+    let texShadow_src = FEATURE.ShadowFilter ? "texShadow_final" : "texShadow";
+
+    registerPost(Stage.POST_RENDER, new Composite("composite-opaque")
+        .vertex("post/bufferless.vsh")
+        .fragment("post/composite-opaque.fsh")
+        .target(0, texFinalOpaque)
+        .define("TEX_SHADOW", texShadow_src)
+        .define("TEX_SSGIAO", "texSSGIAO")
+        .build());
+
+    if (FEATURE.VL) {
+        registerPost(Stage.POST_RENDER, new Composite("volumetric-near")
+            .vertex("post/bufferless.vsh")
+            .fragment("post/volumetric-near.fsh")
+            .target(0, texScatterVL)
+            .target(1, texTransmitVL)
+            .build());
+    }
+
+    registerPost(Stage.POST_RENDER, new Composite("composite-translucent")
+        .vertex("post/bufferless.vsh")
+        .fragment("post/composite-trans.fsh")
+        .target(0, texFinal)
+        .build());
+
+    if (FEATURE.TAA) {
+        registerPost(Stage.POST_RENDER, new Composite("TAA")
+            .vertex("post/bufferless.vsh")
+            .fragment("post/taa.fsh")
+            .target(0, texFinal)
+            .target(1, texFinalPrevious)
+            .build());
+    }
+    else {
+        registerPost(Stage.POST_RENDER, new Composite("copy-prev")
+            .vertex("post/bufferless.vsh")
+            .fragment("post/copy.fsh")
+            .define("TEX_SRC", "texFinal")
+            .target(0, texFinalPrevious)
+            .build());
+    }
+
+    registerPost(Stage.POST_RENDER, new Compute("histogram")
+        .barrier(true)
+        .location("post/histogram.csh")
+        .workGroups(Math.ceil(screenWidth / 16.0), Math.ceil(screenHeight / 16.0), 1)
+        // .ssbo(0, histogramExposureBuffer)
+        .build());
+
+    registerPost(Stage.POST_RENDER, new Compute("exposure")
+        .barrier(true)
+        .location("post/exposure.csh")
+        .workGroups(1, 1, 1)
+        // .ssbo(0, histogramExposureBuffer)
+        .build());
+
+    if (FEATURE.Bloom)
+        setupBloom(texFinal);
+
+    registerPost(Stage.POST_RENDER, new Composite("tonemap")
+        .vertex("post/bufferless.vsh")
+        .fragment("post/tonemap.fsh")
+        .target(0, texFinal)
+        .build());
+
+    registerPost(Stage.POST_RENDER, new Composite("debug")
+        .vertex("post/bufferless.vsh")
+        .fragment("post/debug.fsh")
+        .target(0, texFinal)
+        .define("TEX_SSGIAO", "texSSGIAO")
+        .build());
+
+    setCombinationPass(new CombinationPass("post/final.fsh").build());
+
+    // addUniform("gamingTime", "bool", function(state) {
+    //     return true;
+    // });
 }

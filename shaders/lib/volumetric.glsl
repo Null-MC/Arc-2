@@ -1,7 +1,7 @@
 const float VL_Phase = 0.78;
 const float VL_Scatter  = 0.0024;
 const float VL_Transmit = 0.0002;
-const float VL_AmbientF = 10.0;
+const float VL_AmbientF = 0.0;
 
 const float VL_RainPhase = 0.42;
 const float VL_RainScatter  = 0.090;

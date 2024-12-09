@@ -7,6 +7,7 @@ uniform sampler2D texDiffuseAccum;
 
 #ifdef DEBUG_HISTOGRAM
     uniform usampler2D texHistogram_debug;
+    uniform sampler2D texExposure;
 #endif
 
 #ifdef DEBUG_SSGIAO
@@ -33,10 +34,15 @@ void main() {
     
     if (!guiHidden) {
         #ifdef DEBUG_HISTOGRAM
-            vec2 previewCoord = (uv - 0.01) / vec2(0.2, 0.1);
+            vec2 previewCoord = (uv - 0.01) / vec2(0.25, 0.1);
             if (clamp(previewCoord, 0.0, 1.0) == previewCoord) {
                 uint sampleVal = textureLod(texHistogram_debug, previewCoord, 0).r;
                 color = vec3(step(previewCoord.y*previewCoord.y, sampleVal / (screenSize.x*screenSize.y)));
+            }
+
+            previewCoord = (uv - vec2(0.27, 0.01)) / vec2(0.04, 0.1);
+            if (clamp(previewCoord, 0.0, 1.0) == previewCoord) {
+                color = textureLod(texExposure, previewCoord, 0).rrr;
             }
         #endif
         
@@ -55,10 +61,10 @@ void main() {
             }
         #endif
 
-        // vec2 previewCoord = (uv - 0.01) / vec2(0.25);
-        // if (clamp(previewCoord, 0.0, 1.0) == previewCoord) {
-        //     color = textureLod(texDiffuseAccum, previewCoord, 0).rgb;
-        // }
+        vec2 previewCoord = (uv - 0.01) / vec2(0.25);
+        if (clamp(previewCoord, 0.0, 1.0) == previewCoord) {
+            color = textureLod(texDiffuseAccum, previewCoord, 0).rgb;
+        }
     }
 
     outColor = vec4(color, 1.0);

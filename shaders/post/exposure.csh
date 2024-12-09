@@ -43,17 +43,15 @@ void main() {
 		// Here we take our weighted sum and divide it by the number of pixels
 		// that had luminance greater than zero (since the index == 0, we can
 		// use countForThisBin to find the number of black pixels)
-		// float weightedLogAverage = (histogramShared[0] / max(Exposure_numPixels - float(countForThisBin), 1.0)) - 1.0;
-		float weightedLogAverage = (histogramShared[0] / max(Exposure_numPixels - float(countForThisBin), 1.0)) / 255.0;
+		float weightedLogAverage = (histogramShared[0] / max(Exposure_numPixels - float(countForThisBin), 1.0)) - 1.0;
+		// float weightedLogAverage = (histogramShared[0] / max(Exposure_numPixels - float(countForThisBin), 1.0)) / 255.0;
 		// float weightedLogAverage = float(histogramShared[0]) / max(Exposure_numPixels, 1.0) / 255.0;
 
 		// Map from our histogram space to actual luminance
-		// float weightedAvgLum = exp2(((weightedLogAverage / 254.0) * Exposure_logLumRange) + Exposure_minLogLum);
-		// imageStore(imgExposure, ivec2(0, 0), vec4(weightedAvgLum));
-		// return;
+		float weightedAvgLum = 255.0 * exp(((weightedLogAverage) * Exposure_logLumRange) + Exposure_minLogLum);
 
 		float lumLastFrame = imageLoad(imgExposure, exposure_uv).r;
-		float adaptedLum = lumLastFrame + (weightedLogAverage - lumLastFrame) * Exposure_timeCoeff;
+		float adaptedLum = lumLastFrame + (weightedAvgLum - lumLastFrame) * Exposure_timeCoeff;
 
 		imageStore(imgExposure, exposure_uv, vec4(adaptedLum));
 	}

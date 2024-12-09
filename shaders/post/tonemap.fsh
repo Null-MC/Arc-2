@@ -12,12 +12,16 @@ uniform sampler2D texExposure;
 #include "/lib/exposure.glsl"
 #include "/lib/tonemap.glsl"
 
+#include "/lib/effects/purkinje.glsl"
+
 
 void main() {
     ivec2 iuv = ivec2(gl_FragCoord.xy);
     vec3 color = texelFetch(texFinal, iuv, 0).rgb;
     
     ApplyAutoExposure(color, texExposure);
+
+    color = PurkinjeShift(color, PurkinjeStrength);
 
     // color = tonemap_jodieReinhard(color);
     color = tonemap_ACESFit2(color);

@@ -94,7 +94,7 @@ void main() {
                 }
             }
 
-            // if (abs(sampleViewPos.z - viewPos.z) > SSGIAO_RADIUS) gi_weight = 0.0;
+            if (abs(sampleViewPos.z - viewPos.z) > SSGIAO_RADIUS) gi_weight = 0.0;
 
             vec3 diff = sampleViewPos - viewPos;
             float sampleDist = length(diff);
@@ -106,7 +106,7 @@ void main() {
 
             sampleWeight = 1.0 - sampleWeight;
 
-            gi_weight *= 1.0 / (1.0 + sampleDist);
+            // gi_weight *= 1.0 / (1.0 + sampleDist);
 
             illumination += sampleColor * sampleNoLm * gi_weight;
             occlusion += sampleNoLm * sampleWeight;

@@ -6,6 +6,7 @@ layout(location = 1) out vec3 outTransmit;
 in vec2 uv;
 
 uniform sampler2D texSkyTransmit;
+uniform sampler2D texSkyIrradiance;
 uniform sampler2D mainDepthTex;
 
 #ifdef SHADOWS_ENABLED
@@ -15,6 +16,7 @@ uniform sampler2D mainDepthTex;
 #include "/settings.glsl"
 #include "/lib/common.glsl"
 #include "/lib/ign.glsl"
+#include "/lib/erp.glsl"
 #include "/lib/hg.glsl"
 
 #ifdef SHADOWS_ENABLED
@@ -62,6 +64,11 @@ void main() {
 
         sampleAmbient = vec3(VL_AmbientF);
     }
+
+    // TODO: move to custom uniform/SSBO
+    vec2 skyIrradianceCoord = DirectionToUV(vec3(0.0, 1.0, 0.0));
+    vec3 skyIrradiance = textureLod(texSkyIrradiance, skyIrradianceCoord, 0).rgb;
+    sampleAmbient *= skyIrradiance;
 
     vec3 ndcPos = vec3(uv, depth) * 2.0 - 1.0;
     vec3 viewPos = unproject(playerProjectionInverse, ndcPos);

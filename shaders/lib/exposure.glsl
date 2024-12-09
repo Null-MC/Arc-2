@@ -10,9 +10,9 @@ const mat3 XYZ_TO_RGB = mat3(
 
 const ivec2 exposure_uv = ivec2(0);
 
-const float Exposure_minLogLum = -8.0;
-const float Exposure_logLumRange = 1.0 / 20.0;
-float Exposure_timeCoeff = 0.01; //timeCounter;
+const float Exposure_minLogLum = -11.0;
+const float Exposure_logLumRange = 1.0 / 22.0;
+float Exposure_timeCoeff = 0.003; //timeCounter;
 float Exposure_numPixels = screenSize.x * screenSize.y;
 
 

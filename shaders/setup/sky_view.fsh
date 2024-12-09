@@ -9,6 +9,7 @@ uniform sampler2D texSkyMultiScatter;
 
 #include "/settings.glsl"
 #include "/lib/common.glsl"
+#include "/lib/buffers/scene.glsl"
 #include "/lib/sky/common.glsl"
 // #include "/lib/sky/view.glsl"
 
@@ -83,8 +84,7 @@ void main() {
     float cosAltitude = cos(altitudeAngle);
     vec3 rayDir = vec3(cosAltitude*sin(azimuthAngle), sin(altitudeAngle), -cosAltitude*cos(azimuthAngle));
     
-    vec3 sunDir = normalize((playerModelViewInverse * vec4(sunPosition, 1.0)).xyz);
-    float sunAltitude = (0.5*PI) - acos(dot(sunDir, up));
+    float sunAltitude = (0.5*PI) - acos(dot(Scene_LocalSunDir, up));
     vec3 sunDirEx = vec3(0.0, sin(sunAltitude), -cos(sunAltitude));
     
     float atmoDist = rayIntersectSphere(skyPos, rayDir, atmosphereRadiusMM);

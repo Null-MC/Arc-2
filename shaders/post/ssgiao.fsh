@@ -13,8 +13,7 @@ in vec2 uv;
 #include "/lib/ign.glsl"
 
 const int SSGIAO_SAMPLES = 16;
-const float SSGIAO_RADIUS = 3.0;
-// const float GI_RADIUS = 12.0;
+const float SSGIAO_RADIUS = 4.0;
 
 const bool SSGIAO_TRACE_ENABLED = true;
 const int SSGIAO_TRACE_SAMPLES = 3;

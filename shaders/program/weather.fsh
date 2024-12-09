@@ -19,6 +19,7 @@ uniform sampler2D texSkyIrradiance;
 
 #include "/settings.glsl"
 #include "/lib/common.glsl"
+#include "/lib/buffers/scene.glsl"
 #include "/lib/ign.glsl"
 #include "/lib/erp.glsl"
 
@@ -66,12 +67,10 @@ void iris_emitFragment() {
         shadowSample = SampleShadows(shadowPos, shadowCascade);
     #endif
 
-    vec3 localLightDir = normalize(mul3(playerModelViewInverse, shadowLightPosition));
-    const float NoLm = 1.0; //step(0.0, dot(localLightDir, _localNormal));
+    const float NoLm = 1.0; //step(0.0, dot(Scene_LocalLightDir, _localNormal));
 
     vec3 skyPos = getSkyPosition(localPos);
-    vec3 sunDir = normalize((playerModelViewInverse * vec4(sunPosition, 1.0)).xyz);
-    vec3 skyLighting = getValFromTLUT(texSkyTransmit, skyPos, sunDir);
+    vec3 skyLighting = getValFromTLUT(texSkyTransmit, skyPos, Scene_LocalSunDir);
     skyLighting *= lmcoord.y * NoLm * shadowSample;
 
     vec2 skyIrradianceCoord = DirectionToUV(vec3(0.0, 1.0, 0.0));

@@ -6,16 +6,15 @@ in vec2 uv;
 // in vec2 light;
 in vec4 color;
 in vec3 localPos;
-// in vec3 localOffset;
 in vec3 localNormal;
 // in vec3 shadowViewPos;
-// flat in int material;
 
 uniform sampler2D texSkyTransmit;
 uniform sampler2D texSkyIrradiance;
 
 #include "/settings.glsl"
 #include "/lib/common.glsl"
+#include "/lib/buffers/scene.glsl"
 #include "/lib/erp.glsl"
 
 #include "/lib/sky/common.glsl"
@@ -23,7 +22,7 @@ uniform sampler2D texSkyIrradiance;
 
 void iris_emitFragment() {
     vec2 mUV = uv;
-    vec2 mLight;// = light;
+    vec2 mLight = vec2(1.0);// light;
     vec4 mColor = color;
     iris_modifyBase(mUV, mColor, mLight);
 
@@ -42,12 +41,10 @@ void iris_emitFragment() {
     vec4 colorFinal = albedo;
     const float shadowSample = 1.0;
 
-    vec3 sunDir = normalize(mul3(playerModelViewInverse, sunPosition));
-    vec3 localLightDir = normalize(mul3(playerModelViewInverse, shadowLightPosition));
-    float NoLm = step(0.0, dot(localLightDir, _localNormal));
+    float NoLm = step(0.0, dot(Scene_LocalLightDir, _localNormal));
 
     vec3 skyPos = getSkyPosition(localPos);
-    vec3 skyTransmit = getValFromTLUT(texSkyTransmit, skyPos, sunDir);
+    vec3 skyTransmit = getValFromTLUT(texSkyTransmit, skyPos, Scene_LocalSunDir);
     vec3 skyLighting = NoLm * skyTransmit * shadowSample;
 
     vec2 skyIrradianceCoord = DirectionToUV(_localNormal);

@@ -7,30 +7,23 @@ uniform sampler2D texDiffuseAccum;
 
 #ifdef DEBUG_HISTOGRAM
     uniform usampler2D texHistogram_debug;
-    uniform sampler2D texExposure;
 #endif
 
 #ifdef DEBUG_SSGIAO
-    uniform sampler2D texExposure;
     uniform sampler2D TEX_SSGIAO;
 #endif
 
 in vec2 uv;
 
 #include "/lib/common.glsl"
-
-#ifdef DEBUG_SSGIAO
-    #include "/lib/exposure.glsl"
-    #include "/lib/tonemap.glsl"
-#endif
+#include "/lib/buffers/scene.glsl"
+#include "/lib/exposure.glsl"
+#include "/lib/tonemap.glsl"
 
 
 void main() {
     ivec2 iuv = ivec2(gl_FragCoord.xy);
     vec3 color = texelFetch(texFinal, iuv, 0).rgb;
-
-    // color = textureLod(texShadow_final, uv, 0).rrr;
-    // color = color / (1.0 + color);
     
     if (!guiHidden) {
         #ifdef DEBUG_HISTOGRAM
@@ -42,7 +35,7 @@ void main() {
 
             previewCoord = (uv - vec2(0.27, 0.01)) / vec2(0.04, 0.1);
             if (clamp(previewCoord, 0.0, 1.0) == previewCoord) {
-                color = textureLod(texExposure, previewCoord, 0).rrr;
+                color = vec3(Scene_AvgExposure);
             }
         #endif
         
@@ -51,7 +44,7 @@ void main() {
             if (clamp(previewCoord, 0.0, 1.0) == previewCoord) {
                 color = textureLod(TEX_SSGIAO, previewCoord, 0).rgb;
 
-                ApplyAutoExposure(color, texExposure);
+                ApplyAutoExposure(color, Scene_AvgExposure);
                 color = tonemap_ACESFit2(color);
             }
 
@@ -61,10 +54,12 @@ void main() {
             }
         #endif
 
-        vec2 previewCoord = (uv - 0.01) / vec2(0.25);
-        if (clamp(previewCoord, 0.0, 1.0) == previewCoord) {
-            color = textureLod(texDiffuseAccum, previewCoord, 0).rgb;
-        }
+        // vec2 previewCoord = (uv - 0.01) / vec2(0.25);
+        // if (clamp(previewCoord, 0.0, 1.0) == previewCoord) {
+        //     color = textureLod(texDiffuseAccum, previewCoord, 0).rgb;
+        //     ApplyAutoExposure(color, Scene_AvgExposure);
+        //     color = tonemap_ACESFit2(color);
+        // }
     }
 
     outColor = vec4(color, 1.0);

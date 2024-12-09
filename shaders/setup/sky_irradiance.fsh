@@ -8,6 +8,7 @@ uniform sampler2D texSkyView;
 
 #include "/settings.glsl"
 #include "/lib/common.glsl"
+#include "/lib/buffers/scene.glsl"
 #include "/lib/erp.glsl"
 
 #include "/lib/sky/common.glsl"
@@ -24,7 +25,6 @@ vec3 CalculateIrradiance(const in vec3 normal) {
     mat3 tbn = mat3(right, up, normal);
 
     vec3 skyPos = getSkyPosition(vec3(0.0));
-    vec3 sunDir = normalize(mul3(playerModelViewInverse, sunPosition));
 
     float nrSamples = 0.0;
     vec3 irradiance = vec3(0.0);  
@@ -48,7 +48,7 @@ vec3 CalculateIrradiance(const in vec3 normal) {
             // vec2 uv = DirectionToUV(sampleVec);
             // vec3 skyColor = textureLod(texSkyView, uv, 0).rgb;
 
-            vec3 skyColor = 20.0 * getValFromSkyLUT(texSkyView, skyPos, sampleVec, sunDir);
+            vec3 skyColor = 20.0 * getValFromSkyLUT(texSkyView, skyPos, sampleVec, Scene_LocalSunDir);
 
             irradiance += skyColor * (cos_theta * sin_theta);
             nrSamples++;

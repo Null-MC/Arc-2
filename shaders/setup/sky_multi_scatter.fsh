@@ -8,6 +8,7 @@ uniform sampler2D texSkyTransmit;
 
 #include "/settings.glsl"
 #include "/lib/common.glsl"
+
 #include "/lib/sky/common.glsl"
 #include "/lib/sky/multi_scatter.glsl"
 

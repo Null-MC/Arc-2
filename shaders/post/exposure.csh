@@ -3,7 +3,6 @@
 layout (local_size_x = 256, local_size_y = 1, local_size_z = 1) in;
 
 layout(r32ui) uniform uimage2D imgHistogram;
-layout(r16f) uniform image2D imgExposure;
 
 #ifdef DEBUG_HISTOGRAM
 	layout(r32ui) uniform uimage2D imgHistogram_debug;
@@ -12,7 +11,7 @@ layout(r16f) uniform image2D imgExposure;
 shared uint histogramShared[256];
 
 #include "/lib/common.glsl"
-#include "/lib/buffers/histogram_exposure.glsl"
+#include "/lib/buffers/scene.glsl"
 #include "/lib/exposure.glsl"
 
 
@@ -44,15 +43,15 @@ void main() {
 		// that had luminance greater than zero (since the index == 0, we can
 		// use countForThisBin to find the number of black pixels)
 		float weightedLogAverage = (histogramShared[0] / max(Exposure_numPixels - float(countForThisBin), 1.0)) - 1.0;
-		// float weightedLogAverage = (histogramShared[0] / max(Exposure_numPixels - float(countForThisBin), 1.0)) / 255.0;
-		// float weightedLogAverage = float(histogramShared[0]) / max(Exposure_numPixels, 1.0) / 255.0;
 
 		// Map from our histogram space to actual luminance
 		float weightedAvgLum = 255.0 * exp(((weightedLogAverage) * Exposure_logLumRange) + Exposure_minLogLum);
 
-		float lumLastFrame = imageLoad(imgExposure, exposure_uv).r;
+		float lumLastFrame = Scene_AvgExposure;
+		float Exposure_timeCoeff = (1.0 - exp(-frameTime * 2.1));
+
 		float adaptedLum = lumLastFrame + (weightedAvgLum - lumLastFrame) * Exposure_timeCoeff;
 
-		imageStore(imgExposure, exposure_uv, vec4(adaptedLum));
+		Scene_AvgExposure = adaptedLum;
 	}
 }

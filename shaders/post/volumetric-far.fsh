@@ -17,6 +17,7 @@ uniform sampler2D solidDepthTex;
 
 #include "/settings.glsl"
 #include "/lib/common.glsl"
+#include "/lib/buffers/scene.glsl"
 #include "/lib/ign.glsl"
 #include "/lib/hg.glsl"
 
@@ -51,9 +52,7 @@ void main() {
             float dither = InterleavedGradientNoise(gl_FragCoord.xy);
         #endif
         
-        vec3 localSunDir = normalize(mat3(playerModelViewInverse) * sunPosition);
-        vec3 localLightDir = normalize(mat3(playerModelViewInverse) * shadowLightPosition);
-        float lightStrength = localSunDir.y > 0.0 ? SUN_BRIGHTNESS : MOON_BRIGHTNESS;
+        float lightStrength = Scene_LocalSunDir.y > 0.0 ? SUN_BRIGHTNESS : MOON_BRIGHTNESS;
 
         bool isWater = unpackUnorm4x8(data_g).z > 0.5
             && isEyeInWater != 1;
@@ -100,7 +99,7 @@ void main() {
         vec3 shadowViewStep = (shadowViewEnd - shadowViewStart) * stepScale;
 
         vec3 localViewDir = normalize(localPosOpaque);
-        float VoL = dot(localViewDir, localLightDir);
+        float VoL = dot(localViewDir, Scene_LocalLightDir);
         float phase = HG(VoL, phase_g);
 
         // int material = int(unpackUnorm4x8(data_r).w * 255.0 + 0.5);
@@ -127,7 +126,7 @@ void main() {
             vec3 sampleLocalPos = (i+dither) * stepLocal + localPosTrans;
 
             vec3 skyPos = getSkyPosition(sampleLocalPos);
-            vec3 skyLighting = getValFromTLUT(texSkyTransmit, skyPos, localLightDir);
+            vec3 skyLighting = getValFromTLUT(texSkyTransmit, skyPos, Scene_LocalLightDir);
             vec3 sampleColor = lightStrength * skyLighting * shadowSample;
 
             float sampleDensity = stepDist;
@@ -135,7 +134,7 @@ void main() {
                 sampleDensity = stepDist * GetSkyDensity(sampleLocalPos);
 
                 float worldY = sampleLocalPos.y + cameraPos.y;
-                float lightAtmosDist = max(SEA_LEVEL + 200.0 - worldY, 0.0) / localLightDir.y;
+                float lightAtmosDist = max(SEA_LEVEL + 200.0 - worldY, 0.0) / Scene_LocalLightDir.y;
                 sampleColor *= exp2(-0.16 * lightAtmosDist * transmitF);
             }
 

@@ -25,6 +25,7 @@ uniform sampler2DArray solidShadowMap;
 
 #include "/settings.glsl"
 #include "/lib/common.glsl"
+#include "/lib/buffers/scene.glsl"
 #include "/lib/ign.glsl"
 #include "/lib/erp.glsl"
 #include "/lib/depth.glsl"
@@ -97,14 +98,12 @@ void main() {
             shadowSample = SampleShadows(shadowPos, shadowCascade);
         #endif
 
-        vec3 localLightDir = normalize(mat3(playerModelViewInverse) * shadowLightPosition);
-        // float NoLm = step(0.0, dot(localLightDir, localTexNormal));
-        float NoLm = max(dot(localLightDir, localGeoNormal), 0.0);
+        // float NoLm = step(0.0, dot(Scene_LocalLightDir, localTexNormal));
+        float NoLm = max(dot(Scene_LocalLightDir, localGeoNormal), 0.0);
 
         vec3 skyPos = getSkyPosition(localPosTrans);
-        vec3 sunDir = normalize(mat3(playerModelViewInverse) * sunPosition);
-        vec3 sunTransmit = getValFromTLUT(texSkyTransmit, skyPos, sunDir);
-        vec3 moonTransmit = getValFromTLUT(texSkyTransmit, skyPos, -sunDir);
+        vec3 sunTransmit = getValFromTLUT(texSkyTransmit, skyPos, Scene_LocalSunDir);
+        vec3 moonTransmit = getValFromTLUT(texSkyTransmit, skyPos, -Scene_LocalSunDir);
         vec3 skyLighting = SUN_BRIGHTNESS * sunTransmit + MOON_BRIGHTNESS * moonTransmit;
         skyLighting *= NoLm * shadowSample;
 
@@ -126,7 +125,7 @@ void main() {
             vec3 reflectLocalDir = reflect(localViewDir, localTexNormal);
             vec3 reflectViewDir = mat3(playerModelView) * reflectLocalDir;
 
-            vec3 skyReflectColor = lmCoord.y * SKY_LUMINANCE * getValFromSkyLUT(texSkyView, skyPos, reflectLocalDir, sunDir);
+            vec3 skyReflectColor = lmCoord.y * SKY_LUMINANCE * getValFromSkyLUT(texSkyView, skyPos, reflectLocalDir, Scene_LocalSunDir);
 
             vec3 starViewDir = getStarViewDir(reflectLocalDir);
             vec3 starLight = STAR_LUMINANCE * GetStarLight(starViewDir);
@@ -149,10 +148,10 @@ void main() {
 
             finalColor.rgb = F * skyReflectColor;
 
-            // vec3 moonTransmit = getValFromTLUT(texSkyTransmit, skyPos, -sunDir);
+            // vec3 moonTransmit = getValFromTLUT(texSkyTransmit, skyPos, -Scene_LocalSunDir);
 
-            vec3 reflectSun = SUN_LUMINANCE * sun(reflectLocalDir, sunDir) * sunTransmit;
-            vec3 reflectMoon = MOON_LUMINANCE * moon(reflectLocalDir, -sunDir) * moonTransmit;
+            vec3 reflectSun = SUN_LUMINANCE * sun(reflectLocalDir, Scene_LocalSunDir) * sunTransmit;
+            vec3 reflectMoon = MOON_LUMINANCE * moon(reflectLocalDir, -Scene_LocalSunDir) * moonTransmit;
             vec3 specular = shadowSample * (reflectSun + reflectMoon);
 
             finalColor.rgb += F * specular;

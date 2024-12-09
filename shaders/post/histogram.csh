@@ -8,7 +8,7 @@ layout(r32ui) uniform uimage2D imgHistogram;
 shared uint histogramShared[256];
 
 #include "/lib/common.glsl"
-#include "/lib/buffers/histogram_exposure.glsl"
+#include "/lib/buffers/scene.glsl"
 #include "/lib/exposure.glsl"
 
 

@@ -29,6 +29,7 @@ uniform sampler2D TEX_SSGIAO;
 
 #include "/settings.glsl"
 #include "/lib/common.glsl"
+#include "/lib/buffers/scene.glsl"
 #include "/lib/erp.glsl"
 
 #include "/lib/utility/blackbody.glsl"
@@ -54,8 +55,6 @@ void main() {
     float depthTrans = texelFetch(mainDepthTex, iuv, 0).r;
     vec4 colorOpaque = texelFetch(texDeferredOpaque_Color, iuv, 0);
     vec3 colorFinal;
-
-    vec3 sunDir = normalize(mat3(playerModelViewInverse) * sunPosition);
 
     float depthOpaque = 1.0;
     if (colorOpaque.a > EPSILON) {
@@ -127,8 +126,8 @@ void main() {
         const float roughL = 0.9;
 
         vec3 skyPos = getSkyPosition(localPos);
-        vec3 sunTransmit = getValFromTLUT(texSkyTransmit, skyPos, sunDir);
-        vec3 moonTransmit = getValFromTLUT(texSkyTransmit, skyPos, -sunDir);
+        vec3 sunTransmit = getValFromTLUT(texSkyTransmit, skyPos, Scene_LocalSunDir);
+        vec3 moonTransmit = getValFromTLUT(texSkyTransmit, skyPos, -Scene_LocalSunDir);
         vec3 skyLighting = SUN_BRIGHTNESS * sunTransmit + MOON_BRIGHTNESS * moonTransmit;
 
 
@@ -172,14 +171,12 @@ void main() {
         // colorFinal = mix(colorFinal, fogColor.rgb, fogF);
     }
     else {
-        // vec3 moonDir = normalize(mat3(playerModelViewInverse) * moonPosition);
-        
         vec3 skyPos = getSkyPosition(vec3(0.0));
-        colorFinal = SKY_LUMINANCE * getValFromSkyLUT(texSkyView, skyPos, localViewDir, sunDir);
+        colorFinal = SKY_LUMINANCE * getValFromSkyLUT(texSkyView, skyPos, localViewDir, Scene_LocalSunDir);
 
         if (rayIntersectSphere(skyPos, localViewDir, groundRadiusMM) < 0.0) {
-            float sunLum = SUN_LUMINANCE * sun(localViewDir, sunDir);
-            float moonLum = MOON_LUMINANCE * moon(localViewDir, -sunDir);
+            float sunLum = SUN_LUMINANCE * sun(localViewDir, Scene_LocalSunDir);
+            float moonLum = MOON_LUMINANCE * moon(localViewDir, -Scene_LocalSunDir);
 
             vec3 starViewDir = getStarViewDir(localViewDir);
             vec3 starLight = STAR_LUMINANCE * GetStarLight(starViewDir);

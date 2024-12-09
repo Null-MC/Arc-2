@@ -13,7 +13,7 @@ const DEBUG_SSGIAO = false;
 const DEBUG_HISTOGRAM = false;
 
 
-function setupSky() {
+function setupSky(sceneBuffer) {
     let texSkyTransmit = new Texture("texSkyTransmit")
         .format(RGB16F)
         .clear(false)
@@ -58,12 +58,14 @@ function setupSky() {
         .vertex("post/bufferless.vsh")
         .fragment("setup/sky_view.fsh")
         .target(0, texSkyView)
+        .ssbo(0, sceneBuffer)
         .build())
 
     registerPost(Stage.PRE_RENDER, new Composite("sky-irradiance")
         .vertex("post/bufferless.vsh")
         .fragment("setup/sky_irradiance.fsh")
         .target(0, texSkyIrradiance)
+        .ssbo(0, sceneBuffer)
         .build())
 }
 
@@ -154,6 +156,7 @@ function setupShader() {
         "cameraPos",
         "lastCameraPos",
         "screenSize",
+        "frameTime",
         "frameCounter",
         "worldTime",
         "dayProgression",
@@ -322,25 +325,38 @@ function setupShader() {
             .build();
     }
 
-    let texExposure = new Texture("texExposure")
-        .imageName("imgExposure")
-        .format(R16F)
-        .width(1)
-        .height(1)
+    // let texExposure = new Texture("texExposure")
+    //     .imageName("imgExposure")
+    //     .format(R16F)
+    //     .width(1)
+    //     .height(1)
+    //     .clear(false)
+    //     .build();
+
+    let sceneBuffer = new Buffer(1024)
         .clear(false)
         .build();
-
-    // let histogramExposureBuffer = registerBuffer(
-    //     new Buffer("histogramExposureBuffer", 1028)
-    //     .clear(false)
-    //     .build());
 
     // let texShadowColor = new Texture("texShadowColor")
     //     // .format("rgba8")
     //     // .clear([ 1.0, 1.0, 1.0, 1.0 ])
     //     .build();
 
-    setupSky();
+    registerPost(Stage.SCREEN_SETUP, new Compute("scene-setup")
+        .barrier(true)
+        .workGroups(1, 1, 1)
+        .location("setup/scene-setup.csh")
+        .ssbo(0, sceneBuffer)
+        .build());
+
+    registerPost(Stage.PRE_RENDER, new Compute("scene-prepare")
+        .barrier(true)
+        .workGroups(1, 1, 1)
+        .location("setup/scene-prepare.csh")
+        .ssbo(0, sceneBuffer)
+        .build());
+
+    setupSky(sceneBuffer);
 
     if (FEATURE.Shadows) {
         registerShader(new ObjectShader("shadow", Usage.SHADOW)
@@ -363,6 +379,7 @@ function setupShader() {
         .vertex("program/main.vsh")
         .fragment("program/clouds.fsh")
         .target(0, texClouds)
+        .ssbo(0, sceneBuffer)
         .build());
 
     registerShader(new ObjectShader("terrain", Usage.BASIC)
@@ -405,10 +422,10 @@ function setupShader() {
     }
 
     if (FEATURE.Accumulation) {
-        registerPost(Stage.POST_RENDER, new Composite("diffuse-accum-opaque")
-            .vertex("post/bufferless.vsh")
-            .fragment("post/diffuse-accum-opaque.fsh")
-            .target(0, texDiffuseAccum)
+        registerPost(Stage.POST_RENDER, new Compute("diffuse-accum-opaque")
+            .barrier(true)
+            .location("post/diffuse-accum-opaque.csh")
+            .workGroups(Math.ceil(screenWidth / 16.0), Math.ceil(screenHeight / 16.0), 1)
             .build());
 
         registerPost(Stage.POST_RENDER, new Composite("diffuse-accum-copy-prev")
@@ -425,6 +442,7 @@ function setupShader() {
             .fragment("post/volumetric-far.fsh")
             .target(0, texScatterVL)
             .target(1, texTransmitVL)
+            .ssbo(0, sceneBuffer)
             .build());
     }
 
@@ -450,6 +468,7 @@ function setupShader() {
         .vertex("post/bufferless.vsh")
         .fragment("post/composite-opaque.fsh")
         .target(0, texFinalOpaque)
+        .ssbo(0, sceneBuffer)
         .define("TEX_SHADOW", texShadow_src)
         .define("TEX_SSGIAO", "texSSGIAO")
         .build());
@@ -460,6 +479,7 @@ function setupShader() {
             .fragment("post/volumetric-near.fsh")
             .target(0, texScatterVL)
             .target(1, texTransmitVL)
+            .ssbo(0, sceneBuffer)
             .build());
     }
 
@@ -490,14 +510,13 @@ function setupShader() {
         .barrier(true)
         .location("post/histogram.csh")
         .workGroups(Math.ceil(screenWidth / 16.0), Math.ceil(screenHeight / 16.0), 1)
-        // .ssbo(0, histogramExposureBuffer)
         .build());
 
     registerPost(Stage.POST_RENDER, new Compute("exposure")
         .barrier(true)
-        .location("post/exposure.csh")
         .workGroups(1, 1, 1)
-        // .ssbo(0, histogramExposureBuffer)
+        .location("post/exposure.csh")
+        .ssbo(0, sceneBuffer)
         .build());
 
     if (FEATURE.Bloom)
@@ -506,6 +525,7 @@ function setupShader() {
     registerPost(Stage.POST_RENDER, new Composite("tonemap")
         .vertex("post/bufferless.vsh")
         .fragment("post/tonemap.fsh")
+        .ssbo(0, sceneBuffer)
         .target(0, texFinal)
         .build());
 
@@ -513,12 +533,9 @@ function setupShader() {
         .vertex("post/bufferless.vsh")
         .fragment("post/debug.fsh")
         .target(0, texFinal)
+        .ssbo(0, sceneBuffer)
         .define("TEX_SSGIAO", "texSSGIAO")
         .build());
 
     setCombinationPass(new CombinationPass("post/final.fsh").build());
-
-    // addUniform("gamingTime", "bool", function(state) {
-    //     return true;
-    // });
 }

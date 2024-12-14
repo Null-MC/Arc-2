@@ -549,6 +549,7 @@ function setupShader() {
         .vertex("vertex/bufferless.vsh")
         .fragment("composite/composite-trans.fsh")
         .target(0, texFinal)
+        .ssbo(0, sceneBuffer)
         .build());
 
     if (FEATURE.TAA) {

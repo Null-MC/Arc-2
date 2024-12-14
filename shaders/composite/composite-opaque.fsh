@@ -23,13 +23,28 @@ uniform sampler2D TEX_SSGIAO;
     uniform sampler2D texTransmitVL;
 #endif
 
+// #ifdef LPV_ENABLED
+//     uniform sampler3D texLpvR;
+//     uniform sampler3D texLpvG;
+//     uniform sampler3D texLpvB;
+//     uniform sampler3D texLpvR_alt;
+//     uniform sampler3D texLpvG_alt;
+//     uniform sampler3D texLpvB_alt;
+// #endif
+
 #ifdef ACCUM_ENABLED
     uniform sampler2D texDiffuseAccum;
+    uniform sampler2D texDiffuseAccum_alt;
 #endif
 
 #include "/settings.glsl"
 #include "/lib/common.glsl"
 #include "/lib/buffers/scene.glsl"
+
+#ifdef LPV_ENABLED
+    #include "/lib/buffers/sh-lpv.glsl"
+#endif
+
 #include "/lib/erp.glsl"
 
 #include "/lib/utility/blackbody.glsl"
@@ -44,6 +59,13 @@ uniform sampler2D TEX_SSGIAO;
 #include "/lib/sky/stars.glsl"
 
 #include "/lib/volumetric.glsl"
+
+#ifdef LPV_ENABLED
+    #include "/lib/voxel/voxel_common.glsl"
+
+    #include "/lib/lpv/lpv_common.glsl"
+    #include "/lib/lpv/lpv_sample.glsl"
+#endif
 
 #ifdef EFFECT_TAA_ENABLED
     #include "/lib/taa_jitter.glsl"
@@ -148,6 +170,10 @@ void main() {
         vec3 skyIrradiance = textureLod(texSkyIrradiance, skyIrradianceCoord, 0).rgb;
         skyLighting += (SKY_AMBIENT * lmCoord.y * SKY_BRIGHTNESS) * skyIrradiance * occlusion;
 
+        #ifdef LPV_ENABLED
+            skyLighting += sample_lpv(localPos, localNormal);
+        #endif
+
         #if defined SSGIAO_ENABLED && !defined ACCUM_ENABLED
             skyLighting += gi_ao.rgb;
         #endif
@@ -159,8 +185,14 @@ void main() {
             + (EMISSION_BRIGHTNESS * emission)
             + 0.0016;
 
+        #ifdef LPV_ENABLED
+            vec3 voxelPos = GetVoxelPosition(localPos + 0.5*localNormal);
+            diffuse += sample_lpv(voxelPos, localNormal);
+        #endif
+
         #ifdef ACCUM_ENABLED
-            diffuse += textureLod(texDiffuseAccum, uv, 0).rgb;
+            bool altFrame = (frameCounter % 2) == 1;
+            diffuse += textureLod(altFrame ? texDiffuseAccum_alt : texDiffuseAccum, uv, 0).rgb;
         #endif
 
         colorFinal = colorOpaque.rgb;

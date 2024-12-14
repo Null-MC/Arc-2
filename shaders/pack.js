@@ -1,16 +1,19 @@
 const FEATURE = {
-    Accumulation: true,
+    Accumulation: false,
     WaterWaves: true,
     Shadows: true,
     ShadowFilter: false,
     Bloom: true,
-    GI_AO: true,
+    GI_AO: false,
     TAA: true,
+    LPV: false,
     VL: true
 };
 
 const DEBUG_SSGIAO = false;
 const DEBUG_HISTOGRAM = false;
+
+const VoxelBufferSize = 128;
 
 
 function setupSky(sceneBuffer) {
@@ -43,26 +46,26 @@ function setupSky(sceneBuffer) {
         .build();
 
     registerShader(Stage.SCREEN_SETUP, new Composite("sky-transmit")
-        .vertex("post/bufferless.vsh")
+        .vertex("vertex/bufferless.vsh")
         .fragment("setup/sky_transmit.fsh")
         .target(0, texSkyTransmit)
         .build())
 
     registerShader(Stage.SCREEN_SETUP, new Composite("sky-multi-scatter")
-        .vertex("post/bufferless.vsh")
+        .vertex("vertex/bufferless.vsh")
         .fragment("setup/sky_multi_scatter.fsh")
         .target(0, texSkyMultiScatter)
         .build())
 
     registerShader(Stage.PRE_RENDER, new Composite("sky-view")
-        .vertex("post/bufferless.vsh")
+        .vertex("vertex/bufferless.vsh")
         .fragment("setup/sky_view.fsh")
         .target(0, texSkyView)
         .ssbo(0, sceneBuffer)
         .build())
 
     registerShader(Stage.PRE_RENDER, new Composite("sky-irradiance")
-        .vertex("post/bufferless.vsh")
+        .vertex("vertex/bufferless.vsh")
         .fragment("setup/sky_irradiance.fsh")
         .target(0, texSkyIrradiance)
         .ssbo(0, sceneBuffer)
@@ -75,49 +78,44 @@ function setupBloom(texFinal) {
 
     print(`Bloom enabled with ${maxLod} LODs`);
 
-    let texBloomArray = [];
-    for (let i = 0; i < maxLod; i++) {
-        let scale = Math.pow(2, i+1);
-        let bufferWidth = Math.ceil(screenWidth / scale);
-        let bufferHeight = Math.ceil(screenHeight / scale);
-
-        texBloomArray[i] = new Texture(`texBloom_${i}`)
-            .format(RGB16F)
-            .width(bufferWidth)
-            .height(bufferHeight)
-            .clear(false)
-            .build();
-    }
+    let texBloom = new Texture("texBloom")
+        .format(RGB16F)
+        .width(Math.ceil(screenWidth / 2.0))
+        .height(Math.ceil(screenHeight / 2.0))
+        .mipmap(true)
+        .clear(false)
+        .build();
 
     for (let i = 0; i < maxLod; i++) {
         let texSrc = i == 0
             ? "texFinal"
-            : `texBloom_${i-1}`
+            : "texBloom"
 
         registerShader(Stage.POST_RENDER, new Composite(`bloom-down-${i}`)
-            .vertex("post/bufferless.vsh")
+            .vertex("vertex/bufferless.vsh")
             .fragment("post/bloom/down.fsh")
-            .target(0, texBloomArray[i])
+            .target(0, texBloom, i)
             .define("TEX_SRC", texSrc)
             .define("TEX_SCALE", Math.pow(2, i).toString())
             .define("BLOOM_INDEX", i.toString())
+            .define("MIP_INDEX", Math.max(i-1, 0).toString())
             .build());
     }
 
     for (let i = maxLod-1; i >= 0; i--) {
-        let texOut = i == 0
-            ? texFinal
-            : texBloomArray[i-1];
-
-        registerShader(Stage.POST_RENDER, new Composite(`bloom-up-${i}`)
-            .vertex("post/bufferless.vsh")
+        let shader = new Composite(`bloom-up-${i}`)
+            .vertex("vertex/bufferless.vsh")
             .fragment("post/bloom/up.fsh")
-            .define("TEX_SRC", `texBloom_${i}`)
             .define("TEX_SCALE", Math.pow(2, i+1).toString())
             .define("BLOOM_INDEX", i.toString())
-            .target(0, texOut)
-            .blendFunc(0, Func.ONE, Func.ONE, Func.ONE, Func.ONE)
-            .build());
+            .define("MIP_INDEX", i.toString());
+
+        if (i == 0) shader.target(0, texFinal);
+        else shader.target(0, texBloom, i-1);
+
+        shader.blendFunc(0, Func.ONE, Func.ONE, Func.ONE, Func.ONE);
+
+        registerShader(Stage.POST_RENDER, shader.build());
     }
 }
 
@@ -134,12 +132,14 @@ function setupShader() {
     worldSettings.moon = false;
     worldSettings.sun = false;
 
+    defineGlobally("VOXEL_SIZE", VoxelBufferSize.toString());
     defineGlobally("SHADOW_SCREEN", "1");
 
     if (FEATURE.Accumulation) defineGlobally("ACCUM_ENABLED", "1");
     if (FEATURE.WaterWaves) defineGlobally("WATER_WAVES_ENABLED", "1");
     if (FEATURE.Shadows) defineGlobally("SHADOWS_ENABLED", "1");
     if (FEATURE.GI_AO) defineGlobally("SSGIAO_ENABLED", "1");
+    if (FEATURE.LPV) defineGlobally("LPV_ENABLED", "1");
     if (FEATURE.TAA) defineGlobally("EFFECT_TAA_ENABLED", "1");
     if (FEATURE.VL) defineGlobally("EFFECT_VL_ENABLED", "1");
 
@@ -174,6 +174,7 @@ function setupShader() {
         "playerProjectionInverse",
         "sunPosition",
         "shadowModelView",
+        // "shadowModelViewInverse",
         "shadowProjection",
         "shadowProjectionSize",
         "cascadeSize",
@@ -242,6 +243,15 @@ function setupShader() {
             .build();
     }
 
+    let texVoxelBlock = new Texture("texVoxelBlock")
+        .imageName("imgVoxelBlock")
+        .format(R8UI)
+        .clearColor(0.0, 0.0, 0.0, 0.0)
+        .width(VoxelBufferSize)
+        .height(VoxelBufferSize)
+        .depth(VoxelBufferSize)
+        .build();
+
     let texSSGIAO = null;
     let texSSGIAO_final = null;
     if (FEATURE.GI_AO) {
@@ -262,8 +272,9 @@ function setupShader() {
     }
 
     let texDiffuseAccum = null;
-    let texDiffuseAccumPrevious = null;
-    // let texDiffuseAccumPrevious_alt = null;
+    let texDiffuseAccum_alt = null;
+    let texDiffuseAccumPos = null;
+    let texDiffuseAccumPos_alt = null;
     if (FEATURE.Accumulation) {
         texDiffuseAccum = new Texture("texDiffuseAccum")
             .imageName("imgDiffuseAccum")
@@ -273,21 +284,29 @@ function setupShader() {
             .clear(false)
             .build();
 
-        texDiffuseAccumPrevious = new Texture("texDiffuseAccumPrevious")
-            .imageName("imgDiffuseAccumPrevious")
+        texDiffuseAccum_alt = new Texture("texDiffuseAccum_alt")
+            .imageName("imgDiffuseAccum_alt")
             .format(RGBA16F)
             .width(screenWidth)
             .height(screenHeight)
             .clear(false)
             .build();
 
-        // texDiffuseAccumPrevious_alt = new Texture("texDiffuseAccumPrevious_alt")
-        //     .imageName("imgDiffuseAccumPrevious_alt")
-        //     .format(RGBA16F)
-        //     .width(screenWidth)
-        //     .height(screenHeight)
-        //     .clear(false)
-        //     .build();
+        texDiffuseAccumPos = new Texture("texDiffuseAccumPos")
+            .imageName("imgDiffuseAccumPos")
+            .format(RGBA16F)
+            .width(screenWidth)
+            .height(screenHeight)
+            .clear(false)
+            .build();
+
+        texDiffuseAccumPos_alt = new Texture("texDiffuseAccumPos_alt")
+            .imageName("imgDiffuseAccumPos_alt")
+            .format(RGBA16F)
+            .width(screenWidth)
+            .height(screenHeight)
+            .clear(false)
+            .build();
     }
 
     let texScatterVL = null;
@@ -304,6 +323,21 @@ function setupShader() {
             .format(RGB16F)
             .width(Math.ceil(screenWidth / 2.0))
             .height(Math.ceil(screenHeight / 2.0))
+            .clear(false)
+            .build();
+    }
+
+    let shLpvBuffer = null;
+    let shLpvBuffer_alt = null;
+    if (FEATURE.LPV) {
+        // vec3[12] * Band[4] * VoxelBufferSize^3
+        let bufferSize = 12 * 4 * (VoxelBufferSize*VoxelBufferSize*VoxelBufferSize);
+
+        shLpvBuffer = new Buffer(bufferSize)
+            .clear(false)
+            .build();
+
+        shLpvBuffer_alt = new Buffer(bufferSize)
             .clear(false)
             .build();
     }
@@ -326,14 +360,6 @@ function setupShader() {
             .build();
     }
 
-    // let texExposure = new Texture("texExposure")
-    //     .imageName("imgExposure")
-    //     .format(R16F)
-    //     .width(1)
-    //     .height(1)
-    //     .clear(false)
-    //     .build();
-
     let sceneBuffer = new Buffer(1024)
         .clear(false)
         .build();
@@ -349,6 +375,14 @@ function setupShader() {
         .location("setup/scene-setup.csh")
         .ssbo(0, sceneBuffer)
         .build());
+
+    if (FEATURE.LPV) {
+        registerShader(Stage.SCREEN_SETUP, new Compute("lpv-clear")
+            .barrier(true)
+            .location("setup/lpv-clear.csh")
+            .workGroups(8, 8, 8)
+            .build());
+    }
 
     registerShader(Stage.PRE_RENDER, new Compute("scene-prepare")
         .barrier(true)
@@ -368,15 +402,15 @@ function setupShader() {
 
     if (FEATURE.Shadows) {
         registerShader(new ObjectShader("shadow", Usage.SHADOW)
-            .vertex("program/shadow.vsh")
-            .fragment("program/shadow.fsh")
+            .vertex("vertex/shadow.vsh")
+            .fragment("gbuffer/shadow.fsh")
             // .target(0, texShadowColor)
             .build());
     }
 
     registerShader(new ObjectShader("sky-color", Usage.SKYBOX)
-        .vertex("program/sky.vsh")
-        .fragment("program/sky.fsh")
+        .vertex("vertex/sky.vsh")
+        .fragment("gbuffer/sky.fsh")
         .target(0, texFinalOpaque)
         // .blendFunc(0, FUNC_ONE, FUNC_ZERO, FUNC_ONE, FUNC_ZERO)
         .build());
@@ -384,15 +418,15 @@ function setupShader() {
     // TODO: sky-textured?
 
     registerShader(new ObjectShader("clouds", Usage.CLOUDS)
-        .vertex("program/main.vsh")
-        .fragment("program/clouds.fsh")
+        .vertex("vertex/main.vsh")
+        .fragment("gbuffer/clouds.fsh")
         .target(0, texClouds)
         .ssbo(0, sceneBuffer)
         .build());
 
     registerShader(new ObjectShader("terrain", Usage.BASIC)
-        .vertex("program/main.vsh")
-        .fragment("program/main.fsh")
+        .vertex("vertex/main.vsh")
+        .fragment("gbuffer/main.fsh")
         .target(0, texDeferredOpaque_Color)
         // .blendFunc(0, FUNC_SRC_ALPHA, FUNC_ONE_MINUS_SRC_ALPHA, FUNC_ONE, FUNC_ZERO)
         .target(1, texDeferredOpaque_Data)
@@ -400,8 +434,8 @@ function setupShader() {
         .build());
 
     registerShader(new ObjectShader("water", Usage.TERRAIN_TRANSLUCENT)
-        .vertex("program/main.vsh")
-        .fragment("program/main.fsh")
+        .vertex("vertex/main.vsh")
+        .fragment("gbuffer/main.fsh")
         .define("RENDER_TRANSLUCENT", "1")
         .target(0, texDeferredTrans_Color)
         // .blendFunc(0, FUNC_SRC_ALPHA, FUNC_ONE_MINUS_SRC_ALPHA, FUNC_ONE, FUNC_ZERO)
@@ -410,21 +444,34 @@ function setupShader() {
         .build());
 
     registerShader(new ObjectShader("weather", Usage.WEATHER)
-        .vertex("program/main.vsh")
-        .fragment("program/weather.fsh")
+        .vertex("vertex/main.vsh")
+        .fragment("gbuffer/weather.fsh")
         .target(0, texParticles)
         .build());
 
+    if (FEATURE.LPV) {
+        let groupCount = Math.ceil(VoxelBufferSize / 8);
+
+        registerShader(Stage.POST_RENDER, new Compute("lpv-propagate")
+            .barrier(true)
+            .location("composite/lpv-propagate.csh")
+            .workGroups(groupCount, groupCount, groupCount)
+            .ssbo(0, sceneBuffer)
+            .ssbo(1, shLpvBuffer)
+            .ssbo(2, shLpvBuffer_alt)
+            .build());
+    }
+
     if (FEATURE.GI_AO) {
         registerShader(Stage.POST_RENDER, new Composite("ssgiao-opaque")
-            .vertex("post/bufferless.vsh")
-            .fragment("post/ssgiao.fsh")
+            .vertex("vertex/bufferless.vsh")
+            .fragment("composite/ssgiao.fsh")
             .target(0, texSSGIAO)
             .build());
 
         // registerShader(new Compute(POST_RENDER, "ssgiao-filter-opaque")
         //     .barrier(true)
-        //     .location("post/ssgiao-filter-opaque.csh")
+        //     .location("composite/ssgiao-filter-opaque.csh")
         //     .workGroups(Math.ceil(screenWidth / 16.0), Math.ceil(screenHeight / 16.0), 1)
         //     .build());
     }
@@ -432,22 +479,22 @@ function setupShader() {
     if (FEATURE.Accumulation) {
         registerShader(Stage.POST_RENDER, new Compute("diffuse-accum-opaque")
             .barrier(true)
-            .location("post/diffuse-accum-opaque.csh")
+            .location("composite/diffuse-accum-opaque.csh")
             .workGroups(Math.ceil(screenWidth / 16.0), Math.ceil(screenHeight / 16.0), 1)
             .build());
 
-        registerShader(Stage.POST_RENDER, new Composite("diffuse-accum-copy-prev")
-            .vertex("post/bufferless.vsh")
-            .fragment("post/copy.fsh")
-            .target(0, texDiffuseAccumPrevious)
-            .define("TEX_SRC", "texDiffuseAccum")
-            .build());
+        // registerShader(Stage.POST_RENDER, new Composite("diffuse-accum-copy-prev")
+        //     .vertex("vertex/bufferless.vsh")
+        //     .fragment("post/copy.fsh")
+        //     .target(0, texDiffuseAccumPrevious)
+        //     .define("TEX_SRC", "texDiffuseAccum")
+        //     .build());
     }
 
     if (FEATURE.VL) {
         registerShader(Stage.POST_RENDER, new Composite("volumetric-far")
-            .vertex("post/bufferless.vsh")
-            .fragment("post/volumetric-far.fsh")
+            .vertex("vertex/bufferless.vsh")
+            .fragment("composite/volumetric-far.fsh")
             .target(0, texScatterVL)
             .target(1, texTransmitVL)
             .ssbo(0, sceneBuffer)
@@ -456,15 +503,15 @@ function setupShader() {
 
     if (FEATURE.Shadows) {
         registerShader(Stage.POST_RENDER, new Composite("shadow-opaque")
-            .vertex("post/bufferless.vsh")
-            .fragment("post/shadow-opaque.fsh")
+            .vertex("vertex/bufferless.vsh")
+            .fragment("composite/shadow-opaque.fsh")
             .target(0, texShadow)
             .build());
 
         if (FEATURE.ShadowFilter) {
             registerShader(Stage.POST_RENDER, new Compute("shadow-filter-opaque")
                 .barrier(true)
-                .location("post/shadow-filter-opaque.csh")
+                .location("composite/shadow-filter-opaque.csh")
                 .workGroups(Math.ceil(screenWidth / 16.0), Math.ceil(screenHeight / 16.0), 1)
                 .build());
         }
@@ -472,19 +519,26 @@ function setupShader() {
 
     let texShadow_src = FEATURE.ShadowFilter ? "texShadow_final" : "texShadow";
 
-    registerShader(Stage.POST_RENDER, new Composite("composite-opaque")
-        .vertex("post/bufferless.vsh")
-        .fragment("post/composite-opaque.fsh")
+    let compositeOpaqueShader = new Composite("composite-opaque")
+        .vertex("vertex/bufferless.vsh")
+        .fragment("composite/composite-opaque.fsh")
         .target(0, texFinalOpaque)
         .ssbo(0, sceneBuffer)
         .define("TEX_SHADOW", texShadow_src)
-        .define("TEX_SSGIAO", "texSSGIAO")
-        .build());
+        .define("TEX_SSGIAO", "texSSGIAO");
+
+    if (FEATURE.LPV) {
+        compositeOpaqueShader
+            .ssbo(1, shLpvBuffer)
+            .ssbo(2, shLpvBuffer_alt);
+    }
+
+    registerShader(Stage.POST_RENDER, compositeOpaqueShader.build());
 
     if (FEATURE.VL) {
         registerShader(Stage.POST_RENDER, new Composite("volumetric-near")
-            .vertex("post/bufferless.vsh")
-            .fragment("post/volumetric-near.fsh")
+            .vertex("vertex/bufferless.vsh")
+            .fragment("composite/volumetric-near.fsh")
             .target(0, texScatterVL)
             .target(1, texTransmitVL)
             .ssbo(0, sceneBuffer)
@@ -492,14 +546,14 @@ function setupShader() {
     }
 
     registerShader(Stage.POST_RENDER, new Composite("composite-translucent")
-        .vertex("post/bufferless.vsh")
-        .fragment("post/composite-trans.fsh")
+        .vertex("vertex/bufferless.vsh")
+        .fragment("composite/composite-trans.fsh")
         .target(0, texFinal)
         .build());
 
     if (FEATURE.TAA) {
         registerShader(Stage.POST_RENDER, new Composite("TAA")
-            .vertex("post/bufferless.vsh")
+            .vertex("vertex/bufferless.vsh")
             .fragment("post/taa.fsh")
             .target(0, texFinal)
             .target(1, texFinalPrevious)
@@ -507,7 +561,7 @@ function setupShader() {
     }
     else {
         registerShader(Stage.POST_RENDER, new Composite("copy-prev")
-            .vertex("post/bufferless.vsh")
+            .vertex("vertex/bufferless.vsh")
             .fragment("post/copy.fsh")
             .define("TEX_SRC", "texFinal")
             .target(0, texFinalPrevious)
@@ -531,14 +585,14 @@ function setupShader() {
         setupBloom(texFinal);
 
     registerShader(Stage.POST_RENDER, new Composite("tonemap")
-        .vertex("post/bufferless.vsh")
+        .vertex("vertex/bufferless.vsh")
         .fragment("post/tonemap.fsh")
         .ssbo(0, sceneBuffer)
         .target(0, texFinal)
         .build());
 
     registerShader(Stage.POST_RENDER, new Composite("debug")
-        .vertex("post/bufferless.vsh")
+        .vertex("vertex/bufferless.vsh")
         .fragment("post/debug.fsh")
         .target(0, texFinal)
         .ssbo(0, sceneBuffer)

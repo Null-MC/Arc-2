@@ -9,13 +9,9 @@ uniform sampler2D texSkyIrradiance;
 #include "/lib/buffers/scene.glsl"
 #include "/lib/erp.glsl"
 
-#include "/lib/sky/common.glsl"
-#include "/lib/sky/transmittance.glsl"
-
 
 void main() {
     vec2 skyIrradianceCoord = DirectionToUV(vec3(0.0, 1.0, 0.0));
     vec3 skyIrradiance = textureLod(texSkyIrradiance, skyIrradianceCoord, 0).rgb;
-
     Scene_SkyIrradianceUp = skyIrradiance * SKY_BRIGHTNESS;
 }

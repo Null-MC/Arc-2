@@ -6,7 +6,7 @@ uniform sampler2D texFinal;
 
 // in vec2 uv;
 
-// #include "/settings.glsl"
+#include "/settings.glsl"
 #include "/lib/common.glsl"
 #include "/lib/buffers/scene.glsl"
 #include "/lib/exposure.glsl"

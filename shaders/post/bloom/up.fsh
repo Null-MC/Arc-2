@@ -2,7 +2,7 @@
 
 layout(location = 0) out vec4 outColor;
 
-uniform sampler2D TEX_SRC;
+uniform sampler2D texBloom;
 
 in vec2 uv;
 
@@ -23,7 +23,7 @@ vec3 BloomUp(in sampler2D texColor, const in float scale) {
         for (int x = 0; x <= 2; x++) {
             vec2 sampleOffset = vec2(x, y) - 1.0;
             vec2 sampleCoord = uv + sampleOffset * pixelSize;
-            vec3 sampleColor = textureLod(texColor, sampleCoord, 0).rgb;
+            vec3 sampleColor = textureLod(texColor, sampleCoord, MIP_INDEX).rgb;
 
             float wX = WEIGHTS[x];
             float wY = WEIGHTS[y];
@@ -36,7 +36,7 @@ vec3 BloomUp(in sampler2D texColor, const in float scale) {
 }
 
 void main() {
-    vec3 upColor = BloomUp(TEX_SRC, TEX_SCALE);
+    vec3 upColor = BloomUp(texBloom, TEX_SCALE);
 
     outColor = vec4(upColor, 1.0);
 }

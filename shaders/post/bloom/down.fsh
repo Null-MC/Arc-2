@@ -32,10 +32,10 @@ void main() {
     vec2 uv3 = uv + vec2(-hp.x,  hp.y);
     vec2 uv4 = uv + vec2( hp.x,  hp.y);
 
-    vec3 color1 = textureLod(TEX_SRC, uv1, 0).rgb;
-    vec3 color2 = textureLod(TEX_SRC, uv2, 0).rgb;
-    vec3 color3 = textureLod(TEX_SRC, uv3, 0).rgb;
-    vec3 color4 = textureLod(TEX_SRC, uv4, 0).rgb;
+    vec3 color1 = textureLod(TEX_SRC, uv1, MIP_INDEX).rgb;
+    vec3 color2 = textureLod(TEX_SRC, uv2, MIP_INDEX).rgb;
+    vec3 color3 = textureLod(TEX_SRC, uv3, MIP_INDEX).rgb;
+    vec3 color4 = textureLod(TEX_SRC, uv4, MIP_INDEX).rgb;
 
     #if BLOOM_INDEX == 0
         ScaleInput(color1);

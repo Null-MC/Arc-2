@@ -3,7 +3,7 @@
 layout(location = 0) out vec4 outColor;
 
 uniform sampler2D texFinal;
-uniform sampler2D texDiffuseAccum;
+// uniform sampler2D texBloom;
 
 #ifdef DEBUG_HISTOGRAM
     uniform usampler2D texHistogram_debug;
@@ -15,10 +15,13 @@ uniform sampler2D texDiffuseAccum;
 
 in vec2 uv;
 
+#include "/settings.glsl"
 #include "/lib/common.glsl"
 #include "/lib/buffers/scene.glsl"
 #include "/lib/exposure.glsl"
 #include "/lib/tonemap.glsl"
+
+// #include "/lib/utility/text.glsl"
 
 
 void main() {
@@ -56,11 +59,28 @@ void main() {
 
         // vec2 previewCoord = (uv - 0.01) / vec2(0.25);
         // if (clamp(previewCoord, 0.0, 1.0) == previewCoord) {
-        //     color = textureLod(texDiffuseAccum, previewCoord, 0).rgb;
+        //     color = textureLod(texBloom, previewCoord, 4).rgb;
         //     ApplyAutoExposure(color, Scene_AvgExposure);
         //     color = tonemap_ACESFit2(color);
         // }
     }
+
+    // beginText(ivec2(gl_FragCoord.xy * 0.5), ivec2(4, screenSize.y/2 - 24));
+
+    // text.bgCol = vec4(0.0, 0.0, 0.0, 0.6);
+    // text.fgCol = vec4(1.0, 1.0, 1.0, 1.0);
+    // text.fpPrecision = 4;
+
+    // // printString((_P, _o, _s, _i, _t, _i, _o, _n, _colon, _space));
+    // printChar(_p);
+    // printChar(_o);
+    // printChar(_s);
+    // printChar(_colon);
+    // printChar(_space);
+    // printVec3(Scene_TrackPos);
+    // printLine();
+
+    // endText(color);
 
     outColor = vec4(color, 1.0);
 }

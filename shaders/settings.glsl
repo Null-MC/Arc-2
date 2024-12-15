@@ -13,9 +13,9 @@ const float SUN_LUMINANCE = 4000.0;
 const float EMISSION_BRIGHTNESS = 100.0;
 const float MOON_LUMINANCE = 0.16;
 const float STAR_LUMINANCE = 0.10;
-const float SKY_LUMINANCE = 16.0;
+const float SKY_LUMINANCE = 32.0;
 
-const float SUN_BRIGHTNESS = 48.0;
+const float SUN_BRIGHTNESS = 32.0;
 const float MOON_BRIGHTNESS = 0.016;
 const float SKY_BRIGHTNESS = 12.0;
 const float BLOCKLIGHT_BRIGHTNESS = 4.0;

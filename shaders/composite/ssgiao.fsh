@@ -117,7 +117,7 @@ void main() {
 
     // occlusion *= 2.0;
 
-    vec3 gi = illumination;
+    vec3 gi = 3.0 * illumination;
     float ao = 1.0 - min(occlusion, 1.0);
 
     out_GI_AO = vec4(gi, ao);

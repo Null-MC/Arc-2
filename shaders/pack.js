@@ -5,6 +5,7 @@ const FEATURE = {
     ShadowFilter: false,
     Bloom: true,
     GI_AO: false,
+    SSR: true,
     TAA: true,
     LPV: true,
     LPV_RSM: false,
@@ -142,6 +143,7 @@ function setupShader() {
     if (FEATURE.GI_AO) defineGlobally("SSGIAO_ENABLED", "1");
     if (FEATURE.LPV) defineGlobally("LPV_ENABLED", "1");
     if (FEATURE.LPV_RSM) defineGlobally("LPV_RSM_ENABLED", "1");
+    if (FEATURE.SSR) defineGlobally("SSR_ENABLED", "1");
     if (FEATURE.TAA) defineGlobally("EFFECT_TAA_ENABLED", "1");
     if (FEATURE.VL) defineGlobally("EFFECT_VL_ENABLED", "1");
 

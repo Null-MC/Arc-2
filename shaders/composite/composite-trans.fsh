@@ -39,7 +39,9 @@ uniform sampler2DArray solidShadowMap;
 #include "/lib/sky/sun.glsl"
 #include "/lib/sky/stars.glsl"
 
-#include "/lib/ssr.glsl"
+#ifdef SSR_ENABLED
+    #include "/lib/ssr.glsl"
+#endif
 
 #ifdef SHADOWS_ENABLED
     #include "/lib/shadow/csm.glsl"
@@ -134,21 +136,20 @@ void main() {
             float NoVm = max(dot(localTexNormal, -localViewDir), 0.0);
             float F = F_schlick(NoVm, 0.02, 1.0);
 
-            // SSR
-            vec3 reflectViewPos = viewPosTrans + 0.5*viewDist*reflectViewDir;
-            vec3 reflectClipPos = unproject(playerProjection, reflectViewPos) * 0.5 + 0.5;
+            #ifdef SSR_ENABLED
+                vec3 reflectViewPos = viewPosTrans + 0.5*viewDist*reflectViewDir;
+                vec3 reflectClipPos = unproject(playerProjection, reflectViewPos) * 0.5 + 0.5;
 
-            vec3 clipPos = ndcPosTrans * 0.5 + 0.5;
-            vec3 reflectRay = normalize(reflectClipPos - clipPos);
+                vec3 clipPos = ndcPosTrans * 0.5 + 0.5;
+                vec3 reflectRay = normalize(reflectClipPos - clipPos);
 
-            vec4 reflection = GetReflectionPosition(mainDepthTex, clipPos, reflectRay);
-            vec3 reflectColor = GetRelectColor(texFinalOpaque, reflection.xy, reflection.a, 0.0);
+                vec4 reflection = GetReflectionPosition(mainDepthTex, clipPos, reflectRay);
+                vec3 reflectColor = GetRelectColor(texFinalOpaque, reflection.xy, reflection.a, 0.0);
 
-            skyReflectColor = mix(skyReflectColor, reflectColor, reflection.a);
+                skyReflectColor = mix(skyReflectColor, reflectColor, reflection.a);
+            #endif
 
             finalColor.rgb = F * skyReflectColor;
-
-            // vec3 moonTransmit = getValFromTLUT(texSkyTransmit, skyPos, -Scene_LocalSunDir);
 
             vec3 reflectSun = SUN_LUMINANCE * sun(reflectLocalDir, Scene_LocalSunDir) * sunTransmit;
             vec3 reflectMoon = MOON_LUMINANCE * moon(reflectLocalDir, -Scene_LocalSunDir) * moonTransmit;

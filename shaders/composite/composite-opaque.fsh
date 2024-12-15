@@ -16,7 +16,10 @@ uniform sampler2D texSkyTransmit;
 uniform sampler2D texSkyIrradiance;
 
 uniform sampler2D TEX_SHADOW;
-uniform sampler2D texFinalPrevious;
+
+#ifdef SSR_ENABLED
+    uniform sampler2D texFinalPrevious;
+#endif
 
 #ifdef SSGIAO_ENABLED
     uniform sampler2D TEX_SSGIAO;
@@ -62,7 +65,10 @@ uniform sampler2D texFinalPrevious;
 #include "/lib/sky/stars.glsl"
 
 #include "/lib/volumetric.glsl"
-#include "/lib/ssr.glsl"
+
+#ifdef SSR_ENABLED
+    #include "/lib/ssr.glsl"
+#endif
 
 #ifdef LPV_ENABLED
     #include "/lib/voxel/voxel_common.glsl"
@@ -248,22 +254,28 @@ void main() {
         // vec3 starLight = STAR_LUMINANCE * GetStarLight(starViewDir);
         // skyReflectColor += starLight;
 
-        // SSR
-        float viewDist = length(localPos);
-        vec3 reflectViewDir = mat3(playerModelView) * reflectLocalDir;
-        vec3 reflectViewPos = viewPos + 0.5*viewDist*reflectViewDir;
-        vec3 reflectClipPos = unproject(playerProjection, reflectViewPos) * 0.5 + 0.5;
+        // TODO: add SH-LPV to reflection?
+        #ifdef LPV_ENABLED
+            // vec3 voxelPos = GetVoxelPosition(localPos + 0.5*localTexNormal);
+            skyReflectColor += sample_lpv_linear(voxelPos, reflectLocalDir);
+        #endif
 
-        vec3 clipPos = ndcPos * 0.5 + 0.5;
-        vec3 reflectRay = normalize(reflectClipPos - clipPos);
+        #ifdef SSR_ENABLED
+            float viewDist = length(localPos);
+            vec3 reflectViewDir = mat3(playerModelView) * reflectLocalDir;
+            vec3 reflectViewPos = viewPos + 0.5*viewDist*reflectViewDir;
+            vec3 reflectClipPos = unproject(playerProjection, reflectViewPos) * 0.5 + 0.5;
 
-        float maxLod = max(log2(minOf(screenSize)) - 2.0, 0.0);
-        float roughMip = min(roughness * 6.0, maxLod);
+            vec3 clipPos = ndcPos * 0.5 + 0.5;
+            vec3 reflectRay = normalize(reflectClipPos - clipPos);
 
-        vec4 reflection = GetReflectionPosition(mainDepthTex, clipPos, reflectRay);
-        vec3 reflectColor = GetRelectColor(texFinalPrevious, reflection.xy, reflection.a, roughMip);
+            float maxLod = max(log2(minOf(screenSize)) - 2.0, 0.0);
+            float roughMip = min(roughness * 6.0, maxLod);
+            vec4 reflection = GetReflectionPosition(mainDepthTex, clipPos, reflectRay);
+            vec3 reflectColor = GetRelectColor(texFinalPrevious, reflection.xy, reflection.a, roughMip);
 
-        skyReflectColor = mix(skyReflectColor, reflectColor, reflection.a);
+            skyReflectColor = mix(skyReflectColor, reflectColor, reflection.a);
+        #endif
 
         float NoHm = max(dot(localTexNormal, H), 0.0);
 

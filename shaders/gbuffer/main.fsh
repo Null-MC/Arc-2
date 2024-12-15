@@ -46,7 +46,7 @@ void iris_emitFragment() {
         vec3 localTexNormal = mat_normal_lab(normalData.xy);
         float occlusion = normalData.z;
 
-        float roughness = specularData.r;
+        float roughness = mat_roughness(specularData.r);
         float f0_metal = specularData.g;
         float emission = mat_emission_lab(specularData.a);
         float porosity = mat_porosity_lab(specularData.b);
@@ -55,7 +55,7 @@ void iris_emitFragment() {
         vec3 localTexNormal = mat_normal_old(normalData.xyz);
         float occlusion = 1.0;
 
-        float roughness = specularData.r;
+        float roughness = mat_roughness(specularData.r);
         float f0_metal = specularData.g;
         float emission = specularData.b;
         float porosity = 0.0;
@@ -64,7 +64,7 @@ void iris_emitFragment() {
         vec3 localTexNormal = localGeoNormal;
         float occlusion = 1.0;
 
-        float roughness = 0.1;
+        float roughness = 0.92;
         float f0_metal = 0.0;
         float emission = bitfieldExtract(material, 3, 1) != 0 ? 1.0 : 0.0;
         float porosity = 0.0;

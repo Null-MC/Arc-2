@@ -99,7 +99,7 @@ vec4 GetReflectionPosition(const in sampler2D depthtex, const in vec3 clipPos, c
 }
 
 // uv=tracePos.xy
-vec3 GetRelectColor(const in sampler2D texFinal, const in vec2 uv, inout float alpha, const in float lod) {
+vec3 GetRelectColor(const in sampler2D tex, const in vec2 uv, inout float alpha, const in float lod) {
     vec3 color = vec3(0.0);
 
     if (alpha > EPSILON) {
@@ -107,7 +107,7 @@ vec3 GetRelectColor(const in sampler2D texFinal, const in vec2 uv, inout float a
         alpha = maxOf(alphaXY);
         alpha = 1.0 - pow(alpha, 4);
 
-        color = textureLod(texFinal, uv, lod).rgb;
+        color = textureLod(tex, uv, lod).rgb;
     }
 
     return color;

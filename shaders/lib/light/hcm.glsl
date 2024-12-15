@@ -66,21 +66,21 @@ bool IsMetal(const in float metal_f0) {
     #endif
 }
 
-// vec3 GetMetalTint(const in vec3 albedo, const in float metal_f0) {
-//     #if MATERIAL_SPECULAR == SPECULAR_LABPBR
+vec3 GetMetalTint(const in vec3 albedo, const in float metal_f0) {
+    #if MATERIAL_FORMAT == MAT_LABPBR
+        // #ifndef MATERIAL_HCM_ALBEDO_TINT
+        //     int hcm = int(metal_f0 * 255.0 + 0.5);
+        //     if (hcm < 255) return vec3(1.0);
+        // #else
+            if (!IsMetal(metal_f0)) return vec3(1.0);
+        // #endif
 
-//         #ifndef MATERIAL_HCM_ALBEDO_TINT
-//             int hcm = int(metal_f0 * 255.0 + 0.5);
-//             if (hcm < 255) return vec3(1.0);
-//         #else
-//             if (!IsMetal(metal_f0)) return vec3(1.0);
-//         #endif
-
-//         return pow(albedo, vec3(HCM_TintGammaInv));
-//     #else
-//         return mix(vec3(1.0), albedo, metal_f0);
-//     #endif
-// }
+        // return pow(albedo, vec3(HCM_TintGammaInv));
+        return albedo;
+    #else
+        return mix(vec3(1.0), albedo, metal_f0);
+    #endif
+}
 
 // void ApplyMetalDarkening(inout vec3 diffuse, inout vec3 specular, const in vec3 albedo, const in float metal_f0, const in float roughL) {
 //     #if MATERIAL_SPECULAR == SPECULAR_LABPBR

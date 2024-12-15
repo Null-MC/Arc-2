@@ -208,6 +208,7 @@ function setupShader() {
     let texFinalPrevious = new Texture("texFinalPrevious")
         .format(RGBA16F)
         .clear(false)
+        .mipmap(true)
         .build();
 
     let texClouds = new Texture("texClouds")
@@ -551,6 +552,7 @@ function setupShader() {
         .fragment("composite/composite-opaque.fsh")
         .target(0, texFinalOpaque)
         .ssbo(0, sceneBuffer)
+        .generateMips(texFinalPrevious)
         .define("TEX_SHADOW", texShadow_src)
         .define("TEX_SSGIAO", "texSSGIAO");
 

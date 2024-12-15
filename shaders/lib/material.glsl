@@ -8,6 +8,10 @@ vec3 mat_normal_old(const in vec3 data) {
     return normalize(data * 2.0 - 1.0);
 }
 
+float mat_roughness(const in float data) {
+    return 1.0 - data;
+}
+
 float mat_emission_lab(const in float data) {
     return data * (255.0/254.0) * step(data, (254.5/255.0));
 }

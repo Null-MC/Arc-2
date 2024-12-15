@@ -25,7 +25,7 @@ const float SKY_AMBIENT = 1.0;
 const int SHADOW_PCF_SAMPLES = 8;
 
 const float Exposure_minLogLum = -10.50;
-const float Exposure_maxLogLum =  12.75;
+const float Exposure_maxLogLum =  13.50;
 
 const float shadowMapResolution = 1024.0;
 const float sunPathRotation = 25.0;

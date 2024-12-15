@@ -2,12 +2,6 @@ const float ShadowBias[] = float[](
     0.000012, 0.000024, 0.000064, 0.000256);
 
 
-vec3 GetShadowSamplePos(const in vec3 shadowViewPos, out int shadowCascade) {
-    vec3 shadowPos;
-    GetShadowProjection(shadowViewPos, shadowCascade, shadowPos);
-    return shadowPos * 0.5 + 0.5;
-}
-
 float SampleShadows(const in vec3 shadowPos, const in int shadowCascade) {
     // vec3 shadowPos;
     // int shadowCascade;

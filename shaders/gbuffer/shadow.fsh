@@ -1,13 +1,26 @@
 #version 430 core
 
-in vec2 lUV;
-in vec4 lColor;
+in vec4 vColor;
+in vec2 vUV;
 
-layout(location = 0) out vec4 fragColor;
+#if defined LPV_ENABLED && defined LPV_RSM_ENABLED
+    in vec3 vLocalNormal;
+#endif
+
+layout(location = 0) out vec4 outColor;
+
+#if defined LPV_ENABLED && defined LPV_RSM_ENABLED
+    layout(location = 1) out vec4 outNormal;
+#endif
 
 
 void iris_emitFragment() {
-    fragColor = iris_sampleBaseTex(lUV) * lColor;
+    outColor = iris_sampleBaseTex(vUV) * vColor;
 
-    if (fragColor.a < 0.1) discard;
+    if (outColor.a < 0.2) discard;
+
+    #if defined LPV_ENABLED && defined LPV_RSM_ENABLED
+        vec3 localNormal = normalize(vLocalNormal);
+        outNormal = vec4((localNormal * 0.5 + 0.5), 1.0);
+    #endif
 }

@@ -3,7 +3,7 @@
 layout(location = 0) out vec4 outColor;
 
 uniform sampler2D texFinal;
-// uniform sampler2D texBloom;
+// uniform sampler2DArray texShadowColor;
 
 #ifdef DEBUG_HISTOGRAM
     uniform usampler2D texHistogram_debug;
@@ -59,9 +59,9 @@ void main() {
 
         // vec2 previewCoord = (uv - 0.01) / vec2(0.25);
         // if (clamp(previewCoord, 0.0, 1.0) == previewCoord) {
-        //     color = textureLod(texBloom, previewCoord, 4).rgb;
-        //     ApplyAutoExposure(color, Scene_AvgExposure);
-        //     color = tonemap_ACESFit2(color);
+        //     color = textureLod(texShadowColor, vec3(previewCoord, 2), 0).rgb;
+        //     // ApplyAutoExposure(color, Scene_AvgExposure);
+        //     // color = tonemap_ACESFit2(color);
         // }
     }
 

@@ -6,3 +6,9 @@ void GetShadowProjection(in vec3 shadowViewPos, out int cascadeIndex, out vec3 s
         if (clamp(shadowPos, -1.0, 1.0) == shadowPos) break;
     }
 }
+
+vec3 GetShadowSamplePos(const in vec3 shadowViewPos, out int shadowCascade) {
+    vec3 shadowPos;
+    GetShadowProjection(shadowViewPos, shadowCascade, shadowPos);
+    return shadowPos * 0.5 + 0.5;
+}

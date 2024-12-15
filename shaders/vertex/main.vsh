@@ -28,6 +28,7 @@ out vec4 color;
 out vec3 localPos;
 out vec3 localOffset;
 out vec3 localNormal;
+out vec4 localTangent;
 // out vec3 shadowViewPos;
 flat out int material;
 
@@ -64,9 +65,6 @@ void iris_emitVertex(inout VertexData data) {
 
 	// shadowViewPos = mul3(shadowModelView, localPos);
 
-	vec3 viewNormal = mat3(iris_modelViewMatrix) * data.normal;
-	localNormal = mat3(playerModelViewInverse) * viewNormal;
-
     data.clipPos = iris_projectionMatrix * vec4(viewPos, 1.0);
 
     #ifdef EFFECT_TAA_ENABLED
@@ -78,6 +76,13 @@ void iris_sendParameters(in VertexData data) {
     uv = data.uv;
     light = data.light;
     color = data.color;
+
+	vec3 viewNormal = mat3(iris_modelViewMatrix) * data.normal;
+	localNormal = mat3(playerModelViewInverse) * viewNormal;
+
+    vec3 viewTangent = mat3(iris_modelViewMatrix) * data.tangent.xyz;
+    localTangent.xyz = mat3(playerModelViewInverse) * viewTangent;
+    localTangent.w = data.tangent.w;
 
     material = blockMask;
 }

@@ -20,7 +20,7 @@ uniform sampler2D texSkyIrradiance;
 #include "/settings.glsl"
 #include "/lib/common.glsl"
 #include "/lib/buffers/scene.glsl"
-#include "/lib/ign.glsl"
+#include "/lib/noise/ign.glsl"
 #include "/lib/erp.glsl"
 
 #include "/lib/utility/blackbody.glsl"

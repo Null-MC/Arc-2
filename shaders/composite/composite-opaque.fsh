@@ -16,21 +16,15 @@ uniform sampler2D texSkyTransmit;
 uniform sampler2D texSkyIrradiance;
 
 uniform sampler2D TEX_SHADOW;
-uniform sampler2D TEX_SSGIAO;
+
+#ifdef SSGIAO_ENABLED
+    uniform sampler2D TEX_SSGIAO;
+#endif
 
 #ifdef EFFECT_VL_ENABLED
     uniform sampler2D texScatterVL;
     uniform sampler2D texTransmitVL;
 #endif
-
-// #ifdef LPV_ENABLED
-//     uniform sampler3D texLpvR;
-//     uniform sampler3D texLpvG;
-//     uniform sampler3D texLpvB;
-//     uniform sampler3D texLpvR_alt;
-//     uniform sampler3D texLpvG_alt;
-//     uniform sampler3D texLpvB_alt;
-// #endif
 
 #ifdef ACCUM_ENABLED
     uniform sampler2D texDiffuseAccum;
@@ -39,18 +33,21 @@ uniform sampler2D TEX_SSGIAO;
 
 #include "/settings.glsl"
 #include "/lib/common.glsl"
+#include "/lib/constants.glsl"
 #include "/lib/buffers/scene.glsl"
+
+#include "/lib/erp.glsl"
+#include "/lib/light/hcm.glsl"
+#include "/lib/light/fresnel.glsl"
+#include "/lib/material_fresnel.glsl"
 
 #ifdef LPV_ENABLED
     #include "/lib/buffers/sh-lpv.glsl"
 #endif
 
-#include "/lib/erp.glsl"
-
 #include "/lib/utility/blackbody.glsl"
 #include "/lib/utility/matrix.glsl"
 
-#include "/lib/fresnel.glsl"
 #include "/lib/light/diffuse.glsl"
 
 #include "/lib/sky/common.glsl"
@@ -75,11 +72,11 @@ uniform sampler2D TEX_SSGIAO;
 void main() {
     ivec2 iuv = ivec2(gl_FragCoord.xy);
     float depthTrans = texelFetch(mainDepthTex, iuv, 0).r;
-    vec4 colorOpaque = texelFetch(texDeferredOpaque_Color, iuv, 0);
+    vec4 albedo = texelFetch(texDeferredOpaque_Color, iuv, 0);
     vec3 colorFinal;
 
     float depthOpaque = 1.0;
-    if (colorOpaque.a > EPSILON) {
+    if (albedo.a > EPSILON) {
         depthOpaque = texelFetch(solidDepthTex, iuv, 0).r;
     }
 
@@ -94,8 +91,8 @@ void main() {
 
     vec3 localViewDir = normalize(localPos);
 
-    if (colorOpaque.a > EPSILON) {
-        uvec3 data = texelFetch(texDeferredOpaque_Data, iuv, 0).rgb;
+    if (albedo.a > EPSILON) {
+        uvec4 data = texelFetch(texDeferredOpaque_Data, iuv, 0);
         uint data_trans_g = texelFetch(texDeferredTrans_Data, iuv, 0).g;
 
         // #ifdef SSGIAO_ENABLED
@@ -104,99 +101,129 @@ void main() {
         //     const vec4 gi_ao = vec4(vec3(0.0), 1.0);
         // #endif
 
-        colorOpaque.rgb = RgbToLinear(colorOpaque.rgb);
+        albedo.rgb = RgbToLinear(albedo.rgb);
 
         float data_trans_water = unpackUnorm4x8(data_trans_g).b;
         bool isWet = isEyeInWater == 1
             ? depthTrans >= depthOpaque
             : depthTrans < depthOpaque && data_trans_water > 0.5;
 
-        if (isWet) colorOpaque.rgb = pow(colorOpaque.rgb, vec3(1.8));
+        if (isWet) albedo.rgb = pow(albedo.rgb, vec3(1.8));
 
-        vec4 normalMaterial = unpackUnorm4x8(data.r);
-        vec3 localNormal = normalize(normalMaterial.xyz * 2.0 - 1.0);
-        int material = int(normalMaterial.w * 255.0 + 0.5);
+        vec4 data_r = unpackUnorm4x8(data.r);
+        vec3 localNormal = normalize(data_r.xyz * 2.0 - 1.0);
+        int material = int(data_r.w * 255.0 + 0.5);
 
-        vec2 lmCoord = unpackUnorm4x8(data.g).xy;
+        vec4 data_g = unpackUnorm4x8(data.g);
+        vec2 lmCoord = data_g.xy;
         lmCoord = lmCoord*lmCoord*lmCoord; //pow(lmCoord, vec2(3.0));
         // lmCoord = lmCoord*lmCoord;
 
+        vec4 data_b = unpackUnorm4x8(data.b);
+        vec3 localTexNormal = normalize(data_b.xyz * 2.0 - 1.0);
+        float occlusion = data_b.a;
+
+        vec4 data_a = unpackUnorm4x8(data.a);
+        float roughness = data_a.x;
+        float f0_metal = data_a.y;
+        float emission = data_a.z;
+        float sss = data_a.w;
+
+        // albedo.rgb = max(localTexNormal, 0.0);
+
         // TODO: bitfieldExtract()
-        float sss = 0.0;//bitfieldExtract(material, 2, 1) != 0 ? 1.0 : 0.0;
-        float emission = bitfieldExtract(material, 3, 1) != 0 ? 1.0 : 0.0;
-        emission *= lmCoord.x;
+        // float sss = 0.0;//bitfieldExtract(material, 2, 1) != 0 ? 1.0 : 0.0;
+        // float emission = bitfieldExtract(material, 3, 1) != 0 ? 1.0 : 0.0;
+        // emission *= lmCoord.x;
 
-        // colorOpaque.rgb = vec3(material / 255.0);
-        // colorOpaque.rgb = vec3(emission, sss, 0.0);
+        // albedo.rgb = vec3(material / 255.0);
+        // albedo.rgb = vec3(emission, sss, 0.0);
 
-        vec3 localLightDir = normalize(mat3(playerModelViewInverse) * shadowLightPosition);
-        // float NoLm = step(0.0, dot(localLightDir, localNormal));
+        // vec3 localLightDir = normalize(mat3(playerModelViewInverse) * shadowLightPosition);
+        // float NoLm = step(0.0, dot(localLightDir, localTexNormal));
 
-        vec3 H = normalize(localLightDir + -localViewDir);
+        vec3 H = normalize(Scene_LocalLightDir + -localViewDir);
 
-        float NoLm = max(dot(localNormal, localLightDir), 0.0);
-        float LoHm = max(dot(localLightDir, H), 0.0);
-        float NoVm = max(dot(localNormal, -localViewDir), 0.0);
+        float NoLm = max(dot(localTexNormal, Scene_LocalLightDir), 0.0);
+        float LoHm = max(dot(Scene_LocalLightDir, H), 0.0);
+        float NoVm = max(dot(localTexNormal, -localViewDir), 0.0);
 
         NoLm = mix(NoLm, 1.0, sss);
 
         float shadowSample = NoLm;
         #ifdef SHADOWS_ENABLED
-            shadowSample = textureLod(TEX_SHADOW, uv, 0).r;
+            shadowSample *= textureLod(TEX_SHADOW, uv, 0).r;
         #endif
 
-        const float roughL = 0.9;
+        const float roughL = roughness*roughness;
+
+        vec3 view_F = material_fresnel(albedo.rgb, f0_metal, roughL, NoVm, isWet);
+        // vec3 sky_F = material_fresnel(albedo.rgb, f0_metal, roughL, NoLm, isWet);
 
         vec3 skyPos = getSkyPosition(localPos);
         vec3 sunTransmit = getValFromTLUT(texSkyTransmit, skyPos, Scene_LocalSunDir);
         vec3 moonTransmit = getValFromTLUT(texSkyTransmit, skyPos, -Scene_LocalSunDir);
         vec3 skyLighting = SUN_BRIGHTNESS * sunTransmit + MOON_BRIGHTNESS * moonTransmit;
 
-
         float worldY = localPos.y + cameraPos.y;
         float transmitF = mix(VL_Transmit, VL_RainTransmit, rainStrength);
-        float lightAtmosDist = max(SEA_LEVEL + 200.0 - worldY, 0.0) / localLightDir.y;
+        float lightAtmosDist = max(SEA_LEVEL + 200.0 - worldY, 0.0) / Scene_LocalLightDir.y;
         skyLighting *= exp2(-lightAtmosDist * transmitF);
 
-        float occlusion = 1.0;
+        // float occlusion = 1.0;
         #if defined SSGIAO_ENABLED && !defined ACCUM_ENABLED
             vec4 gi_ao = textureLod(TEX_SSGIAO, uv, 0);
-            occlusion = gi_ao.a;
+            occlusion *= gi_ao.a;
         #endif
 
         skyLighting *= shadowSample * diffuse(NoVm, NoLm, LoHm, roughL);
 
-        vec2 skyIrradianceCoord = DirectionToUV(localNormal);
+        vec2 skyIrradianceCoord = DirectionToUV(localTexNormal);
         vec3 skyIrradiance = textureLod(texSkyIrradiance, skyIrradianceCoord, 0).rgb;
         skyLighting += (SKY_AMBIENT * lmCoord.y * SKY_BRIGHTNESS) * skyIrradiance * occlusion;
 
         #ifdef LPV_ENABLED
-            skyLighting += sample_lpv(localPos, localNormal);
+            vec3 voxelPos = GetVoxelPosition(localPos + 0.5*localTexNormal);
+            skyLighting += sample_lpv_linear(voxelPos, localTexNormal) * occlusion;
         #endif
 
         #if defined SSGIAO_ENABLED && !defined ACCUM_ENABLED
             skyLighting += gi_ao.rgb;
         #endif
 
-        vec3 blockLighting = blackbody(BLOCKLIGHT_TEMP) * lmCoord.x;
+        vec3 blockLighting = vec3(0.0);
+        #ifndef LPV_ENABLED
+            blockLighting = blackbody(BLOCKLIGHT_TEMP) * lmCoord.x;
+        #endif
 
         vec3 diffuse = skyLighting
             + (BLOCKLIGHT_BRIGHTNESS * blockLighting)
-            + (EMISSION_BRIGHTNESS * emission)
             + 0.0016;
 
-        #ifdef LPV_ENABLED
-            vec3 voxelPos = GetVoxelPosition(localPos + 0.5*localNormal);
-            diffuse += sample_lpv(voxelPos, localNormal);
-        #endif
+        diffuse *= 1.0 - f0_metal * roughL;
+
+        diffuse += pow(emission, 2.2) * EMISSION_BRIGHTNESS;
 
         #ifdef ACCUM_ENABLED
             bool altFrame = (frameCounter % 2) == 1;
             diffuse += textureLod(altFrame ? texDiffuseAccum_alt : texDiffuseAccum, uv, 0).rgb;
         #endif
 
-        colorFinal = colorOpaque.rgb;
-        colorFinal *= diffuse;
+        // float viewDist = length(localPosTrans);
+        // vec3 localViewDir = localPosTrans / viewDist;
+
+        vec3 reflectLocalDir = reflect(localViewDir, localTexNormal);
+        // vec3 reflectViewDir = mat3(playerModelView) * reflectLocalDir;
+
+        skyPos = getSkyPosition(vec3(0.0));
+        vec3 skyReflectColor = lmCoord.y * SKY_LUMINANCE * getValFromSkyLUT(texSkyView, skyPos, reflectLocalDir, Scene_LocalSunDir);
+
+        // vec3 starViewDir = getStarViewDir(reflectLocalDir);
+        // vec3 starLight = STAR_LUMINANCE * GetStarLight(starViewDir);
+        // skyReflectColor += starLight;
+
+        colorFinal = albedo.rgb * diffuse;
+        colorFinal += view_F * skyReflectColor;
 
         // float viewDist = length(localPos);
         // float fogF = smoothstep(fogStart, fogEnd, viewDist);

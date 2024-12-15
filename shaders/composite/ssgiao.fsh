@@ -10,7 +10,7 @@ in vec2 uv;
 
 #include "/settings.glsl"
 #include "/lib/common.glsl"
-#include "/lib/ign.glsl"
+#include "/lib/noise/ign.glsl"
 
 const int SSGIAO_SAMPLES = 16;
 const float SSGIAO_RADIUS = 4.0;

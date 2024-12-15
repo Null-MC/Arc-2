@@ -16,7 +16,7 @@ uniform sampler2D texSkyTransmit;
 #include "/settings.glsl"
 #include "/lib/common.glsl"
 #include "/lib/buffers/scene.glsl"
-#include "/lib/ign.glsl"
+#include "/lib/noise/ign.glsl"
 #include "/lib/hg.glsl"
 
 #ifdef SHADOWS_ENABLED

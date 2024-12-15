@@ -10,7 +10,7 @@ uniform usampler2D texDeferredOpaque_Data;
 
 #include "/settings.glsl"
 #include "/lib/common.glsl"
-#include "/lib/ign.glsl"
+#include "/lib/noise/ign.glsl"
 #include "/lib/depth.glsl"
 
 // #include "/lib/utility/matrix.glsl"
@@ -34,7 +34,7 @@ void main() {
     float shadowSample = 1.0;
 
     if (depthOpaque < 1.0) {
-        uvec3 data = texelFetch(texDeferredOpaque_Data, iuv, 0).rgb;
+        uvec4 data = texelFetch(texDeferredOpaque_Data, iuv, 0);
 
         vec3 localLightDir = normalize(mat3(playerModelViewInverse) * shadowLightPosition);
 
@@ -48,15 +48,17 @@ void main() {
         vec3 viewPos = unproject(playerProjectionInverse, ndcPos);
         vec3 localPos = mul3(playerModelViewInverse, viewPos);
 
-        vec4 normalMaterial = unpackUnorm4x8(data.r);
-        vec3 localNormal = normalize(normalMaterial.xyz * 2.0 - 1.0);
+        vec4 data_r = unpackUnorm4x8(data.r);
+        vec3 localNormal = normalize(data_r.xyz * 2.0 - 1.0);
         // int material = int(normalMaterial.w * 255.0 + 0.5);
 
-        float sss = 0.0;//bitfieldExtract(material, 2, 1) != 0 ? 1.0 : 0.0;
+        vec4 data_a = unpackUnorm4x8(data.a);
+        float sss = data_a.a;//bitfieldExtract(material, 2, 1) != 0 ? 1.0 : 0.0;
 
-        float NoLm = max(dot(localNormal, localLightDir), 0.0);
-        NoLm = mix(NoLm, 1.0, sss);
-        shadowSample *= NoLm;
+        // float NoLm = max(dot(localNormal, localLightDir), 0.0);
+        // NoLm = mix(NoLm, 1.0, sss);
+
+        shadowSample *= step(0.0, dot(localNormal, localLightDir));
 
         vec3 shadowViewPos = mul3(shadowModelView, localPos);
 

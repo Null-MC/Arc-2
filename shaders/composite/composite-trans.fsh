@@ -26,10 +26,10 @@ uniform sampler2DArray solidShadowMap;
 #include "/settings.glsl"
 #include "/lib/common.glsl"
 #include "/lib/buffers/scene.glsl"
-#include "/lib/ign.glsl"
+#include "/lib/noise/ign.glsl"
 #include "/lib/erp.glsl"
 #include "/lib/depth.glsl"
-#include "/lib/fresnel.glsl"
+#include "/lib/light/fresnel.glsl"
 
 #include "/lib/utility/blackbody.glsl"
 #include "/lib/utility/matrix.glsl"

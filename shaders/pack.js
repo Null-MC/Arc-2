@@ -6,7 +6,8 @@ const FEATURE = {
     Bloom: true,
     GI_AO: false,
     TAA: true,
-    LPV: false,
+    LPV: true,
+    LPV_RSM: false,
     VL: true
 };
 
@@ -124,7 +125,7 @@ function setupShader() {
 
     print(`SCREEN width: ${screenWidth} height: ${screenHeight}`);
 
-    worldSettings.sunPathRotation = 25.0;
+    worldSettings.sunPathRotation = -29.0;
     worldSettings.shadowMapResolution = 1024;
     worldSettings.vignette = false;
     worldSettings.clouds = false;
@@ -140,6 +141,7 @@ function setupShader() {
     if (FEATURE.Shadows) defineGlobally("SHADOWS_ENABLED", "1");
     if (FEATURE.GI_AO) defineGlobally("SSGIAO_ENABLED", "1");
     if (FEATURE.LPV) defineGlobally("LPV_ENABLED", "1");
+    if (FEATURE.LPV_RSM) defineGlobally("LPV_RSM_ENABLED", "1");
     if (FEATURE.TAA) defineGlobally("EFFECT_TAA_ENABLED", "1");
     if (FEATURE.VL) defineGlobally("EFFECT_VL_ENABLED", "1");
 
@@ -182,6 +184,16 @@ function setupShader() {
 
     finalizeUniforms();
 
+    let texShadowColor = new ArrayTexture("texShadowColor")
+        .format(RGB8)
+        .clearColor(0.0, 0.0, 0.0, 0.0)
+        .build();
+
+    let texShadowNormal = new ArrayTexture("texShadowNormal")
+        .format(RGB8)
+        .clearColor(0.0, 0.0, 0.0, 0.0)
+        .build();
+
     let texFinal = new Texture("texFinal")
         .imageName("imgFinal")
         .format(RGBA16F)
@@ -214,7 +226,7 @@ function setupShader() {
         .build();
 
     let texDeferredOpaque_Data = new Texture("texDeferredOpaque_Data")
-        .format(RGB32UI)
+        .format(RGBA32UI)
         .clearColor(0.0, 0.0, 0.0, 0.0)
         .build();
 
@@ -224,7 +236,7 @@ function setupShader() {
         .build();
 
     let texDeferredTrans_Data = new Texture("texDeferredTrans_Data")
-        .format(RGB32UI)
+        .format(RGBA32UI)
         .clearColor(0.0, 0.0, 0.0, 0.0)
         .build();
 
@@ -329,6 +341,8 @@ function setupShader() {
 
     let shLpvBuffer = null;
     let shLpvBuffer_alt = null;
+    let shLpvRsmBuffer = null;
+    let shLpvRsmBuffer_alt = null;
     if (FEATURE.LPV) {
         // vec3[12] * Band[4] * VoxelBufferSize^3
         let bufferSize = 12 * 4 * (VoxelBufferSize*VoxelBufferSize*VoxelBufferSize);
@@ -340,6 +354,16 @@ function setupShader() {
         shLpvBuffer_alt = new Buffer(bufferSize)
             .clear(false)
             .build();
+
+        if (FEATURE.LPV_RSM) {
+            shLpvRsmBuffer = new Buffer(bufferSize)
+                .clear(false)
+                .build();
+
+            shLpvRsmBuffer_alt = new Buffer(bufferSize)
+                .clear(false)
+                .build();
+        }
     }
 
     let texHistogram = new Texture("texHistogram")
@@ -363,11 +387,6 @@ function setupShader() {
     let sceneBuffer = new Buffer(1024)
         .clear(false)
         .build();
-
-    // let texShadowColor = new Texture("texShadowColor")
-    //     // .format("rgba8")
-    //     // .clear([ 1.0, 1.0, 1.0, 1.0 ])
-    //     .build();
 
     registerShader(Stage.SCREEN_SETUP, new Compute("scene-setup")
         .barrier(true)
@@ -404,7 +423,8 @@ function setupShader() {
         registerShader(new ObjectShader("shadow", Usage.SHADOW)
             .vertex("vertex/shadow.vsh")
             .fragment("gbuffer/shadow.fsh")
-            // .target(0, texShadowColor)
+            .target(0, texShadowColor)
+            .target(1, texShadowNormal)
             .build());
     }
 
@@ -452,14 +472,21 @@ function setupShader() {
     if (FEATURE.LPV) {
         let groupCount = Math.ceil(VoxelBufferSize / 8);
 
-        registerShader(Stage.POST_RENDER, new Compute("lpv-propagate")
+        let shader = new Compute("lpv-propagate")
             .barrier(true)
             .location("composite/lpv-propagate.csh")
             .workGroups(groupCount, groupCount, groupCount)
             .ssbo(0, sceneBuffer)
             .ssbo(1, shLpvBuffer)
-            .ssbo(2, shLpvBuffer_alt)
-            .build());
+            .ssbo(2, shLpvBuffer_alt);
+
+        if (FEATURE.LPV_RSM) {
+            shader
+                .ssbo(3, shLpvRsmBuffer)
+                .ssbo(4, shLpvRsmBuffer_alt);
+        }
+
+        registerShader(Stage.POST_RENDER, shader.build());
     }
 
     if (FEATURE.GI_AO) {

@@ -9,7 +9,7 @@ const FEATURE = {
     TAA: true,
     LPV: true,
     LPV_RSM: false,
-    VL: false
+    VL: true
 };
 
 const DEBUG_SSGIAO = false;

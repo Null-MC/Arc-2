@@ -12,7 +12,7 @@ vec3 sample_lpv(ivec3 voxelPos, vec4 intensity) {
 
 	lpv_intensity = max(lpv_intensity, vec3(0.0));
 
-	lpv_intensity = 10.0 * max(log2(lpv_intensity + 1.0), 0.0);
+	lpv_intensity = 8.0 * max(log2(lpv_intensity + 1.0), 0.0);
 
 	return lpv_intensity;
 }

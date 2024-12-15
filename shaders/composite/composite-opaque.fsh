@@ -244,7 +244,7 @@ void main() {
         randomize_reflection(reflectLocalDir, localTexNormal, roughness);
 
         skyPos = getSkyPosition(vec3(0.0));
-        vec3 skyReflectColor = SKY_LUMINANCE * getValFromSkyLUT(texSkyView, skyPos, reflectLocalDir, Scene_LocalSunDir);
+        vec3 skyReflectColor = lmCoord.y * SKY_LUMINANCE * getValFromSkyLUT(texSkyView, skyPos, reflectLocalDir, Scene_LocalSunDir);
 
         vec3 reflectSun = SUN_LUMINANCE * sun(reflectLocalDir, Scene_LocalSunDir) * sunTransmit;
         vec3 reflectMoon = MOON_LUMINANCE * moon(reflectLocalDir, -Scene_LocalSunDir) * moonTransmit;
@@ -254,7 +254,11 @@ void main() {
         // vec3 starLight = STAR_LUMINANCE * GetStarLight(starViewDir);
         // skyReflectColor += starLight;
 
-        // TODO: add SH-LPV to reflection?
+        // TODO: vol-fog
+        // for (int i = 0; i < 8; i++) {
+        //     //
+        // }
+
         #ifdef LPV_ENABLED
             // vec3 voxelPos = GetVoxelPosition(localPos + 0.5*localTexNormal);
             skyReflectColor += sample_lpv_linear(voxelPos, reflectLocalDir);

@@ -48,7 +48,7 @@ void main() {
 		// Map from our histogram space to actual luminance
 		float weightedAvgLum = 255.0 * exp(((weightedLogAverage) * Exposure_logLumRange) + Exposure_minLogLum);
 
-		float lumLastFrame = Scene_AvgExposure;
+	    float lumLastFrame = clamp(Scene_AvgExposure, Exposure_minLogLum, Exposure_maxLogLum);
 		float Exposure_timeCoeff = (1.0 - exp(-frameTime * 2.1));
 
 		float adaptedLum = lumLastFrame + (weightedAvgLum - lumLastFrame) * Exposure_timeCoeff;

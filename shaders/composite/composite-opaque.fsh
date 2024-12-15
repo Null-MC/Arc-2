@@ -38,9 +38,9 @@ uniform sampler2D texFinalPrevious;
 #include "/lib/buffers/scene.glsl"
 
 #include "/lib/erp.glsl"
-#include "/lib/ign.glsl"
 #include "/lib/depth.glsl"
 
+#include "/lib/noise/ign.glsl"
 #include "/lib/noise/hash.glsl"
 
 #include "/lib/light/hcm.glsl"

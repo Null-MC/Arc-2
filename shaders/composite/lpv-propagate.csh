@@ -10,11 +10,14 @@ layout(r8ui) uniform readonly uimage3D imgVoxelBlock;
 	uniform sampler2DArray texShadowNormal;
 #endif
 
+#include "/settings.glsl"
 #include "/lib/common.glsl"
 #include "/lib/buffers/scene.glsl"
 #include "/lib/buffers/sh-lpv.glsl"
 
 #include "/lib/noise/hash.glsl"
+
+#include "/lib/utility/blackbody.glsl"
 
 #include "/lib/voxel/voxel_common.glsl"
 
@@ -151,7 +154,7 @@ void main() {
 
 			if (neighborBlockId == 2u) {
 				vec4 coeffs = dirToSH(vec3(-curDir)) / PI;
-				vec3 flux = vec3(2000.0);
+				vec3 flux = 1000.0 * blackbody(BLOCKLIGHT_TEMP);
 
 				sh_voxel.R += coeffs * flux.r;
 				sh_voxel.G += coeffs * flux.g;

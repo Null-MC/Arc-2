@@ -21,7 +21,7 @@ in vec2 uv;
 #include "/lib/exposure.glsl"
 #include "/lib/tonemap.glsl"
 
-// #include "/lib/utility/text.glsl"
+#include "/lib/utility/text.glsl"
 
 
 void main() {
@@ -72,12 +72,15 @@ void main() {
     // text.fpPrecision = 4;
 
     // // printString((_P, _o, _s, _i, _t, _i, _o, _n, _colon, _space));
-    // printChar(_p);
-    // printChar(_o);
-    // printChar(_s);
-    // printChar(_colon);
-    // printChar(_space);
-    // printVec3(Scene_TrackPos);
+    // // printVec3(Scene_TrackPos);
+    // // printLine();
+
+    // printString((_E, _x, _p, _o, _s, _u, _r, _e, _colon, _space));
+    // printFloat(Scene_AvgExposure);
+    // printLine();
+
+    // printString((_F, _r, _a, _m, _e, _colon, _space));
+    // printInt(frameCounter);
     // printLine();
 
     // endText(color);

@@ -211,18 +211,19 @@ void main() {
         vec3 skyIrradiance = textureLod(texSkyIrradiance, skyIrradianceCoord, 0).rgb;
         skyLightDiffuse += (SKY_AMBIENT * lmCoord.y * SKY_BRIGHTNESS) * skyIrradiance * occlusion;
 
-        #ifdef LPV_ENABLED
-            vec3 voxelPos = GetVoxelPosition(localPos + 0.5*localTexNormal);
-            skyLightDiffuse += sample_lpv_linear(voxelPos, localTexNormal) * occlusion;
-        #endif
-
         #if defined SSGIAO_ENABLED && !defined ACCUM_ENABLED
             skyLightDiffuse += gi_ao.rgb;
         #endif
 
-        vec3 blockLighting = vec3(0.0);
-        #ifndef LPV_ENABLED
-            blockLighting = blackbody(BLOCKLIGHT_TEMP) * (BLOCKLIGHT_BRIGHTNESS * lmCoord.x);
+        vec3 blockLighting = blackbody(BLOCKLIGHT_TEMP) * (BLOCKLIGHT_BRIGHTNESS * lmCoord.x);
+
+        #ifdef LPV_ENABLED
+            // vec3 voxelPos = GetVoxelPosition(localPos);
+            vec3 voxelPos = GetVoxelPosition(localPos + 0.5*localTexNormal);
+            if (IsInVoxelBounds(voxelPos)) blockLighting = vec3(0.0);
+
+            // vec3 voxelPos = GetVoxelPosition(localPos + 0.5*localTexNormal);
+            blockLighting += sample_lpv_linear(voxelPos, localTexNormal) * occlusion;
         #endif
 
         vec3 diffuse = skyLightDiffuse + blockLighting + 0.0016;

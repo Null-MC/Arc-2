@@ -53,6 +53,8 @@ void main() {
 
 		float adaptedLum = lumLastFrame + (weightedAvgLum - lumLastFrame) * Exposure_timeCoeff;
 
+		if (frameCounter < 100) adaptedLum = weightedAvgLum;
+
 		Scene_AvgExposure = adaptedLum;
 	}
 }

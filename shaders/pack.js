@@ -623,13 +623,13 @@ function setupShader() {
         .target(0, texFinal)
         .build());
 
-    // registerShader(Stage.POST_RENDER, new Composite("debug")
-    //     .vertex("vertex/bufferless.vsh")
-    //     .fragment("post/debug.fsh")
-    //     .target(0, texFinal)
-    //     .ssbo(0, sceneBuffer)
-    //     .define("TEX_SSGIAO", "texSSGIAO")
-    //     .build());
+    registerShader(Stage.POST_RENDER, new Composite("debug")
+        .vertex("vertex/bufferless.vsh")
+        .fragment("post/debug.fsh")
+        .target(0, texFinal)
+        .ssbo(0, sceneBuffer)
+        .define("TEX_SSGIAO", "texSSGIAO")
+        .build());
 
     setCombinationPass(new CombinationPass("post/final.fsh").build());
 }

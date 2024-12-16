@@ -182,10 +182,10 @@ void printChar(uint character) {
 	text.charPos.x++;
 }
 
-// #define printString(string) {                                               \
-// 	uint[] characters = uint[] string;                                     \
-// 	for (int i = 0; i < characters.length(); ++i) printChar(characters[i]); \
-// }
+#define printString(string) {                                               \
+	uint[] characters = uint[] string;                                     \
+	for (int i = 0; i < characters.length(); ++i) printChar(characters[i]); \
+}
 
 void printUnsignedInt(uint value, int len) {
 	const uint[36] digits = uint[](

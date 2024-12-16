@@ -1,6 +1,6 @@
 #version 430 core
 
-layout(location = 0) out vec4 outShadow;
+layout(location = 0) out vec4 outShadowSSS;
 
 in vec2 uv;
 
@@ -31,7 +31,8 @@ void main() {
     ivec2 iuv = ivec2(gl_FragCoord.xy);
     float depthOpaque = texelFetch(solidDepthTex, iuv, 0).r;
 
-    vec3 shadowSample = vec3(1.0);
+    vec3 shadowFinal = vec3(1.0);
+    float sssFinal = 0.0;
 
     if (depthOpaque < 1.0) {
         uvec4 data = texelFetch(texDeferredOpaque_Data, iuv, 0);
@@ -50,29 +51,31 @@ void main() {
 
         vec4 data_r = unpackUnorm4x8(data.r);
         vec3 localNormal = normalize(data_r.xyz * 2.0 - 1.0);
-        // int material = int(normalMaterial.w * 255.0 + 0.5);
 
-        vec4 data_a = unpackUnorm4x8(data.a);
-        float sss = data_a.a;//bitfieldExtract(material, 2, 1) != 0 ? 1.0 : 0.0;
-
-        // float NoLm = max(dot(localNormal, localLightDir), 0.0);
-        // NoLm = mix(NoLm, 1.0, sss);
-
-        shadowSample *= step(0.0, dot(localNormal, localLightDir));
+        shadowFinal *= step(0.0, dot(localNormal, localLightDir));
 
         vec3 shadowViewPos = mul3(shadowModelView, localPos);
 
-        #ifdef EFFECT_TAA_ENABLED
-            float dither = InterleavedGradientNoiseTime(gl_FragCoord.xy);
-        #else
-            float dither = InterleavedGradientNoise(gl_FragCoord.xy);
-        #endif
-        
-        shadowViewPos.z += sss * dither;
+        const float shadowRadius = 2.0*shadowPixelSize;
 
         int shadowCascade;
-        vec3 shadowPos = GetShadowSamplePos(shadowViewPos, shadowCascade);
-        shadowSample *= SampleShadowColor_PCF(shadowPos, shadowCascade);
+        vec3 shadowPos = GetShadowSamplePos(shadowViewPos, shadowRadius, shadowCascade);
+        shadowFinal *= SampleShadowColor_PCF(shadowPos, shadowCascade, shadowRadius);
+
+        float dither = GetShadowDither();
+        
+        // SSS
+        vec4 data_a = unpackUnorm4x8(data.a);
+        float sss = data_a.a;
+
+        if (sss > 0.0) {
+            float NoLm = max(dot(localNormal, localLightDir), 0.0);
+            const float sssRadius = 8.0*shadowPixelSize;
+
+            shadowViewPos.z += sss * dither;
+            shadowPos = GetShadowSamplePos(shadowViewPos, sssRadius, shadowCascade);
+            sssFinal = (1.0 - NoLm) * sss * SampleShadow_PCF(shadowPos, shadowCascade, sssRadius);
+        }
 
         #ifdef SHADOW_SCREEN
             float viewDist = length(viewPos);
@@ -137,7 +140,7 @@ void main() {
                 }
             }
 
-            shadowSample *= shadowTrace;
+            shadowFinal *= shadowTrace;
 
             // #if MATERIAL_SSS != 0
             //     if (traceDist > 0.0) {
@@ -148,5 +151,5 @@ void main() {
         #endif
     }
 
-    outShadow = vec4(shadowSample, 1.0);
+    outShadowSSS = vec4(shadowFinal, sssFinal);
 }

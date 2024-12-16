@@ -179,9 +179,9 @@ void main() {
 
         NoLm = mix(NoLm, 1.0, sss);
 
-        vec3 shadowSample = vec3(1.0);
+        vec4 shadow_sss = vec4(vec3(1.0), 0.0);
         #ifdef SHADOWS_ENABLED
-            shadowSample *= textureLod(TEX_SHADOW, uv, 0).rgb;
+            shadow_sss = textureLod(TEX_SHADOW, uv, 0);
         #endif
 
         float roughL = roughness*roughness;
@@ -194,10 +194,10 @@ void main() {
         vec3 moonTransmit = getValFromTLUT(texSkyTransmit, skyPos, -Scene_LocalSunDir);
         vec3 skyLight = SUN_BRIGHTNESS * sunTransmit + MOON_BRIGHTNESS * moonTransmit;
 
-        float worldY = localPos.y + cameraPos.y;
-        float transmitF = mix(VL_Transmit, VL_RainTransmit, rainStrength);
-        float lightAtmosDist = max(SEA_LEVEL + 200.0 - worldY, 0.0) / Scene_LocalLightDir.y;
-        skyLight *= exp2(-lightAtmosDist * transmitF) * shadowSample;
+        // float worldY = localPos.y + cameraPos.y;
+        // float transmitF = mix(VL_Transmit, VL_RainTransmit, rainStrength);
+        // float lightAtmosDist = max(SEA_LEVEL + 200.0 - worldY, 0.0) / Scene_LocalLightDir.y;
+        // skyLight *= exp2(-lightAtmosDist * transmitF);
 
         // float occlusion = 1.0;
         #if defined SSGIAO_ENABLED && !defined ACCUM_ENABLED
@@ -205,7 +205,9 @@ void main() {
             occlusion *= gi_ao.a;
         #endif
 
-        vec3 skyLightDiffuse = skyLight * NoLm * SampleLightDiffuse(NoVm, NoLm, LoHm, roughL);
+        vec3 skyLightDiffuse = NoLm * skyLight * shadow_sss.rgb * SampleLightDiffuse(NoVm, NoLm, LoHm, roughL);
+
+        skyLightDiffuse += skyLight * shadow_sss.w;// * (1.0 - NoLm);
 
         vec2 skyIrradianceCoord = DirectionToUV(localTexNormal);
         vec3 skyIrradiance = textureLod(texSkyIrradiance, skyIrradianceCoord, 0).rgb;
@@ -236,7 +238,11 @@ void main() {
 
         diffuse *= 1.0 - f0_metal * (1.0 - roughL);
 
-        diffuse += pow(emission, 2.2) * EMISSION_BRIGHTNESS;
+        #if MATERIAL_EMISSION_POWER != 1
+            diffuse += pow(emission, MATERIAL_EMISSION_POWER) * EMISSION_BRIGHTNESS;
+        #else
+            diffuse += emission * EMISSION_BRIGHTNESS;
+        #endif
 
         // float viewDist = length(localPosTrans);
         // vec3 localViewDir = localPosTrans / viewDist;
@@ -250,7 +256,7 @@ void main() {
 
         vec3 reflectSun = SUN_LUMINANCE * sun(reflectLocalDir, Scene_LocalSunDir) * sunTransmit;
         vec3 reflectMoon = MOON_LUMINANCE * moon(reflectLocalDir, -Scene_LocalSunDir) * moonTransmit;
-        skyReflectColor += shadowSample * (reflectSun + reflectMoon);
+        skyReflectColor += shadow_sss.rgb * (reflectSun + reflectMoon);
 
         // vec3 starViewDir = getStarViewDir(reflectLocalDir);
         // vec3 starLight = STAR_LUMINANCE * GetStarLight(starViewDir);
@@ -287,7 +293,7 @@ void main() {
 
         vec3 reflectTint = GetMetalTint(albedo.rgb, f0_metal);
 
-        vec3 specular = skyLight * SampleLightSpecular(NoLm, NoHm, LoHm, view_F, roughL);
+        vec3 specular = skyLight * shadow_sss.rgb * SampleLightSpecular(NoLm, NoHm, LoHm, view_F, roughL);
         specular += view_F * skyReflectColor * reflectTint * (1.0 - roughness);
 
         colorFinal = albedo.rgb * diffuse + specular;

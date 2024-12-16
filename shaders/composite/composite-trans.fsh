@@ -96,11 +96,14 @@ void main() {
 
         vec3 shadowSample = vec3(1.0);
         #ifdef SHADOWS_ENABLED
+            const float shadowPixelSize = 1.0 / shadowMapResolution;
+
             vec3 shadowViewPos = mul3(shadowModelView, localPosTrans);
+            const float shadowRadius = 2.0*shadowPixelSize;
 
             int shadowCascade;
-            vec3 shadowPos = GetShadowSamplePos(shadowViewPos, shadowCascade);
-            shadowSample = SampleShadowColor_PCF(shadowPos, shadowCascade);
+            vec3 shadowPos = GetShadowSamplePos(shadowViewPos, shadowRadius, shadowCascade);
+            shadowSample = SampleShadowColor_PCF(shadowPos, shadowCascade, shadowRadius);
         #endif
 
         // float NoLm = step(0.0, dot(Scene_LocalLightDir, localTexNormal));

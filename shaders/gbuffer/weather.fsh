@@ -62,9 +62,11 @@ void iris_emitFragment() {
 
     float shadowSample = 1.0;
     #ifdef SHADOWS_ENABLED
+        const float shadowRadius = 2.0*shadowPixelSize;
+
         int shadowCascade;
-        vec3 shadowPos = GetShadowSamplePos(shadowViewPos, shadowCascade);
-        shadowSample = SampleShadows(shadowPos, shadowCascade);
+        vec3 shadowPos = GetShadowSamplePos(shadowViewPos, shadowRadius, shadowCascade);
+        shadowSample = SampleShadows(shadowPos, shadowCascade, shadowRadius);
     #endif
 
     const float NoLm = 1.0; //step(0.0, dot(Scene_LocalLightDir, _localNormal));

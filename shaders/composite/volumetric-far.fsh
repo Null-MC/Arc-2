@@ -114,13 +114,12 @@ void main() {
         for (int i = 0; i < VL_MaxSamples; i++) {
             vec3 shadowSample = vec3(1.0);
             #ifdef SHADOWS_ENABLED
+                const float shadowRadius = 2.0*shadowPixelSize;
+
                 vec3 shadowViewPos = shadowViewStep*(i+dither) + shadowViewStart;
 
-                vec3 shadowPos;
                 int shadowCascade;
-                GetShadowProjection(shadowViewPos, shadowCascade, shadowPos);
-                shadowPos = shadowPos * 0.5 + 0.5;
-
+                vec3 shadowPos = GetShadowSamplePos(shadowViewPos, shadowRadius, shadowCascade);
                 shadowSample = SampleShadowColor(shadowPos, shadowCascade);
             #endif
 

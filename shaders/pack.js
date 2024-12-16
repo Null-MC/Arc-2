@@ -1,6 +1,7 @@
 const FEATURE = {
     Accumulation: false,
     GI_AO: false,
+    VL: true,
 };
 
 const Settings = {
@@ -285,13 +286,13 @@ function setupShader() {
     let texShadow_final = null;
     if (Settings.Shadows.Enabled) {
         texShadow = new Texture("texShadow")
-            .format(RGB16F)
+            .format(RGBA16F)
             .clear(false)
             .build();
 
         texShadow_final = new Texture("texShadow_final")
             .imageName("imgShadow_final")
-            .format(RGB16F)
+            .format(RGBA16F)
             .clear(false)
             .build();
     }

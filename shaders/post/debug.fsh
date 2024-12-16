@@ -3,7 +3,7 @@
 layout(location = 0) out vec4 outColor;
 
 uniform sampler2D texFinal;
-// uniform sampler2DArray texShadowColor;
+uniform sampler2D texShadow;
 
 #ifdef DEBUG_HISTOGRAM
     uniform usampler2D texHistogram_debug;
@@ -57,12 +57,12 @@ void main() {
             }
         #endif
 
-        // vec2 previewCoord = (uv - 0.01) / vec2(0.25);
-        // if (clamp(previewCoord, 0.0, 1.0) == previewCoord) {
-        //     color = textureLod(texShadowColor, vec3(previewCoord, 2), 0).rgb;
-        //     // ApplyAutoExposure(color, Scene_AvgExposure);
-        //     // color = tonemap_ACESFit2(color);
-        // }
+        vec2 previewCoord = (uv - 0.01) / vec2(0.25);
+        if (clamp(previewCoord, 0.0, 1.0) == previewCoord) {
+            color = textureLod(texShadow, previewCoord, 0).aaa;
+            // ApplyAutoExposure(color, Scene_AvgExposure);
+            // color = tonemap_ACESFit2(color);
+        }
     }
 
     // beginText(ivec2(gl_FragCoord.xy * 0.5), ivec2(4, screenSize.y/2 - 24));

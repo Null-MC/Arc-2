@@ -19,7 +19,7 @@ float SampleShadow(const in vec3 shadowPos, const in int shadowCascade) {
     return step(shadowPos.z - ShadowBias[shadowCascade], depthOpaque);
 }
 
-float SampleShadow_PCF(const in vec3 shadowPos, const in int shadowCascade) {
+float SampleShadow_PCF(const in vec3 shadowPos, const in int shadowCascade, const in float pixelRadius) {
     if (clamp(shadowPos, 0.0, 1.0) != shadowPos) return 1.0;
 
     float dither = GetShadowDither();
@@ -30,8 +30,6 @@ float SampleShadow_PCF(const in vec3 shadowPos, const in int shadowCascade) {
 
     const float GoldenAngle = PI * (3.0 - sqrt(5.0));
     const float PHI = (1.0 + sqrt(5.0)) / 2.0;
-
-    const float pixelRadius = 2.0 / shadowMapResolution;
 
     float shadowFinal = 0.0;
     for (int i = 0; i < SHADOW_PCF_SAMPLES; i++) {
@@ -70,7 +68,7 @@ vec3 SampleShadowColor(const in vec3 shadowPos, const in int shadowCascade) {
     return shadowSample.rgb;
 }
 
-vec3 SampleShadowColor_PCF(const in vec3 shadowPos, const in int shadowCascade) {
+vec3 SampleShadowColor_PCF(const in vec3 shadowPos, const in int shadowCascade, const in float pixelRadius) {
     if (clamp(shadowPos, 0.0, 1.0) != shadowPos) return vec3(1.0);
 
     float dither = GetShadowDither();
@@ -82,7 +80,7 @@ vec3 SampleShadowColor_PCF(const in vec3 shadowPos, const in int shadowCascade) 
     const float GoldenAngle = PI * (3.0 - sqrt(5.0));
     const float PHI = (1.0 + sqrt(5.0)) / 2.0;
 
-    const float pixelRadius = 2.0 / shadowMapResolution;
+    // const float pixelRadius = 2.0 / shadowMapResolution;
 
     vec3 shadowFinal = vec3(0.0);
     for (int i = 0; i < SHADOW_PCF_SAMPLES; i++) {

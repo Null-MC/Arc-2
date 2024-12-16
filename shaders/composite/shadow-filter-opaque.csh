@@ -6,7 +6,7 @@ const int sharedBufferRes = 20;
 const int sharedBufferSize = sharedBufferRes*sharedBufferRes;
 
 shared float gaussianBuffer[5];
-shared vec3 sharedShadowBuffer[sharedBufferSize];
+shared vec4 sharedShadowBuffer[sharedBufferSize];
 shared float sharedDepthBuffer[sharedBufferSize];
 
 layout(r16f) uniform image2D imgShadow_final;
@@ -44,7 +44,7 @@ void populateSharedBuffer() {
 	    ivec2 uv = uv_base + uv_i;
 
         float depthL = farPlane;
-        vec3 shadow = vec3(1.0);
+        vec4 shadow = vec3(1.0);
 	    if (all(greaterThanEqual(uv, ivec2(0))) && all(lessThan(uv, ivec2(screenSize + 0.5)))) {
 	    	shadow = texelFetch(texShadow, uv, 0).rgb;
 	    	float depth = texelFetch(solidDepthTex, uv, 0).r;
@@ -56,11 +56,11 @@ void populateSharedBuffer() {
     }
 }
 
-vec3 sampleSharedBuffer(const in float depthL) {
+vec4 sampleSharedBuffer(const in float depthL) {
     ivec2 uv_base = ivec2(gl_LocalInvocationID.xy) + 2;
 
     float total = 0.0;
-    vec3 accum = vec3(0.0);
+    vec4 accum = vec4(0.0);
     
     for (int iy = 0; iy < 5; iy++) {
         float fy = gaussianBuffer[iy];
@@ -71,7 +71,7 @@ vec3 sampleSharedBuffer(const in float depthL) {
             ivec2 uv_shared = uv_base + ivec2(ix, iy) - 2;
             int i_shared = uv_shared.y * sharedBufferRes + uv_shared.x;
 
-            vec3 sampleValue = sharedShadowBuffer[i_shared];
+            vec4 sampleValue = sharedShadowBuffer[i_shared];
             float sampleDepthL = sharedDepthBuffer[i_shared];
             
             float depthDiff = abs(sampleDepthL - depthL);
@@ -83,7 +83,7 @@ vec3 sampleSharedBuffer(const in float depthL) {
         }
     }
     
-    if (total <= EPSILON) return vec3(1.0);
+    if (total <= EPSILON) return vec4(vec3(1.0), 0.0);
     return accum / total;
 }
 
@@ -100,6 +100,6 @@ void main() {
     int i_shared = uv_shared.y * sharedBufferRes + uv_shared.x;
 	float depthL = sharedDepthBuffer[i_shared];
 
-	vec3 shadow = sampleSharedBuffer(depthL);
-	imageStore(imgShadow_final, uv, vec4(shadow, 1.0));
+	vec4 shadow_sss = sampleSharedBuffer(depthL);
+	imageStore(imgShadow_final, uv, shadow_sss);
 }

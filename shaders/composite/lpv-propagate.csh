@@ -99,7 +99,7 @@ mat3 neighbourOrientations[6] = {
 		vec3 shadowViewPos = mul3(shadowModelView, localPos);
 
 		int shadowCascade;
-		vec3 shadowCoord = GetShadowSamplePos(shadowViewPos, shadowCascade);
+		vec3 shadowCoord = GetShadowSamplePos(shadowViewPos, 0.0, shadowCascade);
 
 		float shadowDepth = textureLod(solidShadowMap, vec3(shadowCoord.xy, shadowCascade), 0).r;
 

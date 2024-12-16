@@ -2,6 +2,8 @@
 
 // #define MATERIAL_FORMAT 1 // [0 1 2]
 
+#define MATERIAL_EMISSION_POWER 2.2
+
 const float BLOCKLIGHT_TEMP = 3400.0;
 
 const float SEA_LEVEL = 60.0;
@@ -20,7 +22,7 @@ const float MOON_BRIGHTNESS = 0.024;
 const float SKY_BRIGHTNESS = 12.0;
 const float BLOCKLIGHT_BRIGHTNESS = 4.0;
 
-const float SKY_AMBIENT = 1.0;
+const float SKY_AMBIENT = 0.3;
 
 const int SHADOW_PCF_SAMPLES = 8;
 
@@ -33,3 +35,7 @@ const float Exposure_maxLogLum =  19.0;
 const float shadowMapResolution = 1024.0;
 const float sunPathRotation = 25.0;
 const float cloudHeight = 192.0;
+
+
+// DO NOT EDIT
+const float shadowPixelSize = 1.0 / shadowMapResolution;

@@ -23,10 +23,10 @@ vec3 tonemap_ACESFit2(const in vec3 color) {
 }
 
 vec3 tonemap_Lottes(const in vec3 color) {
-    const vec3 a = vec3(2.2); // contrast
+    const vec3 a = vec3(1.65); // contrast
     const vec3 d = vec3(0.977); // shoulder
     const vec3 hdrMax = vec3(16.0);
-    const vec3 midIn = vec3(0.58);
+    const vec3 midIn = vec3(0.42);
     const vec3 midOut = vec3(0.18);
 
     const vec3 b =
@@ -69,4 +69,53 @@ vec3 tonemap_Uchimura(vec3 x) {
     const float b = 0.00;  // pedestal
 
     return _uchimura(x, P, a, m, l, c, b);
+}
+
+vec3 tonemap_bloopHDR(vec3 color) {
+    // Constants for AgX inset and outset matrices
+    const mat3 AgXInsetMatrix =
+        mat3(0.856627153315983, 0.137318972929847, 0.11189821299995, 0.0951212405381588, 0.761241990602591,
+             0.0767994186031903, 0.0482516061458583, 0.101439036467562, 0.811302368396859);
+
+    const mat3 AgXOutsetMatrix =
+        mat3(1.1271005818144368, -0.1413297634984383, -0.14132976349843826, -0.11060664309660323, 1.157823702216272,
+             -0.11060664309660294, -0.016493938717834573, -0.016493938717834257, 1.2519364065950405);
+
+    // Constants for AgX exposure range
+    const float AgxMinEv = -12.47393;
+    const float AgxMaxEv = 4.026069;
+
+    // Constants for agxAscCdl operation
+    const vec3 SLOPE = vec3(0.9);
+    const vec3 OFFSET = vec3(0.0);
+    const vec3 POWER = vec3(1.4);
+    const float SATURATION = 1.1;
+
+    // 1. agx()
+    // Input transform (inset)
+    color = AgXInsetMatrix * color;
+    color = max(color, 1e-10); // Avoid 0 or negative numbers for log2
+
+    // Log2 space encoding
+    color = clamp(log2(color), AgxMinEv, AgxMaxEv);
+    color = (color - AgxMinEv) / (AgxMaxEv - AgxMinEv);
+    color = clamp(color, 0.0, 1.0);
+
+    // Apply sigmoid function approximation
+    vec3 x2 = color * color;
+    vec3 x4 = x2 * x2;
+    color = 15.5 * x4 * x2 - 40.14 * x4 * color + 31.96 * x4 - 6.868 * x2 * color + 0.4298 * x2 + 0.1191 * color - 0.00232;
+
+    // 2. agxAscCdl
+    float luma = luminance(color);
+    vec3 c = pow(color * SLOPE + OFFSET, POWER);
+    color = luma + SATURATION * (c - luma);
+
+    // 3. agxEotf()
+    color = AgXOutsetMatrix * color;
+
+    // sRGB IEC 61966-2-1 2.2 Exponent Reference EOTF Display
+    color = pow(max(vec3(0.0), color), vec3(2.2));
+
+    return color;
 }

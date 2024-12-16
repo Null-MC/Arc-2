@@ -5,4 +5,5 @@ layout(binding = 0) buffer sceneBuffer { // 36
     vec3 Scene_SkyIrradianceUp;     // 16
 
     vec3 Scene_TrackPos;            // 16
+    float Scene_SkyBrightnessSmooth; // 4
 };

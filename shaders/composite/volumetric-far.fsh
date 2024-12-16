@@ -76,7 +76,7 @@ void main() {
             sampleAmbient = vec3(VL_AmbientF);
         }
 
-        sampleAmbient *= Scene_SkyIrradianceUp * saturate(eyeBrightness.y);
+        sampleAmbient *= Scene_SkyIrradianceUp * Scene_SkyBrightnessSmooth;
 
         vec3 ndcPos = vec3(uv, depthOpaque) * 2.0 - 1.0;
         vec3 viewPos = unproject(playerProjectionInverse, ndcPos);

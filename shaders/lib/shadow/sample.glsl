@@ -2,19 +2,27 @@ const float ShadowBias[] = float[](
     0.000012, 0.000024, 0.000064, 0.000256);
 
 
-float SampleShadows(const in vec3 shadowPos, const in int shadowCascade) {
-    // vec3 shadowPos;
-    // int shadowCascade;
-    // GetShadowProjection(shadowViewPos, shadowCascade, shadowPos);
-    // shadowPos = shadowPos * 0.5 + 0.5;
+float GetShadowDither() {
+    #ifdef EFFECT_TAA_ENABLED
+        return InterleavedGradientNoiseTime(gl_FragCoord.xy);
+    #else
+        return InterleavedGradientNoise(gl_FragCoord.xy);
+    #endif
+}
 
+float SampleShadow(const in vec3 shadowPos, const in int shadowCascade) {
     if (clamp(shadowPos, 0.0, 1.0) != shadowPos) return 1.0;
 
-    // #ifdef EFFECT_TAA_ENABLED
-        float dither = InterleavedGradientNoiseTime(gl_FragCoord.xy);
-    // #else
-    //     float dither = InterleavedGradientNoise(gl_FragCoord.xy);
-    // #endif
+    vec3 shadowCoord = vec3(shadowPos.xy, shadowCascade);
+    float depthOpaque = textureLod(solidShadowMap, shadowCoord, 0).r;
+
+    return step(shadowPos.z - ShadowBias[shadowCascade], depthOpaque);
+}
+
+float SampleShadow_PCF(const in vec3 shadowPos, const in int shadowCascade) {
+    if (clamp(shadowPos, 0.0, 1.0) != shadowPos) return 1.0;
+
+    float dither = GetShadowDither();
 
     float angle = fract(dither) * TAU;
     float s = sin(angle), c = cos(angle);
@@ -32,11 +40,9 @@ float SampleShadows(const in vec3 shadowPos, const in int shadowCascade) {
         
         vec2 pcfDiskOffset = r * vec2(cos(theta), sin(theta));
         vec2 pixelOffset = (rotation * pcfDiskOffset) * pixelRadius;
-        vec3 shadowCoord = vec3(shadowPos.xy + pixelOffset, shadowCascade);
+        vec3 sampleShadowPos = shadowPos + vec3(pixelOffset, 0.0);
 
-        float shadowDepth = textureLod(solidShadowMap, shadowCoord, 0).r;
-        float shadowSample = step(shadowPos.z - ShadowBias[shadowCascade], shadowDepth);
-        shadowFinal += shadowSample;
+        shadowFinal += SampleShadow(sampleShadowPos, shadowCascade);
     }
 
     return shadowFinal / SHADOW_PCF_SAMPLES;
@@ -45,14 +51,12 @@ float SampleShadows(const in vec3 shadowPos, const in int shadowCascade) {
 vec3 SampleShadowColor(const in vec3 shadowPos, const in int shadowCascade) {
     if (clamp(shadowPos, 0.0, 1.0) != shadowPos) return vec3(1.0);
 
-    const float bias = 0.0;
-
     vec3 shadowCoord = vec3(shadowPos.xy, shadowCascade);
     float depthOpaque = textureLod(solidShadowMap, shadowCoord, 0).r;
 
     vec4 shadowSample = vec4(1.0);
 
-    if (shadowPos.z - bias > depthOpaque) shadowSample.rgb = vec3(0.0);
+    if (shadowPos.z > depthOpaque) shadowSample.rgb = vec3(0.0);
     else {
         float depthTrans = textureLod(shadowMap, shadowCoord, 0).r;
 
@@ -60,11 +64,6 @@ vec3 SampleShadowColor(const in vec3 shadowPos, const in int shadowCascade) {
         else {
             shadowSample = textureLod(texShadowColor, shadowCoord, 0);
             shadowSample.rgb = RgbToLinear(shadowSample.rgb);
-            
-            // float lum = luminance(shadowSample.rgb);
-            // if (lum > 0.0) shadowSample.rgb /= lum;
-
-            // shadowSample.rgb = mix(shadowSample.rgb, vec3(0.0), (shadowSample.a*shadowSample.a));
         }
     }
 
@@ -72,18 +71,9 @@ vec3 SampleShadowColor(const in vec3 shadowPos, const in int shadowCascade) {
 }
 
 vec3 SampleShadowColor_PCF(const in vec3 shadowPos, const in int shadowCascade) {
-    // vec3 shadowPos;
-    // int shadowCascade;
-    // GetShadowProjection(shadowViewPos, shadowCascade, shadowPos);
-    // shadowPos = shadowPos * 0.5 + 0.5;
-
     if (clamp(shadowPos, 0.0, 1.0) != shadowPos) return vec3(1.0);
 
-    // #ifdef EFFECT_TAA_ENABLED
-        float dither = InterleavedGradientNoiseTime(gl_FragCoord.xy);
-    // #else
-    //     float dither = InterleavedGradientNoise(gl_FragCoord.xy);
-    // #endif
+    float dither = GetShadowDither();
 
     float angle = fract(dither) * TAU;
     float s = sin(angle), c = cos(angle);
@@ -101,9 +91,7 @@ vec3 SampleShadowColor_PCF(const in vec3 shadowPos, const in int shadowCascade) 
         
         vec2 pcfDiskOffset = r * vec2(cos(theta), sin(theta));
         vec2 pixelOffset = (rotation * pcfDiskOffset) * pixelRadius;
-
-        vec3 sampleShadowPos = shadowPos;
-        sampleShadowPos.xy += pixelOffset;
+        vec3 sampleShadowPos = shadowPos + vec3(pixelOffset, 0.0);
 
         shadowFinal += SampleShadowColor(sampleShadowPos, shadowCascade);
     }

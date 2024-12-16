@@ -103,12 +103,6 @@ void main() {
             shadowPos = shadowPos * 0.5 + 0.5;
 
             shadowSample = SampleShadowColor(shadowPos, shadowCascade);
-
-            // if (clamp(shadowPos, 0.0, 1.0) == shadowPos) {
-            //     vec3 shadowCoord = vec3(shadowPos.xy, shadowCascade);
-            //     float shadowDepth = textureLod(solidShadowMap, shadowCoord, 0).r;
-            //     shadowSample = step(shadowPos.z - 0.000006, shadowDepth);
-            // }
         #endif
 
         vec3 sampleLocalPos = (i+dither) * stepLocal;

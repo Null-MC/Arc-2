@@ -398,6 +398,12 @@ function setupShader() {
         .ssbo(0, sceneBuffer)
         .build());
 
+    registerShader(Stage.SCREEN_SETUP, new Compute("histogram-clear")
+        .barrier(true)
+        .location("setup/histogram-clear.csh")
+        .workGroups(1, 1, 1)
+        .build());
+
     if (FEATURE.LPV) {
         registerShader(Stage.SCREEN_SETUP, new Compute("lpv-clear")
             .barrier(true)

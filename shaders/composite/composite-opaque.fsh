@@ -220,6 +220,7 @@ void main() {
         #ifdef LPV_ENABLED
             // vec3 voxelPos = GetVoxelPosition(localPos);
             vec3 voxelPos = GetVoxelPosition(localPos + 0.5*localTexNormal);
+            // TODO: make fade and not cutover!
             if (IsInVoxelBounds(voxelPos)) blockLighting = vec3(0.0);
 
             // vec3 voxelPos = GetVoxelPosition(localPos + 0.5*localTexNormal);

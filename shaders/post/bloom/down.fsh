@@ -6,16 +6,14 @@ uniform sampler2D TEX_SRC;
 
 in vec2 uv;
 
+#include "/settings.glsl"
 #include "/lib/common.glsl"
 
 
-const float bloomPower = 1.3;
-const float bloomStrength = 0.06;
-
 void ScaleInput(inout vec3 color) {
     float lum = luminance(color);
-    float lumScaled = lum * bloomStrength;
-    float lumCurved = pow(lumScaled, bloomPower);
+    float lumScaled = lum * Bloom_Strength;
+    float lumCurved = pow(lumScaled, Bloom_Power);
 
     float lumFinal = min(lumScaled, lumCurved);
 

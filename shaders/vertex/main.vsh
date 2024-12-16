@@ -48,7 +48,6 @@ out VertexData2 {
 void iris_emitVertex(inout VertexData data) {
 	vec3 viewPos = mul3(iris_modelViewMatrix, data.modelPos.xyz);
 	vOut.localPos = mul3(playerModelViewInverse, viewPos);
-	// vOut.surfacePos = vOut.localPos;
 	vOut.localOffset = vec3(0.0);
 
 	#if defined RENDER_TRANSLUCENT && defined WATER_WAVES_ENABLED && !defined WATER_TESSELLATION_ENABLED

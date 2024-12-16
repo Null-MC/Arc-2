@@ -1,6 +1,6 @@
 // #define DEBUG_WHITE_WORLD
 
-#define MATERIAL_FORMAT 1 // [0 1 2]
+// #define MATERIAL_FORMAT 1 // [0 1 2]
 
 const float BLOCKLIGHT_TEMP = 3400.0;
 
@@ -16,7 +16,7 @@ const float STAR_LUMINANCE = 0.10;
 const float SKY_LUMINANCE = 32.0;
 
 const float SUN_BRIGHTNESS = 32.0;
-const float MOON_BRIGHTNESS = 0.016;
+const float MOON_BRIGHTNESS = 0.024;
 const float SKY_BRIGHTNESS = 12.0;
 const float BLOCKLIGHT_BRIGHTNESS = 4.0;
 
@@ -24,8 +24,11 @@ const float SKY_AMBIENT = 1.0;
 
 const int SHADOW_PCF_SAMPLES = 8;
 
-const float Exposure_minLogLum = -10.50;
-const float Exposure_maxLogLum =  13.00;
+const float Bloom_Power = 1.3;
+const float Bloom_Strength = 0.04;
+
+const float Exposure_minLogLum = -9.5;
+const float Exposure_maxLogLum =  19.0;
 
 const float shadowMapResolution = 1024.0;
 const float sunPathRotation = 25.0;

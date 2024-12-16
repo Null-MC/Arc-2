@@ -23,8 +23,7 @@ void main() {
 
     color = PurkinjeShift(color, PurkinjeStrength);
 
-    // color = tonemap_jodieReinhard(color);
-    color = tonemap_ACESFit2(color);
+    color = tonemap_Lottes(color);
 
     outColor = vec4(color, 1.0);
 }

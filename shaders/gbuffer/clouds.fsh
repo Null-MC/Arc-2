@@ -45,12 +45,9 @@ void iris_emitFragment() {
     vec4 colorFinal = albedo;
     const float shadowSample = 1.0;
 
-    // float NoLm = step(0.0, dot(Scene_LocalLightDir, localNormal));
     float NoLm = max(dot(Scene_LocalLightDir, localNormal), 0.0);
 
     vec3 skyPos = getSkyPosition(vIn.localPos);
-    // vec3 skyTransmit = getValFromTLUT(texSkyTransmit, skyPos, Scene_LocalSunDir);
-    // vec3 skyLighting = NoLm * skyTransmit * shadowSample;
     vec3 sunTransmit = getValFromTLUT(texSkyTransmit, skyPos, Scene_LocalSunDir);
     vec3 moonTransmit = getValFromTLUT(texSkyTransmit, skyPos, -Scene_LocalSunDir);
     vec3 skyLight = SUN_BRIGHTNESS * sunTransmit + MOON_BRIGHTNESS * moonTransmit;

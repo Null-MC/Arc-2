@@ -1,27 +1,38 @@
 const FEATURE = {
     Accumulation: false,
-    Shadows: true,
-    ShadowFilter: false,
-    Bloom: true,
     GI_AO: false,
-    SSR: true,
-    TAA: true,
-    LPV: true,
-    LPV_RSM: false,
-    VL: true
 };
 
 const Settings = {
     Water: {
         Waves: true,
         Tessellation: true,
-    }
+        Tessellation_Level: 12,
+    },
+    Shadows: {
+        Enabled: true,
+        Filter: false,
+        SS_Fallback: true,
+    },
+    Material: {
+        Format: "MAT_LABPBR",
+        SSR: true,
+    },
+    Voxel: {
+        Size: 128,
+        LPV: {
+            Enabled: true,
+            RSM_Enabled: false,
+        },
+    },
+    Post: {
+        Bloom: true,
+        TAA: true,
+    },
 };
 
 const DEBUG_SSGIAO = false;
 const DEBUG_HISTOGRAM = false;
-
-const VoxelBufferSize = 128;
 
 
 function setupSky(sceneBuffer) {
@@ -140,20 +151,39 @@ function setupShader() {
     worldSettings.moon = false;
     worldSettings.sun = false;
 
-    defineGlobally("VOXEL_SIZE", VoxelBufferSize.toString());
-    defineGlobally("SHADOW_SCREEN", "1");
-
-    if (FEATURE.Accumulation) defineGlobally("ACCUM_ENABLED", "1");
-    if (FEATURE.Shadows) defineGlobally("SHADOWS_ENABLED", "1");
-    if (FEATURE.GI_AO) defineGlobally("SSGIAO_ENABLED", "1");
-    if (FEATURE.LPV) defineGlobally("LPV_ENABLED", "1");
-    if (FEATURE.LPV_RSM) defineGlobally("LPV_RSM_ENABLED", "1");
-    if (FEATURE.SSR) defineGlobally("SSR_ENABLED", "1");
-    if (FEATURE.TAA) defineGlobally("EFFECT_TAA_ENABLED", "1");
     if (FEATURE.VL) defineGlobally("EFFECT_VL_ENABLED", "1");
 
-    if (Settings.Water.Waves) defineGlobally("WATER_WAVES_ENABLED", "1");
-    if (Settings.Water.Tessellation) defineGlobally("WATER_TESSELLATION_ENABLED", "1");
+    if (FEATURE.Accumulation) defineGlobally("ACCUM_ENABLED", "1");
+    if (FEATURE.GI_AO) defineGlobally("SSGIAO_ENABLED", "1");
+    // if (FEATURE.VL) defineGlobally("EFFECT_VL_ENABLED", "1");
+
+    if (Settings.Water.Waves) {
+        defineGlobally("WATER_WAVES_ENABLED", "1");
+        
+        if (Settings.Water.Tessellation) {
+            defineGlobally("WATER_TESSELLATION_ENABLED", "1");
+            defineGlobally("WATER_TESSELLATION_LEVEL", Settings.Water.Tessellation_Level.toString());
+        }
+    }
+
+    if (Settings.Shadows.Enabled) defineGlobally("SHADOWS_ENABLED", "1");
+    if (Settings.Shadows.SS_Fallback) defineGlobally("SHADOW_SCREEN", "1");
+
+    if (Settings.Material.SSR) defineGlobally("SSR_ENABLED", "1");
+
+    defineGlobally("VOXEL_SIZE", Settings.Voxel.Size.toString());
+
+    if (Settings.Voxel.LPV.Enabled) {
+        defineGlobally("LPV_ENABLED", "1");
+
+        if (Settings.Voxel.LPV.RSM_Enabled) {
+            defineGlobally("LPV_RSM_ENABLED", "1");
+        }
+    }
+
+    if (Settings.Post.TAA) defineGlobally("EFFECT_TAA_ENABLED", "1");
+
+    defineGlobally("MATERIAL_FORMAT", Settings.Material.Format);
 
     if (DEBUG_SSGIAO) defineGlobally("DEBUG_SSGIAO", "1");
     if (DEBUG_HISTOGRAM) defineGlobally("DEBUG_HISTOGRAM", "1");
@@ -253,7 +283,7 @@ function setupShader() {
 
     let texShadow = null;
     let texShadow_final = null;
-    if (FEATURE.Shadows) {
+    if (Settings.Shadows.Enabled) {
         texShadow = new Texture("texShadow")
             .format(RGB16F)
             .clear(false)
@@ -270,9 +300,9 @@ function setupShader() {
         .imageName("imgVoxelBlock")
         .format(R8UI)
         .clearColor(0.0, 0.0, 0.0, 0.0)
-        .width(VoxelBufferSize)
-        .height(VoxelBufferSize)
-        .depth(VoxelBufferSize)
+        .width(Settings.Voxel.Size)
+        .height(Settings.Voxel.Size)
+        .depth(Settings.Voxel.Size)
         .build();
 
     let texSSGIAO = null;
@@ -354,9 +384,9 @@ function setupShader() {
     let shLpvBuffer_alt = null;
     let shLpvRsmBuffer = null;
     let shLpvRsmBuffer_alt = null;
-    if (FEATURE.LPV) {
+    if (Settings.Voxel.LPV.Enabled) {
         // vec3[12] * Band[4] * VoxelBufferSize^3
-        let bufferSize = 12 * 4 * (VoxelBufferSize*VoxelBufferSize*VoxelBufferSize);
+        let bufferSize = 12 * 4 * (Settings.Voxel.Size*Settings.Voxel.Size*Settings.Voxel.Size);
 
         shLpvBuffer = new Buffer(bufferSize)
             .clear(false)
@@ -366,7 +396,7 @@ function setupShader() {
             .clear(false)
             .build();
 
-        if (FEATURE.LPV_RSM) {
+        if (Settings.Voxel.LPV.RSM_Enabled) {
             shLpvRsmBuffer = new Buffer(bufferSize)
                 .clear(false)
                 .build();
@@ -412,7 +442,7 @@ function setupShader() {
         .workGroups(1, 1, 1)
         .build());
 
-    if (FEATURE.LPV) {
+    if (Settings.Voxel.LPV.Enabled) {
         registerShader(Stage.SCREEN_SETUP, new Compute("lpv-clear")
             .barrier(true)
             .location("setup/lpv-clear.csh")
@@ -436,7 +466,7 @@ function setupShader() {
         .ssbo(0, sceneBuffer)
         .build());
 
-    if (FEATURE.Shadows) {
+    if (Settings.Shadows.Enabled) {
         registerShader(new ObjectShader("shadow", Usage.SHADOW)
             .vertex("vertex/shadow.vsh")
             .fragment("gbuffer/shadow.fsh")
@@ -494,8 +524,8 @@ function setupShader() {
         .target(0, texParticles)
         .build());
 
-    if (FEATURE.LPV) {
-        let groupCount = Math.ceil(VoxelBufferSize / 8);
+    if (Settings.Voxel.LPV.Enabled) {
+        let groupCount = Math.ceil(Settings.Voxel.Size / 8);
 
         let shader = new Compute("lpv-propagate")
             .barrier(true)
@@ -505,7 +535,7 @@ function setupShader() {
             .ssbo(1, shLpvBuffer)
             .ssbo(2, shLpvBuffer_alt);
 
-        if (FEATURE.LPV_RSM) {
+        if (Settings.Voxel.LPV.RSM_Enabled) {
             shader
                 .ssbo(3, shLpvRsmBuffer)
                 .ssbo(4, shLpvRsmBuffer_alt);
@@ -553,14 +583,14 @@ function setupShader() {
             .build());
     }
 
-    if (FEATURE.Shadows) {
+    if (Settings.Shadows.Enabled) {
         registerShader(Stage.POST_RENDER, new Composite("shadow-opaque")
             .vertex("vertex/bufferless.vsh")
             .fragment("composite/shadow-opaque.fsh")
             .target(0, texShadow)
             .build());
 
-        if (FEATURE.ShadowFilter) {
+        if (Settings.Shadows.Filter) {
             registerShader(Stage.POST_RENDER, new Compute("shadow-filter-opaque")
                 .barrier(true)
                 .location("composite/shadow-filter-opaque.csh")
@@ -569,7 +599,7 @@ function setupShader() {
         }
     }
 
-    let texShadow_src = FEATURE.ShadowFilter ? "texShadow_final" : "texShadow";
+    let texShadow_src = Settings.Shadows.Filter ? "texShadow_final" : "texShadow";
 
     let compositeOpaqueShader = new Composite("composite-opaque")
         .vertex("vertex/bufferless.vsh")
@@ -580,7 +610,7 @@ function setupShader() {
         .define("TEX_SHADOW", texShadow_src)
         .define("TEX_SSGIAO", "texSSGIAO");
 
-    if (FEATURE.LPV) {
+    if (Settings.Voxel.LPV.Enabled) {
         compositeOpaqueShader
             .ssbo(1, shLpvBuffer)
             .ssbo(2, shLpvBuffer_alt);
@@ -605,7 +635,7 @@ function setupShader() {
         .ssbo(0, sceneBuffer)
         .build());
 
-    if (FEATURE.TAA) {
+    if (Settings.Post.TAA) {
         registerShader(Stage.POST_RENDER, new Composite("TAA")
             .vertex("vertex/bufferless.vsh")
             .fragment("post/taa.fsh")
@@ -635,7 +665,7 @@ function setupShader() {
         .ssbo(0, sceneBuffer)
         .build());
 
-    if (FEATURE.Bloom)
+    if (Settings.Post.Bloom)
         setupBloom(texFinal);
 
     registerShader(Stage.POST_RENDER, new Composite("tonemap")

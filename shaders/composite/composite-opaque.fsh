@@ -40,6 +40,10 @@ uniform sampler2D TEX_SHADOW;
 #include "/lib/constants.glsl"
 #include "/lib/buffers/scene.glsl"
 
+#ifdef LPV_ENABLED
+    #include "/lib/buffers/sh-lpv.glsl"
+#endif
+
 #include "/lib/erp.glsl"
 #include "/lib/depth.glsl"
 
@@ -49,10 +53,6 @@ uniform sampler2D TEX_SHADOW;
 #include "/lib/light/hcm.glsl"
 #include "/lib/light/fresnel.glsl"
 #include "/lib/material_fresnel.glsl"
-
-#ifdef LPV_ENABLED
-    #include "/lib/buffers/sh-lpv.glsl"
-#endif
 
 #include "/lib/utility/blackbody.glsl"
 #include "/lib/utility/matrix.glsl"

@@ -19,11 +19,10 @@ vec3 sample_lpv(ivec3 voxelPos, vec4 intensity) {
 		lpv_intensity *= lum_new / lum;
 	}
 
-	return 3.0 * lpv_intensity;
+	return lpv_intensity;
 }
 
 vec3 sample_lpv_nn(ivec3 voxelPos, vec3 localNormal) {
-	// https://github.com/mafian89/Light-Propagation-Volumes/blob/master/shaders/basicShader.frag
 	vec4 intensity = dirToSH(-localNormal);
 
 	return sample_lpv(voxelPos, intensity) / PI;

@@ -2,12 +2,16 @@
 
 layout(location = 0) out vec4 outColor;
 
-in vec2 uv;
-// in vec2 light;
-in vec4 color;
-in vec3 localPos;
-in vec3 localNormal;
-// in vec3 shadowViewPos;
+in VertexData2 {
+    vec2 uv;
+    vec2 light;
+    vec4 color;
+    vec3 localPos;
+    vec3 localOffset;
+    vec3 localNormal;
+    vec4 localTangent;
+    flat int material;
+} vIn;
 
 uniform sampler2D texSkyTransmit;
 uniform sampler2D texSkyIrradiance;
@@ -21,12 +25,12 @@ uniform sampler2D texSkyIrradiance;
 
 
 void iris_emitFragment() {
-    vec2 mUV = uv;
+    vec2 mUV = vIn.uv;
     vec2 mLight = vec2(1.0);// light;
-    vec4 mColor = color;
+    vec4 mColor = vIn.color;
     iris_modifyBase(mUV, mColor, mLight);
 
-    vec3 _localNormal = normalize(localNormal);
+    vec3 localNormal = normalize(vIn.localNormal);
 
     vec4 albedo = iris_sampleBaseTex(mUV);
     if (iris_discardFragment(albedo)) {discard; return;}
@@ -41,10 +45,10 @@ void iris_emitFragment() {
     vec4 colorFinal = albedo;
     const float shadowSample = 1.0;
 
-    // float NoLm = step(0.0, dot(Scene_LocalLightDir, _localNormal));
-    float NoLm = max(dot(Scene_LocalLightDir, _localNormal), 0.0);
+    // float NoLm = step(0.0, dot(Scene_LocalLightDir, localNormal));
+    float NoLm = max(dot(Scene_LocalLightDir, localNormal), 0.0);
 
-    vec3 skyPos = getSkyPosition(localPos);
+    vec3 skyPos = getSkyPosition(vIn.localPos);
     // vec3 skyTransmit = getValFromTLUT(texSkyTransmit, skyPos, Scene_LocalSunDir);
     // vec3 skyLighting = NoLm * skyTransmit * shadowSample;
     vec3 sunTransmit = getValFromTLUT(texSkyTransmit, skyPos, Scene_LocalSunDir);
@@ -53,7 +57,7 @@ void iris_emitFragment() {
 
     vec3 skyLighting = skyLight * NoLm;// * SampleLightDiffuse(NoVm, NoLm, LoHm, roughL);
 
-    vec2 skyIrradianceCoord = DirectionToUV(_localNormal);
+    vec2 skyIrradianceCoord = DirectionToUV(localNormal);
     skyLighting += SKY_AMBIENT * SKY_BRIGHTNESS * textureLod(texSkyIrradiance, skyIrradianceCoord, 0).rgb;
 
     colorFinal.rgb *= skyLighting + 0.002;

@@ -195,7 +195,7 @@ function setupShader() {
     finalizeUniforms();
 
     let texShadowColor = new ArrayTexture("texShadowColor")
-        .format(RGB8)
+        .format(RGBA8)
         .clearColor(0.0, 0.0, 0.0, 0.0)
         .build();
 
@@ -255,13 +255,13 @@ function setupShader() {
     let texShadow_final = null;
     if (FEATURE.Shadows) {
         texShadow = new Texture("texShadow")
-            .format(R16F)
+            .format(RGB16F)
             .clear(false)
             .build();
 
         texShadow_final = new Texture("texShadow_final")
             .imageName("imgShadow_final")
-            .format(R16F)
+            .format(RGB16F)
             .clear(false)
             .build();
     }
@@ -441,6 +441,7 @@ function setupShader() {
             .vertex("vertex/shadow.vsh")
             .fragment("gbuffer/shadow.fsh")
             .target(0, texShadowColor)
+            // .blendFunc(0, Func.ONE, Func.ZERO, Func.ONE, Func.ZERO)
             .target(1, texShadowNormal)
             .build());
     }

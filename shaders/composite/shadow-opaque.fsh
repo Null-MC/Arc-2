@@ -5,7 +5,9 @@ layout(location = 0) out vec4 outShadow;
 in vec2 uv;
 
 uniform sampler2D solidDepthTex;
+uniform sampler2DArray shadowMap;
 uniform sampler2DArray solidShadowMap;
+uniform sampler2DArray texShadowColor;
 uniform usampler2D texDeferredOpaque_Data;
 
 #include "/settings.glsl"
@@ -31,7 +33,7 @@ void main() {
     ivec2 iuv = ivec2(gl_FragCoord.xy);
     float depthOpaque = texelFetch(solidDepthTex, iuv, 0).r;
 
-    float shadowSample = 1.0;
+    vec3 shadowSample = vec3(1.0);
 
     if (depthOpaque < 1.0) {
         uvec4 data = texelFetch(texDeferredOpaque_Data, iuv, 0);
@@ -72,7 +74,7 @@ void main() {
 
         int shadowCascade;
         vec3 shadowPos = GetShadowSamplePos(shadowViewPos, shadowCascade);
-        shadowSample *= SampleShadows(shadowPos, shadowCascade);
+        shadowSample *= SampleShadowColor_PCF(shadowPos, shadowCascade);
 
         #ifdef SHADOW_SCREEN
             float viewDist = length(viewPos);
@@ -148,5 +150,5 @@ void main() {
         #endif
     }
 
-    outShadow = vec4(vec3(shadowSample), 1.0);
+    outShadow = vec4(shadowSample, 1.0);
 }

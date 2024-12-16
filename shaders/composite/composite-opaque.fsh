@@ -64,7 +64,7 @@ uniform sampler2D TEX_SHADOW;
 #include "/lib/sky/sun.glsl"
 #include "/lib/sky/stars.glsl"
 
-#include "/lib/volumetric.glsl"
+#include "/lib/light/volumetric.glsl"
 
 #ifdef SSR_ENABLED
     #include "/lib/ssr.glsl"
@@ -179,9 +179,9 @@ void main() {
 
         NoLm = mix(NoLm, 1.0, sss);
 
-        float shadowSample = 1.0;
+        vec3 shadowSample = vec3(1.0);
         #ifdef SHADOWS_ENABLED
-            shadowSample *= textureLod(TEX_SHADOW, uv, 0).r;
+            shadowSample *= textureLod(TEX_SHADOW, uv, 0).rgb;
         #endif
 
         float roughL = roughness*roughness;

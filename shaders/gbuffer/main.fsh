@@ -12,7 +12,7 @@ in VertexData2 {
     vec3 localNormal;
     vec4 localTangent;
     flat int material;
-    
+
     #if defined RENDER_TRANSLUCENT && defined WATER_WAVES_ENABLED
         vec3 surfacePos;
     #endif
@@ -22,8 +22,6 @@ in VertexData2 {
 #include "/lib/common.glsl"
 #include "/lib/constants.glsl"
 
-// #include "/lib/light/hcm.glsl"
-// #include "/lib/light/fresnel.glsl"
 #include "/lib/material.glsl"
 
 #ifdef RENDER_TRANSLUCENT

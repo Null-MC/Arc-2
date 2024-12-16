@@ -16,7 +16,10 @@ uniform sampler2D texClouds;
 uniform sampler2D texSkyView;
 uniform sampler2D texSkyTransmit;
 uniform sampler2D texSkyIrradiance;
+
+uniform sampler2DArray shadowMap;
 uniform sampler2DArray solidShadowMap;
+uniform sampler2DArray texShadowColor;
 
 #ifdef EFFECT_VL_ENABLED
     uniform sampler2D texScatterVL;
@@ -91,13 +94,13 @@ void main() {
         bool isWater = bitfieldExtract(material, 6, 1) != 0;
         float emission = 0.0; // (material & 8) != 0 ? 1.0 : 0.0;
 
-        float shadowSample = 1.0;
+        vec3 shadowSample = vec3(1.0);
         #ifdef SHADOWS_ENABLED
             vec3 shadowViewPos = mul3(shadowModelView, localPosTrans);
 
             int shadowCascade;
             vec3 shadowPos = GetShadowSamplePos(shadowViewPos, shadowCascade);
-            shadowSample = SampleShadows(shadowPos, shadowCascade);
+            shadowSample = SampleShadowColor_PCF(shadowPos, shadowCascade);
         #endif
 
         // float NoLm = step(0.0, dot(Scene_LocalLightDir, localTexNormal));

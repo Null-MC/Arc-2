@@ -10,7 +10,9 @@ uniform sampler2D mainDepthTex;
 uniform sampler2D texSkyTransmit;
 
 #ifdef SHADOWS_ENABLED
+    uniform sampler2DArray shadowMap;
     uniform sampler2DArray solidShadowMap;
+    uniform sampler2DArray texShadowColor;
 #endif
 
 #include "/settings.glsl"
@@ -21,12 +23,13 @@ uniform sampler2D texSkyTransmit;
 
 #ifdef SHADOWS_ENABLED
     #include "/lib/shadow/csm.glsl"
+    #include "/lib/shadow/sample.glsl"
 #endif
 
 #include "/lib/sky/common.glsl"
 #include "/lib/sky/transmittance.glsl"
 
-#include "/lib/volumetric.glsl"
+#include "/lib/light/volumetric.glsl"
 
 const int VL_MaxSamples = 32;
 
@@ -90,7 +93,7 @@ void main() {
     vec3 transmittance = vec3(1.0);
 
     for (int i = 0; i < VL_MaxSamples; i++) {
-        float shadowSample = 1.0;
+        vec3 shadowSample = vec3(1.0);
         #ifdef SHADOWS_ENABLED
             vec3 shadowViewPos = shadowViewStep*(i+dither) + shadowViewStart;
 
@@ -99,11 +102,13 @@ void main() {
             GetShadowProjection(shadowViewPos, shadowCascade, shadowPos);
             shadowPos = shadowPos * 0.5 + 0.5;
 
-            if (clamp(shadowPos, 0.0, 1.0) == shadowPos) {
-                vec3 shadowCoord = vec3(shadowPos.xy, shadowCascade);
-                float shadowDepth = textureLod(solidShadowMap, shadowCoord, 0).r;
-                shadowSample = step(shadowPos.z - 0.000006, shadowDepth);
-            }
+            shadowSample = SampleShadowColor(shadowPos, shadowCascade);
+
+            // if (clamp(shadowPos, 0.0, 1.0) == shadowPos) {
+            //     vec3 shadowCoord = vec3(shadowPos.xy, shadowCascade);
+            //     float shadowDepth = textureLod(solidShadowMap, shadowCoord, 0).r;
+            //     shadowSample = step(shadowPos.z - 0.000006, shadowDepth);
+            // }
         #endif
 
         vec3 sampleLocalPos = (i+dither) * stepLocal;

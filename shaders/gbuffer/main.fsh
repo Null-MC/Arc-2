@@ -3,15 +3,20 @@
 layout(location = 0) out vec4 outColor;
 layout(location = 1) out uvec4 outData;
 
-in vec2 uv;
-in vec2 light;
-in vec4 color;
-in vec3 localPos;
-in vec3 localOffset;
-in vec3 localNormal;
-in vec4 localTangent;
-// in vec3 shadowViewPos;
-flat in int material;
+in VertexData2 {
+    vec2 uv;
+    vec2 light;
+    vec4 color;
+    vec3 localPos;
+    vec3 localOffset;
+    vec3 localNormal;
+    vec4 localTangent;
+    flat int material;
+    
+    #if defined RENDER_TRANSLUCENT && defined WATER_WAVES_ENABLED
+        vec3 surfacePos;
+    #endif
+} vIn;
 
 #include "/settings.glsl"
 #include "/lib/common.glsl"
@@ -27,9 +32,9 @@ flat in int material;
 
 
 void iris_emitFragment() {
-    vec2 mUV = uv;
-    vec2 mLight = light;
-    vec4 mColor = color;
+    vec2 mUV = vIn.uv;
+    vec2 mLight = vIn.light;
+    vec4 mColor = vIn.color;
     iris_modifyBase(mUV, mColor, mLight);
 
     vec4 albedo = iris_sampleBaseTex(mUV);
@@ -40,7 +45,7 @@ void iris_emitFragment() {
     #endif
 
     vec2 lmcoord = clamp((mLight - (0.5/16.0)) / (15.0/16.0), 0.0, 1.0);
-    vec3 localGeoNormal = normalize(localNormal);
+    vec3 localGeoNormal = normalize(vIn.localNormal);
 
     #if MATERIAL_FORMAT == MAT_LABPBR
         vec3 localTexNormal = mat_normal_lab(normalData.xy);
@@ -66,7 +71,7 @@ void iris_emitFragment() {
 
         float roughness = 0.92;
         float f0_metal = 0.0;
-        float emission = bitfieldExtract(material, 3, 1) != 0 ? 1.0 : 0.0;
+        float emission = bitfieldExtract(vIn.material, 3, 1) != 0 ? 1.0 : 0.0;
         float porosity = 0.0;
         float sss = 0.0;
 
@@ -74,24 +79,24 @@ void iris_emitFragment() {
     #endif
 
     #if MATERIAL_FORMAT != MAT_NONE
-        vec3 localBinormal = normalize(cross(localTangent.xyz, localGeoNormal) * localTangent.w);
-        mat3 TBN = mat3(normalize(localTangent.xyz), localBinormal, localGeoNormal);
+        vec3 localBinormal = normalize(cross(vIn.localTangent.xyz, localGeoNormal) * vIn.localTangent.w);
+        mat3 TBN = mat3(normalize(vIn.localTangent.xyz), localBinormal, localGeoNormal);
 
         localTexNormal = normalize(TBN * localTexNormal);
     #endif
 
     bool isWater = false;
     #ifdef RENDER_TRANSLUCENT
-        isWater = bitfieldExtract(material, 6, 1) != 0;
+        isWater = bitfieldExtract(vIn.material, 6, 1) != 0;
 
         if (isWater) {
             #ifdef WATER_WAVES_ENABLED
-                vec3 waveOffset = GetWaveHeight(localPos + cameraPos, lmcoord.y, timeCounter, WaterWaveOctaveMax);
+                vec3 waveOffset = GetWaveHeight(vIn.localPos + cameraPos, lmcoord.y, timeCounter, WaterWaveOctaveMax);
 
                 // mUV += 0.1*waveOffset.xz;
 
-                vec3 wavePos = localPos;
-                wavePos.y += waveOffset.y - localOffset.y;
+                vec3 wavePos = vIn.localPos;
+                wavePos.y += waveOffset.y - vIn.localOffset.y;
 
                 vec3 dX = dFdx(wavePos);
                 vec3 dY = dFdy(wavePos);
@@ -120,7 +125,7 @@ void iris_emitFragment() {
 
     outColor = albedo;
 
-    outData.r = packUnorm4x8(vec4(localGeoNormal * 0.5 + 0.5, (material + 0.5) / 255.0));
+    outData.r = packUnorm4x8(vec4(localGeoNormal * 0.5 + 0.5, (vIn.material + 0.5) / 255.0));
     outData.g = packUnorm4x8(vec4(lmcoord, (isWater ? 1.0 : 0.0), 0.0));
     outData.b = packUnorm4x8(vec4((localTexNormal * 0.5 + 0.5), occlusion));
     outData.a = packUnorm4x8(vec4(roughness, f0_metal, emission, sss));

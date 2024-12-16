@@ -3,12 +3,14 @@
 
 layout(location = 6) in int blockMask;
 
-out vec4 vColor;
-out vec2 vUV;
+out VertexData2 {
+    vec4 color;
+    vec2 uv;
 
-#if defined LPV_ENABLED && defined LPV_RSM_ENABLED
-    out vec3 vLocalNormal;
-#endif
+    #if defined LPV_ENABLED && defined LPV_RSM_ENABLED
+        vec3 localNormal;
+    #endif
+} vOut;
 
 #ifdef LPV_ENABLED
     layout(r8ui) uniform writeonly uimage3D imgVoxelBlock;
@@ -24,13 +26,13 @@ void iris_emitVertex(inout VertexData data) {
 }
 
 void iris_sendParameters(in VertexData data) {
-    vColor = data.color;
-    vUV = data.uv;
+    vOut.color = data.color;
+    vOut.uv = data.uv;
 
     #ifdef LPV_ENABLED
         #ifdef LPV_RSM_ENABLED
             vec3 viewNormal = mat3(iris_modelViewMatrix) * data.normal;
-            vLocalNormal = mat3(playerModelViewInverse) * viewNormal;
+            vOut.localNormal = mat3(playerModelViewInverse) * viewNormal;
         #endif
 
         // WARN: temp workaround

@@ -209,7 +209,7 @@ void main() {
 
         vec2 skyIrradianceCoord = DirectionToUV(localTexNormal);
         vec3 skyIrradiance = textureLod(texSkyIrradiance, skyIrradianceCoord, 0).rgb;
-        skyLightDiffuse += (SKY_AMBIENT * lmCoord.y * SKY_BRIGHTNESS) * skyIrradiance * occlusion;
+        skyLightDiffuse += (SKY_AMBIENT * SKY_BRIGHTNESS * lmCoord.y) * skyIrradiance * occlusion;
 
         #if defined SSGIAO_ENABLED && !defined ACCUM_ENABLED
             skyLightDiffuse += gi_ao.rgb;

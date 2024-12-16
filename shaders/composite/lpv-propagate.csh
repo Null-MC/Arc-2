@@ -203,17 +203,16 @@ void main() {
 
 		#ifdef LPV_RSM_ENABLED
 			vec3 sample_color, sample_normal;
-			vec3 localPos = cellIndex - VoxelBufferCenter - fract(cameraPos);// + 0.5;
+			vec3 localPos = cellIndex - VoxelBufferCenter - fract(cameraPos);
 			sample_shadow(localPos, sample_color, sample_normal);
 
 			vec4 coeffs = dirToSH(sample_normal) / PI;
-			vec3 flux = 48000.0 * RgbToLinear(sample_color);
+			vec3 flux = 64000.0 * RgbToLinear(sample_color);
 
 			sh_rsm_voxel.R += coeffs * flux.r;
 			sh_rsm_voxel.G += coeffs * flux.g;
 			sh_rsm_voxel.B += coeffs * flux.b;
 
-			// TODO: mix RSM previous
 			int rsm_i = GetLpvIndex(cellIndexPrev);
 			lpvShVoxel rsm_voxel_prev = altFrame ? SH_LPV_RSM[rsm_i] : SH_LPV_RSM_alt[rsm_i];
 			sh_rsm_voxel.R = mix(rsm_voxel_prev.R, sh_rsm_voxel.R, 0.02);

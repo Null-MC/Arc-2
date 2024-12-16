@@ -1,0 +1,61 @@
+#version 430 core
+
+layout (vertices=3) out;
+
+#include "/lib/constants.glsl"
+#include "/lib/common.glsl"
+
+const float MIN_DISTANCE = 4;
+const float MAX_DISTANCE = 40;
+
+in VertexData2 {
+    vec2 uv;
+    vec2 light;
+    vec4 color;
+    vec3 localPos;
+    vec3 localOffset;
+    vec3 localNormal;
+    vec4 localTangent;
+    flat int material;
+} vIn[];
+
+out VertexData2 {
+    vec2 uv;
+    vec2 light;
+    vec4 color;
+    vec3 localPos;
+    vec3 localOffset;
+    vec3 localNormal;
+    vec4 localTangent;
+    flat int material;
+    
+    vec3 surfacePos;
+} vOut[];
+
+#include "/lib/utility/tessellation_control.glsl"
+
+const int WATER_TESSELLATION_QUALITY = 12;
+
+
+void main() {
+    gl_out[gl_InvocationID].gl_Position = gl_in[gl_InvocationID].gl_Position;
+
+    vOut[gl_InvocationID].uv = vIn[gl_InvocationID].uv;
+    vOut[gl_InvocationID].light = vIn[gl_InvocationID].light;
+    vOut[gl_InvocationID].color = vIn[gl_InvocationID].color;
+    vOut[gl_InvocationID].localPos = vIn[gl_InvocationID].localPos;
+    vOut[gl_InvocationID].localOffset = vIn[gl_InvocationID].localOffset;
+    vOut[gl_InvocationID].localNormal = vIn[gl_InvocationID].localNormal;
+    vOut[gl_InvocationID].localTangent = vIn[gl_InvocationID].localTangent;
+    vOut[gl_InvocationID].surfacePos = vIn[gl_InvocationID].localPos;
+
+    vOut[gl_InvocationID].material = vIn[gl_InvocationID].material;
+
+    if (gl_InvocationID == 0) {
+        bool isWater = bitfieldExtract(vIn[gl_InvocationID].material, 6, 1) != 0;
+        float maxQuality = isWater ? WATER_TESSELLATION_QUALITY : 1.0;
+
+        vec3 distances = GetPatchDistances(MIN_DISTANCE, MAX_DISTANCE);
+        ApplyPatchControl(distances, maxQuality);
+    }
+}

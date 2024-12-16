@@ -22,15 +22,16 @@ struct VertexData {
 
 layout(location = 6) in int blockMask;
 
-out vec2 uv;
-out vec2 light;
-out vec4 color;
-out vec3 localPos;
-out vec3 localOffset;
-out vec3 localNormal;
-out vec4 localTangent;
-// out vec3 shadowViewPos;
-flat out int material;
+out VertexData2 {
+	vec2 uv;
+	vec2 light;
+	vec4 color;
+	vec3 localPos;
+	vec3 localOffset;
+	vec3 localNormal;
+	vec4 localTangent;
+	flat int material;
+} vOut;
 
 #include "/settings.glsl"
 #include "/lib/common.glsl"
@@ -46,24 +47,23 @@ flat out int material;
 
 void iris_emitVertex(inout VertexData data) {
 	vec3 viewPos = mul3(iris_modelViewMatrix, data.modelPos.xyz);
-	localPos = mul3(playerModelViewInverse, viewPos);
-	localOffset = vec3(0.0);
+	vOut.localPos = mul3(playerModelViewInverse, viewPos);
+	// vOut.surfacePos = vOut.localPos;
+	vOut.localOffset = vec3(0.0);
 
-	#if defined RENDER_TRANSLUCENT && defined WATER_WAVES_ENABLED
+	#if defined RENDER_TRANSLUCENT && defined WATER_WAVES_ENABLED && !defined WATER_TESSELLATION_ENABLED
         bool isWater = bitfieldExtract(blockMask, 6, 1) != 0;
 
         if (isWater) {
 			const float lmcoord_y = 1.0;
 
-            vec3 waveOffset = GetWaveHeight(localPos + cameraPos, lmcoord_y, timeCounter, WaterWaveOctaveMin);
-            localOffset.y += waveOffset.y;
+            vec3 waveOffset = GetWaveHeight(vOut.localPos + cameraPos, lmcoord_y, timeCounter, WaterWaveOctaveMin);
+            vOut.localOffset.y += waveOffset.y;
 
-            localPos += localOffset;
-			viewPos = mul3(playerModelView, localPos);
+            vOut.localPos += vOut.localOffset;
+			viewPos = mul3(playerModelView, vOut.localPos);
         }
 	#endif
-
-	// shadowViewPos = mul3(shadowModelView, localPos);
 
     data.clipPos = iris_projectionMatrix * vec4(viewPos, 1.0);
 
@@ -73,16 +73,16 @@ void iris_emitVertex(inout VertexData data) {
 }
 
 void iris_sendParameters(in VertexData data) {
-    uv = data.uv;
-    light = data.light;
-    color = data.color;
+    vOut.uv = data.uv;
+    vOut.light = data.light;
+    vOut.color = data.color;
 
 	vec3 viewNormal = mat3(iris_modelViewMatrix) * data.normal;
-	localNormal = mat3(playerModelViewInverse) * viewNormal;
+	vOut.localNormal = mat3(playerModelViewInverse) * viewNormal;
 
     vec3 viewTangent = mat3(iris_modelViewMatrix) * data.tangent.xyz;
-    localTangent.xyz = mat3(playerModelViewInverse) * viewTangent;
-    localTangent.w = data.tangent.w;
+    vOut.localTangent.xyz = mat3(playerModelViewInverse) * viewTangent;
+    vOut.localTangent.w = data.tangent.w;
 
-    material = blockMask;
+    vOut.material = blockMask;
 }

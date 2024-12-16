@@ -1,6 +1,5 @@
 const FEATURE = {
     Accumulation: false,
-    WaterWaves: true,
     Shadows: true,
     ShadowFilter: false,
     Bloom: true,
@@ -10,6 +9,13 @@ const FEATURE = {
     LPV: true,
     LPV_RSM: false,
     VL: true
+};
+
+const Settings = {
+    Water: {
+        Waves: true,
+        Tessellation: true,
+    }
 };
 
 const DEBUG_SSGIAO = false;
@@ -138,7 +144,6 @@ function setupShader() {
     defineGlobally("SHADOW_SCREEN", "1");
 
     if (FEATURE.Accumulation) defineGlobally("ACCUM_ENABLED", "1");
-    if (FEATURE.WaterWaves) defineGlobally("WATER_WAVES_ENABLED", "1");
     if (FEATURE.Shadows) defineGlobally("SHADOWS_ENABLED", "1");
     if (FEATURE.GI_AO) defineGlobally("SSGIAO_ENABLED", "1");
     if (FEATURE.LPV) defineGlobally("LPV_ENABLED", "1");
@@ -146,6 +151,9 @@ function setupShader() {
     if (FEATURE.SSR) defineGlobally("SSR_ENABLED", "1");
     if (FEATURE.TAA) defineGlobally("EFFECT_TAA_ENABLED", "1");
     if (FEATURE.VL) defineGlobally("EFFECT_VL_ENABLED", "1");
+
+    if (Settings.Water.Waves) defineGlobally("WATER_WAVES_ENABLED", "1");
+    if (Settings.Water.Tessellation) defineGlobally("WATER_TESSELLATION_ENABLED", "1");
 
     if (DEBUG_SSGIAO) defineGlobally("DEBUG_SSGIAO", "1");
     if (DEBUG_HISTOGRAM) defineGlobally("DEBUG_HISTOGRAM", "1");
@@ -462,15 +470,22 @@ function setupShader() {
         // .blendFunc(1, FUNC_ONE, FUNC_ZERO, FUNC_ONE, FUNC_ZERO)
         .build());
 
-    registerShader(new ObjectShader("water", Usage.TERRAIN_TRANSLUCENT)
+    let waterShader = new ObjectShader("water", Usage.TERRAIN_TRANSLUCENT)
         .vertex("vertex/main.vsh")
         .fragment("gbuffer/main.fsh")
         .define("RENDER_TRANSLUCENT", "1")
         .target(0, texDeferredTrans_Color)
         // .blendFunc(0, FUNC_SRC_ALPHA, FUNC_ONE_MINUS_SRC_ALPHA, FUNC_ONE, FUNC_ZERO)
-        .target(1, texDeferredTrans_Data)
+        .target(1, texDeferredTrans_Data);
         // .blendFunc(1, FUNC_ONE, FUNC_ZERO, FUNC_ONE, FUNC_ZERO)
-        .build());
+
+    if (Settings.Water.Tessellation) {
+        waterShader
+            .control("gbuffer/main.tcs")
+            .eval("gbuffer/main.tes");
+    }
+
+    registerShader(waterShader.build());
 
     registerShader(new ObjectShader("weather", Usage.WEATHER)
         .vertex("vertex/main.vsh")

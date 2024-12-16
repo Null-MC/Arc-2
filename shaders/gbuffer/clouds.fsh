@@ -31,7 +31,7 @@ void iris_emitFragment() {
     vec4 albedo = iris_sampleBaseTex(mUV);
     if (iris_discardFragment(albedo)) {discard; return;}
 
-    albedo *= mColor;
+    albedo *= mColor * 0.8;
     albedo.rgb = RgbToLinear(albedo.rgb);
 
     #ifdef DEBUG_WHITE_WORLD
@@ -41,16 +41,22 @@ void iris_emitFragment() {
     vec4 colorFinal = albedo;
     const float shadowSample = 1.0;
 
-    float NoLm = step(0.0, dot(Scene_LocalLightDir, _localNormal));
+    // float NoLm = step(0.0, dot(Scene_LocalLightDir, _localNormal));
+    float NoLm = max(dot(Scene_LocalLightDir, _localNormal), 0.0);
 
     vec3 skyPos = getSkyPosition(localPos);
-    vec3 skyTransmit = getValFromTLUT(texSkyTransmit, skyPos, Scene_LocalSunDir);
-    vec3 skyLighting = NoLm * skyTransmit * shadowSample;
+    // vec3 skyTransmit = getValFromTLUT(texSkyTransmit, skyPos, Scene_LocalSunDir);
+    // vec3 skyLighting = NoLm * skyTransmit * shadowSample;
+    vec3 sunTransmit = getValFromTLUT(texSkyTransmit, skyPos, Scene_LocalSunDir);
+    vec3 moonTransmit = getValFromTLUT(texSkyTransmit, skyPos, -Scene_LocalSunDir);
+    vec3 skyLight = SUN_BRIGHTNESS * sunTransmit + MOON_BRIGHTNESS * moonTransmit;
+
+    vec3 skyLighting = skyLight * NoLm;// * SampleLightDiffuse(NoVm, NoLm, LoHm, roughL);
 
     vec2 skyIrradianceCoord = DirectionToUV(_localNormal);
-    skyLighting += 0.3 * textureLod(texSkyIrradiance, skyIrradianceCoord, 0).rgb;
+    skyLighting += SKY_AMBIENT * SKY_BRIGHTNESS * textureLod(texSkyIrradiance, skyIrradianceCoord, 0).rgb;
 
-    colorFinal.rgb *= (5.0 * skyLighting) + 0.002;
+    colorFinal.rgb *= skyLighting + 0.002;
 
     outColor = colorFinal;
 }

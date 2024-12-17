@@ -13,7 +13,7 @@ in VertexData2 {
     vec4 localTangent;
     flat int material;
 
-    #if defined RENDER_TRANSLUCENT && defined WATER_WAVES_ENABLED
+    #if defined RENDER_TRANSLUCENT && defined WATER_TESSELLATION_ENABLED
         vec3 surfacePos;
     #endif
 } vIn;

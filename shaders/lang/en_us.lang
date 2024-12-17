@@ -1,0 +1,13 @@
+option.SKY_SUN_ANGLE=Sun Angle
+
+option.WATER_WAVES_ENABLED=Waves
+
+option.WATER_TESSELLATION_ENABLED=Tessellation
+
+option.WATER_TESSELLATION_LEVEL=Tessellation Level
+suffix.WATER_TESSELLATION_LEVEL=x
+
+option.MATERIAL_FORMAT=Format
+value.MATERIAL_FORMAT.0=None
+value.MATERIAL_FORMAT.1=Lab-PBR
+value.MATERIAL_FORMAT.2=Old-PBR

@@ -6,7 +6,7 @@
 
 const float BLOCKLIGHT_TEMP = 3400.0;
 
-const float SEA_LEVEL = 60.0;
+const float SEA_LEVEL = 66.0;
 const float ATMOSPHERE_MAX = 2200.0;
 const float SUN_SIZE = 2.2;
 const float MOON_SIZE = 3.4;

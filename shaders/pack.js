@@ -115,14 +115,17 @@ function setupShader() {
     print("Setting up shader");
 
     const Settings = {
+        Sky: {
+            SunAngle: parseInt(getStringSetting("SKY_SUN_ANGLE")),
+        },
         Water: {
             Waves: getBoolSetting("WATER_WAVES_ENABLED"),
             Tessellation: getBoolSetting("WATER_TESSELLATION_ENABLED"),
-            // Tessellation_Level: parseInt(getStringSetting("WATER_TESSELLATION_LEVEL")),
+            Tessellation_Level: parseInt(getStringSetting("WATER_TESSELLATION_LEVEL")),
         },
         Shadows: {
             Enabled: true,
-            Filter: false,
+            Filter: true,
             SS_Fallback: true,
         },
         Material: {
@@ -133,7 +136,7 @@ function setupShader() {
             Size: 128, // [64 128 256]
             LPV: {
                 Enabled: true,
-                RSM_Enabled: false,
+                RSM_Enabled: true,
             },
         },
         Post: {
@@ -143,7 +146,7 @@ function setupShader() {
     };
 
     worldSettings.ambientOcclusionLevel = 0.0;
-    worldSettings.sunPathRotation = -29.0;
+    worldSettings.sunPathRotation = Settings.Sky.SunAngle;
     worldSettings.shadowMapResolution = 1024;
     worldSettings.vignette = false;
     worldSettings.clouds = false;
@@ -162,7 +165,7 @@ function setupShader() {
         
         if (Settings.Water.Tessellation) {
             defineGlobally("WATER_TESSELLATION_ENABLED", "1");
-            defineGlobally("WATER_TESSELLATION_LEVEL", getStringSetting("WATER_TESSELLATION_LEVEL"));
+            defineGlobally("WATER_TESSELLATION_LEVEL", Settings.Water.Tessellation_Level.toString());
         }
     }
 

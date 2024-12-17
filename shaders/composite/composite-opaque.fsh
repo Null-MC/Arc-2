@@ -225,7 +225,7 @@ void main() {
             //if (IsInVoxelBounds(voxelPos)) blockLighting = vec3(0.0);
 
             // vec3 voxelPos = GetVoxelPosition(localPos + 0.5*localTexNormal);
-            skyLightDiffuse += 2.0 * sample_lpv_linear(voxelPos, localTexNormal) * occlusion * SampleLightDiffuse(NoVm, 1.0, 1.0, roughL);
+            skyLightDiffuse += sample_lpv_linear(voxelPos, localTexNormal) * occlusion * SampleLightDiffuse(NoVm, 1.0, 1.0, roughL);
         #endif
 
         float VoL = dot(localViewDir, Scene_LocalLightDir);

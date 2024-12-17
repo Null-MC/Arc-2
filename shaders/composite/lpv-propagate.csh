@@ -207,7 +207,7 @@ void main() {
 			sample_shadow(localPos, sample_color, sample_normal);
 
 			vec4 coeffs = dirToSH(sample_normal) / PI;
-			vec3 flux = 64000.0 * max(Scene_LocalSunDir.y, 0.0) * RgbToLinear(sample_color);
+			vec3 flux = exp2(20.0) * max(Scene_LocalSunDir.y, 0.0) * RgbToLinear(sample_color);
 
 			sh_rsm_voxel.R += coeffs * flux.r;
 			sh_rsm_voxel.G += coeffs * flux.g;

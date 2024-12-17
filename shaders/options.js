@@ -1,4 +1,8 @@
 function setupOptions() {
+    let screenSky = new Screen("Sky")
+        .add(asString("SKY_SUN_ANGLE", "-20", "-10", "0", "10", "20"))
+        .build();
+
     let screenWater = new Screen("Water")
         .add(asBool("WATER_WAVES_ENABLED", true))
         .add(asBool("WATER_TESSELLATION_ENABLED", true))
@@ -7,7 +11,7 @@ function setupOptions() {
         .build();
 
     return new Screen("main")
-        .add(screenWater)
+        .add(screenSky, screenWater)
         .add(asBool("VL", true), asBool("LPV", false))
         .build();
 }

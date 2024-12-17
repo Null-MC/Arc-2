@@ -22,7 +22,11 @@ const float MOON_BRIGHTNESS = 0.024;
 const float SKY_BRIGHTNESS = 12.0;
 const float BLOCKLIGHT_BRIGHTNESS = 4.0;
 
-const float SKY_AMBIENT = 0.3;
+#if defined LPV_ENABLED && defined LPV_RSM_ENABLED
+	const float SKY_AMBIENT = 0.3;
+#else
+	const float SKY_AMBIENT = 0.6;
+#endif
 
 const int SHADOW_PCF_SAMPLES = 8;
 const int SHADOW_PCSS_SAMPLES = 6;

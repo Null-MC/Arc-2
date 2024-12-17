@@ -20,6 +20,11 @@ uniform sampler2D texSkyTransmit;
 #include "/settings.glsl"
 #include "/lib/common.glsl"
 #include "/lib/buffers/scene.glsl"
+
+#ifdef LPV_ENABLED
+    #include "/lib/buffers/sh-lpv.glsl"
+#endif
+
 #include "/lib/noise/ign.glsl"
 #include "/lib/hg.glsl"
 
@@ -32,6 +37,12 @@ uniform sampler2D texSkyTransmit;
 #include "/lib/sky/transmittance.glsl"
 
 #include "/lib/light/volumetric.glsl"
+
+#ifdef LPV_ENABLED
+    #include "/lib/voxel/voxel_common.glsl"
+    #include "/lib/lpv/lpv_common.glsl"
+    #include "/lib/lpv/lpv_sample.glsl"
+#endif
 
 const int VL_MaxSamples = 16;
 
@@ -140,6 +151,14 @@ void main() {
 
             vec3 sampleLit = phase * sampleColor + phaseIso * sampleAmbient;
             vec3 sampleTransmit = exp(-sampleDensity * transmitF);
+
+            #ifdef LPV_ENABLED
+                vec3 voxelPos = GetVoxelPosition(sampleLocalPos);
+                if (IsInVoxelBounds(voxelPos)) {
+                    vec3 blockLight = sample_lpv_linear(voxelPos, localViewDir);
+                    sampleLit += 3.0 * phaseIso * blockLight;
+                }
+            #endif
 
             scattering += scatterF * transmittance * sampleLit * sampleDensity;
             transmittance *= sampleTransmit;

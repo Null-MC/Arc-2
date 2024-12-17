@@ -20,10 +20,10 @@ const Settings = {
         SSR: true,
     },
     Voxel: {
-        Size: 128,
+        Size: 128, // [64 128 256]
         LPV: {
             Enabled: true,
-            RSM_Enabled: true,
+            RSM_Enabled: false,
         },
     },
     Post: {

@@ -21,7 +21,7 @@ uniform sampler2D TEX_SHADOW;
     uniform sampler2D texFinalPrevious;
 #endif
 
-#ifdef SSGIAO_ENABLED
+#if defined EFFECT_SSAO_ENABLED || defined EFFECT_SSGI_ENABLED
     uniform sampler2D TEX_SSGIAO;
 #endif
 
@@ -126,7 +126,7 @@ void main() {
         uvec4 data = texelFetch(texDeferredOpaque_Data, iuv, 0);
         uint data_trans_g = texelFetch(texDeferredTrans_Data, iuv, 0).g;
 
-        // #ifdef SSGIAO_ENABLED
+        // #if defined EFFECT_SSAO_ENABLED || defined EFFECT_SSGI_ENABLED
         //     vec4 gi_ao = textureLod(TEX_SSGIAO, uv, 0);
         // #else
         //     const vec4 gi_ao = vec4(vec3(0.0), 1.0);
@@ -152,7 +152,7 @@ void main() {
 
         vec4 data_b = unpackUnorm4x8(data.b);
         vec3 localTexNormal = normalize(data_b.xyz * 2.0 - 1.0);
-        float occlusion = data_b.a;
+        float texOcclusion = data_b.a;
 
         vec4 data_a = unpackUnorm4x8(data.a);
         float roughness = data_a.x;
@@ -201,8 +201,8 @@ void main() {
         // float lightAtmosDist = max(SEA_LEVEL + 200.0 - worldY, 0.0) / Scene_LocalLightDir.y;
         // skyLight *= exp2(-lightAtmosDist * transmitF);
 
-        // float occlusion = 1.0;
-        #if defined SSGIAO_ENABLED && !defined ACCUM_ENABLED
+        float occlusion = texOcclusion;
+        #if defined EFFECT_SSAO_ENABLED //&& !defined ACCUM_ENABLED
             vec4 gi_ao = textureLod(TEX_SSGIAO, uv, 0);
             occlusion *= gi_ao.a;
         #endif
@@ -214,7 +214,7 @@ void main() {
             bool altFrame = (frameCounter % 2) == 1;
             vec3 accumDiffuse = textureLod(altFrame ? texDiffuseAccum_alt : texDiffuseAccum, uv, 0).rgb;
             skyLightDiffuse += accumDiffuse * SampleLightDiffuse(NoVm, 1.0, 1.0, roughL);
-        #elif defined SSGIAO_ENABLED
+        #elif defined EFFECT_SSGI_ENABLED
             skyLightDiffuse += gi_ao.rgb;
         #endif
 
@@ -225,16 +225,18 @@ void main() {
             //if (IsInVoxelBounds(voxelPos)) blockLighting = vec3(0.0);
 
             // vec3 voxelPos = GetVoxelPosition(localPos + 0.5*localTexNormal);
-            skyLightDiffuse += sample_lpv_linear(voxelPos, localTexNormal) * occlusion * SampleLightDiffuse(NoVm, 1.0, 1.0, roughL);
+            skyLightDiffuse += sample_lpv_linear(voxelPos, localTexNormal) * SampleLightDiffuse(NoVm, 1.0, 1.0, roughL);
         #endif
+
+        vec2 skyIrradianceCoord = DirectionToUV(localTexNormal);
+        vec3 skyIrradiance = textureLod(texSkyIrradiance, skyIrradianceCoord, 0).rgb;
+        skyLightDiffuse += (SKY_AMBIENT * SKY_BRIGHTNESS * lmCoord.y) * skyIrradiance;
+
+        skyLightDiffuse *= occlusion;
 
         float VoL = dot(localViewDir, Scene_LocalLightDir);
         float sss_phase = 4.0 * max(HG(VoL, 0.16), 0.0);
         skyLightDiffuse += skyLight * sss_phase * max(shadow_sss.w, 0.0);// * (1.0 - NoLm);
-
-        vec2 skyIrradianceCoord = DirectionToUV(localTexNormal);
-        vec3 skyIrradiance = textureLod(texSkyIrradiance, skyIrradianceCoord, 0).rgb;
-        skyLightDiffuse += (SKY_AMBIENT * SKY_BRIGHTNESS * lmCoord.y) * skyIrradiance * occlusion;
 
         vec3 blockLighting = blackbody(BLOCKLIGHT_TEMP) * (BLOCKLIGHT_BRIGHTNESS * lmCoord.x);
 

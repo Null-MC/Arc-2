@@ -10,6 +10,10 @@ function setupOptions() {
         .add(asString("WATER_TESSELLATION_LEVEL", "2", "4", "6", "8", "10", "12"))
         .build();
 
+    const screen_Shadows = new Screen("Shadows")
+        .add(asBool("SHADOWS_ENABLED", true))
+        .build();
+
     let screen_Material = new Screen("Material")
         .add(asString("MATERIAL_FORMAT", "0", "1", "2"))
         .add(asBool("MATERIAL_SSR_ENABLED", true))
@@ -25,12 +29,20 @@ function setupOptions() {
         .add(screen_Voxel_LPV)
         .build();
 
+    const screen_Effects = new Screen("Effects")
+        .add(asBool("EFFECT_SSAO_ENABLED", true))
+        .add(asBool("EFFECT_SSGI_ENABLED", false))
+        .build();
+
     const screen_Post = new Screen("Post")
         .add(asBool("POST_BLOOM_ENABLED", true))
         .add(asBool("EFFECT_TAA_ENABLED", true))
         .build();
 
     return new Screen("main")
-        .add(screen_Sky, screen_Water, screen_Material, screen_Voxel, screen_Post)
+        .add(screen_Sky, screen_Water)
+        .add(screen_Shadows, screen_Material)
+        .add(screen_Voxel, EMPTY)
+        .add(screen_Effects, screen_Post)
         .build();
 }

@@ -1,6 +1,5 @@
 const FEATURE = {
-    Accumulation: false,
-    GI_AO: false,
+    Accumulation: true,
     VL: true,
 };
 
@@ -19,7 +18,7 @@ function setupSettings() {
             Tessellation_Level: parseInt(getStringSetting("WATER_TESSELLATION_LEVEL")),
         },
         Shadows: {
-            Enabled: true,
+            Enabled: getBoolSetting("SHADOWS_ENABLED"),
             Filter: true,
             SS_Fallback: true,
         },
@@ -33,6 +32,10 @@ function setupSettings() {
                 Enabled: getBoolSetting("LPV_ENABLED"),
                 RSM_Enabled: getBoolSetting("LPV_RSM_ENABLED"),
             },
+        },
+        Effect: {
+            SSAO: getBoolSetting("EFFECT_SSAO_ENABLED"),
+            SSGI: getBoolSetting("EFFECT_SSGI_ENABLED"),
         },
         Post: {
             Bloom: getBoolSetting("POST_BLOOM_ENABLED"),
@@ -53,8 +56,9 @@ function setupSettings() {
     if (FEATURE.VL) defineGlobally("EFFECT_VL_ENABLED", "1");
 
     if (FEATURE.Accumulation) defineGlobally("ACCUM_ENABLED", "1");
-    if (FEATURE.GI_AO) defineGlobally("SSGIAO_ENABLED", "1");
-    // if (FEATURE.VL) defineGlobally("EFFECT_VL_ENABLED", "1");
+
+    if (Settings.Effect.SSAO) defineGlobally("EFFECT_SSAO_ENABLED", "1");
+    if (Settings.Effect.SSGI) defineGlobally("EFFECT_SSGI_ENABLED", "1");
 
     if (Settings.Water.Waves) {
         defineGlobally("WATER_WAVES_ENABLED", "1");
@@ -317,7 +321,7 @@ function setupShader() {
 
     let texSSGIAO = null;
     let texSSGIAO_final = null;
-    if (FEATURE.GI_AO) {
+    if (Settings.Effect.SSAO || Settings.Effect.SSGI) {
         texSSGIAO = new Texture("texSSGIAO")
             .format(RGBA16F)
             .width(Math.ceil(screenWidth / 2.0))
@@ -554,7 +558,7 @@ function setupShader() {
         registerShader(Stage.POST_RENDER, shader.build());
     }
 
-    if (FEATURE.GI_AO) {
+    if (Settings.Effect.SSAO || Settings.Effect.SSGI) {
         registerShader(Stage.POST_RENDER, new Composite("ssgiao-opaque")
             .vertex("shared/bufferless.vsh")
             .fragment("composite/ssgiao.fsh")

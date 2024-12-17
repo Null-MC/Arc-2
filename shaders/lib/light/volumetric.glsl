@@ -1,6 +1,6 @@
 const float VL_Phase = 0.86;
-const float VL_Scatter  = 0.120;
-const float VL_Transmit = 0.035;
+const float VL_Scatter  = 0.060;
+const float VL_Transmit = 0.018;
 const float VL_AmbientF = 2.0;
 
 const float VL_RainPhase = 0.42;
@@ -17,7 +17,7 @@ float GetSkyDensity(const in vec3 localPos) {
     float sampleY = localPos.y + cameraPos.y;
     float sampleDensity = clamp((sampleY - SEA_LEVEL) / (200.0), 0.0, 1.0);
 
-    float p = mix(40.0, 2.0, rainStrength);
+    float p = mix(40.0, 4.0, rainStrength);
     sampleDensity = pow(1.0 - sampleDensity, p);
 
     return sampleDensity;

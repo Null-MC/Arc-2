@@ -4,34 +4,6 @@ const FEATURE = {
     VL: true,
 };
 
-const Settings = {
-    Water: {
-        Waves: true,
-        Tessellation: true,
-        Tessellation_Level: 12,
-    },
-    Shadows: {
-        Enabled: true,
-        Filter: true,
-        SS_Fallback: true,
-    },
-    Material: {
-        Format: "MAT_LABPBR",
-        SSR: true,
-    },
-    Voxel: {
-        Size: 128, // [64 128 256]
-        LPV: {
-            Enabled: true,
-            RSM_Enabled: false,
-        },
-    },
-    Post: {
-        Bloom: true,
-        TAA: true,
-    },
-};
-
 const DEBUG_SSGIAO = false;
 const DEBUG_HISTOGRAM = false;
 
@@ -142,8 +114,35 @@ function setupBloom(texFinal) {
 function setupShader() {
     print("Setting up shader");
 
-    print(`SCREEN width: ${screenWidth} height: ${screenHeight}`);
+    const Settings = {
+        Water: {
+            Waves: getBoolSetting("WATER_WAVES_ENABLED"),
+            Tessellation: getBoolSetting("WATER_TESSELLATION_ENABLED"),
+            // Tessellation_Level: parseInt(getStringSetting("WATER_TESSELLATION_LEVEL")),
+        },
+        Shadows: {
+            Enabled: true,
+            Filter: false,
+            SS_Fallback: true,
+        },
+        Material: {
+            Format: "MAT_LABPBR",
+            SSR: true,
+        },
+        Voxel: {
+            Size: 128, // [64 128 256]
+            LPV: {
+                Enabled: true,
+                RSM_Enabled: false,
+            },
+        },
+        Post: {
+            Bloom: true,
+            TAA: true,
+        },
+    };
 
+    worldSettings.ambientOcclusionLevel = 0.0;
     worldSettings.sunPathRotation = -29.0;
     worldSettings.shadowMapResolution = 1024;
     worldSettings.vignette = false;
@@ -163,7 +162,7 @@ function setupShader() {
         
         if (Settings.Water.Tessellation) {
             defineGlobally("WATER_TESSELLATION_ENABLED", "1");
-            defineGlobally("WATER_TESSELLATION_LEVEL", Settings.Water.Tessellation_Level.toString());
+            defineGlobally("WATER_TESSELLATION_LEVEL", getStringSetting("WATER_TESSELLATION_LEVEL"));
         }
     }
 

@@ -129,10 +129,10 @@ vec3 SampleShadowColor_PCSS(const in vec3 shadowPos, const in int shadowCascade)
     vec2 maxPixelRadius = GetPixelRadius(Shadow_MaxPcfSize, shadowCascade);
     float blockerDistance = ShadowBlockerDistance(shadowPos, shadowCascade, 0.5 * maxPixelRadius);
 
-    if (blockerDistance <= 0.0) {
-        // WARN: Is this faster or just doubling work?!
-        return SampleShadowColor(shadowPos, shadowCascade);
-    }
+    // if (blockerDistance <= 0.0) {
+    //     // WARN: Is this faster or just doubling work?!
+    //     return SampleShadowColor(shadowPos, shadowCascade);
+    // }
 
     const float SHADOW_PENUMBRA_SCALE = 24.0;
     const float minShadowPixelRadius = 1.25 * shadowPixelSize;

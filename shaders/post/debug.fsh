@@ -3,7 +3,7 @@
 layout(location = 0) out vec4 outColor;
 
 uniform sampler2D texFinal;
-// uniform sampler2D texShadow;
+// uniform sampler2D texDeferredOpaque_Color;
 
 #ifdef DEBUG_HISTOGRAM
     uniform usampler2D texHistogram_debug;

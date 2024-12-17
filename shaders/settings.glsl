@@ -1,7 +1,5 @@
 // #define DEBUG_WHITE_WORLD
 
-// #define MATERIAL_FORMAT 1 // [0 1 2]
-
 #define MATERIAL_EMISSION_POWER 2.2
 
 const float BLOCKLIGHT_TEMP = 3400.0;

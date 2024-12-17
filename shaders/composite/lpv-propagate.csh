@@ -8,6 +8,8 @@ layout(r8ui) uniform readonly uimage3D imgVoxelBlock;
 	uniform sampler2DArray solidShadowMap;
 	uniform sampler2DArray texShadowColor;
 	uniform sampler2DArray texShadowNormal;
+
+	uniform sampler2D texSkyTransmit;
 #endif
 
 #include "/settings.glsl"
@@ -24,6 +26,11 @@ layout(r8ui) uniform readonly uimage3D imgVoxelBlock;
 #include "/lib/lpv/lpv_common.glsl"
 
 #include "/lib/shadow/csm.glsl"
+
+#include "/lib/sky/common.glsl"
+// #include "/lib/sky/view.glsl"
+#include "/lib/sky/sun.glsl"
+// #include "/lib/sky/stars.glsl"
 
 
 const float directFaceSubtendedSolidAngle = 0.4006696846 / PI / 2.0;
@@ -116,6 +123,7 @@ mat3 neighbourOrientations[6] = {
 		}
 
 		sample_color = textureLod(texShadowColor, vec3(shadowCoord.xy, shadowCascade), 0).rgb;
+		sample_color = RgbToLinear(sample_color);
 
 		// TODO: sample normal
 		sample_normal = textureLod(texShadowNormal, vec3(shadowCoord.xy, shadowCascade), 0).rgb;
@@ -206,8 +214,13 @@ void main() {
 			vec3 localPos = cellIndex - VoxelBufferCenter - fract(cameraPos) + 0.5;
 			sample_shadow(localPos, sample_color, sample_normal);
 
+	        vec3 skyPos = getSkyPosition(localPos);
+	        vec3 sunTransmit = getValFromTLUT(texSkyTransmit, skyPos, Scene_LocalSunDir);
+	        vec3 moonTransmit = getValFromTLUT(texSkyTransmit, skyPos, -Scene_LocalSunDir);
+	        vec3 skyLight = SUN_BRIGHTNESS * sunTransmit + MOON_BRIGHTNESS * moonTransmit;
+
 			vec4 coeffs = dirToSH(sample_normal) / PI;
-			vec3 flux = exp2(20.0) * max(Scene_LocalSunDir.y, 0.0) * RgbToLinear(sample_color);
+			vec3 flux = exp2(15.0) * max(Scene_LocalSunDir.y, 0.0) * skyLight * sample_color;
 
 			sh_rsm_voxel.R += coeffs * flux.r;
 			sh_rsm_voxel.G += coeffs * flux.g;

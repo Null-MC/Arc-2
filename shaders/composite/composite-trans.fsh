@@ -42,7 +42,7 @@ uniform sampler2DArray texShadowColor;
 #include "/lib/sky/sun.glsl"
 #include "/lib/sky/stars.glsl"
 
-#ifdef SSR_ENABLED
+#ifdef MATERIAL_SSR_ENABLED
     #include "/lib/ssr.glsl"
 #endif
 
@@ -142,7 +142,7 @@ void main() {
             float NoVm = max(dot(localTexNormal, -localViewDir), 0.0);
             float F = F_schlick(NoVm, 0.02, 1.0);
 
-            #ifdef SSR_ENABLED
+            #ifdef MATERIAL_SSR_ENABLED
                 vec3 reflectViewPos = viewPosTrans + 0.5*viewDist*reflectViewDir;
                 vec3 reflectClipPos = unproject(playerProjection, reflectViewPos) * 0.5 + 0.5;
 

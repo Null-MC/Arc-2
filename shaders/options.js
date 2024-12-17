@@ -12,10 +12,25 @@ function setupOptions() {
 
     let screen_Material = new Screen("Material")
         .add(asString("MATERIAL_FORMAT", "0", "1", "2"))
+        .add(asBool("MATERIAL_SSR_ENABLED", true))
+        .build();
+
+    let screen_Voxel_LPV = new Screen("LPV")
+        .add(asBool("LPV_ENABLED", true))
+        .add(asBool("LPV_RSM_ENABLED", true))
+        .build();
+
+    let screen_Voxel = new Screen("Voxels")
+        .add(asString("VOXEL_SIZE", "64", "128", "256", "512"))
+        .add(screen_Voxel_LPV)
+        .build();
+
+    const screen_Post = new Screen("Post")
+        .add(asBool("POST_BLOOM_ENABLED", true))
+        .add(asBool("EFFECT_TAA_ENABLED", true))
         .build();
 
     return new Screen("main")
-        .add(screen_Sky, screen_Water, screen_Material)
-        .add(asBool("VL", true), asBool("LPV", false))
+        .add(screen_Sky, screen_Water, screen_Material, screen_Voxel, screen_Post)
         .build();
 }

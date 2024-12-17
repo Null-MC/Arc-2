@@ -17,7 +17,7 @@ uniform sampler2D texSkyIrradiance;
 
 uniform sampler2D TEX_SHADOW;
 
-#ifdef SSR_ENABLED
+#ifdef MATERIAL_SSR_ENABLED
     uniform sampler2D texFinalPrevious;
 #endif
 
@@ -68,7 +68,7 @@ uniform sampler2D TEX_SHADOW;
 // #include "/lib/light/sky.glsl"
 #include "/lib/light/volumetric.glsl"
 
-#ifdef SSR_ENABLED
+#ifdef MATERIAL_SSR_ENABLED
     #include "/lib/ssr.glsl"
 #endif
 
@@ -281,7 +281,7 @@ void main() {
             skyReflectColor += sample_lpv_linear(voxelPos, reflectLocalDir);
         #endif
 
-        #ifdef SSR_ENABLED
+        #ifdef MATERIAL_SSR_ENABLED
             float viewDist = length(localPos);
             vec3 reflectViewDir = mat3(playerModelView) * reflectLocalDir;
             vec3 reflectViewPos = viewPos + 0.5*viewDist*reflectViewDir;

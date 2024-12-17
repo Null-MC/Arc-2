@@ -11,3 +11,14 @@ option.MATERIAL_FORMAT=Format
 value.MATERIAL_FORMAT.0=None
 value.MATERIAL_FORMAT.1=Lab-PBR
 value.MATERIAL_FORMAT.2=Old-PBR
+
+option.VOXEL_SIZE=Size
+suffix.VOXEL_SIZE=^3
+
+option.LPV_ENABLED=Enabled
+
+option.LPV_RSM_ENABLED=RSM
+
+option.POST_BLOOM_ENABLED=Bloom
+
+option.EFFECT_TAA_ENABLED=TAA

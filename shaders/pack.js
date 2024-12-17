@@ -8,6 +8,88 @@ const DEBUG_SSGIAO = false;
 const DEBUG_HISTOGRAM = false;
 
 
+function setupSettings() {
+    const Settings = {
+        Sky: {
+            SunAngle: parseInt(getStringSetting("SKY_SUN_ANGLE")),
+        },
+        Water: {
+            Waves: getBoolSetting("WATER_WAVES_ENABLED"),
+            Tessellation: getBoolSetting("WATER_TESSELLATION_ENABLED"),
+            Tessellation_Level: parseInt(getStringSetting("WATER_TESSELLATION_LEVEL")),
+        },
+        Shadows: {
+            Enabled: true,
+            Filter: true,
+            SS_Fallback: true,
+        },
+        Material: {
+            Format: getStringSetting("MATERIAL_FORMAT"),
+            SSR: getBoolSetting("MATERIAL_SSR_ENABLED"),
+        },
+        Voxel: {
+            Size: parseInt(getStringSetting("VOXEL_SIZE")),
+            LPV: {
+                Enabled: getBoolSetting("LPV_ENABLED"),
+                RSM_Enabled: getBoolSetting("LPV_RSM_ENABLED"),
+            },
+        },
+        Post: {
+            Bloom: getBoolSetting("POST_BLOOM_ENABLED"),
+            TAA: getBoolSetting("EFFECT_TAA_ENABLED"),
+        },
+    };
+
+    worldSettings.disableShade = true;
+    worldSettings.ambientOcclusionLevel = 0.0;
+    worldSettings.sunPathRotation = Settings.Sky.SunAngle;
+    worldSettings.shadowMapResolution = 1024;
+    worldSettings.vignette = false;
+    worldSettings.clouds = false;
+    worldSettings.stars = false;
+    worldSettings.moon = false;
+    worldSettings.sun = false;
+
+    if (FEATURE.VL) defineGlobally("EFFECT_VL_ENABLED", "1");
+
+    if (FEATURE.Accumulation) defineGlobally("ACCUM_ENABLED", "1");
+    if (FEATURE.GI_AO) defineGlobally("SSGIAO_ENABLED", "1");
+    // if (FEATURE.VL) defineGlobally("EFFECT_VL_ENABLED", "1");
+
+    if (Settings.Water.Waves) {
+        defineGlobally("WATER_WAVES_ENABLED", "1");
+        
+        if (Settings.Water.Tessellation) {
+            defineGlobally("WATER_TESSELLATION_ENABLED", "1");
+            defineGlobally("WATER_TESSELLATION_LEVEL", Settings.Water.Tessellation_Level.toString());
+        }
+    }
+
+    if (Settings.Shadows.Enabled) defineGlobally("SHADOWS_ENABLED", "1");
+    if (Settings.Shadows.SS_Fallback) defineGlobally("SHADOW_SCREEN", "1");
+
+    if (Settings.Material.SSR) defineGlobally("MATERIAL_SSR_ENABLED", "1");
+
+    defineGlobally("VOXEL_SIZE", Settings.Voxel.Size.toString());
+
+    if (Settings.Voxel.LPV.Enabled) {
+        defineGlobally("LPV_ENABLED", "1");
+
+        if (Settings.Voxel.LPV.RSM_Enabled) {
+            defineGlobally("LPV_RSM_ENABLED", "1");
+        }
+    }
+
+    if (Settings.Post.TAA) defineGlobally("EFFECT_TAA_ENABLED", "1");
+
+    defineGlobally("MATERIAL_FORMAT", Settings.Material.Format);
+
+    if (DEBUG_SSGIAO) defineGlobally("DEBUG_SSGIAO", "1");
+    if (DEBUG_HISTOGRAM) defineGlobally("DEBUG_HISTOGRAM", "1");
+
+    return Settings;
+}
+
 function setupSky(sceneBuffer) {
     let texSkyTransmit = new Texture("texSkyTransmit")
         .format(RGB16F)
@@ -114,83 +196,7 @@ function setupBloom(texFinal) {
 function setupShader() {
     print("Setting up shader");
 
-    const Settings = {
-        Sky: {
-            SunAngle: parseInt(getStringSetting("SKY_SUN_ANGLE")),
-        },
-        Water: {
-            Waves: getBoolSetting("WATER_WAVES_ENABLED"),
-            Tessellation: getBoolSetting("WATER_TESSELLATION_ENABLED"),
-            Tessellation_Level: parseInt(getStringSetting("WATER_TESSELLATION_LEVEL")),
-        },
-        Shadows: {
-            Enabled: true,
-            Filter: true,
-            SS_Fallback: true,
-        },
-        Material: {
-            Format: "MAT_LABPBR",
-            SSR: true,
-        },
-        Voxel: {
-            Size: 128, // [64 128 256]
-            LPV: {
-                Enabled: true,
-                RSM_Enabled: true,
-            },
-        },
-        Post: {
-            Bloom: true,
-            TAA: true,
-        },
-    };
-
-    worldSettings.disableShade = true;
-    worldSettings.ambientOcclusionLevel = 0.0;
-    worldSettings.sunPathRotation = Settings.Sky.SunAngle;
-    worldSettings.shadowMapResolution = 1024;
-    worldSettings.vignette = false;
-    worldSettings.clouds = false;
-    worldSettings.stars = false;
-    worldSettings.moon = false;
-    worldSettings.sun = false;
-
-    if (FEATURE.VL) defineGlobally("EFFECT_VL_ENABLED", "1");
-
-    if (FEATURE.Accumulation) defineGlobally("ACCUM_ENABLED", "1");
-    if (FEATURE.GI_AO) defineGlobally("SSGIAO_ENABLED", "1");
-    // if (FEATURE.VL) defineGlobally("EFFECT_VL_ENABLED", "1");
-
-    if (Settings.Water.Waves) {
-        defineGlobally("WATER_WAVES_ENABLED", "1");
-        
-        if (Settings.Water.Tessellation) {
-            defineGlobally("WATER_TESSELLATION_ENABLED", "1");
-            defineGlobally("WATER_TESSELLATION_LEVEL", Settings.Water.Tessellation_Level.toString());
-        }
-    }
-
-    if (Settings.Shadows.Enabled) defineGlobally("SHADOWS_ENABLED", "1");
-    if (Settings.Shadows.SS_Fallback) defineGlobally("SHADOW_SCREEN", "1");
-
-    if (Settings.Material.SSR) defineGlobally("SSR_ENABLED", "1");
-
-    defineGlobally("VOXEL_SIZE", Settings.Voxel.Size.toString());
-
-    if (Settings.Voxel.LPV.Enabled) {
-        defineGlobally("LPV_ENABLED", "1");
-
-        if (Settings.Voxel.LPV.RSM_Enabled) {
-            defineGlobally("LPV_RSM_ENABLED", "1");
-        }
-    }
-
-    if (Settings.Post.TAA) defineGlobally("EFFECT_TAA_ENABLED", "1");
-
-    defineGlobally("MATERIAL_FORMAT", Settings.Material.Format);
-
-    if (DEBUG_SSGIAO) defineGlobally("DEBUG_SSGIAO", "1");
-    if (DEBUG_HISTOGRAM) defineGlobally("DEBUG_HISTOGRAM", "1");
+    let Settings = setupSettings();
 
     registerUniforms("shadowLightPosition",
         "fogColor",

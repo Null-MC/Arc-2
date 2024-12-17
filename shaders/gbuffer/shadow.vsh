@@ -29,6 +29,20 @@ void iris_sendParameters(in VertexData data) {
     vOut.color = data.color;
     vOut.uv = data.uv;
 
+    bool isWater = bitfieldExtract(blockMask, 6, 1) != 0;
+
+    if (isWater) {
+        vOut.color = vec4(1.0);
+
+        // const float lmcoord_y = 1.0;
+
+        // vec3 waveOffset = GetWaveHeight(vOut.localPos + cameraPos, lmcoord_y, timeCounter, WaterWaveOctaveMin);
+        // vOut.localOffset.y += waveOffset.y;
+
+        // vOut.localPos += vOut.localOffset;
+        // viewPos = mul3(playerModelView, vOut.localPos);
+    }
+
     #ifdef LPV_ENABLED
         #ifdef LPV_RSM_ENABLED
             vec3 viewNormal = mat3(iris_modelViewMatrix) * data.normal;

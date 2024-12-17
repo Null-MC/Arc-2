@@ -56,11 +56,9 @@ void main() {
 
         vec3 shadowViewPos = mul3(shadowModelView, localPos);
 
-        const float shadowRadius = 2.0*shadowPixelSize;
-
         int shadowCascade;
-        vec3 shadowPos = GetShadowSamplePos(shadowViewPos, shadowRadius, shadowCascade);
-        shadowFinal *= SampleShadowColor_PCF(shadowPos, shadowCascade, shadowRadius);
+        vec3 shadowPos = GetShadowSamplePos(shadowViewPos, Shadow_MaxPcfSize, shadowCascade);
+        shadowFinal *= SampleShadowColor_PCSS(shadowPos, shadowCascade);
 
         float dither = GetShadowDither();
         
@@ -70,11 +68,16 @@ void main() {
 
         if (sss > 0.0) {
             float NoLm = max(dot(localNormal, localLightDir), 0.0);
-            const float sssRadius = 8.0*shadowPixelSize;
 
-            shadowViewPos.z += sss * dither;
-            shadowPos = GetShadowSamplePos(shadowViewPos, sssRadius, shadowCascade);
-            sssFinal = (1.0 - NoLm) * sss * SampleShadow_PCF(shadowPos, shadowCascade, sssRadius);
+            const float SSS_MaxDist = 3.0;
+            const float SSS_MaxPcfSize = 1.5;
+            // vec2 sssRadius = GetPixelRadius(SSS_MaxPcfSize, shadowCascade);
+
+            shadowViewPos.z += SSS_MaxDist * sss * dither;
+            shadowPos = GetShadowSamplePos(shadowViewPos, SSS_MaxPcfSize, shadowCascade);
+
+            vec2 sssRadius = GetPixelRadius(SSS_MaxPcfSize, shadowCascade);
+            sssFinal = (1.0 - NoLm) * sss * SampleShadow_PCF(shadowPos, shadowCascade, minOf(sssRadius));
         }
 
         #ifdef SHADOW_SCREEN

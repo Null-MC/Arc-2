@@ -123,27 +123,30 @@ void main() {
         vec3 sampleColor = lightStrength * skyLighting * shadowSample;
 
         float sampleDensity = stepDist;
-        // if (isEyeInWater == 0) {
-        //     sampleDensity = stepDist * GetSkyDensity(sampleLocalPos);
+        if (isEyeInWater == 0) {
+            sampleDensity = stepDist * GetSkyDensity(sampleLocalPos);
 
-        //     float worldY = sampleLocalPos.y + cameraPos.y;
-        //     float lightAtmosDist = max(SEA_LEVEL + 200.0 - worldY, 0.0) / Scene_LocalLightDir.y;
-        //     sampleColor *= exp2(-lightAtmosDist * transmitF);
-        // }
+            // float worldY = sampleLocalPos.y + cameraPos.y;
+            // float lightAtmosDist = max(SEA_LEVEL + 200.0 - worldY, 0.0) / Scene_LocalLightDir.y;
+            // sampleColor *= exp2(-lightAtmosDist * transmitF);
+
+            // if (sampleLocalPos.y > cloudHeight && (sampleLocalPos.y - stepLocal.y) < cloudHeight)
+            //     sampleDensity = 200.0;
+        }
 
         vec3 sampleLit = phase * sampleColor + phaseIso * sampleAmbient;
         vec3 sampleTransmit = exp(-sampleDensity * transmitF);
 
-        // #ifdef LPV_ENABLED
-        //     vec3 voxelPos = GetVoxelPosition(sampleLocalPos);
-        //     if (IsInVoxelBounds(voxelPos)) {
-        //         vec3 blockLight = sample_lpv_linear(voxelPos, -localViewDir);
-        //         sampleLit += phaseIso * blockLight * 100.0;
-        //     }
-        // #endif
+        #ifdef LPV_ENABLED
+            vec3 voxelPos = GetVoxelPosition(sampleLocalPos);
+            if (IsInVoxelBounds(voxelPos)) {
+                vec3 blockLight = sample_lpv_linear(voxelPos, localViewDir);
+                sampleLit += phaseIso * blockLight;
+            }
+        #endif
 
-        transmittance *= sampleTransmit;
         scattering += scatterF * transmittance * sampleLit * sampleDensity;
+        transmittance *= sampleTransmit;
     }
 
     outScatter = scattering;

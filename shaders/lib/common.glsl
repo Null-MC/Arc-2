@@ -5,6 +5,9 @@ const float EPSILON = 1e-6;
 const float IOR_AIR   = 1.00;
 const float IOR_WATER = 1.33;
 
+const float GoldenAngle = PI * (3.0 - sqrt(5.0));
+const float PHI = (1.0 + sqrt(5.0)) / 2.0;
+
 const vec3 luma_factor = vec3(0.2126, 0.7152, 0.0722);
 
 

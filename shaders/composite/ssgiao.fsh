@@ -13,7 +13,7 @@ in vec2 uv;
 #include "/lib/noise/ign.glsl"
 
 const int SSGIAO_SAMPLES = 16;
-const float SSGIAO_RADIUS = 4.0;
+// const float SSGIAO_RADIUS = 4.0;
 
 const bool SSGIAO_TRACE_ENABLED = true;
 const int SSGIAO_TRACE_SAMPLES = 3;
@@ -35,15 +35,18 @@ void main() {
             float dither = InterleavedGradientNoise(ivec2(gl_FragCoord.xy));
         #endif
 
-        const float rStep = SSGIAO_RADIUS / SSGIAO_SAMPLES;
-
         vec2 pixelSize = 1.0 / screenSize;
 
         float rotatePhase = dither * TAU;
-        float radius = rStep * dither;
 
         vec3 clipPos = vec3(uv, depth) * 2.0 - 1.0;
         vec3 viewPos = unproject(playerProjectionInverse, clipPos);
+
+        float viewDist = length(viewPos);
+
+        float max_radius = mix(1.0, 16.0, min(viewDist * 0.01, 1.0));
+        float rStep = max_radius / SSGIAO_SAMPLES;
+        float radius = rStep * dither;
 
         uint data_r = texelFetch(texDeferredOpaque_Data, iuv, 0).r;
         vec3 data_normal = unpackUnorm4x8(data_r).xyz;
@@ -93,7 +96,7 @@ void main() {
                 }
             }
 
-            if (abs(sampleViewPos.z - viewPos.z) > SSGIAO_RADIUS) gi_weight = 0.0;
+            if (abs(sampleViewPos.z - viewPos.z) > max_radius) gi_weight = 0.0;
 
             vec3 diff = sampleViewPos - viewPos;
             float sampleDist = length(diff);
@@ -101,7 +104,7 @@ void main() {
 
             float sampleNoLm = max(dot(viewNormal, sampleNormal), 0.0);
 
-            float sampleWeight = saturate(sampleDist / SSGIAO_RADIUS);
+            float sampleWeight = saturate(sampleDist / max_radius);
 
             sampleWeight = 1.0 - sampleWeight;
 
@@ -117,7 +120,7 @@ void main() {
 
     // occlusion *= 2.0;
 
-    vec3 gi = 3.0 * illumination;
+    vec3 gi = illumination;
     float ao = 1.0 - min(occlusion, 1.0);
 
     out_GI_AO = vec4(gi, ao);

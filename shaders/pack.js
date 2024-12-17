@@ -12,7 +12,7 @@ const Settings = {
     },
     Shadows: {
         Enabled: true,
-        Filter: false,
+        Filter: true,
         SS_Fallback: true,
     },
     Material: {
@@ -23,7 +23,7 @@ const Settings = {
         Size: 128,
         LPV: {
             Enabled: true,
-            RSM_Enabled: false,
+            RSM_Enabled: true,
         },
     },
     Post: {
@@ -469,7 +469,7 @@ function setupShader() {
 
     if (Settings.Shadows.Enabled) {
         registerShader(new ObjectShader("shadow", Usage.SHADOW)
-            .vertex("vertex/shadow.vsh")
+            .vertex("gbuffer/shadow.vsh")
             .fragment("gbuffer/shadow.fsh")
             .target(0, texShadowColor)
             // .blendFunc(0, Func.ONE, Func.ZERO, Func.ONE, Func.ZERO)
@@ -478,7 +478,7 @@ function setupShader() {
     }
 
     registerShader(new ObjectShader("sky-color", Usage.SKYBOX)
-        .vertex("vertex/sky.vsh")
+        .vertex("gbuffer/sky.vsh")
         .fragment("gbuffer/sky.fsh")
         .target(0, texFinalOpaque)
         // .blendFunc(0, FUNC_ONE, FUNC_ZERO, FUNC_ONE, FUNC_ZERO)
@@ -520,7 +520,7 @@ function setupShader() {
     registerShader(waterShader.build());
 
     registerShader(new ObjectShader("weather", Usage.WEATHER)
-        .vertex("vertex/main.vsh")
+        .vertex("gbuffer/weather.vsh")
         .fragment("gbuffer/weather.fsh")
         .target(0, texParticles)
         .build());
@@ -581,6 +581,8 @@ function setupShader() {
             .target(0, texScatterVL)
             .target(1, texTransmitVL)
             .ssbo(0, sceneBuffer)
+            .ssbo(1, shLpvBuffer)
+            .ssbo(2, shLpvBuffer_alt)
             .build());
     }
 
@@ -626,6 +628,8 @@ function setupShader() {
             .target(0, texScatterVL)
             .target(1, texTransmitVL)
             .ssbo(0, sceneBuffer)
+            .ssbo(1, shLpvBuffer)
+            .ssbo(2, shLpvBuffer_alt)
             .build());
     }
 

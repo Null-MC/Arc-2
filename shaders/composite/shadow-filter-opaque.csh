@@ -44,9 +44,9 @@ void populateSharedBuffer() {
 	    ivec2 uv = uv_base + uv_i;
 
         float depthL = farPlane;
-        vec4 shadow = vec3(1.0);
+        vec4 shadow = vec4(1.0);
 	    if (all(greaterThanEqual(uv, ivec2(0))) && all(lessThan(uv, ivec2(screenSize + 0.5)))) {
-	    	shadow = texelFetch(texShadow, uv, 0).rgb;
+	    	shadow = texelFetch(texShadow, uv, 0);
 	    	float depth = texelFetch(solidDepthTex, uv, 0).r;
 	    	depthL = linearizeDepth(depth, nearPlane, farPlane);
 	    }

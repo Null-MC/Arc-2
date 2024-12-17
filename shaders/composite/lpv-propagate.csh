@@ -203,11 +203,11 @@ void main() {
 
 		#ifdef LPV_RSM_ENABLED
 			vec3 sample_color, sample_normal;
-			vec3 localPos = cellIndex - VoxelBufferCenter - fract(cameraPos);
+			vec3 localPos = cellIndex - VoxelBufferCenter - fract(cameraPos) + 0.5;
 			sample_shadow(localPos, sample_color, sample_normal);
 
 			vec4 coeffs = dirToSH(sample_normal) / PI;
-			vec3 flux = 64000.0 * RgbToLinear(sample_color);
+			vec3 flux = 64000.0 * max(Scene_LocalSunDir.y, 0.0) * RgbToLinear(sample_color);
 
 			sh_rsm_voxel.R += coeffs * flux.r;
 			sh_rsm_voxel.G += coeffs * flux.g;

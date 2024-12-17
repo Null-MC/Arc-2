@@ -103,7 +103,7 @@ void main() {
 
             int shadowCascade;
             vec3 shadowPos = GetShadowSamplePos(shadowViewPos, shadowRadius, shadowCascade);
-            shadowSample = SampleShadowColor_PCF(shadowPos, shadowCascade, shadowRadius);
+            shadowSample = SampleShadowColor_PCF(shadowPos, shadowCascade, vec2(shadowRadius));
         #endif
 
         // float NoLm = step(0.0, dot(Scene_LocalLightDir, localTexNormal));

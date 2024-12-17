@@ -81,7 +81,7 @@ vec3 sampleSharedBuffer(const in float depthL) {
             vec3 sampleValue = sharedOcclusionBuffer[i_shared];
             float sampleDepthL = sharedDepthBuffer[i_shared];
             
-            float depthDiff = abs(sampleDepthL - depthL) * 1000.0;
+            float depthDiff = abs(sampleDepthL - depthL);// * 1000.0;
             float fv = Gaussian(g_sigmaV, depthDiff);
             
             float weight = fx*fy*fv;

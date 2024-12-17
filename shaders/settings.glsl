@@ -25,6 +25,8 @@ const float BLOCKLIGHT_BRIGHTNESS = 4.0;
 const float SKY_AMBIENT = 0.3;
 
 const int SHADOW_PCF_SAMPLES = 8;
+const int SHADOW_PCSS_SAMPLES = 6;
+const float Shadow_MaxPcfSize = 2.0;
 
 const float Bloom_Power = 1.3;
 const float Bloom_Strength = 0.04;

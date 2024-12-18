@@ -238,6 +238,16 @@ function setupShader() {
 
     finalizeUniforms();
 
+    let texFogNoise = new RawTexture("texFogNoise", "textures/fog.dat")
+        .type(PixelType.UNSIGNED_BYTE)
+        .format(R8_SNORM)
+        .width(256)
+        .height(32)
+        .depth(256)
+        .clamp(false)
+        .blur(true)
+        .build();
+
     let texShadowColor = new ArrayTexture("texShadowColor")
         .format(RGBA8)
         .clearColor(0.0, 0.0, 0.0, 0.0)
@@ -500,7 +510,7 @@ function setupShader() {
     // TODO: sky-textured?
 
     registerShader(new ObjectShader("clouds", Usage.CLOUDS)
-        .vertex("gbuffer/main.vsh")
+        .vertex("gbuffer/clouds.vsh")
         .fragment("gbuffer/clouds.fsh")
         .target(0, texClouds)
         .ssbo(0, sceneBuffer)

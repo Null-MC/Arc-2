@@ -20,7 +20,7 @@ float safeacos(const float x) {
 
 vec3 getSkyPosition(const in vec3 localPos) {
     vec3 skyPos = localPos;
-    skyPos.y += max(cameraPos.y - SEA_LEVEL, 0.0);
+    skyPos.y = max(cameraPos.y + skyPos.y - SEA_LEVEL, 0.0);
     skyPos /= (ATMOSPHERE_MAX - SEA_LEVEL);
 
     skyPos *= (atmosphereRadiusMM - groundRadiusMM);

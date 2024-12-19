@@ -206,7 +206,8 @@ function setupShader() {
     let Settings = setupSettings();
 
     setLightColor("torch", 243, 158, 73, 255);
-    // setLightColor("sea_lantern", 0, 0, 255, 255);
+    setLightColor("wall_torch", 243, 158, 73, 255);
+    // setLightColor("redstone_lamp", 249, 50, 28, 255);
     setLightColor("pearlescent_froglight", 224, 117, 232, 255);
     setLightColor("ochre_froglight", 223, 172, 71, 255);
     setLightColor("verdant_froglight", 99, 229, 60, 255);

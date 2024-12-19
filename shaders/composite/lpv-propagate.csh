@@ -29,9 +29,7 @@ layout(r32ui) uniform readonly uimage3D imgVoxelBlock;
 #include "/lib/shadow/csm.glsl"
 
 #include "/lib/sky/common.glsl"
-// #include "/lib/sky/view.glsl"
 #include "/lib/sky/sun.glsl"
-// #include "/lib/sky/stars.glsl"
 
 
 const float directFaceSubtendedSolidAngle = 0.4006696846 / PI / 2.0;
@@ -126,10 +124,8 @@ const ivec3 directions[] = {
 		sample_color = textureLod(texShadowColor, vec3(shadowCoord.xy, shadowCascade), 0).rgb;
 		sample_color = RgbToLinear(sample_color);
 
-		// TODO: sample normal
 		sample_normal = textureLod(texShadowNormal, vec3(shadowCoord.xy, shadowCascade), 0).rgb;
 		sample_normal = normalize(sample_normal * 2.0 - 1.0);
-		// sample_normal = vec3(0.0, 1.0, 0.0);
 
 		sample_color *= max(dot(sample_normal, Scene_LocalLightDir), 0.0);
 	}
@@ -159,8 +155,6 @@ void main() {
 
 	ivec3 voxelFrameOffset = GetVoxelFrameOffset();
 	ivec3 cellIndexPrev = cellIndex + voxelFrameOffset;
-
-	// vec3 localPos = cellIndex - VoxelBufferCenter - fract(cameraPos) + 0.5;
 
     vec3 viewDir = playerModelViewInverse[2].xyz;
     vec3 voxelCenter = GetVoxelCenter(cameraPos, viewDir);
@@ -257,16 +251,11 @@ void main() {
 				sh_voxel.R = f16vec4(sh_voxel.R + max(dot(neighbor_voxel.R, curDirSH), 0.0) * f);
 				sh_voxel.G = f16vec4(sh_voxel.G + max(dot(neighbor_voxel.G, curDirSH), 0.0) * f);
 				sh_voxel.B = f16vec4(sh_voxel.B + max(dot(neighbor_voxel.B, curDirSH), 0.0) * f);
-
-				// sh_voxel.R += max(neighbor_voxel.R, 0.0) * f;
-				// sh_voxel.G += max(neighbor_voxel.G, 0.0) * f;
-				// sh_voxel.B += max(neighbor_voxel.B, 0.0) * f;
 			}
 		}
 
 		#ifdef LPV_RSM_ENABLED
 			vec3 sample_color, sample_normal;
-			// vec3 localPos = cellIndex - VoxelBufferCenter - fract(cameraPos) + 0.5;
 			sample_shadow(localPos, sample_color, sample_normal);
 
 	        vec3 skyPos = getSkyPosition(localPos);

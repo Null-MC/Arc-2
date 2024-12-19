@@ -139,8 +139,8 @@ void main() {
 
         vec3 localTexNormal = normalize(texNormalData * 2.0 - 1.0);
 
-        // vec4 data_r = unpackUnorm4x8(data.r);
-        // vec3 localNormal = normalize(data_r.xyz * 2.0 - 1.0);
+        vec3 data_r = unpackUnorm4x8(data.r).rgb;
+        vec3 localGeoNormal = normalize(data_r * 2.0 - 1.0);
 
         vec4 data_g = unpackUnorm4x8(data.g);
         float roughness = data_g.x;
@@ -208,7 +208,10 @@ void main() {
 
         #ifdef LPV_ENABLED
             // vec3 voxelPos = GetVoxelPosition(localPos);
-            vec3 voxelPos = GetVoxelPosition(localPos + 0.5*localTexNormal);
+            vec3 voxelPos = localPos - 0.25*localGeoNormal + 0.75*localTexNormal;
+            // vec3 voxelPos = localPos + 0.5*localGeoNormal;
+            // vec3 voxelPos = localPos + 0.5*localTexNormal;
+            voxelPos = GetVoxelPosition(voxelPos);
 
             // vec3 voxelPos = GetVoxelPosition(localPos + 0.5*localTexNormal);
             skyLightDiffuse += sample_lpv_linear(voxelPos, localTexNormal) * SampleLightDiffuse(NoVm, 1.0, 1.0, roughL);

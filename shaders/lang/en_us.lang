@@ -19,6 +19,10 @@ option.MATERIAL_SSR_ENABLED=Reflections
 option.VOXEL_SIZE=Size
 suffix.VOXEL_SIZE=^3
 
+option.VOXEL_FRUSTUM_OFFSET=Offset
+option.VOXEL_FRUSTUM_OFFSET.comment=Shifts the volume in the direction the camera is looking.
+suffix.VOXEL_FRUSTUM_OFFSET=%
+
 option.LPV_ENABLED=Enabled
 
 option.LPV_RSM_ENABLED=RSM

@@ -29,6 +29,7 @@ function setupSettings() {
         },
         Voxel: {
             Size: parseInt(getStringSetting("VOXEL_SIZE")),
+            Offset: parseFloat(getStringSetting("VOXEL_FRUSTUM_OFFSET")),
             LPV: {
                 Enabled: getBoolSetting("LPV_ENABLED"),
                 RSM_Enabled: getBoolSetting("LPV_RSM_ENABLED"),
@@ -207,10 +208,20 @@ function setupShader() {
 
     setLightColor("torch", 243, 158, 73, 255);
     setLightColor("wall_torch", 243, 158, 73, 255);
-    // setLightColor("redstone_lamp", 249, 50, 28, 255);
+    setLightColor("redstone_torch", 249, 50, 28, 255);
     setLightColor("pearlescent_froglight", 224, 117, 232, 255);
     setLightColor("ochre_froglight", 223, 172, 71, 255);
     setLightColor("verdant_froglight", 99, 229, 60, 255);
+    setLightColor("glow_lichen", 107, 238, 172, 255);
+    setLightColor("cave_vines", 243, 133, 59, 255);
+    setLightColor("cave_vines_plant", 243, 133, 59, 255);
+
+    setLightColor("red_stained_glass", 255, 0, 0, 255);
+    setLightColor("red_stained_glass_pane", 255, 0, 0, 255);
+    setLightColor("green_stained_glass", 0, 255, 0, 255);
+    setLightColor("green_stained_glass_pane", 0, 255, 0, 255);
+    setLightColor("blue_stained_glass", 0, 0, 255, 255);
+    setLightColor("blue_stained_glass_pane", 0, 0, 255, 255);
 
     registerUniforms("shadowLightPosition",
         "fogColor",
@@ -429,7 +440,7 @@ function setupShader() {
     let shLpvRsmBuffer = null;
     let shLpvRsmBuffer_alt = null;
     if (Settings.Voxel.LPV.Enabled) {
-        // f16vec4[16] * Band[3] * VoxelBufferSize^3
+        // f16vec4[8] * Band[3] * VoxelBufferSize^3
         let bufferSize = 8 * 3 * (Settings.Voxel.Size*Settings.Voxel.Size*Settings.Voxel.Size);
 
         shLpvBuffer = new Buffer(bufferSize)

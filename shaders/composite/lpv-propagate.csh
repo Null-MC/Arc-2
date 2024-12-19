@@ -163,15 +163,19 @@ void main() {
 	uint blockId = imageLoad(imgVoxelBlock, cellIndex).r;
 
 	bool isFullBlock = false;
+	vec3 tintColor = vec3(1.0);
 	uint faceMask = 0u;
+
 	if (blockId > 0u) {
 		isFullBlock = iris_isFullBlock(blockId);
 		uint blockData = iris_getMetadata(blockId);
 		faceMask = bitfieldExtract(blockData, 0, 6);
+
+		tintColor = iris_getLightColor(blockId).rgb;
+		tintColor = RgbToLinear(tintColor);
 	}
 
 	if (!isFullBlock) {
-
 		for (uint neighbour = 0; neighbour < 6; ++neighbour) {
 			// mat3 orientation = neighbourOrientations[neighbour];
 
@@ -203,7 +207,7 @@ void main() {
 					lightColor = RgbToLinear(lightColor);
 
 					vec4 coeffs = dirToSH(vec3(-curDir)) / PI;
-					vec3 flux = exp2(lightRange) * lightColor;
+					vec3 flux = exp2(lightRange) * lightColor * tintColor;
 
 					sh_voxel.R = f16vec4(sh_voxel.R + coeffs * flux.r);
 					sh_voxel.G = f16vec4(sh_voxel.G + coeffs * flux.g);
@@ -248,9 +252,9 @@ void main() {
 
 				vec4 f = (1.0/2.0) * curCosLobe;
 
-				sh_voxel.R = f16vec4(sh_voxel.R + max(dot(neighbor_voxel.R, curDirSH), 0.0) * f);
-				sh_voxel.G = f16vec4(sh_voxel.G + max(dot(neighbor_voxel.G, curDirSH), 0.0) * f);
-				sh_voxel.B = f16vec4(sh_voxel.B + max(dot(neighbor_voxel.B, curDirSH), 0.0) * f);
+				sh_voxel.R = f16vec4(sh_voxel.R + max(dot(neighbor_voxel.R, curDirSH), 0.0) * f * tintColor.r);
+				sh_voxel.G = f16vec4(sh_voxel.G + max(dot(neighbor_voxel.G, curDirSH), 0.0) * f * tintColor.g);
+				sh_voxel.B = f16vec4(sh_voxel.B + max(dot(neighbor_voxel.B, curDirSH), 0.0) * f * tintColor.b);
 			}
 		}
 
@@ -264,7 +268,7 @@ void main() {
 	        vec3 skyLight = SUN_BRIGHTNESS * sunTransmit + MOON_BRIGHTNESS * moonTransmit;
 
 			vec4 coeffs = dirToSH(sample_normal) / PI;
-			vec3 flux = exp2(15.0) * max(Scene_LocalSunDir.y, 0.0) * skyLight * sample_color;
+			vec3 flux = exp2(13.0) * max(Scene_LocalSunDir.y, 0.0) * skyLight * sample_color;
 
 			sh_rsm_voxel.R = f16vec4(sh_rsm_voxel.R + coeffs * flux.r);
 			sh_rsm_voxel.G = f16vec4(sh_rsm_voxel.G + coeffs * flux.g);

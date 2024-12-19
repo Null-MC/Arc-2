@@ -28,6 +28,7 @@ function setupOptions() {
     let screen_Voxel = new Screen("Voxels")
         .add(asString("VOXEL_SIZE", "128", "64", "128", "256"))
         .add(screen_Voxel_LPV)
+        .add(asString("VOXEL_FRUSTUM_OFFSET", "80", "0", "50", "80"))
         .build();
 
     const screen_Effects = new Screen("Effects")

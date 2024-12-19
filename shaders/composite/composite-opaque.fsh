@@ -234,7 +234,7 @@ void main() {
             if (IsInVoxelBounds(voxelPos)) blockLighting = vec3(0.0);
         #endif
 
-        vec3 diffuse = skyLightDiffuse + blockLighting + 0.0016;
+        vec3 diffuse = skyLightDiffuse + blockLighting + 0.0016 * occlusion;
 
         // #ifdef ACCUM_ENABLED
         //     bool altFrame = (frameCounter % 2) == 1;

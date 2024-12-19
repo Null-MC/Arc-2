@@ -176,6 +176,24 @@ void main() {
 	}
 
 	if (!isFullBlock) {
+		#ifndef LPV_PER_FACE_LIGHTING
+			if (blockId > 0u) {
+				int lightRange = iris_getEmission(blockId);
+
+				if (lightRange > 0) {
+					vec3 lightColor = tintColor;//iris_getLightColor(neighborBlockId).rgb;
+					// lightColor = RgbToLinear(lightColor);
+
+					vec4 coeffs = vec4(1.0 / PI);//dirToSH(vec3(-curDir)) / PI;
+					vec3 flux = exp2(lightRange) * lightColor;
+
+					sh_voxel.R = f16vec4(sh_voxel.R + coeffs * flux.r);
+					sh_voxel.G = f16vec4(sh_voxel.G + coeffs * flux.g);
+					sh_voxel.B = f16vec4(sh_voxel.B + coeffs * flux.b);
+				}
+			}
+		#endif
+
 		for (uint neighbour = 0; neighbour < 6; ++neighbour) {
 			// mat3 orientation = neighbourOrientations[neighbour];
 
@@ -194,28 +212,30 @@ void main() {
 				isNeighborFullBlock = iris_isFullBlock(neighborBlockId);
 				int lightRange = iris_getEmission(neighborBlockId);
 
-				uint neighborBlockData = iris_getMetadata(neighborBlockId);
-				neighborfaceMask = bitfieldExtract(neighborBlockData, 0, 6);
+				#ifdef LPV_PER_FACE_LIGHTING
+					uint neighborBlockData = iris_getMetadata(neighborBlockId);
+					neighborfaceMask = bitfieldExtract(neighborBlockData, 0, 6);
 
-				// vec3 lightColor = blackbody(BLOCKLIGHT_TEMP);
-				// vec3 lightColor = hash33(floor(localPos + cameraPos + curDir));
-				// lightColor = normalize(lightColor);
-				// lightColor = RgbToLinear(lightColor);
+					// vec3 lightColor = blackbody(BLOCKLIGHT_TEMP);
+					// vec3 lightColor = hash33(floor(localPos + cameraPos + curDir));
+					// lightColor = normalize(lightColor);
+					// lightColor = RgbToLinear(lightColor);
 
-				if (lightRange > 0) {
-					vec3 lightColor = iris_getLightColor(neighborBlockId).rgb;
-					lightColor = RgbToLinear(lightColor);
+					if (lightRange > 0) {
+						vec3 lightColor = iris_getLightColor(neighborBlockId).rgb;
+						lightColor = RgbToLinear(lightColor);
 
-					vec4 coeffs = dirToSH(vec3(-curDir)) / PI;
-					vec3 flux = exp2(lightRange) * lightColor * tintColor;
+						vec4 coeffs = dirToSH(vec3(-curDir)) / PI;
+						vec3 flux = exp2(lightRange) * lightColor * tintColor;
 
-					sh_voxel.R = f16vec4(sh_voxel.R + coeffs * flux.r);
-					sh_voxel.G = f16vec4(sh_voxel.G + coeffs * flux.g);
-					sh_voxel.B = f16vec4(sh_voxel.B + coeffs * flux.b);
-				}
+						sh_voxel.R = f16vec4(sh_voxel.R + coeffs * flux.r);
+						sh_voxel.G = f16vec4(sh_voxel.G + coeffs * flux.g);
+						sh_voxel.B = f16vec4(sh_voxel.B + coeffs * flux.b);
+					}
+				#endif
 			}
 
-			uint neighbourInverse = neighbour; // TODO: !!
+			uint neighbourInverse = neighbour;
 			neighbourInverse += (neighbourInverse % 2 == 0) ? 1 : -1;
 
 			bool isNeighborFaceSolid = bitfieldExtract(neighborfaceMask, int(neighbourInverse), 1) == 1u;

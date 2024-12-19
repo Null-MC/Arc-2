@@ -3,7 +3,7 @@
 
 layout (local_size_x = 8, local_size_y = 8, local_size_z = 8) in;
 
-layout(r8ui) uniform readonly uimage3D imgVoxelBlock;
+layout(r32ui) uniform readonly uimage3D imgVoxelBlock;
 
 #ifdef LPV_RSM_ENABLED
 	uniform sampler2DArray solidShadowMap;
@@ -38,67 +38,67 @@ const float directFaceSubtendedSolidAngle = 0.4006696846 / PI / 2.0;
 const float sideFaceSubtendedSolidAngle = 0.4234413544 / PI / 2.0;
 
 const ivec3 directions[] = {
-	ivec3( 0, 0, 1),
-	ivec3( 0, 0,-1),
-	ivec3( 1, 0, 0),
-	ivec3(-1, 0, 0),
+	ivec3( 0,-1, 0),
 	ivec3( 0, 1, 0),
-	ivec3( 0,-1, 0)
+	ivec3( 0, 0,-1),
+	ivec3( 0, 0, 1),
+	ivec3(-1, 0, 0),
+	ivec3( 1, 0, 0),
 };
 
 // With a lot of help from: http://blog.blackhc.net/2010/07/light-propagation-volumes/
 // This is a fully functioning LPV implementation
 
 // right up
-ivec2 side[4] = {
-	ivec2( 1.0,  0.0),
-	ivec2( 0.0,  1.0),
-	ivec2(-1.0,  0.0),
-	ivec2( 0.0, -1.0)
-};
+// ivec2 side[4] = {
+// 	ivec2( 1.0,  0.0),
+// 	ivec2( 0.0,  1.0),
+// 	ivec2(-1.0,  0.0),
+// 	ivec2( 0.0, -1.0)
+// };
 
 // orientation = [ right | up | forward ] = [ x | y | z ]
-vec3 getEvalSideDirection(uint index, mat3 orientation) {
-	return orientation * vec3(side[index] * 0.4472135, 0.894427);
-}
+// vec3 getEvalSideDirection(uint index, mat3 orientation) {
+// 	return orientation * vec3(side[index] * 0.4472135, 0.894427);
+// }
 
-vec3 getReprojSideDirection(uint index, mat3 orientation) {
-	return orientation * vec3(side[index], 0.0);
-}
+// vec3 getReprojSideDirection(uint index, mat3 orientation) {
+// 	return orientation * vec3(side[index], 0.0);
+// }
 
 // orientation = [ right | up | forward ] = [ x | y | z ]
-mat3 neighbourOrientations[6] = {
-	// Z+
-	mat3(
-		-1, 0, 0,
-		0, 1, 0, 
-		0, 0, -1),
-	// Z-
-	mat3(
-		1, 0,  0,
-		 0, 1,  0,
-		 0, 0, 1),
-	// X+
-	mat3(
-		 0, 0, 1,
-		 0, 1, 0,
-		-1, 0, 0),
-	// X-
-	mat3(
-		0, 0, -1,
-		0, 1,  0,
-		1, 0,  0),
-	// Y+
-	mat3(
-		1,  0, 0,
-		0,  0, 1,
-		0, -1, 0),
-	// Y-
-	mat3(
-		1, 0,  0,
-		0, 0, -1,
-		0, 1,  0),
-};
+// mat3 neighbourOrientations[6] = {
+// 	// Z+
+// 	mat3(
+// 		-1, 0, 0,
+// 		0, 1, 0, 
+// 		0, 0, -1),
+// 	// Z-
+// 	mat3(
+// 		1, 0,  0,
+// 		 0, 1,  0,
+// 		 0, 0, 1),
+// 	// X+
+// 	mat3(
+// 		 0, 0, 1,
+// 		 0, 1, 0,
+// 		-1, 0, 0),
+// 	// X-
+// 	mat3(
+// 		0, 0, -1,
+// 		0, 1,  0,
+// 		1, 0,  0),
+// 	// Y+
+// 	mat3(
+// 		1,  0, 0,
+// 		0,  0, 1,
+// 		0, -1, 0),
+// 	// Y-
+// 	mat3(
+// 		1, 0,  0,
+// 		0, 0, -1,
+// 		0, 1,  0),
+// };
 
 #ifdef LPV_RSM_ENABLED
 	void sample_shadow(vec3 localPos, out vec3 sample_color, out vec3 sample_normal) {
@@ -168,32 +168,62 @@ void main() {
 
 	uint blockId = imageLoad(imgVoxelBlock, cellIndex).r;
 
-	if (blockId == 0u) {
+	bool isFullBlock = false;
+	uint faceMask = 0u;
+	if (blockId > 0u) {
+		isFullBlock = iris_isFullBlock(blockId);
+		uint blockData = iris_getMetadata(blockId);
+		faceMask = bitfieldExtract(blockData, 0, 6);
+	}
+
+	if (!isFullBlock) {
+
 		for (uint neighbour = 0; neighbour < 6; ++neighbour) {
-			mat3 orientation = neighbourOrientations[neighbour];
-			// TODO: transpose all orientation matrices and use row indexing instead? ie int3( orientation[2] )
-			// vec3 mainDirection = orientation * vec3(0.0, 0.0, 1.0);
+			// mat3 orientation = neighbourOrientations[neighbour];
+
+			bool isFaceSolid = bitfieldExtract(faceMask, int(neighbour), 1) == 1u;
+			if (isFaceSolid) continue;
 
 			ivec3 curDir = directions[neighbour];
 			ivec3 neighbourIndex = cellIndexPrev + curDir;
 			if (!IsInVoxelBounds(neighbourIndex)) continue;
 
 			uint neighborBlockId = imageLoad(imgVoxelBlock, cellIndex + curDir).r;
+			bool isNeighborFullBlock = false;
+			uint neighborfaceMask = 0u;
 
-			if (neighborBlockId == 2u) {
+			if (neighborBlockId != 0u) {
+				isNeighborFullBlock = iris_isFullBlock(neighborBlockId);
+				int lightRange = iris_getEmission(neighborBlockId);
+
+				uint neighborBlockData = iris_getMetadata(neighborBlockId);
+				neighborfaceMask = bitfieldExtract(neighborBlockData, 0, 6);
+
 				// vec3 lightColor = blackbody(BLOCKLIGHT_TEMP);
-				vec3 lightColor = hash33(floor(localPos + cameraPos + curDir));
-				lightColor = normalize(lightColor);
+				// vec3 lightColor = hash33(floor(localPos + cameraPos + curDir));
+				// lightColor = normalize(lightColor);
 				// lightColor = RgbToLinear(lightColor);
 
-				vec4 coeffs = dirToSH(vec3(-curDir)) / PI;
-				vec3 flux = 1000.0 * lightColor;
+				if (lightRange > 0) {
+					vec3 lightColor = iris_getLightColor(neighborBlockId).rgb;
+					lightColor = RgbToLinear(lightColor);
 
-				sh_voxel.R = f16vec4(sh_voxel.R + coeffs * flux.r);
-				sh_voxel.G = f16vec4(sh_voxel.G + coeffs * flux.g);
-				sh_voxel.B = f16vec4(sh_voxel.B + coeffs * flux.b);
+					vec4 coeffs = dirToSH(vec3(-curDir)) / PI;
+					vec3 flux = exp2(lightRange) * lightColor;
+
+					sh_voxel.R = f16vec4(sh_voxel.R + coeffs * flux.r);
+					sh_voxel.G = f16vec4(sh_voxel.G + coeffs * flux.g);
+					sh_voxel.B = f16vec4(sh_voxel.B + coeffs * flux.b);
+				}
 			}
-			else if (neighborBlockId == 0u) {
+
+			uint neighbourInverse = neighbour; // TODO: !!
+			neighbourInverse += (neighbourInverse % 2 == 0) ? 1 : -1;
+
+			bool isNeighborFaceSolid = bitfieldExtract(neighborfaceMask, int(neighbourInverse), 1) == 1u;
+			if (isNeighborFaceSolid) continue;
+
+			if (!isNeighborFullBlock) {
 				int neighbor_i = GetLpvIndex(neighbourIndex);
 				lpvShVoxel neighbor_voxel = altFrame ? SH_LPV[neighbor_i] : SH_LPV_alt[neighbor_i];
 

@@ -3,7 +3,7 @@
 layout(location = 0) out vec4 out_GI_AO;
 
 uniform sampler2D solidDepthTex;
-uniform usampler2D texDeferredOpaque_Data;
+uniform sampler2D texDeferredOpaque_TexNormal;
 
 #ifdef EFFECT_SSGI_ENABLED
     uniform sampler2D texFinalPrevious;
@@ -51,9 +51,11 @@ void main() {
         float rStep = max_radius / SSGIAO_SAMPLES;
         float radius = rStep * dither;
 
-        uint data_r = texelFetch(texDeferredOpaque_Data, iuv, 0).r;
-        vec3 data_normal = unpackUnorm4x8(data_r).xyz;
-        vec3 localNormal = normalize(data_normal * 2.0 - 1.0);
+        // uint data_r = texelFetch(texDeferredOpaque_Data, iuv, 0).r;
+        // vec3 normalData = unpackUnorm4x8(data_r).xyz;
+        vec3 normalData = texelFetch(texDeferredOpaque_TexNormal, iuv, 0).xyz;
+        vec3 localNormal = normalize(normalData * 2.0 - 1.0);
+
         vec3 viewNormal = mat3(playerModelView) * localNormal;
 
         float maxWeight = EPSILON;

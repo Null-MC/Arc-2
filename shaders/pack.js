@@ -11,6 +11,7 @@ function setupSettings() {
     const Settings = {
         Sky: {
             SunAngle: parseInt(getStringSetting("SKY_SUN_ANGLE")),
+            SeaLevel: parseInt(getStringSetting("SKY_SEA_LEVEL")),
         },
         Water: {
             Waves: getBoolSetting("WATER_WAVES_ENABLED"),
@@ -56,6 +57,8 @@ function setupSettings() {
     if (FEATURE.VL) defineGlobally("EFFECT_VL_ENABLED", "1");
 
     if (FEATURE.Accumulation) defineGlobally("ACCUM_ENABLED", "1");
+
+    defineGlobally("SKY_SEA_LEVEL", Settings.Sky.SeaLevel.toString());
 
     if (Settings.Effect.SSAO) defineGlobally("EFFECT_SSAO_ENABLED", "1");
     if (Settings.Effect.SSGI) defineGlobally("EFFECT_SSGI_ENABLED", "1");
@@ -202,6 +205,12 @@ function setupShader() {
 
     let Settings = setupSettings();
 
+    setLightColor("torch", 243, 158, 73, 255);
+    // setLightColor("sea_lantern", 0, 0, 255, 255);
+    setLightColor("pearlescent_froglight", 224, 117, 232, 255);
+    setLightColor("ochre_froglight", 223, 172, 71, 255);
+    setLightColor("verdant_froglight", 99, 229, 60, 255);
+
     registerUniforms("shadowLightPosition",
         "fogColor",
         "fogStart",
@@ -290,6 +299,11 @@ function setupShader() {
         .clearColor(0.0, 0.0, 0.0, 0.0)
         .build();
 
+    let texDeferredOpaque_TexNormal = new Texture("texDeferredOpaque_TexNormal")
+        .format(RGB8)
+        .clearColor(0.0, 0.0, 0.0, 0.0)
+        .build();
+
     let texDeferredOpaque_Data = new Texture("texDeferredOpaque_Data")
         .format(RGBA32UI)
         .clearColor(0.0, 0.0, 0.0, 0.0)
@@ -297,6 +311,11 @@ function setupShader() {
 
     let texDeferredTrans_Color = new Texture("texDeferredTrans_Color")
         .format(RGBA8)
+        .clearColor(0.0, 0.0, 0.0, 0.0)
+        .build();
+
+    let texDeferredTrans_TexNormal = new Texture("texDeferredTrans_TexNormal")
+        .format(RGB8)
         .clearColor(0.0, 0.0, 0.0, 0.0)
         .build();
 
@@ -322,7 +341,7 @@ function setupShader() {
 
     let texVoxelBlock = new Texture("texVoxelBlock")
         .imageName("imgVoxelBlock")
-        .format(R8UI)
+        .format(R32UI)
         .clearColor(0.0, 0.0, 0.0, 0.0)
         .width(Settings.Voxel.Size)
         .height(Settings.Voxel.Size)
@@ -521,8 +540,10 @@ function setupShader() {
         .fragment("gbuffer/main.fsh")
         .target(0, texDeferredOpaque_Color)
         // .blendFunc(0, FUNC_SRC_ALPHA, FUNC_ONE_MINUS_SRC_ALPHA, FUNC_ONE, FUNC_ZERO)
-        .target(1, texDeferredOpaque_Data)
+        .target(1, texDeferredOpaque_TexNormal)
         // .blendFunc(1, FUNC_ONE, FUNC_ZERO, FUNC_ONE, FUNC_ZERO)
+        .target(2, texDeferredOpaque_Data)
+        // .blendFunc(2, FUNC_ONE, FUNC_ZERO, FUNC_ONE, FUNC_ZERO)
         .build());
 
     let waterShader = new ObjectShader("water", Usage.TERRAIN_TRANSLUCENT)
@@ -531,8 +552,9 @@ function setupShader() {
         .define("RENDER_TRANSLUCENT", "1")
         .target(0, texDeferredTrans_Color)
         // .blendFunc(0, FUNC_SRC_ALPHA, FUNC_ONE_MINUS_SRC_ALPHA, FUNC_ONE, FUNC_ZERO)
-        .target(1, texDeferredTrans_Data);
-        // .blendFunc(1, FUNC_ONE, FUNC_ZERO, FUNC_ONE, FUNC_ZERO)
+        .target(1, texDeferredTrans_TexNormal)
+        .target(2, texDeferredTrans_Data);
+        // .blendFunc(2, FUNC_ONE, FUNC_ZERO, FUNC_ONE, FUNC_ZERO)
 
     if (Settings.Water.Waves && Settings.Water.Tessellation) {
         waterShader

@@ -12,6 +12,8 @@ uniform usampler2D texDeferredOpaque_Data;
 
 #include "/settings.glsl"
 #include "/lib/common.glsl"
+#include "/lib/buffers/scene.glsl"
+
 #include "/lib/noise/ign.glsl"
 #include "/lib/depth.glsl"
 
@@ -35,9 +37,7 @@ void main() {
     float sssFinal = 0.0;
 
     if (depthOpaque < 1.0) {
-        uvec4 data = texelFetch(texDeferredOpaque_Data, iuv, 0);
-
-        vec3 localLightDir = normalize(mat3(playerModelViewInverse) * shadowLightPosition);
+        uvec2 data = texelFetch(texDeferredOpaque_Data, iuv, 0).rg;
 
         vec3 clipPos = vec3(uv, depthOpaque);
         vec3 ndcPos = clipPos * 2.0 - 1.0;
@@ -49,10 +49,10 @@ void main() {
         vec3 viewPos = unproject(playerProjectionInverse, ndcPos);
         vec3 localPos = mul3(playerModelViewInverse, viewPos);
 
-        vec4 data_r = unpackUnorm4x8(data.r);
-        vec3 localNormal = normalize(data_r.xyz * 2.0 - 1.0);
+        vec3 data_r = unpackUnorm4x8(data.r).xyz;
+        vec3 localGeoNormal = normalize(data_r * 2.0 - 1.0);
 
-        shadowFinal *= step(0.0, dot(localNormal, localLightDir));
+        shadowFinal *= step(0.0, dot(localGeoNormal, Scene_LocalLightDir));
 
         vec3 shadowViewPos = mul3(shadowModelView, localPos);
 
@@ -63,11 +63,11 @@ void main() {
         float dither = GetShadowDither();
         
         // SSS
-        vec4 data_a = unpackUnorm4x8(data.a);
+        vec4 data_a = unpackUnorm4x8(data.g);
         float sss = data_a.a;
 
         if (sss > 0.0) {
-            float NoLm = max(dot(localNormal, localLightDir), 0.0);
+            float NoLm = max(dot(localGeoNormal, Scene_LocalLightDir), 0.0);
 
             const float SSS_MaxDist = 3.0;
             const float SSS_MaxPcfSize = 1.5;

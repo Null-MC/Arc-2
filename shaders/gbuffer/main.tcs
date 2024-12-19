@@ -10,7 +10,7 @@ in VertexData2 {
     vec3 localOffset;
     vec3 localNormal;
     vec4 localTangent;
-    flat int material;
+    flat uint blockId;
 } vIn[];
 
 out VertexData2 {
@@ -21,7 +21,7 @@ out VertexData2 {
     vec3 localOffset;
     vec3 localNormal;
     vec4 localTangent;
-    flat int material;
+    flat uint blockId;
     
     vec3 surfacePos;
 } vOut[];
@@ -49,11 +49,13 @@ void main() {
     vOut[gl_InvocationID].localTangent = vIn[gl_InvocationID].localTangent;
     vOut[gl_InvocationID].surfacePos = vIn[gl_InvocationID].localPos;
 
-    vOut[gl_InvocationID].material = vIn[gl_InvocationID].material;
+    vOut[gl_InvocationID].blockId = vIn[gl_InvocationID].blockId;
 
     if (gl_InvocationID == 0) {
-        bool isWater = bitfieldExtract(vIn[gl_InvocationID].material, 6, 1) != 0;
-        float maxQuality = isWater ? WATER_TESSELLATION_LEVEL : 1.0;
+        // bool isWater = bitfieldExtract(vIn[gl_InvocationID].material, 6, 1) != 0;
+        bool is_fluid = iris_hasFluid(vIn[gl_InvocationID].blockId);
+
+        float maxQuality = is_fluid ? WATER_TESSELLATION_LEVEL : 1.0;
 
         vec3 distances = GetPatchDistances(MIN_DISTANCE, MAX_DISTANCE);
         ApplyPatchControl(distances, maxQuality);

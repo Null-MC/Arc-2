@@ -1,26 +1,6 @@
 #version 430 core
 
-/*
-
-VertexData is a predefined struct. You do not need to define it.
-Your job in iris_emitVertex is to take the model space position, and convert it into clip space along with any vertex transformations you wish.
-
-After this, mods get a chance to run their own transformations; and then you can use iris_sendParameters to send data to your fragment shader.
-
-
-struct VertexData {
-	vec4 pos;
-	vec2 uv;
-	vec2 light;
-	vec4 color;
-	vec3 normal;
-	vec4 tangent;
-	vec4 overlayColor;
-};
-
-*/
-
-layout(location = 6) in int blockMask;
+// layout(location = 6) in int blockMask;
 
 out VertexData2 {
 	vec2 uv;
@@ -30,7 +10,7 @@ out VertexData2 {
 	vec3 localOffset;
 	vec3 localNormal;
 	vec4 localTangent;
-	flat int material;
+	flat uint blockId;
 } vOut;
 
 #include "/settings.glsl"
@@ -51,9 +31,10 @@ void iris_emitVertex(inout VertexData data) {
 	vOut.localOffset = vec3(0.0);
 
 	#if defined RENDER_TRANSLUCENT && defined WATER_WAVES_ENABLED && !defined WATER_TESSELLATION_ENABLED
-        bool isWater = bitfieldExtract(blockMask, 6, 1) != 0;
+        // bool isWater = bitfieldExtract(blockMask, 6, 1) != 0;
+	    bool is_fluid = iris_hasFluid(vIn.blockId);
 
-        if (isWater) {
+        if (is_fluid) {
 			const float lmcoord_y = 1.0;
 
             vec3 waveOffset = GetWaveHeight(vOut.localPos + cameraPos, lmcoord_y, timeCounter, WaterWaveOctaveMin);
@@ -75,6 +56,7 @@ void iris_sendParameters(in VertexData data) {
     vOut.uv = data.uv;
     vOut.light = data.light;
     vOut.color = data.color;
+    vOut.blockId = data.blockId;
 
 	vec3 viewNormal = mat3(iris_modelViewMatrix) * data.normal;
 	vOut.localNormal = mat3(playerModelViewInverse) * viewNormal;
@@ -82,6 +64,4 @@ void iris_sendParameters(in VertexData data) {
     vec3 viewTangent = mat3(iris_modelViewMatrix) * data.tangent.xyz;
     vOut.localTangent.xyz = mat3(playerModelViewInverse) * viewTangent;
     vOut.localTangent.w = data.tangent.w;
-
-    vOut.material = blockMask;
 }

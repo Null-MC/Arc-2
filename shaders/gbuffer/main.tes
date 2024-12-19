@@ -13,7 +13,7 @@ in VertexData2 {
     vec3 localOffset;
     vec3 localNormal;
     vec4 localTangent;
-    flat int material;
+    flat uint blockId;
 
     vec3 surfacePos;
 } vIn[];
@@ -26,7 +26,7 @@ out VertexData2 {
     vec3 localOffset;
     vec3 localNormal;
     vec4 localTangent;
-    flat int material;
+    flat uint blockId;
 
     vec3 surfacePos;
 } vOut;
@@ -52,11 +52,12 @@ void main() {
     vOut.localTangent = _interpolate(vIn[0].localTangent, vIn[1].localTangent, vIn[2].localTangent);
     vOut.surfacePos = _interpolate(vIn[0].surfacePos, vIn[1].surfacePos, vIn[2].surfacePos);
 
-    vOut.material = vIn[0].material;
+    vOut.blockId = vIn[0].blockId;
 
-    bool isWater = bitfieldExtract(vIn[0].material, 6, 1) != 0;
+    // bool isWater = bitfieldExtract(vIn[0].blockId, 6, 1) != 0;
+    bool is_fluid = iris_hasFluid(vIn[0].blockId);
 
-    if (isWater) {
+    if (is_fluid) {
         float distF = 1.0 - smoothstep(0.2, 2.8, length(vOut.surfacePos));
         distF = 1.0 - (distF*distF);
         

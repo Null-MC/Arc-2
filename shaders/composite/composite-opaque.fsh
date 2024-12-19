@@ -9,6 +9,7 @@ uniform sampler2D mainDepthTex;
 uniform sampler2D solidDepthTex;
 
 uniform sampler2D texDeferredOpaque_Color;
+uniform sampler2D texDeferredOpaque_TexNormal;
 uniform usampler2D texDeferredOpaque_Data;
 uniform usampler2D texDeferredTrans_Data;
 
@@ -124,8 +125,9 @@ void main() {
     vec3 localViewDir = normalize(localPos);
 
     if (albedo.a > EPSILON) {
+        vec3 texNormalData = texelFetch(texDeferredOpaque_TexNormal, iuv, 0).rgb;
         uvec4 data = texelFetch(texDeferredOpaque_Data, iuv, 0);
-        uint data_trans_g = texelFetch(texDeferredTrans_Data, iuv, 0).g;
+        uint trans_blockId = texelFetch(texDeferredTrans_Data, iuv, 0).a;
 
         // #if defined EFFECT_SSAO_ENABLED || defined EFFECT_SSGI_ENABLED
         //     vec4 gi_ao = textureLod(TEX_SSGIAO, uv, 0);
@@ -135,44 +137,33 @@ void main() {
 
         albedo.rgb = RgbToLinear(albedo.rgb);
 
-        float data_trans_water = unpackUnorm4x8(data_trans_g).b;
+        vec3 localTexNormal = normalize(texNormalData * 2.0 - 1.0);
+
+        // vec4 data_r = unpackUnorm4x8(data.r);
+        // vec3 localNormal = normalize(data_r.xyz * 2.0 - 1.0);
+
+        vec4 data_g = unpackUnorm4x8(data.g);
+        float roughness = data_g.x;
+        float f0_metal = data_g.y;
+        float emission = data_g.z;
+        float sss = data_g.w;
+
+        vec4 data_b = unpackUnorm4x8(data.b);
+        vec2 lmCoord = data_b.rg;
+        float texOcclusion = data_b.b;
+
+        // float data_trans_water = unpackUnorm4x8(data_trans_a).b;
+        bool is_trans_fluid = iris_hasFluid(trans_blockId);
+
         bool isWet = isEyeInWater == 1
-            ? depthTrans >= depthOpaque
-            : depthTrans < depthOpaque && data_trans_water > 0.5;
+            ? (depthTrans >= depthOpaque)
+            : (depthTrans < depthOpaque && is_trans_fluid);
 
         if (isWet) albedo.rgb = pow(albedo.rgb, vec3(1.8));
 
-        vec4 data_r = unpackUnorm4x8(data.r);
-        vec3 localNormal = normalize(data_r.xyz * 2.0 - 1.0);
-        int material = int(data_r.w * 255.0 + 0.5);
+        lmCoord = lmCoord*lmCoord*lmCoord;
 
-        vec4 data_g = unpackUnorm4x8(data.g);
-        vec2 lmCoord = data_g.xy;
-        lmCoord = lmCoord*lmCoord*lmCoord; //pow(lmCoord, vec2(3.0));
-        // lmCoord = lmCoord*lmCoord;
-
-        vec4 data_b = unpackUnorm4x8(data.b);
-        vec3 localTexNormal = normalize(data_b.xyz * 2.0 - 1.0);
-        float texOcclusion = data_b.a;
-
-        vec4 data_a = unpackUnorm4x8(data.a);
-        float roughness = data_a.x;
-        float f0_metal = data_a.y;
-        float emission = data_a.z;
-        float sss = data_a.w;
-
-        // albedo.rgb = max(localTexNormal, 0.0);
-
-        // TODO: bitfieldExtract()
-        // float sss = 0.0;//bitfieldExtract(material, 2, 1) != 0 ? 1.0 : 0.0;
-        // float emission = bitfieldExtract(material, 3, 1) != 0 ? 1.0 : 0.0;
-        // emission *= lmCoord.x;
-
-        // albedo.rgb = vec3(material / 255.0);
-        // albedo.rgb = vec3(emission, sss, 0.0);
-
-        // vec3 localLightDir = normalize(mat3(playerModelViewInverse) * shadowLightPosition);
-        // float NoLm = step(0.0, dot(localLightDir, localTexNormal));
+        float roughL = roughness*roughness;
 
         vec3 H = normalize(Scene_LocalLightDir + -localViewDir);
 
@@ -180,14 +171,10 @@ void main() {
         float LoHm = max(dot(Scene_LocalLightDir, H), 0.0);
         float NoVm = max(dot(localTexNormal, -localViewDir), 0.0);
 
-        // NoLm = mix(NoLm, 1.0, sss);
-
         vec4 shadow_sss = vec4(vec3(1.0), 0.0);
         #ifdef SHADOWS_ENABLED
             shadow_sss = textureLod(TEX_SHADOW, uv, 0);
         #endif
-
-        float roughL = roughness*roughness;
 
         vec3 view_F = material_fresnel(albedo.rgb, f0_metal, roughL, NoVm, isWet);
         // vec3 sky_F = material_fresnel(albedo.rgb, f0_metal, roughL, NoLm, isWet);
@@ -199,7 +186,7 @@ void main() {
 
         // float worldY = localPos.y + cameraPos.y;
         // float transmitF = mix(VL_Transmit, VL_RainTransmit, rainStrength);
-        // float lightAtmosDist = max(SEA_LEVEL + 200.0 - worldY, 0.0) / Scene_LocalLightDir.y;
+        // float lightAtmosDist = max(SKY_SEA_LEVEL + 200.0 - worldY, 0.0) / Scene_LocalLightDir.y;
         // skyLight *= exp2(-lightAtmosDist * transmitF);
 
         float occlusion = texOcclusion;

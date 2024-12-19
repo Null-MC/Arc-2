@@ -8,6 +8,7 @@ uniform sampler2D texFinalOpaque;
 uniform sampler2D mainDepthTex;
 uniform sampler2D solidDepthTex;
 uniform sampler2D texDeferredTrans_Color;
+uniform sampler2D texDeferredTrans_TexNormal;
 uniform usampler2D texDeferredTrans_Data;
 
 uniform sampler2D texParticles;
@@ -62,7 +63,8 @@ void main() {
     vec4 colorTrans = texelFetch(texDeferredTrans_Color, iuv, 0);
 
     if (colorTrans.a > EPSILON) {
-        uvec3 data = texelFetch(texDeferredTrans_Data, iuv, 0).rgb;
+        vec3 texNormalData = texelFetch(texDeferredTrans_TexNormal, iuv, 0).rgb;
+        uvec4 data = texelFetch(texDeferredTrans_Data, iuv, 0);
         float depthOpaque = texelFetch(solidDepthTex, iuv, 0).r;
         float depthTrans = texelFetch(mainDepthTex, iuv, 0).r;
 
@@ -82,16 +84,23 @@ void main() {
 
         colorTrans.rgb = RgbToLinear(colorTrans.rgb);
 
-        vec4 normalMaterial = unpackUnorm4x8(data.r);
-        vec3 localGeoNormal = normalize(normalMaterial.xyz * 2.0 - 1.0);
-        int material = int(normalMaterial.w * 255.0 + 0.5);
+        vec3 localTexNormal = normalize(texNormalData * 2.0 - 1.0);
 
-        vec2 lmCoord = unpackUnorm4x8(data.g).xy;
-        lmCoord = pow(lmCoord, vec2(3.0));
+        vec3 data_r = unpackUnorm4x8(data.r).rgb;
+        vec3 localGeoNormal = normalize(data_r * 2.0 - 1.0);
 
-        vec3 localTexNormal = normalize(unpackUnorm4x8(data.b).xyz * 2.0 - 1.0);
+        // data_g
 
-        bool isWater = bitfieldExtract(material, 6, 1) != 0;
+        vec3 data_b = unpackUnorm4x8(data.b).xyz;
+        vec2 lmCoord = data_b.xy;
+        float occlusion = data_b.b;
+
+        uint blockId = data.a;
+
+        lmCoord = lmCoord*lmCoord*lmCoord;
+
+        // bool isWater = bitfieldExtract(material, 6, 1) != 0;
+        bool is_fluid = iris_hasFluid(blockId);
         float emission = 0.0; // (material & 8) != 0 ? 1.0 : 0.0;
 
         vec3 shadowSample = vec3(1.0);
@@ -127,7 +136,7 @@ void main() {
             + (EMISSION_BRIGHTNESS * emission)
             + 0.0016;
 
-        if (isWater) {
+        if (is_fluid) {
             float viewDist = length(localPosTrans);
             vec3 localViewDir = localPosTrans / viewDist;
             vec3 reflectLocalDir = reflect(localViewDir, localTexNormal);
@@ -197,7 +206,7 @@ void main() {
         // float fogF = smoothstep(fogStart, fogEnd, viewDist);
         // finalColor = mix(finalColor, vec4(fogColor.rgb, 1.0), fogF);
 
-        if (isWater) {
+        if (is_fluid) {
             colorFinal = mix(colorFinal, finalColor.rgb, finalColor.a);
         }
         else {

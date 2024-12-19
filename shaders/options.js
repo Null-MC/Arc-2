@@ -1,6 +1,7 @@
 function setupOptions() {
     let screen_Sky = new Screen("Sky")
         .add(asString("SKY_SUN_ANGLE", "-20", "-10", "0", "10", "20"))
+        .add(asString("SKY_SEA_LEVEL", "60", "0", "10", "20", "30", "40", "50", "60", "70", "80", "90"))
         .build();
 
     let screen_Water = new Screen("Water")
@@ -15,7 +16,7 @@ function setupOptions() {
         .build();
 
     let screen_Material = new Screen("Material")
-        .add(asString("MATERIAL_FORMAT", "0", "1", "2"))
+        .add(asString("MATERIAL_FORMAT", "1", "0", "1", "2"))
         .add(asBool("MATERIAL_SSR_ENABLED", true))
         .build();
 
@@ -25,7 +26,7 @@ function setupOptions() {
         .build();
 
     let screen_Voxel = new Screen("Voxels")
-        .add(asString("VOXEL_SIZE", "64", "128", "256", "512"))
+        .add(asString("VOXEL_SIZE", "128", "64", "128", "256"))
         .add(screen_Voxel_LPV)
         .build();
 

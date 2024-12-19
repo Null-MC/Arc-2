@@ -53,7 +53,6 @@ void main() {
 
     ivec2 iuv = ivec2(uv * screenSize);
 
-    uint data_g = texelFetch(texDeferredTrans_Data, iuv, 0).g;
     float depthOpaque = textureLod(solidDepthTex, uv, 0).r;
     float depthTrans = textureLod(mainDepthTex, uv, 0).r;
 
@@ -61,6 +60,8 @@ void main() {
     vec3 transmittance = vec3(1.0);
 
     if (depthTrans < depthOpaque) {
+        uint blockId = texelFetch(texDeferredTrans_Data, iuv, 0).a;
+
         #ifdef EFFECT_TAA_ENABLED
             float dither = InterleavedGradientNoiseTime(gl_FragCoord.xy);
         #else
@@ -69,8 +70,8 @@ void main() {
         
         float lightStrength = Scene_LocalSunDir.y > 0.0 ? SUN_BRIGHTNESS : MOON_BRIGHTNESS;
 
-        bool isWater = unpackUnorm4x8(data_g).z > 0.5
-            && isEyeInWater != 1;
+        bool is_trans_fluid = iris_hasFluid(blockId); //unpackUnorm4x8(data_g).z > 0.5
+        bool isWater = is_trans_fluid && isEyeInWater != 1;
 
         float phase_g;
         vec3 scatterF, transmitF;
@@ -146,7 +147,7 @@ void main() {
                 sampleDensity = stepDist * GetSkyDensity(sampleLocalPos);
 
                 float worldY = sampleLocalPos.y + cameraPos.y;
-                float lightAtmosDist = max(SEA_LEVEL + 200.0 - worldY, 0.0) / Scene_LocalLightDir.y;
+                float lightAtmosDist = max(SKY_SEA_LEVEL + 200.0 - worldY, 0.0) / Scene_LocalLightDir.y;
                 sampleColor *= exp2(-0.16 * lightAtmosDist * transmitF);
             }
 

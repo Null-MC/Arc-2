@@ -1,7 +1,7 @@
 #version 430 core
 #extension GL_AMD_vertex_shader_layer : require
 
-layout(location = 6) in int blockMask;
+// layout(location = 6) in int blockMask;
 
 out VertexData2 {
     vec4 color;
@@ -13,7 +13,7 @@ out VertexData2 {
 } vOut;
 
 #ifdef LPV_ENABLED
-    layout(r8ui) uniform writeonly uimage3D imgVoxelBlock;
+    layout(r32ui) uniform writeonly uimage3D imgVoxelBlock;
 #endif
 
 #include "/settings.glsl"
@@ -30,9 +30,10 @@ void iris_sendParameters(in VertexData data) {
     vOut.color = data.color;
     vOut.uv = data.uv;
 
-    bool isWater = bitfieldExtract(blockMask, 6, 1) != 0;
+    // bool isWater = bitfieldExtract(blockMask, 6, 1) != 0;
+    bool is_trans_fluid = iris_hasFluid(data.blockId);
 
-    if (isWater) {
+    if (is_trans_fluid) {
         vOut.color = vec4(1.0);
 
         // const float lmcoord_y = 1.0;
@@ -60,13 +61,7 @@ void iris_sendParameters(in VertexData data) {
         vec3 voxelPos = GetVoxelPosition(localPos);
 
         if (IsInVoxelBounds(voxelPos)) {
-            bool isFullBlock = bitfieldExtract(blockMask, 0, 1) != 0;
-            bool isEmissive = bitfieldExtract(blockMask, 3, 1) != 0;
-
-            uint blockId = isFullBlock ? 1u : 0u;
-            if (isEmissive) blockId = 2u;
-
-            imageStore(imgVoxelBlock, ivec3(voxelPos), uvec4(blockId));
+            imageStore(imgVoxelBlock, ivec3(voxelPos), uvec4(data.blockId));
         }
     #endif
 }

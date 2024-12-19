@@ -1,7 +1,8 @@
 #version 430
 
 layout(location = 0) out vec4 outColor;
-layout(location = 1) out uvec4 outData;
+layout(location = 1) out vec4 outTexNormal;
+layout(location = 2) out uvec4 outData;
 
 in VertexData2 {
     vec2 uv;
@@ -11,7 +12,7 @@ in VertexData2 {
     vec3 localOffset;
     vec3 localNormal;
     vec4 localTangent;
-    flat int material;
+    flat uint blockId;
 
     #if defined RENDER_TRANSLUCENT && defined WATER_TESSELLATION_ENABLED
         vec3 surfacePos;
@@ -69,7 +70,8 @@ void iris_emitFragment() {
 
         float roughness = 0.92;
         float f0_metal = 0.0;
-        float emission = bitfieldExtract(vIn.material, 3, 1) != 0 ? 1.0 : 0.0;
+        // float emission = bitfieldExtract(vIn.material, 3, 1) != 0 ? 1.0 : 0.0;
+        float emission = iris_getEmission(vIn.blockId);
         float porosity = 0.0;
         float sss = 0.0;
 
@@ -83,11 +85,11 @@ void iris_emitFragment() {
         localTexNormal = normalize(TBN * localTexNormal);
     #endif
 
-    bool isWater = false;
     #ifdef RENDER_TRANSLUCENT
-        isWater = bitfieldExtract(vIn.material, 6, 1) != 0;
+        // isWater = bitfieldExtract(vIn.material, 6, 1) != 0;
+        bool is_fluid = iris_hasFluid(vIn.blockId);
 
-        if (isWater) {
+        if (is_fluid) {
             #ifdef WATER_WAVES_ENABLED
                 vec3 waveOffset = GetWaveHeight(vIn.localPos + cameraPos, lmcoord.y, timeCounter, WaterWaveOctaveMax);
 
@@ -123,8 +125,10 @@ void iris_emitFragment() {
 
     outColor = albedo;
 
-    outData.r = packUnorm4x8(vec4(localGeoNormal * 0.5 + 0.5, (vIn.material + 0.5) / 255.0));
-    outData.g = packUnorm4x8(vec4(lmcoord, (isWater ? 1.0 : 0.0), 0.0));
-    outData.b = packUnorm4x8(vec4((localTexNormal * 0.5 + 0.5), occlusion));
-    outData.a = packUnorm4x8(vec4(roughness, f0_metal, emission, sss));
+    outTexNormal = vec4((localTexNormal * 0.5 + 0.5), 1.0);
+
+    outData.r = packUnorm4x8(vec4((localGeoNormal * 0.5 + 0.5), 0.0));
+    outData.g = packUnorm4x8(vec4(roughness, f0_metal, emission, sss));
+    outData.b = packUnorm4x8(vec4(lmcoord, occlusion, 0.0));
+    outData.a = vIn.blockId;
 }

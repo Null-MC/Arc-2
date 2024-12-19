@@ -5,7 +5,7 @@
 const float BLOCKLIGHT_TEMP = 3400.0;
 
 const float VOXEL_FRUSTUM_OFFSET = 90.0;
-// #define LPV_PER_FACE_LIGHTING
+#define LPV_PER_FACE_LIGHTING
 
 const float ATMOSPHERE_MAX = 2200.0;
 const float SUN_SIZE = 2.2;

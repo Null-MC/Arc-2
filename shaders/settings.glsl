@@ -4,6 +4,8 @@
 
 const float BLOCKLIGHT_TEMP = 3400.0;
 
+const float VOXEL_FRUSTUM_OFFSET = 90.0;
+
 const float SEA_LEVEL = 66.0;
 const float ATMOSPHERE_MAX = 2200.0;
 const float SUN_SIZE = 2.2;

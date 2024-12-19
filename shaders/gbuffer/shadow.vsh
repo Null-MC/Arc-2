@@ -16,6 +16,7 @@ out VertexData2 {
     layout(r8ui) uniform writeonly uimage3D imgVoxelBlock;
 #endif
 
+#include "/settings.glsl"
 #include "/lib/common.glsl"
 #include "/lib/voxel/voxel_common.glsl"
 

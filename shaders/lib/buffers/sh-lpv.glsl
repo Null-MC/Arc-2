@@ -1,10 +1,10 @@
 struct lpvShVoxel {  // 48
-    vec4 R;
-    vec4 G;
-    vec4 B;
+    f16vec4 R;
+    f16vec4 G;
+    f16vec4 B;
 };
 
-const lpvShVoxel voxel_empty = lpvShVoxel(vec4(0.0), vec4(0.0), vec4(0.0));
+const lpvShVoxel voxel_empty = lpvShVoxel(f16vec4(0.0), f16vec4(0.0), f16vec4(0.0));
 
 
 layout(binding = 1) buffer shLpvBuffer {

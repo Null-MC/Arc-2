@@ -20,5 +20,5 @@ float GetSkyDensity(const in vec3 localPos) {
     float p = mix(12.0, 4.0, rainStrength);
     sampleDensity = pow(1.0 - sampleDensity, p);
 
-    return sampleDensity;
+    return 0.2 * sampleDensity;
 }

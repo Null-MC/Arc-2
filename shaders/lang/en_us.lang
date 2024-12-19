@@ -14,6 +14,8 @@ value.MATERIAL_FORMAT.0=None
 value.MATERIAL_FORMAT.1=Lab-PBR
 value.MATERIAL_FORMAT.2=Old-PBR
 
+option.MATERIAL_SSR_ENABLED=Reflections
+
 option.VOXEL_SIZE=Size
 suffix.VOXEL_SIZE=^3
 

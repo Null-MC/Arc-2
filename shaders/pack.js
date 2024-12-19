@@ -409,8 +409,8 @@ function setupShader() {
     let shLpvRsmBuffer = null;
     let shLpvRsmBuffer_alt = null;
     if (Settings.Voxel.LPV.Enabled) {
-        // vec3[12] * Band[4] * VoxelBufferSize^3
-        let bufferSize = 12 * 4 * (Settings.Voxel.Size*Settings.Voxel.Size*Settings.Voxel.Size);
+        // f16vec4[16] * Band[3] * VoxelBufferSize^3
+        let bufferSize = 8 * 3 * (Settings.Voxel.Size*Settings.Voxel.Size*Settings.Voxel.Size);
 
         shLpvBuffer = new Buffer(bufferSize)
             .clear(false)

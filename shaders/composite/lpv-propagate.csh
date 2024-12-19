@@ -1,4 +1,5 @@
 #version 430 core
+#extension GL_NV_gpu_shader5: enable
 
 layout (local_size_x = 8, local_size_y = 8, local_size_z = 8) in;
 
@@ -134,6 +135,18 @@ mat3 neighbourOrientations[6] = {
 	}
 #endif
 
+ivec3 GetVoxelFrameOffset() {
+    vec3 viewDir = playerModelViewInverse[2].xyz;
+    vec3 posNow = GetVoxelCenter(cameraPos, viewDir);
+
+    vec3 viewDirPrev = vec3(lastPlayerModelView[0].z, lastPlayerModelView[1].z, lastPlayerModelView[2].z);
+    vec3 posPrev = GetVoxelCenter(lastCameraPos, viewDirPrev);
+
+    vec3 posLast = posNow + (lastCameraPos - cameraPos) - (posPrev - posNow);
+
+    return ivec3(posNow) - ivec3(posLast);
+}
+
 void main() {
 	ivec3 cellIndex = ivec3(gl_GlobalInvocationID);
 	bool altFrame = frameCounter % 2 == 1;
@@ -144,7 +157,14 @@ void main() {
 		lpvShVoxel sh_rsm_voxel = voxel_empty;
 	#endif
 
-	ivec3 cellIndexPrev = cellIndex + ivec3(floor(cameraPos) - floor(lastCameraPos));
+	ivec3 voxelFrameOffset = GetVoxelFrameOffset();
+	ivec3 cellIndexPrev = cellIndex + voxelFrameOffset;
+
+	// vec3 localPos = cellIndex - VoxelBufferCenter - fract(cameraPos) + 0.5;
+
+    vec3 viewDir = playerModelViewInverse[2].xyz;
+    vec3 voxelCenter = GetVoxelCenter(cameraPos, viewDir);
+    vec3 localPos = cellIndex - voxelCenter + 0.5;
 
 	uint blockId = imageLoad(imgVoxelBlock, cellIndex).r;
 
@@ -161,12 +181,17 @@ void main() {
 			uint neighborBlockId = imageLoad(imgVoxelBlock, cellIndex + curDir).r;
 
 			if (neighborBlockId == 2u) {
-				vec4 coeffs = dirToSH(vec3(-curDir)) / PI;
-				vec3 flux = 1000.0 * blackbody(BLOCKLIGHT_TEMP);
+				// vec3 lightColor = blackbody(BLOCKLIGHT_TEMP);
+				vec3 lightColor = hash33(floor(localPos + cameraPos + curDir));
+				lightColor = normalize(lightColor);
+				// lightColor = RgbToLinear(lightColor);
 
-				sh_voxel.R += coeffs * flux.r;
-				sh_voxel.G += coeffs * flux.g;
-				sh_voxel.B += coeffs * flux.b;
+				vec4 coeffs = dirToSH(vec3(-curDir)) / PI;
+				vec3 flux = 1000.0 * lightColor;
+
+				sh_voxel.R = f16vec4(sh_voxel.R + coeffs * flux.r);
+				sh_voxel.G = f16vec4(sh_voxel.G + coeffs * flux.g);
+				sh_voxel.B = f16vec4(sh_voxel.B + coeffs * flux.b);
 			}
 			else if (neighborBlockId == 0u) {
 				int neighbor_i = GetLpvIndex(neighbourIndex);
@@ -199,9 +224,9 @@ void main() {
 
 				vec4 f = (1.0/2.0) * curCosLobe;
 
-				sh_voxel.R += max(dot(neighbor_voxel.R, curDirSH), 0.0) * f;
-				sh_voxel.G += max(dot(neighbor_voxel.G, curDirSH), 0.0) * f;
-				sh_voxel.B += max(dot(neighbor_voxel.B, curDirSH), 0.0) * f;
+				sh_voxel.R = f16vec4(sh_voxel.R + max(dot(neighbor_voxel.R, curDirSH), 0.0) * f);
+				sh_voxel.G = f16vec4(sh_voxel.G + max(dot(neighbor_voxel.G, curDirSH), 0.0) * f);
+				sh_voxel.B = f16vec4(sh_voxel.B + max(dot(neighbor_voxel.B, curDirSH), 0.0) * f);
 
 				// sh_voxel.R += max(neighbor_voxel.R, 0.0) * f;
 				// sh_voxel.G += max(neighbor_voxel.G, 0.0) * f;
@@ -211,7 +236,7 @@ void main() {
 
 		#ifdef LPV_RSM_ENABLED
 			vec3 sample_color, sample_normal;
-			vec3 localPos = cellIndex - VoxelBufferCenter - fract(cameraPos) + 0.5;
+			// vec3 localPos = cellIndex - VoxelBufferCenter - fract(cameraPos) + 0.5;
 			sample_shadow(localPos, sample_color, sample_normal);
 
 	        vec3 skyPos = getSkyPosition(localPos);
@@ -222,19 +247,19 @@ void main() {
 			vec4 coeffs = dirToSH(sample_normal) / PI;
 			vec3 flux = exp2(15.0) * max(Scene_LocalSunDir.y, 0.0) * skyLight * sample_color;
 
-			sh_rsm_voxel.R += coeffs * flux.r;
-			sh_rsm_voxel.G += coeffs * flux.g;
-			sh_rsm_voxel.B += coeffs * flux.b;
+			sh_rsm_voxel.R = f16vec4(sh_rsm_voxel.R + coeffs * flux.r);
+			sh_rsm_voxel.G = f16vec4(sh_rsm_voxel.G + coeffs * flux.g);
+			sh_rsm_voxel.B = f16vec4(sh_rsm_voxel.B + coeffs * flux.b);
 
 			int rsm_i = GetLpvIndex(cellIndexPrev);
 			lpvShVoxel rsm_voxel_prev = altFrame ? SH_LPV_RSM[rsm_i] : SH_LPV_RSM_alt[rsm_i];
-			sh_rsm_voxel.R = mix(rsm_voxel_prev.R, sh_rsm_voxel.R, 0.02);
-			sh_rsm_voxel.G = mix(rsm_voxel_prev.G, sh_rsm_voxel.G, 0.02);
-			sh_rsm_voxel.B = mix(rsm_voxel_prev.B, sh_rsm_voxel.B, 0.02);
+			sh_rsm_voxel.R = f16vec4(mix(rsm_voxel_prev.R, sh_rsm_voxel.R, 0.02));
+			sh_rsm_voxel.G = f16vec4(mix(rsm_voxel_prev.G, sh_rsm_voxel.G, 0.02));
+			sh_rsm_voxel.B = f16vec4(mix(rsm_voxel_prev.B, sh_rsm_voxel.B, 0.02));
 
-			sh_voxel.R += sh_rsm_voxel.R;
-			sh_voxel.G += sh_rsm_voxel.G;
-			sh_voxel.B += sh_rsm_voxel.B;
+			sh_voxel.R = f16vec4(sh_voxel.R + sh_rsm_voxel.R);
+			sh_voxel.G = f16vec4(sh_voxel.G + sh_rsm_voxel.G);
+			sh_voxel.B = f16vec4(sh_voxel.B + sh_rsm_voxel.B);
 		#endif
 	}
 

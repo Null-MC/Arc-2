@@ -1,4 +1,5 @@
 #version 430 core
+#extension GL_NV_gpu_shader5: enable
 
 layout(location = 0) out vec4 outColor;
 
@@ -221,8 +222,6 @@ void main() {
         #ifdef LPV_ENABLED
             // vec3 voxelPos = GetVoxelPosition(localPos);
             vec3 voxelPos = GetVoxelPosition(localPos + 0.5*localTexNormal);
-            // TODO: make fade and not cutover!
-            //if (IsInVoxelBounds(voxelPos)) blockLighting = vec3(0.0);
 
             // vec3 voxelPos = GetVoxelPosition(localPos + 0.5*localTexNormal);
             skyLightDiffuse += sample_lpv_linear(voxelPos, localTexNormal) * SampleLightDiffuse(NoVm, 1.0, 1.0, roughL);
@@ -239,6 +238,11 @@ void main() {
         skyLightDiffuse += skyLight * sss_phase * max(shadow_sss.w, 0.0);// * (1.0 - NoLm);
 
         vec3 blockLighting = blackbody(BLOCKLIGHT_TEMP) * (BLOCKLIGHT_BRIGHTNESS * lmCoord.x);
+
+        #ifdef LPV_ENABLED
+            // TODO: make fade and not cutover!
+            if (IsInVoxelBounds(voxelPos)) blockLighting = vec3(0.0);
+        #endif
 
         vec3 diffuse = skyLightDiffuse + blockLighting + 0.0016;
 
@@ -278,10 +282,10 @@ void main() {
         //     //
         // }
 
-        #ifdef LPV_ENABLED
-            // vec3 voxelPos = GetVoxelPosition(localPos + 0.5*localTexNormal);
-            skyReflectColor += sample_lpv_linear(voxelPos, reflectLocalDir);
-        #endif
+        // #ifdef LPV_ENABLED
+        //     // vec3 voxelPos = GetVoxelPosition(localPos + 0.5*localTexNormal);
+        //     skyReflectColor += sample_lpv_linear(voxelPos, reflectLocalDir);
+        // #endif
 
         #ifdef MATERIAL_SSR_ENABLED
             float viewDist = length(localPos);

@@ -237,7 +237,7 @@ void main() {
         #endif
 
         diffuse *= 1.0 - f0_metal * (1.0 - roughL);
-        diffuse *= occlusion;
+        diffuse *= occlusion * 0.5 + 0.5;
 
         #ifdef ACCUM_ENABLED
             // specular += textureLod(altFrame ? texSpecularAccum_alt : texSpecularAccum, uv, 0).rgb;

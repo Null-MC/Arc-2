@@ -14,7 +14,7 @@ uniform sampler2D solidDepthTex;
 #include "/lib/taa_jitter.glsl"
 
 
-// const int EFFECT_TAA_MAX_ACCUM = 16;
+const float TAA_MAX_FRAMES = 8.0;
 
 vec3 encodePalYuv(vec3 rgb) {
     const mat3 m = mat3(
@@ -37,8 +37,6 @@ vec3 decodePalYuv(vec3 yuv) {
 vec3 getReprojectedClipPos(const in vec2 texcoord, const in float depthNow, const in vec3 velocity) {
     vec3 clipPos = vec3(texcoord, depthNow) * 2.0 - 1.0;
 
-    // jitter(clipPos.xy);
-
     vec3 viewPos = unproject(playerProjectionInverse, clipPos);
 
     vec3 localPos = mul3(playerModelViewInverse, viewPos);
@@ -48,8 +46,6 @@ vec3 getReprojectedClipPos(const in vec2 texcoord, const in float depthNow, cons
     vec3 viewPosPrev = mul3(lastPlayerModelView, localPosPrev);
 
     vec3 clipPosPrev = unproject(lastPlayerProjection, viewPosPrev);
-
-    // unjitter(clipPos);
 
     return clipPosPrev * 0.5 + 0.5;
 }
@@ -64,28 +60,17 @@ void main() {
     // TODO: add velocity buffer
     vec3 velocity = vec3(0.0); //textureLod(BUFFER_VELOCITY, uv, 0).xyz;
     vec2 uvLast = getReprojectedClipPos(uv, depth, velocity).xy;
-
-    // #ifdef EFFECT_TAA_SHARPEN
-        vec4 lastColor = sampleHistoryCatmullRom(texFinalPrevious, uvLast);
-    // #else
-    //     vec4 lastColor = textureLod(texFinalPrevious, uvLast, 0);
-    // #endif
+    vec4 lastColor = sampleHistoryCatmullRom(texFinalPrevious, uvLast);
 
     vec3 antialiased = lastColor.rgb;
-    // float mixRate = min(lastColor.a, 0.5);
-    float mixRate = clamp(lastColor.a, 0.02, 1.0);
-    // #ifdef EFFECT_TAA_ACCUM
-    //     mixRate = 0.0;
-    // #endif
-
-    // mixRate = 0.0; // WARN: FOR TESTING
+    float mixRate = clamp(lastColor.a, 0.0, TAA_MAX_FRAMES);
 
     if (clamp(uvLast, 0.0, 1.0) != uvLast)
-        mixRate = 1.0;
+        mixRate = 0.0;
     
     vec3 in0 = textureLod(texFinal, uv, 0).rgb;
 
-    antialiased = mix(antialiased * antialiased, in0 * in0, mixRate);
+    antialiased = mix(antialiased * antialiased, in0 * in0, 1.0 / (1.0 + mixRate));
     antialiased = sqrt(antialiased);
 
     vec2 pixelSize = 1.0 / screenSize;
@@ -113,35 +98,18 @@ void main() {
     vec3 minColor = min(min(min(in0, in1), min(in2, in3)), in4);
     vec3 maxColor = max(max(max(in0, in1), max(in2, in3)), in4);
 
-    // minColor = mix(minColor,
-    //    min(min(min(in5, in6), min(in7, in8)), minColor), 0.5);
-
-    // maxColor = mix(maxColor,
-    //    max(max(max(in5, in6), max(in7, in8)), maxColor), 0.5);
-
     minColor = min(min(min(in5, in6), min(in7, in8)), minColor);
     maxColor = max(max(max(in5, in6), max(in7, in8)), maxColor);
     
     vec3 preclamping = antialiased;
-    vec3 clamped = clamp(antialiased, minColor, maxColor);
-    // #ifdef EFFECT_TAA_ACCUM
-    //     antialiased = mix(antialiased, clamped, mixRate);
-    // #else
-        antialiased = clamped;
-    // #endif
-    
-    mixRate = 1.0 / (1.0 / mixRate + 1.0);
-    
+    vec3 antialiased = clamp(antialiased, minColor, maxColor);
+        
     vec3 diff = antialiased - preclamping;
     float clampAmount = dot(diff, diff);
-    
-    const float weightMax = 0.02;//1.0 / EFFECT_TAA_MAX_ACCUM;
-
-    mixRate += clampAmount * 0.02;
-    mixRate = clamp(mixRate, weightMax, 1.0);
+    mixRate *= 1.0 / (1.0 + clampAmount);
     
     antialiased = decodePalYuv(antialiased);
     
     outColor = vec4(antialiased, 1.0);
-    outColorPrev = vec4(antialiased, mixRate);
+    outColorPrev = vec4(antialiased, mixRate + 1.0);
 }

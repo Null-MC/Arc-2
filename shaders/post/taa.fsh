@@ -37,6 +37,8 @@ vec3 decodePalYuv(vec3 yuv) {
 vec3 getReprojectedClipPos(const in vec2 texcoord, const in float depthNow, const in vec3 velocity) {
     vec3 clipPos = vec3(texcoord, depthNow) * 2.0 - 1.0;
 
+    // jitter(clipPos.xy);
+
     vec3 viewPos = unproject(playerProjectionInverse, clipPos);
 
     vec3 localPos = mul3(playerModelViewInverse, viewPos);
@@ -47,13 +49,15 @@ vec3 getReprojectedClipPos(const in vec2 texcoord, const in float depthNow, cons
 
     vec3 clipPosPrev = unproject(lastPlayerProjection, viewPosPrev);
 
+    // unjitter(clipPos);
+
     return clipPosPrev * 0.5 + 0.5;
 }
 
 void main() {
     vec2 uv2 = uv;
 
-    uv2 += getJitterOffset(frameCounter);
+    // uv2 += getJitterOffset(frameCounter);
 
     float depth = textureLod(solidDepthTex, uv, 0).r;
 
@@ -131,9 +135,9 @@ void main() {
     vec3 diff = antialiased - preclamping;
     float clampAmount = dot(diff, diff);
     
-    const float weightMax = 0.1;//1.0 / EFFECT_TAA_MAX_ACCUM;
+    const float weightMax = 0.02;//1.0 / EFFECT_TAA_MAX_ACCUM;
 
-    mixRate += clampAmount;// * 4.0;
+    mixRate += clampAmount * 0.02;
     mixRate = clamp(mixRate, weightMax, 1.0);
     
     antialiased = decodePalYuv(antialiased);

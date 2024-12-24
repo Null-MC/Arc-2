@@ -15,12 +15,15 @@ float maxOf(const in vec2 vec) {return max(vec[0], vec[1]);}
 float maxOf(const in vec3 vec) {return max(max(vec[0], vec[1]), vec[2]);}
 
 float minOf(const in vec2 vec) {return min(vec[0], vec[1]);}
+float minOf(const in vec3 vec) {return min(min(vec[0], vec[1]), vec[2]);}
 
 int sumOf(ivec3 vec) {return vec.x + vec.y + vec.z;}
 
 vec3 LinearToRgb(const in vec3 color) {return pow(color, vec3(1.0 / 2.2));}
 
 vec3 RgbToLinear(const in vec3 color) {return pow(color, vec3(2.2));}
+
+float lengthSq(const in vec3 vec) {return dot(vec, vec);}
 
 float luminance(const in vec3 color) {
    return dot(color, luma_factor);

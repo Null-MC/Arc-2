@@ -18,6 +18,8 @@ function setupOptions() {
     let screen_Material = new Screen("Material")
         .add(asString("MATERIAL_FORMAT", "1", "0", "1", "2"))
         .add(asBool("MATERIAL_SSR_ENABLED", true))
+        .add(EMPTY)
+        .add(asBool("MATERIAL_ROUGH_REFLECT_NOISE", false))
         .build();
 
     let screen_Voxel_LPV = new Screen("LPV")

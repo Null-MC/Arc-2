@@ -59,6 +59,11 @@ vec4 GetReflectionPosition(const in sampler2D depthtex, const in vec3 clipPos, c
             continue;
         }
 
+        if (sampleDepth > clipPos.z && screenRay.z < 0.0) {
+            lastTracePos = tracePos;
+            continue;
+        }
+
         lastVisPos = tracePos;
         alpha = 1.0;
         break;
@@ -86,6 +91,11 @@ vec4 GetReflectionPosition(const in sampler2D depthtex, const in vec3 clipPos, c
         float traceDepthL = linearizeDepth(tracePos.z, nearPlane, farPlane);
 
         if (traceDepthL < sampleDepthL + 0.002) {
+            lastTracePos = tracePos;
+            continue;
+        }
+
+        if (sampleDepth > clipPos.z && screenRay.z < 0.0) {
             lastTracePos = tracePos;
             continue;
         }

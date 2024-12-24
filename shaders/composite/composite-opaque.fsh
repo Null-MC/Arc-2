@@ -17,6 +17,8 @@ uniform sampler2D texSkyView;
 uniform sampler2D texSkyTransmit;
 uniform sampler2D texSkyIrradiance;
 
+uniform sampler3D texFogNoise;
+
 uniform sampler2D TEX_SHADOW;
 
 #ifdef MATERIAL_SSR_ENABLED
@@ -66,17 +68,21 @@ uniform sampler2D TEX_SHADOW;
 #include "/lib/sky/view.glsl"
 #include "/lib/sky/sun.glsl"
 #include "/lib/sky/stars.glsl"
+#include "/lib/sky/transmittance.glsl"
+#include "/lib/sky/clouds.glsl"
 
 // #include "/lib/light/sky.glsl"
 #include "/lib/light/volumetric.glsl"
 
 #ifdef MATERIAL_SSR_ENABLED
-    #include "/lib/ssr.glsl"
+    #include "/lib/effects/ssr.glsl"
+#endif
+
+#if defined LPV_ENABLED || defined RT_ENABLED
+    #include "/lib/voxel/voxel_common.glsl"
 #endif
 
 #ifdef LPV_ENABLED
-    #include "/lib/voxel/voxel_common.glsl"
-
     #include "/lib/lpv/lpv_common.glsl"
     #include "/lib/lpv/lpv_sample.glsl"
 #endif
@@ -85,21 +91,7 @@ uniform sampler2D TEX_SHADOW;
     #include "/lib/taa_jitter.glsl"
 #endif
 
-
-void randomize_reflection(inout vec3 reflectRay, const in vec3 normal, const in float roughL) {
-    #ifdef EFFECT_TAA_ENABLED
-        vec3 seed = vec3(gl_FragCoord.xy, 1.0 + frameCounter);
-    #else
-        vec3 seed = vec3(gl_FragCoord.xy, 1.0);
-    #endif
-
-    vec3 randomVec = normalize(hash33(seed) * 2.0 - 1.0);
-    if (dot(randomVec, normal) <= 0.0) randomVec = -randomVec;
-
-    float roughScatterF = 0.25 * (roughL*roughL);
-    reflectRay = mix(reflectRay, randomVec, roughScatterF);
-    reflectRay = normalize(reflectRay);
-}
+#include "/lib/composite-shared.glsl"
 
 
 void main() {
@@ -176,18 +168,9 @@ void main() {
             shadow_sss = textureLod(TEX_SHADOW, uv, 0);
         #endif
 
-        vec3 view_F = material_fresnel(albedo.rgb, f0_metal, roughL, NoVm, isWet);
-        // vec3 sky_F = material_fresnel(albedo.rgb, f0_metal, roughL, NoLm, isWet);
-
-        vec3 skyPos = getSkyPosition(localPos);
-        vec3 sunTransmit = getValFromTLUT(texSkyTransmit, skyPos, Scene_LocalSunDir);
-        vec3 moonTransmit = getValFromTLUT(texSkyTransmit, skyPos, -Scene_LocalSunDir);
-        vec3 skyLight = SUN_BRIGHTNESS * sunTransmit + MOON_BRIGHTNESS * moonTransmit;
-
-        // float worldY = localPos.y + cameraPos.y;
-        // float transmitF = mix(VL_Transmit, VL_RainTransmit, rainStrength);
-        // float lightAtmosDist = max(SKY_SEA_LEVEL + 200.0 - worldY, 0.0) / Scene_LocalLightDir.y;
-        // skyLight *= exp2(-lightAtmosDist * transmitF);
+        vec3 cloudPos = (cloudHeight-cameraPos.y-localPos.y) / Scene_LocalLightDir.y * Scene_LocalLightDir + localPos + cameraPos;
+        float cloudDensity = SampleCloudDensity(cloudPos);
+        shadow_sss.rgb *= max(1.0 - 0.4*cloudDensity, 0.0);
 
         float occlusion = texOcclusion;
         #if defined EFFECT_SSAO_ENABLED //&& !defined ACCUM_ENABLED
@@ -195,26 +178,38 @@ void main() {
             occlusion *= gi_ao.a;
         #endif
 
+        vec3 view_F = material_fresnel(albedo.rgb, f0_metal, roughL, NoVm, isWet);
+        // vec3 sky_F = material_fresnel(albedo.rgb, f0_metal, roughL, NoLm, isWet);
+
+        // vec3 skyPos = getSkyPosition(localPos);
+        // vec3 sunTransmit = getValFromTLUT(texSkyTransmit, skyPos, Scene_LocalSunDir);
+        // vec3 moonTransmit = getValFromTLUT(texSkyTransmit, skyPos, -Scene_LocalSunDir);
+        // vec3 skyLight = SUN_BRIGHTNESS * sunTransmit + MOON_BRIGHTNESS * moonTransmit;
+        // vec3 skyLight = GetSkyBrightness(localPos);
+        vec3 sunTransmit, moonTransmit;
+        GetSkyLightTransmission(localPos, sunTransmit, moonTransmit);
+
+        // float worldY = localPos.y + cameraPos.y;
+        // float transmitF = mix(VL_Transmit, VL_RainTransmit, rainStrength);
+        // float lightAtmosDist = max(SKY_SEA_LEVEL + 200.0 - worldY, 0.0) / Scene_LocalLightDir.y;
+        // skyLight *= exp2(-lightAtmosDist * transmitF);
+
+        vec3 skyLight = SUN_BRIGHTNESS * sunTransmit + MOON_BRIGHTNESS * moonTransmit;
         vec3 skyLightDiffuse = NoLm * skyLight * shadow_sss.rgb;
         skyLightDiffuse *= SampleLightDiffuse(NoVm, NoLm, LoHm, roughL);
 
-        #ifdef ACCUM_ENABLED
-            bool altFrame = (frameCounter % 2) == 1;
-            vec3 accumDiffuse = textureLod(altFrame ? texDiffuseAccum_alt : texDiffuseAccum, uv, 0).rgb;
-            skyLightDiffuse += accumDiffuse * SampleLightDiffuse(NoVm, 1.0, 1.0, roughL);
-        #elif defined EFFECT_SSGI_ENABLED
+        #if defined EFFECT_SSGI_ENABLED && !defined ACCUM_ENABLED
             skyLightDiffuse += gi_ao.rgb;
         #endif
 
-        #ifdef LPV_ENABLED
-            // vec3 voxelPos = GetVoxelPosition(localPos);
-            vec3 voxelPos = localPos - 0.25*localGeoNormal + 0.75*localTexNormal;
-            // vec3 voxelPos = localPos + 0.5*localGeoNormal;
-            // vec3 voxelPos = localPos + 0.5*localTexNormal;
-            voxelPos = GetVoxelPosition(voxelPos);
+        #if defined LPV_ENABLED || defined RT_ENABLED
+            vec3 voxelPos = GetVoxelPosition(localPos);
+        #endif
 
-            // vec3 voxelPos = GetVoxelPosition(localPos + 0.5*localTexNormal);
-            skyLightDiffuse += sample_lpv_linear(voxelPos, localTexNormal) * SampleLightDiffuse(NoVm, 1.0, 1.0, roughL);
+        #ifdef LPV_ENABLED
+            vec3 voxelSamplePos = voxelPos - 0.25*localGeoNormal + 0.75*localTexNormal;
+
+            skyLightDiffuse += sample_lpv_linear(voxelSamplePos, localTexNormal) * SampleLightDiffuse(NoVm, 1.0, 1.0, roughL);
         #endif
 
         vec2 skyIrradianceCoord = DirectionToUV(localTexNormal);
@@ -229,19 +224,24 @@ void main() {
 
         vec3 blockLighting = blackbody(BLOCKLIGHT_TEMP) * (BLOCKLIGHT_BRIGHTNESS * lmCoord.x);
 
-        #ifdef LPV_ENABLED
+        #if defined LPV_ENABLED || defined RT_ENABLED
             // TODO: make fade and not cutover!
             if (IsInVoxelBounds(voxelPos)) blockLighting = vec3(0.0);
         #endif
 
         vec3 diffuse = skyLightDiffuse + blockLighting + 0.0016 * occlusion;
 
-        // #ifdef ACCUM_ENABLED
-        //     bool altFrame = (frameCounter % 2) == 1;
-        //     diffuse += textureLod(altFrame ? texDiffuseAccum_alt : texDiffuseAccum, uv, 0).rgb;
-        // #endif
+        #ifdef ACCUM_ENABLED
+            bool altFrame = (frameCounter % 2) == 1;
+            diffuse += textureLod(altFrame ? texDiffuseAccum_alt : texDiffuseAccum, uv, 0).rgb;
+        #endif
 
         diffuse *= 1.0 - f0_metal * (1.0 - roughL);
+        diffuse *= occlusion;
+
+        #ifdef ACCUM_ENABLED
+            // specular += textureLod(altFrame ? texSpecularAccum_alt : texSpecularAccum, uv, 0).rgb;
+        #endif
 
         #if MATERIAL_EMISSION_POWER != 1
             diffuse += pow(emission, MATERIAL_EMISSION_POWER) * EMISSION_BRIGHTNESS;
@@ -249,15 +249,16 @@ void main() {
             diffuse += emission * EMISSION_BRIGHTNESS;
         #endif
 
-        // float viewDist = length(localPosTrans);
-        // vec3 localViewDir = localPosTrans / viewDist;
-
+        // reflections
         vec3 reflectLocalDir = reflect(localViewDir, localTexNormal);
 
-        randomize_reflection(reflectLocalDir, localTexNormal, roughness);
+        #ifdef MATERIAL_ROUGH_REFLECT_NOISE
+            randomize_reflection(reflectLocalDir, localTexNormal, roughness);
+        #endif
 
-        vec3 reflect_skyPos = getSkyPosition(vec3(0.0));
-        vec3 skyReflectColor = lmCoord.y * SKY_LUMINANCE * getValFromSkyLUT(texSkyView, reflect_skyPos, reflectLocalDir, Scene_LocalSunDir);
+        // vec3 skyReflectColor = GetSkyColor(vec3(0.0), reflectLocalDir, shadow_sss.rgb, lmCoord.y);
+        vec3 skyPos = getSkyPosition(vec3(0.0));
+        vec3 skyReflectColor = lmCoord.y * SKY_LUMINANCE * getValFromSkyLUT(texSkyView, skyPos, reflectLocalDir, Scene_LocalSunDir);
 
         vec3 reflectSun = SUN_LUMINANCE * sun(reflectLocalDir, Scene_LocalSunDir) * sunTransmit;
         vec3 reflectMoon = MOON_LUMINANCE * moon(reflectLocalDir, -Scene_LocalSunDir) * moonTransmit;
@@ -317,6 +318,7 @@ void main() {
 
             vec3 starViewDir = getStarViewDir(localViewDir);
             vec3 starLight = STAR_LUMINANCE * GetStarLight(starViewDir);
+            starLight *= step(sunLum + moonLum, EPSILON);
 
             vec3 skyTransmit = getValFromTLUT(texSkyTransmit, skyPos, localViewDir);
 

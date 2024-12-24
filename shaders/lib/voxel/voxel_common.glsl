@@ -13,6 +13,11 @@ vec3 GetVoxelPosition(const in vec3 position) {
     return position + GetVoxelCenter(cameraPos, viewDir);
 }
 
+vec3 GetVoxelLocalPos(vec3 voxelPos) {
+    vec3 viewDir = playerModelViewInverse[2].xyz;
+    return voxelPos - GetVoxelCenter(cameraPos, viewDir);
+}
+
 bool IsInVoxelBounds(const in ivec3 voxelPos) {
     return clamp(voxelPos, 0, VOXEL_SIZE-1) == voxelPos;
 }

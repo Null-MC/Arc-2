@@ -1,18 +1,21 @@
 // #define DEBUG_WHITE_WORLD
 
 #define MATERIAL_EMISSION_POWER 2.2
+// #define LPV_PER_FACE_LIGHTING
+#define MATERIAL_ROUGH_REFRACT
+#define CLOUDS_ENABLED
+
 
 const float BLOCKLIGHT_TEMP = 3400.0;
 
-const float VOXEL_FRUSTUM_OFFSET = 90.0;
-#define LPV_PER_FACE_LIGHTING
+// const float VOXEL_FRUSTUM_OFFSET = 90.0;
 
 const float ATMOSPHERE_MAX = 2200.0;
 const float SUN_SIZE = 2.2;
 const float MOON_SIZE = 3.4;
 
 const float SUN_LUMINANCE = 4000.0;
-const float EMISSION_BRIGHTNESS = 100.0;
+const float EMISSION_BRIGHTNESS = 80.0;
 const float MOON_LUMINANCE = 0.16;
 const float STAR_LUMINANCE = 0.10;
 const float SKY_LUMINANCE = 32.0;

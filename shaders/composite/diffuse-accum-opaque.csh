@@ -21,6 +21,10 @@ uniform sampler2D texDiffuseAccumPos;
 uniform sampler2D texDiffuseAccumPos_alt;
 uniform sampler2D texSSGIAO;
 
+#ifdef RT_ENABLED
+    uniform sampler2D texDiffuseRT;
+#endif
+
 #include "/settings.glsl"
 #include "/lib/common.glsl"
 #include "/lib/depth.glsl"
@@ -144,6 +148,10 @@ void main() {
     if (distance(localPosPrev, localPosLast) > offsetThreshold) previous.a = 0.0;
 
     vec3 diffuse = sampleSharedBuffer(depthL);
+
+    #ifdef RT_ENABLED
+        diffuse += textureLod(texDiffuseRT, uv, 0).rgb;
+    #endif
 
     // TODO: add RT diffuse lighting
 

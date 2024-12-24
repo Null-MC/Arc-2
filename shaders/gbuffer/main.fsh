@@ -71,7 +71,7 @@ void iris_emitFragment() {
         float roughness = 0.92;
         float f0_metal = 0.0;
         // float emission = bitfieldExtract(vIn.material, 3, 1) != 0 ? 1.0 : 0.0;
-        float emission = iris_getEmission(vIn.blockId);
+        float emission = iris_getEmission(vIn.blockId) / 15.0;
         float porosity = 0.0;
         float sss = 0.0;
 
@@ -91,11 +91,11 @@ void iris_emitFragment() {
 
         if (is_fluid) {
             #ifdef WATER_WAVES_ENABLED
-                vec3 waveOffset = GetWaveHeight(vIn.localPos + cameraPos, lmcoord.y, timeCounter, WaterWaveOctaveMax);
+                vec3 waveOffset = GetWaveHeight(vIn.surfacePos + cameraPos, lmcoord.y, timeCounter, WaterWaveOctaveMax);
 
                 // mUV += 0.1*waveOffset.xz;
 
-                vec3 wavePos = vIn.localPos;
+                vec3 wavePos = vIn.surfacePos;
                 wavePos.y += waveOffset.y - vIn.localOffset.y;
 
                 vec3 dX = dFdx(wavePos);
@@ -107,6 +107,7 @@ void iris_emitFragment() {
             // float NoVm = max(dot(localNormal, -localViewDir), 0.0);
             // float F = F_schlick(NoVm, 0.02, 1.0);
 
+            roughness = 0.02;
             albedo.a = 0.02; //F;
         }
     #endif

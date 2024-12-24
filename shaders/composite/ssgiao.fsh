@@ -13,7 +13,12 @@ in vec2 uv;
 
 #include "/settings.glsl"
 #include "/lib/common.glsl"
+
 #include "/lib/noise/ign.glsl"
+
+#ifdef EFFECT_TAA_ENABLED
+    #include "/lib/taa_jitter.glsl"
+#endif
 
 const int SSGIAO_SAMPLES = 16;
 // const float SSGIAO_RADIUS = 4.0;
@@ -28,26 +33,37 @@ void main() {
     ivec2 iuv = ivec2(uv * screenSize + 0.5);
     float depth = texelFetch(solidDepthTex, iuv, 0).r;
 
+    // vec2 uv_j = uv;
+    // #ifdef EFFECT_TAA_ENABLED
+    //     vec2 jitterOffset = getJitterOffset(frameCounter);
+    //     uv_j -= jitterOffset;
+    // #endif
+
     vec3 illumination = vec3(0.0);
     float occlusion = 0.0;
 
     if (depth < 1.0) {
-        #if defined EFFECT_TAA_ENABLED || defined ACCUM_ENABLED
-            float dither = InterleavedGradientNoiseTime(ivec2(gl_FragCoord.xy));
-        #else
+        // #if defined EFFECT_TAA_ENABLED || defined ACCUM_ENABLED
+        //     float dither = InterleavedGradientNoiseTime(ivec2(gl_FragCoord.xy));
+        // #else
             float dither = InterleavedGradientNoise(ivec2(gl_FragCoord.xy));
-        #endif
+        // #endif
 
         vec2 pixelSize = 1.0 / screenSize;
 
         float rotatePhase = dither * TAU;
 
         vec3 clipPos = vec3(uv, depth) * 2.0 - 1.0;
+
+        #ifdef EFFECT_TAA_ENABLED
+            unjitter(clipPos);
+        #endif
+
         vec3 viewPos = unproject(playerProjectionInverse, clipPos);
 
         float viewDist = length(viewPos);
 
-        float max_radius = mix(1.0, 16.0, min(viewDist * 0.01, 1.0));
+        float max_radius = mix(0.5, 8.0, min(viewDist * 0.01, 1.0));
         float rStep = max_radius / SSGIAO_SAMPLES;
         float radius = rStep * dither;
 
@@ -57,6 +73,8 @@ void main() {
         vec3 localNormal = normalize(normalData * 2.0 - 1.0);
 
         vec3 viewNormal = mat3(playerModelView) * localNormal;
+
+        viewPos += localNormal * 0.06;
 
         float maxWeight = EPSILON;
 

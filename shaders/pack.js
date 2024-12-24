@@ -1,10 +1,15 @@
 const FEATURE = {
-    Accumulation: true,
+    Accumulation: false,
+    RT_ENABLED: false,
+    RT_TRI_ENABLED: false,
     VL: true,
 };
 
+const DEBUG = false;
 const DEBUG_SSGIAO = false;
 const DEBUG_HISTOGRAM = false;
+const LIGHT_BIN_SIZE = 8;
+const TRIANGLE_BIN_SIZE = 4;
 
 
 function setupSettings() {
@@ -26,10 +31,13 @@ function setupSettings() {
         Material: {
             Format: getStringSetting("MATERIAL_FORMAT"),
             SSR: getBoolSetting("MATERIAL_SSR_ENABLED"),
+            SSR_Noise: getBoolSetting("MATERIAL_ROUGH_REFLECT_NOISE"),
         },
         Voxel: {
             Size: parseInt(getStringSetting("VOXEL_SIZE")),
             Offset: parseFloat(getStringSetting("VOXEL_FRUSTUM_OFFSET")),
+            MaxLightCount: 64,
+            MaxTriangleCount: 256,
             LPV: {
                 Enabled: getBoolSetting("LPV_ENABLED"),
                 RSM_Enabled: getBoolSetting("LPV_RSM_ENABLED"),
@@ -56,7 +64,8 @@ function setupSettings() {
     worldSettings.sun = false;
 
     if (FEATURE.VL) defineGlobally("EFFECT_VL_ENABLED", "1");
-
+    if (FEATURE.RT_ENABLED) defineGlobally("RT_ENABLED", "1");
+    if (FEATURE.RT_TRI_ENABLED) defineGlobally("RT_TRI_ENABLED", "1");
     if (FEATURE.Accumulation) defineGlobally("ACCUM_ENABLED", "1");
 
     defineGlobally("SKY_SEA_LEVEL", Settings.Sky.SeaLevel.toString());
@@ -76,9 +85,16 @@ function setupSettings() {
     if (Settings.Shadows.Enabled) defineGlobally("SHADOWS_ENABLED", "1");
     if (Settings.Shadows.SS_Fallback) defineGlobally("SHADOW_SCREEN", "1");
 
+    defineGlobally("MATERIAL_FORMAT", Settings.Material.Format);
     if (Settings.Material.SSR) defineGlobally("MATERIAL_SSR_ENABLED", "1");
+    if (Settings.Material.SSR_Noise) defineGlobally("MATERIAL_ROUGH_REFLECT_NOISE", "1");
 
     defineGlobally("VOXEL_SIZE", Settings.Voxel.Size.toString());
+    defineGlobally("VOXEL_FRUSTUM_OFFSET", Settings.Voxel.Offset.toString());
+    defineGlobally("LIGHT_BIN_MAX", Settings.Voxel.MaxLightCount.toString());
+    defineGlobally("LIGHT_BIN_SIZE", LIGHT_BIN_SIZE.toString());
+    defineGlobally("TRIANGLE_BIN_MAX", Settings.Voxel.MaxTriangleCount.toString());
+    defineGlobally("TRIANGLE_BIN_SIZE", TRIANGLE_BIN_SIZE.toString());
 
     if (Settings.Voxel.LPV.Enabled) {
         defineGlobally("LPV_ENABLED", "1");
@@ -90,8 +106,6 @@ function setupSettings() {
 
     if (Settings.Post.TAA) defineGlobally("EFFECT_TAA_ENABLED", "1");
 
-    defineGlobally("MATERIAL_FORMAT", Settings.Material.Format);
-
     if (DEBUG_SSGIAO) defineGlobally("DEBUG_SSGIAO", "1");
     if (DEBUG_HISTOGRAM) defineGlobally("DEBUG_HISTOGRAM", "1");
 
@@ -99,28 +113,28 @@ function setupSettings() {
 }
 
 function setupSky(sceneBuffer) {
-    let texSkyTransmit = new Texture("texSkyTransmit")
+    const texSkyTransmit = new Texture("texSkyTransmit")
         .format(RGB16F)
         .clear(false)
         .width(256)
         .height(64)
         .build();
 
-    let texSkyMultiScatter = new Texture("texSkyMultiScatter")
+    const texSkyMultiScatter = new Texture("texSkyMultiScatter")
         .format(RGB16F)
         .clear(false)
         .width(32)
         .height(32)
         .build();
 
-    let texSkyView = new Texture("texSkyView")
+    const texSkyView = new Texture("texSkyView")
         .format(RGB16F)
         .clear(false)
         .width(256)
         .height(256)
         .build();
 
-    let texSkyIrradiance = new Texture("texSkyIrradiance")
+    const texSkyIrradiance = new Texture("texSkyIrradiance")
         .format(RGB16F)
         .clear(false)
         .width(32)
@@ -160,7 +174,7 @@ function setupBloom(texFinal) {
 
     print(`Bloom enabled with ${maxLod} LODs`);
 
-    let texBloom = new Texture("texBloom")
+    const texBloom = new Texture("texBloom")
         .format(RGB16F)
         .width(Math.ceil(screenWidth / 2.0))
         .height(Math.ceil(screenHeight / 2.0))
@@ -185,7 +199,7 @@ function setupBloom(texFinal) {
     }
 
     for (let i = maxLod-1; i >= 0; i--) {
-        let shader = new Composite(`bloom-up-${i}`)
+        const shader = new Composite(`bloom-up-${i}`)
             .vertex("shared/bufferless.vsh")
             .fragment("post/bloom/up.fsh")
             .define("TEX_SCALE", Math.pow(2, i+1).toString())
@@ -204,9 +218,12 @@ function setupBloom(texFinal) {
 function setupShader() {
     print("Setting up shader");
 
-    let Settings = setupSettings();
+    const Settings = setupSettings();
 
-    setLightColor("torch", 243, 158, 73, 255);
+    setLightColor("campfire", 243, 152, 73, 255);
+    setLightColor("candle", 245, 127, 68, 255);
+    setLightColor("lantern", 243, 158, 73, 255);
+    setLightColor("torch", 243, 181, 73, 255);
     setLightColor("wall_torch", 243, 158, 73, 255);
     setLightColor("redstone_torch", 249, 50, 28, 255);
     setLightColor("pearlescent_froglight", 224, 117, 232, 255);
@@ -215,11 +232,15 @@ function setupShader() {
     setLightColor("glow_lichen", 107, 238, 172, 255);
     setLightColor("cave_vines", 243, 133, 59, 255);
     setLightColor("cave_vines_plant", 243, 133, 59, 255);
+    setLightColor("soul_campfire", 40, 170, 235, 255);
+    // setLightColor("soul_torch", 40, 170, 235, 255);
 
     setLightColor("red_stained_glass", 255, 0, 0, 255);
     setLightColor("red_stained_glass_pane", 255, 0, 0, 255);
     setLightColor("green_stained_glass", 0, 255, 0, 255);
     setLightColor("green_stained_glass_pane", 0, 255, 0, 255);
+    setLightColor("lime_stained_glass", 102, 255, 0, 255);
+    setLightColor("lime_stained_glass_pane", 102, 255, 0, 255);
     setLightColor("blue_stained_glass", 0, 0, 255, 255);
     setLightColor("blue_stained_glass_pane", 0, 0, 255, 255);
 
@@ -259,7 +280,7 @@ function setupShader() {
 
     finalizeUniforms();
 
-    let texFogNoise = new RawTexture("texFogNoise", "textures/fog.dat")
+    const texFogNoise = new RawTexture("texFogNoise", "textures/fog.dat")
         .type(PixelType.UNSIGNED_BYTE)
         .format(R8_SNORM)
         .width(256)
@@ -269,69 +290,70 @@ function setupShader() {
         .blur(true)
         .build();
 
-    let texShadowColor = new ArrayTexture("texShadowColor")
+    const texShadowColor = new ArrayTexture("texShadowColor")
         .format(RGBA8)
         .clearColor(0.0, 0.0, 0.0, 0.0)
         .build();
 
-    let texShadowNormal = new ArrayTexture("texShadowNormal")
+    const texShadowNormal = new ArrayTexture("texShadowNormal")
         .format(RGB8)
         .clearColor(0.0, 0.0, 0.0, 0.0)
         .build();
 
-    let texFinal = new Texture("texFinal")
+    const texFinal = new Texture("texFinal")
         .imageName("imgFinal")
         .format(RGBA16F)
         .clearColor(0.0, 0.0, 0.0, 0.0)
         .build();
 
-    let texFinalOpaque = new Texture("texFinalOpaque")
+    const texFinalOpaque = new Texture("texFinalOpaque")
         .format(RGBA16F)
         .clearColor(0.0, 0.0, 0.0, 0.0)
+        .mipmap(true)
         .build();
 
-    let texFinalPrevious = new Texture("texFinalPrevious")
+    const texFinalPrevious = new Texture("texFinalPrevious")
         .format(RGBA16F)
         .clear(false)
         .mipmap(true)
         .build();
 
-    let texClouds = new Texture("texClouds")
+    const texClouds = new Texture("texClouds")
         .format(RGBA16F)
         .clearColor(0.0, 0.0, 0.0, 0.0)
         .build();
 
-    let texParticles = new Texture("texParticles")
+    const texParticles = new Texture("texParticles")
         .format(RGBA16F)
         .clearColor(0.0, 0.0, 0.0, 0.0)
         .build();
 
-    let texDeferredOpaque_Color = new Texture("texDeferredOpaque_Color")
+    const texDeferredOpaque_Color = new Texture("texDeferredOpaque_Color")
         .format(RGBA8)
         .clearColor(0.0, 0.0, 0.0, 0.0)
         .build();
 
-    let texDeferredOpaque_TexNormal = new Texture("texDeferredOpaque_TexNormal")
+    const texDeferredOpaque_TexNormal = new Texture("texDeferredOpaque_TexNormal")
         .format(RGB8)
         .clearColor(0.0, 0.0, 0.0, 0.0)
         .build();
 
-    let texDeferredOpaque_Data = new Texture("texDeferredOpaque_Data")
+    const texDeferredOpaque_Data = new Texture("texDeferredOpaque_Data")
         .format(RGBA32UI)
         .clearColor(0.0, 0.0, 0.0, 0.0)
         .build();
 
-    let texDeferredTrans_Color = new Texture("texDeferredTrans_Color")
+    const texDeferredTrans_Color = new Texture("texDeferredTrans_Color")
         .format(RGBA8)
         .clearColor(0.0, 0.0, 0.0, 0.0)
         .build();
 
-    let texDeferredTrans_TexNormal = new Texture("texDeferredTrans_TexNormal")
+    const texDeferredTrans_TexNormal = new Texture("texDeferredTrans_TexNormal")
         .format(RGB8)
         .clearColor(0.0, 0.0, 0.0, 0.0)
         .build();
 
-    let texDeferredTrans_Data = new Texture("texDeferredTrans_Data")
+    const texDeferredTrans_Data = new Texture("texDeferredTrans_Data")
         .format(RGBA32UI)
         .clearColor(0.0, 0.0, 0.0, 0.0)
         .build();
@@ -351,7 +373,7 @@ function setupShader() {
             .build();
     }
 
-    let texVoxelBlock = new Texture("texVoxelBlock")
+    const texVoxelBlock = new Texture("texVoxelBlock")
         .imageName("imgVoxelBlock")
         .format(R32UI)
         .clearColor(0.0, 0.0, 0.0, 0.0)
@@ -359,6 +381,17 @@ function setupShader() {
         .height(Settings.Voxel.Size)
         .depth(Settings.Voxel.Size)
         .build();
+
+    let texDiffuseRT = null;
+    if (FEATURE.RT_ENABLED) {
+        texDiffuseRT = new Texture("texDiffuseRT")
+            // .imageName("imgRT")
+            .format(RGB16F)
+            // .clearColor(0.0, 0.0, 0.0, 0.0)
+            .width(Math.ceil(screenWidth / 2.0))
+            .height(Math.ceil(screenHeight / 2.0))
+            .build();
+    }
 
     let texSSGIAO = null;
     let texSSGIAO_final = null;
@@ -370,13 +403,13 @@ function setupShader() {
             .clear(false)
             .build();
 
-        // texSSGIAO_final = new Texture("texSSGIAO_final")
-        //     .imageName("imgSSGIAO_final")
-        //     .format(RGBA16F)
-        //     .width(screenWidth)
-        //     .height(screenHeight)
-        //     .clear(false)
-        //     .build();
+        texSSGIAO_final = new Texture("texSSGIAO_final")
+            .imageName("imgSSGIAO_final")
+            .format(RGBA16F)
+            .width(screenWidth)
+            .height(screenHeight)
+            .clear(false)
+            .build();
     }
 
     let texDiffuseAccum = null;
@@ -441,7 +474,7 @@ function setupShader() {
     let shLpvRsmBuffer_alt = null;
     if (Settings.Voxel.LPV.Enabled) {
         // f16vec4[8] * Band[3] * VoxelBufferSize^3
-        let bufferSize = 8 * 3 * (Settings.Voxel.Size*Settings.Voxel.Size*Settings.Voxel.Size);
+        const bufferSize = 8 * 3 * (Settings.Voxel.Size*Settings.Voxel.Size*Settings.Voxel.Size);
 
         shLpvBuffer = new Buffer(bufferSize)
             .clear(false)
@@ -462,7 +495,7 @@ function setupShader() {
         }
     }
 
-    let texHistogram = new Texture("texHistogram")
+    const texHistogram = new Texture("texHistogram")
         .imageName("imgHistogram")
         .format(R32UI)
         .width(256)
@@ -471,7 +504,7 @@ function setupShader() {
         .build();
 
     if (DEBUG_HISTOGRAM) {
-        let texHistogram_debug = new Texture("texHistogram_debug")
+        const texHistogram_debug = new Texture("texHistogram_debug")
             .imageName("imgHistogram_debug")
             .format(R32UI)
             .width(256)
@@ -480,9 +513,33 @@ function setupShader() {
             .build();
     }
 
-    let sceneBuffer = new Buffer(1024)
+    const sceneBuffer = new Buffer(1024)
         .clear(false)
         .build();
+
+    let lightListBuffer = null;
+    let triangleListBuffer = null;
+    if (FEATURE.RT_ENABLED) {
+        const lightBinSize = 4 * (1 + Settings.Voxel.MaxLightCount);
+        const lightListBinCount = Math.ceil(Settings.Voxel.Size / LIGHT_BIN_SIZE);
+        const lightListBufferSize = lightBinSize * lightListBinCount*lightListBinCount*lightListBinCount + 4;
+        print(`Light-List Buffer Size: ${lightListBufferSize.toLocaleString()}`);
+
+        lightListBuffer = new Buffer(lightListBufferSize)
+            .clear(true) // TODO: clear with compute
+            .build();
+
+        if (FEATURE.RT_TRI_ENABLED) {
+            const triangleBinSize = 4 + 32*Settings.Voxel.MaxTriangleCount;
+            const triangleListBinCount = Math.ceil(Settings.Voxel.Size / TRIANGLE_BIN_SIZE);
+            const triangleListBufferSize = triangleBinSize * triangleListBinCount*triangleListBinCount*triangleListBinCount + 4;
+            print(`Triangle-List Buffer Size: ${triangleListBufferSize.toLocaleString()}`);
+
+            triangleListBuffer = new Buffer(triangleListBufferSize)
+                .clear(true) // TODO: clear with compute
+                .build();
+        }
+    }
 
     registerShader(Stage.SCREEN_SETUP, new Compute("scene-setup")
         .barrier(true)
@@ -510,6 +567,8 @@ function setupShader() {
         .workGroups(1, 1, 1)
         .location("setup/scene-prepare.csh")
         .ssbo(0, sceneBuffer)
+        .ssbo(3, lightListBuffer)
+        .ssbo(4, triangleListBuffer)
         .build());
 
     setupSky(sceneBuffer);
@@ -524,10 +583,47 @@ function setupShader() {
     if (Settings.Shadows.Enabled) {
         registerShader(new ObjectShader("shadow", Usage.SHADOW)
             .vertex("gbuffer/shadow.vsh")
+            .geometry("gbuffer/shadow.gsh")
             .fragment("gbuffer/shadow.fsh")
             .target(0, texShadowColor)
             // .blendFunc(0, Func.ONE, Func.ZERO, Func.ONE, Func.ZERO)
             .target(1, texShadowNormal)
+            .build());
+
+        registerShader(new ObjectShader("shadow-terrain-solid", Usage.SHADOW_TERRAIN_SOLID)
+            .vertex("gbuffer/shadow.vsh")
+            .geometry("gbuffer/shadow.gsh")
+            .fragment("gbuffer/shadow.fsh")
+            .target(0, texShadowColor)
+            // .blendFunc(0, Func.ONE, Func.ZERO, Func.ONE, Func.ZERO)
+            .target(1, texShadowNormal)
+            .ssbo(3, lightListBuffer)
+            .ssbo(4, triangleListBuffer)
+            .define("RENDER_TERRAIN", "1")
+            .build());
+
+        registerShader(new ObjectShader("shadow-terrain-cutout", Usage.SHADOW_TERRAIN_CUTOUT)
+            .vertex("gbuffer/shadow.vsh")
+            .geometry("gbuffer/shadow.gsh")
+            .fragment("gbuffer/shadow.fsh")
+            .target(0, texShadowColor)
+            // .blendFunc(0, Func.ONE, Func.ZERO, Func.ONE, Func.ZERO)
+            .target(1, texShadowNormal)
+            .ssbo(3, lightListBuffer)
+            .ssbo(4, triangleListBuffer)
+            .define("RENDER_TERRAIN", "1")
+            .build());
+
+        registerShader(new ObjectShader("shadow-terrain-translucent", Usage.SHADOW_TERRAIN_TRANSLUCENT)
+            .vertex("gbuffer/shadow.vsh")
+            .geometry("gbuffer/shadow.gsh")
+            .fragment("gbuffer/shadow.fsh")
+            .target(0, texShadowColor)
+            // .blendFunc(0, Func.ONE, Func.ZERO, Func.ONE, Func.ZERO)
+            .target(1, texShadowNormal)
+            .ssbo(3, lightListBuffer)
+            .ssbo(4, triangleListBuffer)
+            .define("RENDER_TERRAIN", "1")
             .build());
     }
 
@@ -558,7 +654,7 @@ function setupShader() {
         // .blendFunc(2, FUNC_ONE, FUNC_ZERO, FUNC_ONE, FUNC_ZERO)
         .build());
 
-    let waterShader = new ObjectShader("water", Usage.TERRAIN_TRANSLUCENT)
+    const waterShader = new ObjectShader("water", Usage.TERRAIN_TRANSLUCENT)
         .vertex("gbuffer/main.vsh")
         .fragment("gbuffer/main.fsh")
         .define("RENDER_TRANSLUCENT", "1")
@@ -583,9 +679,9 @@ function setupShader() {
         .build());
 
     if (Settings.Voxel.LPV.Enabled) {
-        let groupCount = Math.ceil(Settings.Voxel.Size / 8);
+        const groupCount = Math.ceil(Settings.Voxel.Size / 8);
 
-        let shader = new Compute("lpv-propagate")
+        const shader = new Compute("lpv-propagate")
             .barrier(true)
             .location("composite/lpv-propagate.csh")
             .workGroups(groupCount, groupCount, groupCount)
@@ -602,6 +698,26 @@ function setupShader() {
         registerShader(Stage.POST_RENDER, shader.build());
     }
 
+    if (FEATURE.RT_ENABLED) {
+        const groupCount = Math.ceil(Settings.Voxel.Size / 8);
+
+        registerShader(Stage.POST_RENDER, new Compute("light-list")
+            .barrier(true)
+            .location("composite/light-list.csh")
+            .workGroups(groupCount, groupCount, groupCount)
+            .ssbo(0, sceneBuffer)
+            .ssbo(3, lightListBuffer)
+            .build());
+
+        registerShader(Stage.POST_RENDER, new Composite("rt-opaque")
+            .vertex("shared/bufferless.vsh")
+            .fragment("composite/rt-opaque.fsh")
+            .target(0, texDiffuseRT)
+            .ssbo(3, lightListBuffer)
+            .ssbo(4, triangleListBuffer)
+            .build());
+    }
+
     if (Settings.Effect.SSAO || Settings.Effect.SSGI) {
         registerShader(Stage.POST_RENDER, new Composite("ssgiao-opaque")
             .vertex("shared/bufferless.vsh")
@@ -609,11 +725,11 @@ function setupShader() {
             .target(0, texSSGIAO)
             .build());
 
-        // registerShader(new Compute(POST_RENDER, "ssgiao-filter-opaque")
-        //     .barrier(true)
-        //     .location("composite/ssgiao-filter-opaque.csh")
-        //     .workGroups(Math.ceil(screenWidth / 16.0), Math.ceil(screenHeight / 16.0), 1)
-        //     .build());
+        registerShader(Stage.POST_RENDER, new Compute("ssgiao-filter-opaque")
+            .barrier(true)
+            .location("composite/ssgiao-filter-opaque.csh")
+            .workGroups(Math.ceil(screenWidth / 16.0), Math.ceil(screenHeight / 16.0), 1)
+            .build());
     }
 
     if (FEATURE.Accumulation) {
@@ -659,16 +775,16 @@ function setupShader() {
         }
     }
 
-    let texShadow_src = Settings.Shadows.Filter ? "texShadow_final" : "texShadow";
+    const texShadow_src = Settings.Shadows.Filter ? "texShadow_final" : "texShadow";
 
-    let compositeOpaqueShader = new Composite("composite-opaque")
+    const compositeOpaqueShader = new Composite("composite-opaque")
         .vertex("shared/bufferless.vsh")
         .fragment("composite/composite-opaque.fsh")
         .target(0, texFinalOpaque)
         .ssbo(0, sceneBuffer)
         .generateMips(texFinalPrevious)
         .define("TEX_SHADOW", texShadow_src)
-        .define("TEX_SSGIAO", "texSSGIAO");
+        .define("TEX_SSGIAO", "texSSGIAO_final");
 
     if (Settings.Voxel.LPV.Enabled) {
         compositeOpaqueShader
@@ -695,6 +811,7 @@ function setupShader() {
         .fragment("composite/composite-trans.fsh")
         .target(0, texFinal)
         .ssbo(0, sceneBuffer)
+        .generateMips(texFinalOpaque)
         .build());
 
     if (Settings.Post.TAA) {
@@ -737,13 +854,17 @@ function setupShader() {
         .target(0, texFinal)
         .build());
 
-    registerShader(Stage.POST_RENDER, new Composite("debug")
-        .vertex("shared/bufferless.vsh")
-        .fragment("post/debug.fsh")
-        .target(0, texFinal)
-        .ssbo(0, sceneBuffer)
-        .define("TEX_SSGIAO", "texSSGIAO")
-        .build());
+    if (DEBUG) {
+        registerShader(Stage.POST_RENDER, new Composite("debug")
+            .vertex("shared/bufferless.vsh")
+            .fragment("post/debug.fsh")
+            .target(0, texFinal)
+            .ssbo(0, sceneBuffer)
+            .ssbo(3, lightListBuffer)
+            .ssbo(4, triangleListBuffer)
+            .define("TEX_SSGIAO", "texSSGIAO_final")
+            .build());
+    }
 
     setCombinationPass(new CombinationPass("post/final.fsh").build());
 }

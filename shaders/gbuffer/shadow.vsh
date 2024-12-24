@@ -1,36 +1,43 @@
 #version 430 core
-#extension GL_AMD_vertex_shader_layer : require
-
-// layout(location = 6) in int blockMask;
+#extension GL_AMD_vertex_shader_layer: enable
 
 out VertexData2 {
     vec4 color;
     vec2 uv;
+    flat int currentCascade;
 
-    #if defined LPV_ENABLED && defined LPV_RSM_ENABLED
+    #ifdef LPV_RSM_ENABLED
         vec3 localNormal;
+    #endif
+
+    #if (defined LPV_ENABLED || defined RT_ENABLED) && defined RENDER_TERRAIN
+        vec3 localPos;
+        flat vec3 originPos;
+        flat uint blockId;
     #endif
 } vOut;
 
-#ifdef LPV_ENABLED
-    layout(r32ui) uniform writeonly uimage3D imgVoxelBlock;
-#endif
-
 #include "/settings.glsl"
 #include "/lib/common.glsl"
-#include "/lib/voxel/voxel_common.glsl"
 
 
 void iris_emitVertex(inout VertexData data) {
     vec3 shadowViewPos = mul3(iris_modelViewMatrix, data.modelPos.xyz);
     data.clipPos = iris_projectionMatrix * vec4(shadowViewPos, 1.0);
+
+    #if (defined LPV_ENABLED || defined RT_ENABLED) && defined RENDER_TERRAIN
+        // WARN: temp workaround
+        mat4 shadowModelViewInverse = inverse(shadowModelView);
+
+        vOut.localPos = mul3(shadowModelViewInverse, shadowViewPos);
+        vOut.originPos = vOut.localPos + data.midBlock / 64.0;
+    #endif
 }
 
 void iris_sendParameters(in VertexData data) {
     vOut.color = data.color;
     vOut.uv = data.uv;
 
-    // bool isWater = bitfieldExtract(blockMask, 6, 1) != 0;
     bool is_trans_fluid = iris_hasFluid(data.blockId);
 
     if (is_trans_fluid) {
@@ -45,23 +52,16 @@ void iris_sendParameters(in VertexData data) {
         // viewPos = mul3(playerModelView, vOut.localPos);
     }
 
-    #ifdef LPV_ENABLED
-        #ifdef LPV_RSM_ENABLED
-            vec3 viewNormal = mat3(iris_modelViewMatrix) * data.normal;
-            vOut.localNormal = mat3(playerModelViewInverse) * viewNormal;
+    #ifdef LPV_RSM_ENABLED
+        vec3 viewNormal = mat3(iris_modelViewMatrix) * data.normal;
+        vOut.localNormal = mat3(playerModelViewInverse) * viewNormal;
+    #endif
+
+    #if defined LPV_ENABLED || defined RT_ENABLED
+        vOut.currentCascade = iris_currentCascade;
+
+        #ifdef RENDER_TERRAIN
+            vOut.blockId = data.blockId;
         #endif
-
-        // WARN: temp workaround
-        mat4 shadowModelViewInverse = inverse(shadowModelView);
-
-        vec3 shadowViewPos = mul3(iris_modelViewMatrix, data.modelPos.xyz);
-        vec3 localPos = mul3(shadowModelViewInverse, shadowViewPos);
-        localPos += data.midBlock / 64.0;
-
-        vec3 voxelPos = GetVoxelPosition(localPos);
-
-        if (IsInVoxelBounds(voxelPos)) {
-            imageStore(imgVoxelBlock, ivec3(voxelPos), uvec4(data.blockId));
-        }
     #endif
 }

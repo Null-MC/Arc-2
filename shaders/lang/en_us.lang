@@ -16,6 +16,8 @@ value.MATERIAL_FORMAT.2=Old-PBR
 
 option.MATERIAL_SSR_ENABLED=Reflections
 
+option.MATERIAL_ROUGH_REFLECT_NOISE=Rough Reflections
+
 option.VOXEL_SIZE=Size
 suffix.VOXEL_SIZE=^3
 

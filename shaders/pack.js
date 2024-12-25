@@ -1,7 +1,5 @@
 const FEATURE = {
-    Accumulation: false,
-    RT_ENABLED: false,
-    RT_TRI_ENABLED: false,
+    Accumulation: true,
     VL: true,
 };
 
@@ -9,7 +7,7 @@ const DEBUG = false;
 const DEBUG_SSGIAO = false;
 const DEBUG_HISTOGRAM = false;
 const LIGHT_BIN_SIZE = 8;
-const TRIANGLE_BIN_SIZE = 4;
+const TRIANGLE_BIN_SIZE = 2;
 
 
 function setupSettings() {
@@ -37,10 +35,14 @@ function setupSettings() {
             Size: parseInt(getStringSetting("VOXEL_SIZE")),
             Offset: parseFloat(getStringSetting("VOXEL_FRUSTUM_OFFSET")),
             MaxLightCount: 64,
-            MaxTriangleCount: 256,
+            MaxTriangleCount: 64,
             LPV: {
                 Enabled: getBoolSetting("LPV_ENABLED"),
                 RSM_Enabled: getBoolSetting("LPV_RSM_ENABLED"),
+            },
+            RT: {
+                Enabled: getBoolSetting("RT_ENABLED"),
+                Triangles_Enabled: getBoolSetting("RT_TRI_ENABLED"),
             },
         },
         Effect: {
@@ -64,8 +66,6 @@ function setupSettings() {
     worldSettings.sun = false;
 
     if (FEATURE.VL) defineGlobally("EFFECT_VL_ENABLED", "1");
-    if (FEATURE.RT_ENABLED) defineGlobally("RT_ENABLED", "1");
-    if (FEATURE.RT_TRI_ENABLED) defineGlobally("RT_TRI_ENABLED", "1");
     if (FEATURE.Accumulation) defineGlobally("ACCUM_ENABLED", "1");
 
     defineGlobally("SKY_SEA_LEVEL", Settings.Sky.SeaLevel.toString());
@@ -102,6 +102,12 @@ function setupSettings() {
         if (Settings.Voxel.LPV.RSM_Enabled) {
             defineGlobally("LPV_RSM_ENABLED", "1");
         }
+    }
+
+    if (Settings.Voxel.RT.Enabled) {
+        defineGlobally("RT_ENABLED", "1");
+        
+        if (Settings.Voxel.RT.Triangles_Enabled) defineGlobally("RT_TRI_ENABLED", "1");
     }
 
     if (Settings.Post.TAA) defineGlobally("EFFECT_TAA_ENABLED", "1");
@@ -383,7 +389,7 @@ function setupShader() {
         .build();
 
     let texDiffuseRT = null;
-    if (FEATURE.RT_ENABLED) {
+    if (Settings.Voxel.RT.Enabled) {
         texDiffuseRT = new Texture("texDiffuseRT")
             // .imageName("imgRT")
             .format(RGB16F)
@@ -519,7 +525,7 @@ function setupShader() {
 
     let lightListBuffer = null;
     let triangleListBuffer = null;
-    if (FEATURE.RT_ENABLED) {
+    if (Settings.Voxel.RT.Enabled) {
         const lightBinSize = 4 * (1 + Settings.Voxel.MaxLightCount);
         const lightListBinCount = Math.ceil(Settings.Voxel.Size / LIGHT_BIN_SIZE);
         const lightListBufferSize = lightBinSize * lightListBinCount*lightListBinCount*lightListBinCount + 4;
@@ -529,8 +535,8 @@ function setupShader() {
             .clear(true) // TODO: clear with compute
             .build();
 
-        if (FEATURE.RT_TRI_ENABLED) {
-            const triangleBinSize = 4 + 32*Settings.Voxel.MaxTriangleCount;
+        if (Settings.Voxel.RT.Triangles_Enabled) {
+            const triangleBinSize = 4 + 36*Settings.Voxel.MaxTriangleCount;
             const triangleListBinCount = Math.ceil(Settings.Voxel.Size / TRIANGLE_BIN_SIZE);
             const triangleListBufferSize = triangleBinSize * triangleListBinCount*triangleListBinCount*triangleListBinCount + 4;
             print(`Triangle-List Buffer Size: ${triangleListBufferSize.toLocaleString()}`);
@@ -542,28 +548,28 @@ function setupShader() {
     }
 
     registerShader(Stage.SCREEN_SETUP, new Compute("scene-setup")
-        .barrier(true)
+        // .barrier(true)
         .workGroups(1, 1, 1)
         .location("setup/scene-setup.csh")
         .ssbo(0, sceneBuffer)
         .build());
 
     registerShader(Stage.SCREEN_SETUP, new Compute("histogram-clear")
-        .barrier(true)
+        // .barrier(true)
         .location("setup/histogram-clear.csh")
         .workGroups(1, 1, 1)
         .build());
 
     if (Settings.Voxel.LPV.Enabled) {
         registerShader(Stage.SCREEN_SETUP, new Compute("lpv-clear")
-            .barrier(true)
+            // .barrier(true)
             .location("setup/lpv-clear.csh")
             .workGroups(8, 8, 8)
             .build());
     }
 
     registerShader(Stage.PRE_RENDER, new Compute("scene-prepare")
-        .barrier(true)
+        // .barrier(true)
         .workGroups(1, 1, 1)
         .location("setup/scene-prepare.csh")
         .ssbo(0, sceneBuffer)
@@ -574,7 +580,7 @@ function setupShader() {
     setupSky(sceneBuffer);
 
     registerShader(Stage.PRE_RENDER, new Compute("scene-begin")
-        .barrier(true)
+        // .barrier(true)
         .workGroups(1, 1, 1)
         .location("setup/scene-begin.csh")
         .ssbo(0, sceneBuffer)
@@ -682,7 +688,7 @@ function setupShader() {
         const groupCount = Math.ceil(Settings.Voxel.Size / 8);
 
         const shader = new Compute("lpv-propagate")
-            .barrier(true)
+            // .barrier(true)
             .location("composite/lpv-propagate.csh")
             .workGroups(groupCount, groupCount, groupCount)
             .ssbo(0, sceneBuffer)
@@ -698,11 +704,11 @@ function setupShader() {
         registerShader(Stage.POST_RENDER, shader.build());
     }
 
-    if (FEATURE.RT_ENABLED) {
+    if (Settings.Voxel.RT.Enabled) {
         const groupCount = Math.ceil(Settings.Voxel.Size / 8);
 
         registerShader(Stage.POST_RENDER, new Compute("light-list")
-            .barrier(true)
+            // .barrier(true)
             .location("composite/light-list.csh")
             .workGroups(groupCount, groupCount, groupCount)
             .ssbo(0, sceneBuffer)
@@ -726,7 +732,7 @@ function setupShader() {
             .build());
 
         registerShader(Stage.POST_RENDER, new Compute("ssgiao-filter-opaque")
-            .barrier(true)
+            // .barrier(true)
             .location("composite/ssgiao-filter-opaque.csh")
             .workGroups(Math.ceil(screenWidth / 16.0), Math.ceil(screenHeight / 16.0), 1)
             .build());
@@ -734,7 +740,7 @@ function setupShader() {
 
     if (FEATURE.Accumulation) {
         registerShader(Stage.POST_RENDER, new Compute("diffuse-accum-opaque")
-            .barrier(true)
+            // .barrier(true)
             .location("composite/diffuse-accum-opaque.csh")
             .workGroups(Math.ceil(screenWidth / 16.0), Math.ceil(screenHeight / 16.0), 1)
             .build());
@@ -768,7 +774,7 @@ function setupShader() {
 
         if (Settings.Shadows.Filter) {
             registerShader(Stage.POST_RENDER, new Compute("shadow-filter-opaque")
-                .barrier(true)
+                // .barrier(true)
                 .location("composite/shadow-filter-opaque.csh")
                 .workGroups(Math.ceil(screenWidth / 16.0), Math.ceil(screenHeight / 16.0), 1)
                 .build());
@@ -815,6 +821,13 @@ function setupShader() {
         .build());
 
     if (Settings.Post.TAA) {
+        registerShader(Stage.POST_RENDER, new Composite("copy-TAA")
+            .vertex("shared/bufferless.vsh")
+            .fragment("shared/copy.fsh")
+            .define("TEX_SRC", "texFinal")
+            .target(0, texFinalOpaque)
+            .build());
+
         registerShader(Stage.POST_RENDER, new Composite("TAA")
             .vertex("shared/bufferless.vsh")
             .fragment("post/taa.fsh")
@@ -832,13 +845,13 @@ function setupShader() {
     }
 
     registerShader(Stage.POST_RENDER, new Compute("histogram")
-        .barrier(true)
+        // .barrier(true)
         .location("post/histogram.csh")
         .workGroups(Math.ceil(screenWidth / 16.0), Math.ceil(screenHeight / 16.0), 1)
         .build());
 
     registerShader(Stage.POST_RENDER, new Compute("exposure")
-        .barrier(true)
+        // .barrier(true)
         .workGroups(1, 1, 1)
         .location("post/exposure.csh")
         .ssbo(0, sceneBuffer)

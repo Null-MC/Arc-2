@@ -140,6 +140,20 @@ void main() {
                 cloudDensity *= 1.0 - smoothstep(2000.0, 5000.0, cloudDist);
             }
         }
+
+        float cloudHeight2 = cloudHeight + 120.0;
+
+        float cloudDensity2 = 0.0;
+        if (cameraPos.y < cloudHeight2 && localViewDir.y > 0.0) {
+            vec3 cloudPos = (cloudHeight2-cameraPos.y) / stepLocal.y * stepLocal;
+            float cloudDist = length(cloudPos);
+            cloudPos += cameraPos;
+
+            if (cloudDist < 5000.0) {
+                cloudDensity2 = SampleCloudDensity2(cloudPos);
+                cloudDensity2 *= 1.0 - smoothstep(2000.0, 5000.0, cloudDist);
+            }
+        }
     #endif
 
     vec3 scattering = vec3(0.0);
@@ -236,6 +250,22 @@ void main() {
 
             transmittance *= sampleTransmit;
             scattering += scatterF * transmittance * sampleLit * cloudDensity;
+        }
+
+        if (traceEnd.y + cameraPos.y < cloudHeight2 && depth == 1.0) {
+            vec3 cloud_localPos = (cloudHeight2 - cameraPos.y) / localViewDir.y * localViewDir;
+
+            vec3 sunTransmit, moonTransmit;
+            GetSkyLightTransmission(cloud_localPos, sunTransmit, moonTransmit);
+            vec3 sunSkyLight = SUN_BRIGHTNESS * sunTransmit;// * cloud_shadowSun;
+            vec3 moonSkyLight = MOON_BRIGHTNESS * moonTransmit;// * cloud_shadowMoon;
+
+            vec3 sampleColor = (phase_sun * sunSkyLight) + (phase_moon * moonSkyLight);
+            vec3 sampleLit = sampleColor + phaseIso * sampleAmbient;
+            vec3 sampleTransmit = exp(-cloudDensity2 * transmitF);
+
+            transmittance *= sampleTransmit;
+            scattering += scatterF * transmittance * sampleLit * cloudDensity2;
         }
     #endif
 

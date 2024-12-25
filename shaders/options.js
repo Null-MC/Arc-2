@@ -27,10 +27,16 @@ function setupOptions() {
         .add(asBool("LPV_RSM_ENABLED", true))
         .build();
 
+    let screen_Voxel_RT = new Screen("RT")
+        .add(asBool("RT_ENABLED", false))
+        .add(asBool("RT_TRI_ENABLED", false))
+        .build();
+
     let screen_Voxel = new Screen("Voxels")
         .add(asString("VOXEL_SIZE", "128", "64", "128", "256"))
         .add(screen_Voxel_LPV)
         .add(asString("VOXEL_FRUSTUM_OFFSET", "80", "0", "50", "80"))
+        .add(screen_Voxel_RT)
         .build();
 
     const screen_Effects = new Screen("Effects")

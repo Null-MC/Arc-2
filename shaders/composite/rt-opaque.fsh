@@ -7,6 +7,8 @@ uniform sampler2D solidDepthTex;
 uniform usampler2D texDeferredOpaque_Data;
 uniform sampler2D texDeferredOpaque_TexNormal;
 
+uniform sampler2D blockAtlas;
+
 layout(r32ui) uniform readonly uimage3D imgVoxelBlock;
 
 in vec2 uv;
@@ -81,13 +83,19 @@ void main() {
             // voxelPos = GetVoxelPosition(localPos + 0.02*localGeoNormal);
             vec3 voxelPos_out = voxelPos + 0.02*localGeoNormal;
 
-            uint maxSampleCount = binLightCount; //min(binLightCount, 16u);
+            const uint MAX_SAMPLE_COUNT = 8u;
+            uint maxSampleCount = min(binLightCount, MAX_SAMPLE_COUNT);
+            float bright_scale = ceil(binLightCount / float(MAX_SAMPLE_COUNT));
+
+            int i_offset = int(binLightCount * hash13(vec3(gl_FragCoord.xy, frameCounter)));
 
             for (int i = 0; i < maxSampleCount; i++) {
-                uint light_voxelIndex = LightBinMap[lightBinIndex].lightList[i];
+                int i2 = (i + i_offset) % int(binLightCount);
+
+                uint light_voxelIndex = LightBinMap[lightBinIndex].lightList[i2];
 
                 vec3 light_voxelPos = GetVoxelPos(light_voxelIndex) + 0.5;
-                light_voxelPos += jitter*0.5;
+                light_voxelPos += jitter*0.125;
 
                 vec3 light_LocalPos = GetVoxelLocalPos(light_voxelPos);
 
@@ -120,7 +128,7 @@ void main() {
                 bool traceSelf = false;
                 sampleDiffuse *= TraceDDA(origin, endPos, lightRange, traceSelf);
 
-                diffuseFinal += sampleDiffuse;
+                diffuseFinal += sampleDiffuse * bright_scale;
             }
         }
     }

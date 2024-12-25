@@ -94,6 +94,10 @@ void main() {
                         tri.pos[1] = f16vec3(vIn[1].localPos - originBase + offset);
                         tri.pos[2] = f16vec3(vIn[2].localPos - originBase + offset);
 
+                        tri.uv[0] = f16vec2(vIn[0].uv);
+                        tri.uv[1] = f16vec2(vIn[1].uv);
+                        tri.uv[2] = f16vec2(vIn[2].uv);
+
                         TriangleBinMap[triangleBinIndex].triangleList[triangleIndex] = tri;
 
                         atomicAdd(Scene_TriangleCount, 1u);

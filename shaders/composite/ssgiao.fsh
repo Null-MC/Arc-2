@@ -150,10 +150,10 @@ void main() {
         occlusion = occlusion / max(maxWeight, 1.0);
     }
 
-    // occlusion *= 2.0;
+    occlusion *= 2.0;
 
     vec3 gi = illumination;
-    float ao = 1.0 - min(occlusion*2.0, 1.0);
+    float ao = 1.0 - min(occlusion, 1.0);
     // ao = ao*ao;
 
     out_GI_AO = vec4(gi, ao);

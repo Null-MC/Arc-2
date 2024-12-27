@@ -1,4 +1,4 @@
-#define DDA_MAX_STEP 24 //((LIGHTING_RANGE/100.0) * 24)
+#define DDA_MAX_STEP 6 //((LIGHTING_RANGE/100.0) * 24)
 
 const uint DDAStepCount = uint(DDA_MAX_STEP);
 
@@ -67,9 +67,9 @@ vec3 TraceDDA(vec3 origin, const in vec3 endPos, const in float range, const in 
         float currLen2 = lengthSq(currPos - origin);
         if (currLen2 > traceRayLen2) currPos = endPos;
         
-        vec3 voxelPos = floor(0.5 * (currPos + rayStart));
+        ivec3 voxelPos = ivec3(floor(0.5 * (currPos + rayStart)));
 
-        if (!traceSelf && ivec3(voxelPos) == ivec3(endPos)) i = 999;
+        // if (!traceSelf && ivec3(voxelPos) == ivec3(endPos)) i = 999;
 
         vec3 stepAxis = vec3(lessThanEqual(nextDist, vec3(closestDist)));
 
@@ -77,66 +77,40 @@ vec3 TraceDDA(vec3 origin, const in vec3 endPos, const in float range, const in 
         nextDist += stepSizes * stepAxis;
 
         if (IsInVoxelBounds(voxelPos)) {
-            uint blockId = imageLoad(imgVoxelBlock, ivec3(voxelPos)).r;
+            #ifdef RT_TRI_ENABLED
+                ivec3 triangleBinPos = voxelPos;// ivec3(floor(voxelPos / TRIANGLE_BIN_SIZE));
+                int triangleBinIndex = GetTriangleBinIndex(triangleBinPos);
+                uint triangleCount = TriangleBinMap[triangleBinIndex].triangleCount;
 
+                vec3 rayStart = (rayStart - triangleBinPos)*TRIANGLE_BIN_SIZE;
+                vec3 rayEnd = (currPos - triangleBinPos)*TRIANGLE_BIN_SIZE;
 
+                for (int t = 0; t < triangleCount && !hit; t++) {
+                    Triangle tri = TriangleBinMap[triangleBinIndex].triangleList[t];
 
-            // #if LIGHTING_TINT_MODE == LIGHT_TINT_ABSORB
-            //     if (blockId >= BLOCK_HONEY && blockId <= BLOCK_TINTED_GLASS) {
-            //         vec3 glassTint = GetLightGlassTint(blockId);
-            //         color *= exp(-2.0 * Lighting_TintF * closestDist * (1.0 - glassTint));
-            //     }
-            //     else {
-            // #elif LIGHTING_TINT_MODE == LIGHT_TINT_BASIC
-            //     if (blockId >= BLOCK_HONEY && blockId <= BLOCK_TINTED_GLASS && blockId != blockIdLast) {
-            //         vec3 glassTint = GetLightGlassTint(blockId) * Lighting_TintF;
-            //         glassTint += max(1.0 - Lighting_TintF, 0.0);
+                    vec3 coord;
+                    if (lineTriangleIntersect(rayStart, rayEnd, tri.pos[0], tri.pos[1], tri.pos[2], coord)) {
+                        vec2 uv = tri.uv[0] * coord.x
+                                + tri.uv[1] * coord.y
+                                + tri.uv[2] * coord.z;
 
-            //         color *= glassTint;
-            //     }
-            //     else {
-            // #endif
+                        vec4 sampleColor = textureLod(blockAtlas, uv, 0);
+                        // sampleColor.rgb = RgbToLinear(sampleColor.rgb);
 
-            if (blockId != 0u) {
-                bool isFullBlock = iris_isFullBlock(blockId);
+                        //color *= sampleColor.rgb; //mix(sampleColor.rgb, vec3(1.0), (sampleColor.a*sampleColor.a));
+                        color = sqrt(color) * sampleColor.rgb;
 
-                if (isFullBlock) hit = true;
-                #ifdef RT_TRI_ENABLED
-                    else {
-                        ivec3 triangleBinPos = ivec3(floor(voxelPos / TRIANGLE_BIN_SIZE));
-                        int triangleBinIndex = GetTriangleBinIndex(triangleBinPos);
-                        uint triangleCount = TriangleBinMap[triangleBinIndex].triangleCount;
-
-                        vec3 rayStart = rayStart - triangleBinPos*TRIANGLE_BIN_SIZE;
-                        vec3 rayEnd = currPos - triangleBinPos*TRIANGLE_BIN_SIZE;
-
-                        for (int t = 0; t < triangleCount && !hit; t++) {
-                            Triangle tri = TriangleBinMap[triangleBinIndex].triangleList[t];
-
-                            vec3 coord;
-                            if (lineTriangleIntersect(rayStart, rayEnd, tri.pos[0], tri.pos[1], tri.pos[2], coord)) {
-                                vec2 uv = tri.uv[0] * coord.x
-                                        + tri.uv[1] * coord.y
-                                        + tri.uv[2] * coord.z;
-
-                                // float alpha = iris_sampleBaseTex(uv).a;
-                                float alpha = textureLod(blockAtlas, uv, 0).a;
-                                hit = alpha > 0.1;
-
-                                // hit = true;
-                            }
-                        }
+                        hit = sampleColor.a > 0.9;
                     }
-                #endif
-            }
+                }
+            #else
+                uint blockId = imageLoad(imgVoxelBlock, voxelPos).r;
 
-            // #if LIGHTING_TINT_MODE != LIGHT_TINT_NONE
-            //     }
-            // #endif
-
-            // #if LIGHTING_TINT_MODE == LIGHT_TINT_BASIC
-            //     blockIdLast = blockId;
-            // #endif
+                if (blockId != 0u) {
+                    bool isFullBlock = iris_isFullBlock(blockId);
+                    if (isFullBlock) hit = true;
+                }
+            #endif
         }
 
         currDist2 = lengthSq(currPos - origin);

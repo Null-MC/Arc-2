@@ -1,13 +1,7 @@
-const FEATURE = {
-    Accumulation: true,
-    VL: true,
-};
+import './iris'
 
-const DEBUG = false;
-const DEBUG_SSGIAO = false;
-const DEBUG_HISTOGRAM = false;
 const LIGHT_BIN_SIZE = 8;
-const TRIANGLE_BIN_SIZE = 2;
+const TRIANGLE_BIN_SIZE = 4;
 
 
 function setupSettings() {
@@ -35,7 +29,7 @@ function setupSettings() {
             Size: parseInt(getStringSetting("VOXEL_SIZE")),
             Offset: parseFloat(getStringSetting("VOXEL_FRUSTUM_OFFSET")),
             MaxLightCount: 64,
-            MaxTriangleCount: 64,
+            MaxTriangleCount: 256,
             LPV: {
                 Enabled: getBoolSetting("LPV_ENABLED"),
                 RSM_Enabled: getBoolSetting("LPV_RSM_ENABLED"),
@@ -53,20 +47,31 @@ function setupSettings() {
             Bloom: getBoolSetting("POST_BLOOM_ENABLED"),
             TAA: getBoolSetting("EFFECT_TAA_ENABLED"),
         },
+        Debug: {
+            Enabled: getBoolSetting("DEBUG_ENABLED"),
+            SSGIAO: false,
+            HISTOGRAM: false,
+        },
+        Internal: {
+            Accumulation: false,
+        },
     };
+
+    if (Settings.Voxel.RT.Enabled) Settings.Internal.Accumulation = true;
+    if (Settings.Effect.SSGI) Settings.Internal.Accumulation = true;
 
     worldSettings.disableShade = true;
     worldSettings.ambientOcclusionLevel = 0.0;
     worldSettings.sunPathRotation = Settings.Sky.SunAngle;
     worldSettings.shadowMapResolution = 1024;
-    worldSettings.vignette = false;
-    worldSettings.clouds = false;
-    worldSettings.stars = false;
-    worldSettings.moon = false;
-    worldSettings.sun = false;
+    worldSettings.renderStars = false;
+    worldSettings.renderMoon = false;
+    worldSettings.renderSun = false;
+    // worldSettings.vignette = false;
+    // worldSettings.clouds = false;
 
-    if (FEATURE.VL) defineGlobally("EFFECT_VL_ENABLED", "1");
-    if (FEATURE.Accumulation) defineGlobally("ACCUM_ENABLED", "1");
+    defineGlobally("EFFECT_VL_ENABLED", "1");
+    if (Settings.Internal.Accumulation) defineGlobally("ACCUM_ENABLED", "1");
 
     defineGlobally("SKY_SEA_LEVEL", Settings.Sky.SeaLevel.toString());
 
@@ -112,36 +117,38 @@ function setupSettings() {
 
     if (Settings.Post.TAA) defineGlobally("EFFECT_TAA_ENABLED", "1");
 
-    if (DEBUG_SSGIAO) defineGlobally("DEBUG_SSGIAO", "1");
-    if (DEBUG_HISTOGRAM) defineGlobally("DEBUG_HISTOGRAM", "1");
+    if (Settings.Debug.Enabled) {
+        if (Settings.Debug.SSGIAO) defineGlobally("DEBUG_SSGIAO", "1");
+        if (Settings.Debug.HISTOGRAM) defineGlobally("DEBUG_HISTOGRAM", "1");
+    }
 
     return Settings;
 }
 
 function setupSky(sceneBuffer) {
     const texSkyTransmit = new Texture("texSkyTransmit")
-        .format(RGB16F)
+        .format(Format.RGB16F)
         .clear(false)
         .width(256)
         .height(64)
         .build();
 
     const texSkyMultiScatter = new Texture("texSkyMultiScatter")
-        .format(RGB16F)
+        .format(Format.RGB16F)
         .clear(false)
         .width(32)
         .height(32)
         .build();
 
     const texSkyView = new Texture("texSkyView")
-        .format(RGB16F)
+        .format(Format.RGB16F)
         .clear(false)
         .width(256)
         .height(256)
         .build();
 
     const texSkyIrradiance = new Texture("texSkyIrradiance")
-        .format(RGB16F)
+        .format(Format.RGB16F)
         .clear(false)
         .width(32)
         .height(32)
@@ -175,15 +182,18 @@ function setupSky(sceneBuffer) {
 }
 
 function setupBloom(texFinal) {
+    const screenWidth_half = Math.ceil(screenWidth / 2.0);
+    const screenHeight_half = Math.ceil(screenHeight / 2.0);
+
     let maxLod = Math.log2(Math.min(screenWidth, screenHeight));
     maxLod = Math.max(Math.min(maxLod, 8), 0);
 
     print(`Bloom enabled with ${maxLod} LODs`);
 
     const texBloom = new Texture("texBloom")
-        .format(RGB16F)
-        .width(Math.ceil(screenWidth / 2.0))
-        .height(Math.ceil(screenHeight / 2.0))
+        .format(Format.RGB16F)
+        .width(screenWidth_half)
+        .height(screenHeight_half)
         .mipmap(true)
         .clear(false)
         .build();
@@ -286,9 +296,12 @@ function setupShader() {
 
     finalizeUniforms();
 
+    const screenWidth_half = Math.ceil(screenWidth / 2.0);
+    const screenHeight_half = Math.ceil(screenHeight / 2.0);
+
     const texFogNoise = new RawTexture("texFogNoise", "textures/fog.dat")
         .type(PixelType.UNSIGNED_BYTE)
-        .format(R8_SNORM)
+        .format(Format.R8_SNORM)
         .width(256)
         .height(32)
         .depth(256)
@@ -297,135 +310,146 @@ function setupShader() {
         .build();
 
     const texShadowColor = new ArrayTexture("texShadowColor")
-        .format(RGBA8)
+        .format(Format.RGBA8)
         .clearColor(0.0, 0.0, 0.0, 0.0)
         .build();
 
     const texShadowNormal = new ArrayTexture("texShadowNormal")
-        .format(RGB8)
+        .format(Format.RGB8)
         .clearColor(0.0, 0.0, 0.0, 0.0)
         .build();
 
     const texFinal = new Texture("texFinal")
         .imageName("imgFinal")
-        .format(RGBA16F)
+        .format(Format.RGBA16F)
         .clearColor(0.0, 0.0, 0.0, 0.0)
         .build();
 
     const texFinalOpaque = new Texture("texFinalOpaque")
-        .format(RGBA16F)
+        .format(Format.RGBA16F)
         .clearColor(0.0, 0.0, 0.0, 0.0)
         .mipmap(true)
         .build();
 
     const texFinalPrevious = new Texture("texFinalPrevious")
-        .format(RGBA16F)
+        .format(Format.RGBA16F)
         .clear(false)
         .mipmap(true)
         .build();
 
     const texClouds = new Texture("texClouds")
-        .format(RGBA16F)
+        .format(Format.RGBA16F)
         .clearColor(0.0, 0.0, 0.0, 0.0)
         .build();
 
     const texParticles = new Texture("texParticles")
-        .format(RGBA16F)
+        .format(Format.RGBA16F)
         .clearColor(0.0, 0.0, 0.0, 0.0)
         .build();
 
     const texDeferredOpaque_Color = new Texture("texDeferredOpaque_Color")
-        .format(RGBA8)
+        .format(Format.RGBA8)
         .clearColor(0.0, 0.0, 0.0, 0.0)
         .build();
 
     const texDeferredOpaque_TexNormal = new Texture("texDeferredOpaque_TexNormal")
-        .format(RGB8)
+        .format(Format.RGB8)
         .clearColor(0.0, 0.0, 0.0, 0.0)
         .build();
 
     const texDeferredOpaque_Data = new Texture("texDeferredOpaque_Data")
-        .format(RGBA32UI)
+        .format(Format.RGBA32UI)
         .clearColor(0.0, 0.0, 0.0, 0.0)
         .build();
 
     const texDeferredTrans_Color = new Texture("texDeferredTrans_Color")
-        .format(RGBA8)
+        .format(Format.RGBA8)
         .clearColor(0.0, 0.0, 0.0, 0.0)
         .build();
 
     const texDeferredTrans_TexNormal = new Texture("texDeferredTrans_TexNormal")
-        .format(RGB8)
+        .format(Format.RGB8)
         .clearColor(0.0, 0.0, 0.0, 0.0)
         .build();
 
     const texDeferredTrans_Data = new Texture("texDeferredTrans_Data")
-        .format(RGBA32UI)
+        .format(Format.RGBA32UI)
         .clearColor(0.0, 0.0, 0.0, 0.0)
         .build();
 
-    let texShadow = null;
-    let texShadow_final = null;
+    let texShadow: BuiltTexture | null = null;
+    let texShadow_final: BuiltTexture | null = null;
     if (Settings.Shadows.Enabled) {
         texShadow = new Texture("texShadow")
-            .format(RGBA16F)
+            .format(Format.RGBA16F)
             .clear(false)
             .build();
 
         texShadow_final = new Texture("texShadow_final")
             .imageName("imgShadow_final")
-            .format(RGBA16F)
+            .format(Format.RGBA16F)
             .clear(false)
             .build();
     }
 
     const texVoxelBlock = new Texture("texVoxelBlock")
         .imageName("imgVoxelBlock")
-        .format(R32UI)
+        .format(Format.R32UI)
         .clearColor(0.0, 0.0, 0.0, 0.0)
         .width(Settings.Voxel.Size)
         .height(Settings.Voxel.Size)
         .depth(Settings.Voxel.Size)
         .build();
 
-    let texDiffuseRT = null;
+    let texDiffuseRT: BuiltTexture | null = null;
+    let texSpecularRT: BuiltTexture | null = null;
     if (Settings.Voxel.RT.Enabled) {
         texDiffuseRT = new Texture("texDiffuseRT")
-            // .imageName("imgRT")
-            .format(RGB16F)
+            // .imageName("imgDiffuseRT")
+            .format(Format.RGB16F)
             // .clearColor(0.0, 0.0, 0.0, 0.0)
-            .width(Math.ceil(screenWidth / 2.0))
-            .height(Math.ceil(screenHeight / 2.0))
+            .width(screenWidth_half)
+            .height(screenHeight_half)
+            .build();
+
+        texSpecularRT = new Texture("texSpecularRT")
+            // .imageName("imgSpecularRT")
+            .format(Format.RGB16F)
+            // .clearColor(0.0, 0.0, 0.0, 0.0)
+            .width(screenWidth_half)
+            .height(screenHeight_half)
             .build();
     }
 
-    let texSSGIAO = null;
-    let texSSGIAO_final = null;
+    let texSSGIAO: BuiltTexture | null = null;
+    let texSSGIAO_final: BuiltTexture | null = null;
     if (Settings.Effect.SSAO || Settings.Effect.SSGI) {
         texSSGIAO = new Texture("texSSGIAO")
-            .format(RGBA16F)
-            .width(Math.ceil(screenWidth / 2.0))
-            .height(Math.ceil(screenHeight / 2.0))
+            .format(Format.RGBA16F)
+            .width(screenWidth_half)
+            .height(screenHeight_half)
             .clear(false)
             .build();
 
         texSSGIAO_final = new Texture("texSSGIAO_final")
             .imageName("imgSSGIAO_final")
-            .format(RGBA16F)
+            .format(Format.RGBA16F)
             .width(screenWidth)
             .height(screenHeight)
             .clear(false)
             .build();
     }
 
-    let texDiffuseAccum = null;
-    let texDiffuseAccum_alt = null;
-    let texDiffuseAccumPos = null;
-    let texDiffuseAccumPos_alt = null;
-    if (FEATURE.Accumulation) {
+    let texDiffuseAccum: BuiltTexture | null = null;
+    let texDiffuseAccum_alt: BuiltTexture | null = null;
+    let texSpecularAccum: BuiltTexture | null = null;
+    let texSpecularAccum_alt: BuiltTexture | null = null;
+    let texDiffuseAccumPos: BuiltTexture | null = null;
+    let texDiffuseAccumPos_alt: BuiltTexture | null = null;
+    if (Settings.Internal.Accumulation) {
         texDiffuseAccum = new Texture("texDiffuseAccum")
             .imageName("imgDiffuseAccum")
-            .format(RGBA16F)
+            .format(Format.RGBA16F)
             .width(screenWidth)
             .height(screenHeight)
             .clear(false)
@@ -433,7 +457,23 @@ function setupShader() {
 
         texDiffuseAccum_alt = new Texture("texDiffuseAccum_alt")
             .imageName("imgDiffuseAccum_alt")
-            .format(RGBA16F)
+            .format(Format.RGBA16F)
+            .width(screenWidth)
+            .height(screenHeight)
+            .clear(false)
+            .build();
+
+        texSpecularAccum = new Texture("texSpecularAccum")
+            .imageName("imgSpecularAccum")
+            .format(Format.RGBA16F)
+            .width(screenWidth)
+            .height(screenHeight)
+            .clear(false)
+            .build();
+
+        texSpecularAccum_alt = new Texture("texSpecularAccum_alt")
+            .imageName("imgSpecularAccum_alt")
+            .format(Format.RGBA16F)
             .width(screenWidth)
             .height(screenHeight)
             .clear(false)
@@ -441,7 +481,7 @@ function setupShader() {
 
         texDiffuseAccumPos = new Texture("texDiffuseAccumPos")
             .imageName("imgDiffuseAccumPos")
-            .format(RGBA16F)
+            .format(Format.RGBA16F)
             .width(screenWidth)
             .height(screenHeight)
             .clear(false)
@@ -449,38 +489,34 @@ function setupShader() {
 
         texDiffuseAccumPos_alt = new Texture("texDiffuseAccumPos_alt")
             .imageName("imgDiffuseAccumPos_alt")
-            .format(RGBA16F)
+            .format(Format.RGBA16F)
             .width(screenWidth)
             .height(screenHeight)
             .clear(false)
             .build();
     }
 
-    let texScatterVL = null;
-    let texTransmitVL = null;
-    if (FEATURE.VL) {
-        texScatterVL = new Texture("texScatterVL")
-            .format(RGB16F)
-            .width(Math.ceil(screenWidth / 2.0))
-            .height(Math.ceil(screenHeight / 2.0))
-            .clear(false)
-            .build();
+    const texScatterVL = new Texture("texScatterVL")
+        .format(Format.RGB16F)
+        .width(screenWidth_half)
+        .height(screenHeight_half)
+        .clear(false)
+        .build();
 
-        texTransmitVL = new Texture("texTransmitVL")
-            .format(RGB16F)
-            .width(Math.ceil(screenWidth / 2.0))
-            .height(Math.ceil(screenHeight / 2.0))
-            .clear(false)
-            .build();
-    }
+    const texTransmitVL = new Texture("texTransmitVL")
+        .format(Format.RGB16F)
+        .width(screenWidth_half)
+        .height(screenHeight_half)
+        .clear(false)
+        .build();
 
-    let shLpvBuffer = null;
-    let shLpvBuffer_alt = null;
-    let shLpvRsmBuffer = null;
-    let shLpvRsmBuffer_alt = null;
+    let shLpvBuffer: BuiltBuffer | null = null;
+    let shLpvBuffer_alt: BuiltBuffer | null = null;
+    let shLpvRsmBuffer: BuiltBuffer | null = null;
+    let shLpvRsmBuffer_alt: BuiltBuffer | null = null;
     if (Settings.Voxel.LPV.Enabled) {
-        // f16vec4[8] * Band[3] * VoxelBufferSize^3
-        const bufferSize = 8 * 3 * (Settings.Voxel.Size*Settings.Voxel.Size*Settings.Voxel.Size);
+        // f16vec4[3] * VoxelBufferSize^3
+        const bufferSize = 8 * 3 * cubed(Settings.Voxel.Size);
 
         shLpvBuffer = new Buffer(bufferSize)
             .clear(false)
@@ -503,16 +539,16 @@ function setupShader() {
 
     const texHistogram = new Texture("texHistogram")
         .imageName("imgHistogram")
-        .format(R32UI)
+        .format(Format.R32UI)
         .width(256)
         .height(1)
         .clear(false)
         .build();
 
-    if (DEBUG_HISTOGRAM) {
+    if (Settings.Debug.HISTOGRAM) {
         const texHistogram_debug = new Texture("texHistogram_debug")
             .imageName("imgHistogram_debug")
-            .format(R32UI)
+            .format(Format.R32UI)
             .width(256)
             .height(1)
             .clear(false)
@@ -523,12 +559,12 @@ function setupShader() {
         .clear(false)
         .build();
 
-    let lightListBuffer = null;
-    let triangleListBuffer = null;
+    let lightListBuffer: BuiltBuffer | null = null;
+    let triangleListBuffer: BuiltBuffer | null = null;
     if (Settings.Voxel.RT.Enabled) {
         const lightBinSize = 4 * (1 + Settings.Voxel.MaxLightCount);
         const lightListBinCount = Math.ceil(Settings.Voxel.Size / LIGHT_BIN_SIZE);
-        const lightListBufferSize = lightBinSize * lightListBinCount*lightListBinCount*lightListBinCount + 4;
+        const lightListBufferSize = lightBinSize * cubed(lightListBinCount) + 4;
         print(`Light-List Buffer Size: ${lightListBufferSize.toLocaleString()}`);
 
         lightListBuffer = new Buffer(lightListBufferSize)
@@ -538,7 +574,7 @@ function setupShader() {
         if (Settings.Voxel.RT.Triangles_Enabled) {
             const triangleBinSize = 4 + 36*Settings.Voxel.MaxTriangleCount;
             const triangleListBinCount = Math.ceil(Settings.Voxel.Size / TRIANGLE_BIN_SIZE);
-            const triangleListBufferSize = triangleBinSize * triangleListBinCount*triangleListBinCount*triangleListBinCount + 4;
+            const triangleListBufferSize = triangleBinSize * cubed(triangleListBinCount) + 4;
             print(`Triangle-List Buffer Size: ${triangleListBufferSize.toLocaleString()}`);
 
             triangleListBuffer = new Buffer(triangleListBufferSize)
@@ -719,6 +755,7 @@ function setupShader() {
             .vertex("shared/bufferless.vsh")
             .fragment("composite/rt-opaque.fsh")
             .target(0, texDiffuseRT)
+            .target(1, texSpecularRT)
             .ssbo(3, lightListBuffer)
             .ssbo(4, triangleListBuffer)
             .build());
@@ -738,7 +775,7 @@ function setupShader() {
             .build());
     }
 
-    if (FEATURE.Accumulation) {
+    if (Settings.Internal.Accumulation) {
         registerShader(Stage.POST_RENDER, new Compute("diffuse-accum-opaque")
             // .barrier(true)
             .location("composite/diffuse-accum-opaque.csh")
@@ -753,17 +790,15 @@ function setupShader() {
         //     .build());
     }
 
-    if (FEATURE.VL) {
-        registerShader(Stage.POST_RENDER, new Composite("volumetric-far")
-            .vertex("shared/bufferless.vsh")
-            .fragment("composite/volumetric-far.fsh")
-            .target(0, texScatterVL)
-            .target(1, texTransmitVL)
-            .ssbo(0, sceneBuffer)
-            .ssbo(1, shLpvBuffer)
-            .ssbo(2, shLpvBuffer_alt)
-            .build());
-    }
+    registerShader(Stage.POST_RENDER, new Composite("volumetric-far")
+        .vertex("shared/bufferless.vsh")
+        .fragment("composite/volumetric-far.fsh")
+        .target(0, texScatterVL)
+        .target(1, texTransmitVL)
+        .ssbo(0, sceneBuffer)
+        .ssbo(1, shLpvBuffer)
+        .ssbo(2, shLpvBuffer_alt)
+        .build());
 
     if (Settings.Shadows.Enabled) {
         registerShader(Stage.POST_RENDER, new Composite("shadow-opaque")
@@ -800,17 +835,15 @@ function setupShader() {
 
     registerShader(Stage.POST_RENDER, compositeOpaqueShader.build());
 
-    if (FEATURE.VL) {
-        registerShader(Stage.POST_RENDER, new Composite("volumetric-near")
-            .vertex("shared/bufferless.vsh")
-            .fragment("composite/volumetric-near.fsh")
-            .target(0, texScatterVL)
-            .target(1, texTransmitVL)
-            .ssbo(0, sceneBuffer)
-            .ssbo(1, shLpvBuffer)
-            .ssbo(2, shLpvBuffer_alt)
-            .build());
-    }
+    registerShader(Stage.POST_RENDER, new Composite("volumetric-near")
+        .vertex("shared/bufferless.vsh")
+        .fragment("composite/volumetric-near.fsh")
+        .target(0, texScatterVL)
+        .target(1, texTransmitVL)
+        .ssbo(0, sceneBuffer)
+        .ssbo(1, shLpvBuffer)
+        .ssbo(2, shLpvBuffer_alt)
+        .build());
 
     registerShader(Stage.POST_RENDER, new Composite("composite-translucent")
         .vertex("shared/bufferless.vsh")
@@ -867,7 +900,7 @@ function setupShader() {
         .target(0, texFinal)
         .build());
 
-    if (DEBUG) {
+    if (Settings.Debug.Enabled) {
         registerShader(Stage.POST_RENDER, new Composite("debug")
             .vertex("shared/bufferless.vsh")
             .fragment("post/debug.fsh")
@@ -881,3 +914,5 @@ function setupShader() {
 
     setCombinationPass(new CombinationPass("post/final.fsh").build());
 }
+
+function cubed(x) {return x*x*x;}

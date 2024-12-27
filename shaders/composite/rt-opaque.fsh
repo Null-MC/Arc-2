@@ -2,8 +2,10 @@
 #extension GL_NV_gpu_shader5: enable
 
 layout(location = 0) out vec4 outDiffuseRT;
+layout(location = 1) out vec4 outSpecularRT;
 
 uniform sampler2D solidDepthTex;
+uniform sampler2D texDeferredOpaque_Color;
 uniform usampler2D texDeferredOpaque_Data;
 uniform sampler2D texDeferredOpaque_TexNormal;
 
@@ -24,10 +26,15 @@ in vec2 uv;
 #include "/lib/light/fresnel.glsl"
 #include "/lib/light/sampling.glsl"
 
+#include "/lib/material_fresnel.glsl"
+
 #include "/lib/voxel/voxel_common.glsl"
 #include "/lib/voxel/light-list.glsl"
 #include "/lib/voxel/triangle-list.glsl"
 #include "/lib/voxel/dda-trace.glsl"
+
+
+#define MAX_SAMPLE_COUNT 2u
 
 
 void main() {
@@ -35,6 +42,7 @@ void main() {
     float depth = texelFetch(solidDepthTex, iuv, 0).r;
 
     vec3 diffuseFinal = vec3(0.0);
+    vec3 specularFinal = vec3(0.0);
 
     if (depth < 1.0) {
         uvec4 data = texelFetch(texDeferredOpaque_Data, iuv, 0);
@@ -64,9 +72,12 @@ void main() {
                 float dither = InterleavedGradientNoise(ivec2(gl_FragCoord.xy));
             #endif
 
+            vec4 albedo = texelFetch(texDeferredOpaque_Color, iuv, 0);
+            albedo.rgb = RgbToLinear(albedo.rgb);
+
             vec4 data_g = unpackUnorm4x8(data.g);
             float roughness = data_g.x;
-            // float f0_metal = data_g.y;
+             float f0_metal = data_g.y;
             // float emission = data_g.z;
             // float sss = data_g.w;
 
@@ -83,9 +94,13 @@ void main() {
             // voxelPos = GetVoxelPosition(localPos + 0.02*localGeoNormal);
             vec3 voxelPos_out = voxelPos + 0.02*localGeoNormal;
 
-            const uint MAX_SAMPLE_COUNT = 8u;
-            uint maxSampleCount = min(binLightCount, MAX_SAMPLE_COUNT);
-            float bright_scale = ceil(binLightCount / float(MAX_SAMPLE_COUNT));
+            #if MAX_SAMPLE_COUNT > 0
+                uint maxSampleCount = min(binLightCount, MAX_SAMPLE_COUNT);
+                float bright_scale = ceil(binLightCount / float(MAX_SAMPLE_COUNT));
+            #else
+                uint maxSampleCount = binLightCount;
+                const float bright_scale = 1.0;
+            #endif
 
             int i_offset = int(binLightCount * hash13(vec3(gl_FragCoord.xy, frameCounter)));
 
@@ -123,15 +138,52 @@ void main() {
                 float D = SampleLightDiffuse(NoVm, NoLm, LoHm, roughL);
                 vec3 sampleDiffuse = (NoLm * lightAtt.x * D) * lightColor;
 
-                vec3 origin = light_voxelPos;
-                vec3 endPos = voxelPos_out;
-                bool traceSelf = false;
-                sampleDiffuse *= TraceDDA(origin, endPos, lightRange, traceSelf);
+                float NoHm = max(dot(localTexNormal, H), 0.0);
 
-                diffuseFinal += sampleDiffuse * bright_scale;
+                const bool isUnderWater = false;
+                vec3 F = material_fresnel(albedo.rgb, f0_metal, roughL, NoVm, isUnderWater);
+                vec3 S = SampleLightSpecular(NoLm, NoHm, LoHm, F, roughL);
+                vec3 sampleSpecular = lightAtt.y * S * lightColor;
+
+                vec3 traceStart = light_voxelPos;
+                vec3 traceEnd = voxelPos_out;
+                bool traceSelf = false;
+
+                #ifdef RT_TRI_ENABLED
+                    vec3 traceRay = traceEnd - traceStart;
+                    vec3 direction = normalize(traceRay);
+
+                    vec3 stepDir = sign(direction);
+                    // vec3 stepSizes = 1.0 / abs(direction);
+                    vec3 nextDist = (stepDir * 0.5 + 0.5 - fract(traceStart)) / direction;
+
+                    float closestDist = minOf(nextDist);
+                    traceStart += direction * closestDist;
+
+                    // vec3 stepAxis = vec3(lessThanEqual(nextDist, vec3(closestDist)));
+
+                    // nextDist -= closestDist;
+                    // nextDist += stepSizes * stepAxis;
+
+
+
+                    // ivec3 triangle_offset = ivec3(voxelPos) % TRIANGLE_BIN_SIZE;
+                    // traceStart -= triangle_offset;
+                    // traceEnd -= triangle_offset;
+
+                    traceStart /= TRIANGLE_BIN_SIZE;
+                    traceEnd /= TRIANGLE_BIN_SIZE;
+                    traceSelf = true;
+                #endif
+
+                vec3 shadow_color = TraceDDA(traceStart, traceEnd, lightRange, traceSelf);
+
+                diffuseFinal += sampleDiffuse * shadow_color * bright_scale;
+                specularFinal += sampleSpecular * shadow_color * bright_scale;
             }
         }
     }
 
     outDiffuseRT = vec4(diffuseFinal, 1.0);
+    outSpecularRT = vec4(specularFinal, 1.0);
 }

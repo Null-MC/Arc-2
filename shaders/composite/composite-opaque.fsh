@@ -37,6 +37,8 @@ uniform sampler2D TEX_SHADOW;
 #ifdef ACCUM_ENABLED
     uniform sampler2D texDiffuseAccum;
     uniform sampler2D texDiffuseAccum_alt;
+    uniform sampler2D texSpecularAccum;
+    uniform sampler2D texSpecularAccum_alt;
 #endif
 
 #include "/settings.glsl"
@@ -207,7 +209,8 @@ void main() {
         #endif
 
         #ifdef LPV_ENABLED
-            vec3 voxelSamplePos = voxelPos - 0.25*localGeoNormal + 0.75*localTexNormal;
+            // vec3 voxelSamplePos = voxelPos - 0.25*localGeoNormal + 0.75*localTexNormal;
+            vec3 voxelSamplePos = voxelPos + 0.5*localGeoNormal;
 
             skyLightDiffuse += sample_lpv_linear(voxelSamplePos, localTexNormal) * SampleLightDiffuse(NoVm, 1.0, 1.0, roughL);
         #endif
@@ -301,6 +304,10 @@ void main() {
 
         vec3 specular = skyLight * shadow_sss.rgb * SampleLightSpecular(NoLm, NoHm, LoHm, view_F, roughL);
         specular += view_F * skyReflectColor * reflectTint * (1.0 - roughness);
+
+        #ifdef ACCUM_ENABLED
+            specular += textureLod(altFrame ? texSpecularAccum_alt : texSpecularAccum, uv, 0).rgb;
+        #endif
 
         colorFinal = albedo.rgb * diffuse + specular;
 

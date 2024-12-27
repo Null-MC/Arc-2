@@ -77,9 +77,9 @@ void main() {
             imageStore(imgVoxelBlock, ivec3(voxelPos), uvec4(vIn[0].blockId));
 
             #if defined RT_ENABLED && defined RT_TRI_ENABLED
-                bool isFullBlock = iris_isFullBlock(vIn[0].blockId);
+                // bool isFullBlock = iris_isFullBlock(vIn[0].blockId);
 
-                if (!isFullBlock && vIn[0].currentCascade == 0) {
+                if (vIn[0].currentCascade == 0) {
                     ivec3 triangleBinPos = ivec3(floor(voxelPos / TRIANGLE_BIN_SIZE));
                     int triangleBinIndex = GetTriangleBinIndex(triangleBinPos);
 
@@ -87,7 +87,7 @@ void main() {
 
                     if (triangleIndex < TRIANGLE_BIN_MAX) {
                         vec3 originBase = vIn[0].originPos - 0.5;
-                        vec3 offset = voxelPos - 0.5 - triangleBinPos*TRIANGLE_BIN_SIZE;
+                        vec3 offset = ivec3(voxelPos) - triangleBinPos*TRIANGLE_BIN_SIZE;
 
                         Triangle tri;
                         tri.pos[0] = f16vec3(vIn[0].localPos - originBase + offset);

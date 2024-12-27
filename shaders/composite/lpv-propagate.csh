@@ -293,7 +293,7 @@ void main() {
 	        vec3 moonTransmit = getValFromTLUT(texSkyTransmit, skyPos, -Scene_LocalSunDir);
 	        vec3 skyLight = SUN_BRIGHTNESS * sunTransmit + MOON_BRIGHTNESS * moonTransmit;
 
-			vec4 coeffs = dirToSH(-sample_normal) / PI;
+			vec4 coeffs = dirToSH(sample_normal) / PI;
 			vec3 flux = exp2(13.0) * max(Scene_LocalSunDir.y, 0.0) * skyLight * sample_color;
 
 			sh_rsm_voxel.R = f16vec4(sh_rsm_voxel.R + coeffs * flux.r);

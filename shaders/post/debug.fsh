@@ -4,7 +4,7 @@
 layout(location = 0) out vec4 outColor;
 
 uniform sampler2D texFinal;
-uniform sampler2D texDiffuseRT;
+uniform sampler2D texSpecularRT;
 
 #ifdef DEBUG_HISTOGRAM
     uniform usampler2D texHistogram_debug;
@@ -67,7 +67,7 @@ void main() {
 
         previewCoord = (uv - 0.01) / vec2(0.25);
         if (clamp(previewCoord, 0.0, 1.0) == previewCoord) {
-            color = textureLod(texDiffuseRT, previewCoord, 0).rgb;
+            color = textureLod(texSpecularRT, previewCoord, 0).rgb;
         }
     }
 

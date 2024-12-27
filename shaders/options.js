@@ -49,10 +49,14 @@ function setupOptions() {
         .add(asBool("EFFECT_TAA_ENABLED", true))
         .build();
 
+    const screen_Debug = new Screen("Debug")
+        .add(asBool("DEBUG_ENABLED", false))
+        .build();
+
     return new Screen("main")
         .add(screen_Sky, screen_Water)
         .add(screen_Shadows, screen_Material)
-        .add(screen_Voxel, EMPTY)
-        .add(screen_Effects, screen_Post)
+        .add(screen_Voxel, screen_Effects)
+        .add(screen_Post, screen_Debug)
         .build();
 }

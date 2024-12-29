@@ -3,6 +3,7 @@ import './iris'
 const LIGHT_BIN_SIZE = 8;
 const TRIANGLE_BIN_SIZE = 2;
 
+// CONSTANTS
 const LightMode_LightMap = 0;
 const LightMode_LPV = 1;
 const LightMode_RT = 2;

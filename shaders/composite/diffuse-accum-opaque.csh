@@ -1,5 +1,8 @@
 #version 430 core
 
+#include "/settings.glsl"
+#include "/lib/constants.glsl"
+
 layout (local_size_x = 16, local_size_y = 16, local_size_z = 1) in;
 
 const int sharedBufferRes = 20;
@@ -32,7 +35,6 @@ uniform sampler2D texSSGIAO;
     uniform sampler2D texSpecularRT;
 #endif
 
-#include "/settings.glsl"
 #include "/lib/common.glsl"
 #include "/lib/depth.glsl"
 #include "/lib/gaussian.glsl"

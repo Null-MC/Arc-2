@@ -1,4 +1,4 @@
-#define DDA_MAX_STEP 6 //((LIGHTING_RANGE/100.0) * 24)
+#define DDA_MAX_STEP 20
 
 const uint DDAStepCount = uint(DDA_MAX_STEP);
 

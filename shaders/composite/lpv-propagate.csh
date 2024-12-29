@@ -1,6 +1,9 @@
 #version 430 core
 #extension GL_NV_gpu_shader5: enable
 
+#include "/settings.glsl"
+#include "/lib/constants.glsl"
+
 layout (local_size_x = 8, local_size_y = 8, local_size_z = 8) in;
 
 layout(r32ui) uniform readonly uimage3D imgVoxelBlock;
@@ -13,23 +16,24 @@ layout(r32ui) uniform readonly uimage3D imgVoxelBlock;
 	uniform sampler2D texSkyTransmit;
 #endif
 
-#include "/settings.glsl"
 #include "/lib/common.glsl"
 #include "/lib/buffers/scene.glsl"
 #include "/lib/buffers/sh-lpv.glsl"
 
 #include "/lib/noise/hash.glsl"
 
-#include "/lib/utility/blackbody.glsl"
+//#include "/lib/utility/blackbody.glsl"
 
 #include "/lib/voxel/voxel_common.glsl"
 
 #include "/lib/lpv/lpv_common.glsl"
 
-#include "/lib/shadow/csm.glsl"
+#ifdef LPV_RSM_ENABLED
+	#include "/lib/shadow/csm.glsl"
 
-#include "/lib/sky/common.glsl"
-#include "/lib/sky/sun.glsl"
+	#include "/lib/sky/common.glsl"
+	#include "/lib/sky/sun.glsl"
+#endif
 
 
 const float directFaceSubtendedSolidAngle = 0.4006696846 / PI / 2.0;
@@ -178,25 +182,27 @@ void main() {
 	#ifndef LPV_PER_FACE_LIGHTING
 		int lightRange = iris_getEmission(blockId);
 
-		if (lightRange > 0) {
-			vec3 lightColor = tintColor;//iris_getLightColor(neighborBlockId).rgb;
-			// lightColor = RgbToLinear(lightColor);
+		#if LIGHTING_MODE == LIGHT_MODE_LPV
+			if (lightRange > 0) {
+				vec3 lightColor = tintColor;//iris_getLightColor(neighborBlockId).rgb;
+				// lightColor = RgbToLinear(lightColor);
 
-			// vec4 coeffs = vec4(1.0 / PI);//dirToSH(vec3(-curDir)) / PI;
-			vec4 coeffs = vec4(0.0);
-			coeffs += dirToSH(vec3( 0.0,  1.0,  0.0));
-			coeffs += dirToSH(vec3( 0.0, -1.0,  0.0));
-			coeffs += dirToSH(vec3( 1.0,  0.0,  0.0));
-			coeffs += dirToSH(vec3(-1.0,  0.0,  0.0));
-			coeffs += dirToSH(vec3( 0.0,  0.0,  1.0));
-			coeffs += dirToSH(vec3( 0.0,  0.0, -1.0));
-			coeffs /= PI;
-			vec3 flux = exp2(lightRange) * lightColor;
+				// vec4 coeffs = vec4(1.0 / PI);//dirToSH(vec3(-curDir)) / PI;
+				vec4 coeffs = vec4(0.0);
+				coeffs += dirToSH(vec3( 0.0,  1.0,  0.0));
+				coeffs += dirToSH(vec3( 0.0, -1.0,  0.0));
+				coeffs += dirToSH(vec3( 1.0,  0.0,  0.0));
+				coeffs += dirToSH(vec3(-1.0,  0.0,  0.0));
+				coeffs += dirToSH(vec3( 0.0,  0.0,  1.0));
+				coeffs += dirToSH(vec3( 0.0,  0.0, -1.0));
+				coeffs /= PI;
+				vec3 flux = exp2(lightRange) * lightColor;
 
-			sh_voxel.R = f16vec4(sh_voxel.R + coeffs * flux.r);
-			sh_voxel.G = f16vec4(sh_voxel.G + coeffs * flux.g);
-			sh_voxel.B = f16vec4(sh_voxel.B + coeffs * flux.b);
-		}
+				sh_voxel.R = f16vec4(sh_voxel.R + coeffs * flux.r);
+				sh_voxel.G = f16vec4(sh_voxel.G + coeffs * flux.g);
+				sh_voxel.B = f16vec4(sh_voxel.B + coeffs * flux.b);
+			}
+		#endif
 	#endif
 	}
 
@@ -228,17 +234,19 @@ void main() {
 					// lightColor = normalize(lightColor);
 					// lightColor = RgbToLinear(lightColor);
 
-					if (lightRange > 0) {
-						vec3 lightColor = iris_getLightColor(neighborBlockId).rgb;
-						lightColor = RgbToLinear(lightColor);
+					#if LIGHTING_MODE == LIGHT_MODE_LPV
+						if (lightRange > 0) {
+							vec3 lightColor = iris_getLightColor(neighborBlockId).rgb;
+							lightColor = RgbToLinear(lightColor);
 
-						vec4 coeffs = dirToSH(vec3(-curDir)) / PI;
-						vec3 flux = exp2(lightRange) * lightColor * tintColor;
+							vec4 coeffs = dirToSH(vec3(-curDir)) / PI;
+							vec3 flux = exp2(lightRange) * lightColor * tintColor;
 
-						sh_voxel.R = f16vec4(sh_voxel.R + coeffs * flux.r);
-						sh_voxel.G = f16vec4(sh_voxel.G + coeffs * flux.g);
-						sh_voxel.B = f16vec4(sh_voxel.B + coeffs * flux.b);
-					}
+							sh_voxel.R = f16vec4(sh_voxel.R + coeffs * flux.r);
+							sh_voxel.G = f16vec4(sh_voxel.G + coeffs * flux.g);
+							sh_voxel.B = f16vec4(sh_voxel.B + coeffs * flux.b);
+						}
+					#endif
 				#endif
 			}
 

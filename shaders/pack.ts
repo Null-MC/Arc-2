@@ -1,7 +1,15 @@
 import './iris'
 
 const LIGHT_BIN_SIZE = 8;
-const TRIANGLE_BIN_SIZE = 4;
+const TRIANGLE_BIN_SIZE = 2;
+
+const LightMode_LightMap = 0;
+const LightMode_LPV = 1;
+const LightMode_RT = 2;
+
+const ReflectMode_None = 0;
+const ReflectMode_SSR = 1;
+const ReflectMode_WSR = 2;
 
 
 function setupSettings() {
@@ -22,22 +30,19 @@ function setupSettings() {
         },
         Material: {
             Format: getStringSetting("MATERIAL_FORMAT"),
-            SSR: getBoolSetting("MATERIAL_SSR_ENABLED"),
-            SSR_Noise: getBoolSetting("MATERIAL_ROUGH_REFLECT_NOISE"),
+        },
+        Lighting: {
+            Mode: parseInt(getStringSetting("LIGHTING_MODE")),
+            ReflectionMode: parseInt(getStringSetting("LIGHTING_REFLECT_MODE")),
+            ReflectionNoise: getBoolSetting("LIGHTING_REFLECT_NOISE"),
+            TraceTriangles: getBoolSetting("LIGHTING_TRACE_TRIANGLE"),
+            LpvRsmEnabled: getBoolSetting("LPV_RSM_ENABLED"),
         },
         Voxel: {
             Size: parseInt(getStringSetting("VOXEL_SIZE")),
             Offset: parseFloat(getStringSetting("VOXEL_FRUSTUM_OFFSET")),
             MaxLightCount: 64,
-            MaxTriangleCount: 256,
-            LPV: {
-                Enabled: getBoolSetting("LPV_ENABLED"),
-                RSM_Enabled: getBoolSetting("LPV_RSM_ENABLED"),
-            },
-            RT: {
-                Enabled: getBoolSetting("RT_ENABLED"),
-                Triangles_Enabled: getBoolSetting("RT_TRI_ENABLED"),
-            },
+            MaxTriangleCount: 64,
         },
         Effect: {
             SSAO: getBoolSetting("EFFECT_SSAO_ENABLED"),
@@ -51,14 +56,39 @@ function setupSettings() {
             Enabled: getBoolSetting("DEBUG_ENABLED"),
             SSGIAO: false,
             HISTOGRAM: false,
+            RT: true,
         },
         Internal: {
             Accumulation: false,
+            Voxelization: false,
+            VoxelizeTriangles: false,
+            LPV: false,
         },
     };
 
-    if (Settings.Voxel.RT.Enabled) Settings.Internal.Accumulation = true;
+    // if (Settings.Voxel.RT.Enabled) Settings.Internal.Accumulation = true;
     if (Settings.Effect.SSGI) Settings.Internal.Accumulation = true;
+
+    if (Settings.Lighting.Mode == LightMode_LPV) {
+        Settings.Internal.Voxelization = true;
+        Settings.Internal.LPV = true;
+    }
+
+    if (Settings.Lighting.Mode == LightMode_RT) {
+        Settings.Internal.Voxelization = true;
+        Settings.Internal.Accumulation = true;
+    }
+
+    if (Settings.Lighting.ReflectionMode == ReflectMode_WSR) {
+        Settings.Internal.Voxelization = true;
+        Settings.Internal.VoxelizeTriangles = true;
+        Settings.Internal.Accumulation = true;
+    }
+
+    if (Settings.Lighting.LpvRsmEnabled) {
+        Settings.Internal.Voxelization = true;
+        Settings.Internal.LPV = true;
+    }
 
     worldSettings.disableShade = true;
     worldSettings.ambientOcclusionLevel = 0.0;
@@ -91,28 +121,38 @@ function setupSettings() {
     if (Settings.Shadows.SS_Fallback) defineGlobally("SHADOW_SCREEN", "1");
 
     defineGlobally("MATERIAL_FORMAT", Settings.Material.Format);
-    if (Settings.Material.SSR) defineGlobally("MATERIAL_SSR_ENABLED", "1");
-    if (Settings.Material.SSR_Noise) defineGlobally("MATERIAL_ROUGH_REFLECT_NOISE", "1");
 
-    defineGlobally("VOXEL_SIZE", Settings.Voxel.Size.toString());
-    defineGlobally("VOXEL_FRUSTUM_OFFSET", Settings.Voxel.Offset.toString());
-    defineGlobally("LIGHT_BIN_MAX", Settings.Voxel.MaxLightCount.toString());
-    defineGlobally("LIGHT_BIN_SIZE", LIGHT_BIN_SIZE.toString());
-    defineGlobally("TRIANGLE_BIN_MAX", Settings.Voxel.MaxTriangleCount.toString());
-    defineGlobally("TRIANGLE_BIN_SIZE", TRIANGLE_BIN_SIZE.toString());
+    defineGlobally("LIGHTING_MODE", Settings.Lighting.Mode.toString());
+    defineGlobally("LIGHTING_REFLECT_MODE", Settings.Lighting.ReflectionMode.toString());
+    if (Settings.Lighting.ReflectionNoise) defineGlobally("MATERIAL_ROUGH_REFLECT_NOISE", "1");
 
-    if (Settings.Voxel.LPV.Enabled) {
-        defineGlobally("LPV_ENABLED", "1");
+    if (Settings.Internal.Voxelization) {
+        defineGlobally("VOXEL_ENABLED", "1");
+        defineGlobally("VOXEL_SIZE", Settings.Voxel.Size.toString());
+        defineGlobally("VOXEL_FRUSTUM_OFFSET", Settings.Voxel.Offset.toString());
 
-        if (Settings.Voxel.LPV.RSM_Enabled) {
-            defineGlobally("LPV_RSM_ENABLED", "1");
+        if (Settings.Lighting.Mode == LightMode_RT) {
+            defineGlobally("RT_ENABLED", "1");
+            defineGlobally("LIGHT_BIN_MAX", Settings.Voxel.MaxLightCount.toString());
+            defineGlobally("LIGHT_BIN_SIZE", LIGHT_BIN_SIZE.toString());
+
+            if (Settings.Lighting.TraceTriangles) defineGlobally("RT_TRI_ENABLED", "1")
         }
-    }
 
-    if (Settings.Voxel.RT.Enabled) {
-        defineGlobally("RT_ENABLED", "1");
-        
-        if (Settings.Voxel.RT.Triangles_Enabled) defineGlobally("RT_TRI_ENABLED", "1");
+        if (Settings.Internal.VoxelizeTriangles) {
+            defineGlobally("VOXEL_TRI_ENABLED", "1");
+            defineGlobally("TRIANGLE_BIN_MAX", Settings.Voxel.MaxTriangleCount.toString());
+            defineGlobally("TRIANGLE_BIN_SIZE", TRIANGLE_BIN_SIZE.toString());
+        }
+
+        // if (Settings.Lighting.ReflectionMode == ReflectMode_WSR) defineGlobally("VOXEL_WSR_ENABLED", "1");
+
+        if (Settings.Internal.LPV) {
+            defineGlobally("LPV_ENABLED", "1");
+
+            if (Settings.Lighting.LpvRsmEnabled)
+                defineGlobally("LPV_RSM_ENABLED", "1");
+        }
     }
 
     if (Settings.Post.TAA) defineGlobally("EFFECT_TAA_ENABLED", "1");
@@ -120,6 +160,7 @@ function setupSettings() {
     if (Settings.Debug.Enabled) {
         if (Settings.Debug.SSGIAO) defineGlobally("DEBUG_SSGIAO", "1");
         if (Settings.Debug.HISTOGRAM) defineGlobally("DEBUG_HISTOGRAM", "1");
+        if (Settings.Debug.RT) defineGlobally("DEBUG_RT", "1");
     }
 
     return Settings;
@@ -403,7 +444,7 @@ function setupShader() {
 
     let texDiffuseRT: BuiltTexture | null = null;
     let texSpecularRT: BuiltTexture | null = null;
-    if (Settings.Voxel.RT.Enabled) {
+    if (Settings.Lighting.Mode == LightMode_RT || Settings.Lighting.ReflectionMode == ReflectMode_WSR) {
         texDiffuseRT = new Texture("texDiffuseRT")
             // .imageName("imgDiffuseRT")
             .format(Format.RGB16F)
@@ -514,7 +555,7 @@ function setupShader() {
     let shLpvBuffer_alt: BuiltBuffer | null = null;
     let shLpvRsmBuffer: BuiltBuffer | null = null;
     let shLpvRsmBuffer_alt: BuiltBuffer | null = null;
-    if (Settings.Voxel.LPV.Enabled) {
+    if (Settings.Internal.LPV) {
         // f16vec4[3] * VoxelBufferSize^3
         const bufferSize = 8 * 3 * cubed(Settings.Voxel.Size);
 
@@ -526,7 +567,7 @@ function setupShader() {
             .clear(false)
             .build();
 
-        if (Settings.Voxel.LPV.RSM_Enabled) {
+        if (Settings.Lighting.LpvRsmEnabled) {
             shLpvRsmBuffer = new Buffer(bufferSize)
                 .clear(false)
                 .build();
@@ -561,7 +602,7 @@ function setupShader() {
 
     let lightListBuffer: BuiltBuffer | null = null;
     let triangleListBuffer: BuiltBuffer | null = null;
-    if (Settings.Voxel.RT.Enabled) {
+    if (Settings.Internal.Voxelization) {
         const lightBinSize = 4 * (1 + Settings.Voxel.MaxLightCount);
         const lightListBinCount = Math.ceil(Settings.Voxel.Size / LIGHT_BIN_SIZE);
         const lightListBufferSize = lightBinSize * cubed(lightListBinCount) + 4;
@@ -571,8 +612,8 @@ function setupShader() {
             .clear(true) // TODO: clear with compute
             .build();
 
-        if (Settings.Voxel.RT.Triangles_Enabled) {
-            const triangleBinSize = 4 + 36*Settings.Voxel.MaxTriangleCount;
+        if (Settings.Internal.VoxelizeTriangles) {
+            const triangleBinSize = 4 + 44*Settings.Voxel.MaxTriangleCount;
             const triangleListBinCount = Math.ceil(Settings.Voxel.Size / TRIANGLE_BIN_SIZE);
             const triangleListBufferSize = triangleBinSize * cubed(triangleListBinCount) + 4;
             print(`Triangle-List Buffer Size: ${triangleListBufferSize.toLocaleString()}`);
@@ -596,7 +637,7 @@ function setupShader() {
         .workGroups(1, 1, 1)
         .build());
 
-    if (Settings.Voxel.LPV.Enabled) {
+    if (Settings.Internal.LPV) {
         registerShader(Stage.SCREEN_SETUP, new Compute("lpv-clear")
             // .barrier(true)
             .location("setup/lpv-clear.csh")
@@ -720,7 +761,7 @@ function setupShader() {
         .target(0, texParticles)
         .build());
 
-    if (Settings.Voxel.LPV.Enabled) {
+    if (Settings.Internal.LPV) {
         const groupCount = Math.ceil(Settings.Voxel.Size / 8);
 
         const shader = new Compute("lpv-propagate")
@@ -731,7 +772,7 @@ function setupShader() {
             .ssbo(1, shLpvBuffer)
             .ssbo(2, shLpvBuffer_alt);
 
-        if (Settings.Voxel.LPV.RSM_Enabled) {
+        if (Settings.Lighting.LpvRsmEnabled) {
             shader
                 .ssbo(3, shLpvRsmBuffer)
                 .ssbo(4, shLpvRsmBuffer_alt);
@@ -740,7 +781,7 @@ function setupShader() {
         registerShader(Stage.POST_RENDER, shader.build());
     }
 
-    if (Settings.Voxel.RT.Enabled) {
+    if (Settings.Lighting.Mode == LightMode_RT) {
         const groupCount = Math.ceil(Settings.Voxel.Size / 8);
 
         registerShader(Stage.POST_RENDER, new Compute("light-list")
@@ -750,15 +791,41 @@ function setupShader() {
             .ssbo(0, sceneBuffer)
             .ssbo(3, lightListBuffer)
             .build());
+    }
 
-        registerShader(Stage.POST_RENDER, new Composite("rt-opaque")
+    if (Settings.Shadows.Enabled) {
+        registerShader(Stage.POST_RENDER, new Composite("shadow-opaque")
+            .vertex("shared/bufferless.vsh")
+            .fragment("composite/shadow-opaque.fsh")
+            .target(0, texShadow)
+            .build());
+
+        if (Settings.Shadows.Filter) {
+            registerShader(Stage.POST_RENDER, new Compute("shadow-filter-opaque")
+                // .barrier(true)
+                .location("composite/shadow-filter-opaque.csh")
+                .workGroups(Math.ceil(screenWidth / 16.0), Math.ceil(screenHeight / 16.0), 1)
+                .build());
+        }
+    }
+
+    const texShadow_src = Settings.Shadows.Filter ? "texShadow_final" : "texShadow";
+
+    if (Settings.Lighting.Mode == LightMode_RT || Settings.Lighting.ReflectionMode == ReflectMode_WSR) {
+        const rtOpaqueShader = new Composite("rt-opaque")
             .vertex("shared/bufferless.vsh")
             .fragment("composite/rt-opaque.fsh")
             .target(0, texDiffuseRT)
             .target(1, texSpecularRT)
+            .ssbo(0, sceneBuffer)
             .ssbo(3, lightListBuffer)
             .ssbo(4, triangleListBuffer)
-            .build());
+            .define("TEX_SHADOW", texShadow_src);
+
+        if (Settings.Lighting.ReflectionMode == ReflectMode_WSR)
+            rtOpaqueShader.generateMips(texFinalPrevious);
+
+        registerShader(Stage.POST_RENDER, rtOpaqueShader.build());
     }
 
     if (Settings.Effect.SSAO || Settings.Effect.SSGI) {
@@ -800,34 +867,19 @@ function setupShader() {
         .ssbo(2, shLpvBuffer_alt)
         .build());
 
-    if (Settings.Shadows.Enabled) {
-        registerShader(Stage.POST_RENDER, new Composite("shadow-opaque")
-            .vertex("shared/bufferless.vsh")
-            .fragment("composite/shadow-opaque.fsh")
-            .target(0, texShadow)
-            .build());
-
-        if (Settings.Shadows.Filter) {
-            registerShader(Stage.POST_RENDER, new Compute("shadow-filter-opaque")
-                // .barrier(true)
-                .location("composite/shadow-filter-opaque.csh")
-                .workGroups(Math.ceil(screenWidth / 16.0), Math.ceil(screenHeight / 16.0), 1)
-                .build());
-        }
-    }
-
-    const texShadow_src = Settings.Shadows.Filter ? "texShadow_final" : "texShadow";
-
     const compositeOpaqueShader = new Composite("composite-opaque")
         .vertex("shared/bufferless.vsh")
         .fragment("composite/composite-opaque.fsh")
         .target(0, texFinalOpaque)
         .ssbo(0, sceneBuffer)
-        .generateMips(texFinalPrevious)
+        .ssbo(4, triangleListBuffer)
         .define("TEX_SHADOW", texShadow_src)
         .define("TEX_SSGIAO", "texSSGIAO_final");
 
-    if (Settings.Voxel.LPV.Enabled) {
+    if (Settings.Lighting.ReflectionMode == ReflectMode_SSR)
+        compositeOpaqueShader.generateMips(texFinalPrevious);
+
+    if (Settings.Internal.LPV) {
         compositeOpaqueShader
             .ssbo(1, shLpvBuffer)
             .ssbo(2, shLpvBuffer_alt);
@@ -850,6 +902,7 @@ function setupShader() {
         .fragment("composite/composite-trans.fsh")
         .target(0, texFinal)
         .ssbo(0, sceneBuffer)
+        .ssbo(4, triangleListBuffer)
         .generateMips(texFinalOpaque)
         .build());
 
@@ -885,6 +938,7 @@ function setupShader() {
 
     registerShader(Stage.POST_RENDER, new Compute("exposure")
         // .barrier(true)
+        .imageBarrier()
         .workGroups(1, 1, 1)
         .location("post/exposure.csh")
         .ssbo(0, sceneBuffer)

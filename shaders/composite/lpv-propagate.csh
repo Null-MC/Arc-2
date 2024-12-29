@@ -115,6 +115,7 @@ const ivec3 directions[] = {
 		vec3 sample_ndcPos = vec3(shadowCoord.xy, shadowDepth) * 2.0 - 1.0;
 		vec3 sample_shadowViewPos = mul3(shadowProjectionInverse, sample_ndcPos);
 
+		shadowViewPos.z -= 3.0;
 		if (distance(shadowViewPos, sample_shadowViewPos) > 1.0) {
 			sample_color = vec3(0.0);
 			sample_normal = vec3(0.0);

@@ -14,9 +14,19 @@ value.MATERIAL_FORMAT.0=None
 value.MATERIAL_FORMAT.1=Lab-PBR
 value.MATERIAL_FORMAT.2=Old-PBR
 
-option.MATERIAL_SSR_ENABLED=Reflections
+option.LIGHTING_MODE=Mode
+value.LIGHTING_MODE.0=LightMap
+value.LIGHTING_MODE.1=LPV
+value.LIGHTING_MODE.2=RT
 
-option.MATERIAL_ROUGH_REFLECT_NOISE=Rough Reflections
+option.LIGHTING_REFLECT_MODE=Reflections
+value.LIGHTING_REFLECT_MODE.0=Sky Only
+value.LIGHTING_REFLECT_MODE.1=Screen-Space
+value.LIGHTING_REFLECT_MODE.2=World-Space
+
+option.LIGHTING_REFLECT_NOISE=Rough Reflections
+
+option.LIGHTING_TRACE_TRIANGLE=Fully Traced Lighting
 
 option.VOXEL_SIZE=Size
 suffix.VOXEL_SIZE=^3

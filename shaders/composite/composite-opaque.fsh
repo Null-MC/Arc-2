@@ -1,6 +1,9 @@
 #version 430 core
 #extension GL_NV_gpu_shader5: enable
 
+#include "/settings.glsl"
+#include "/lib/constants.glsl"
+
 layout(location = 0) out vec4 outColor;
 
 in vec2 uv;
@@ -21,7 +24,7 @@ uniform sampler3D texFogNoise;
 
 uniform sampler2D TEX_SHADOW;
 
-#ifdef MATERIAL_SSR_ENABLED
+#if LIGHTING_REFLECT_MODE == REFLECT_MODE_SSR
     uniform sampler2D texFinalPrevious;
 #endif
 
@@ -41,9 +44,7 @@ uniform sampler2D TEX_SHADOW;
     uniform sampler2D texSpecularAccum_alt;
 #endif
 
-#include "/settings.glsl"
 #include "/lib/common.glsl"
-#include "/lib/constants.glsl"
 #include "/lib/buffers/scene.glsl"
 
 #ifdef LPV_ENABLED
@@ -59,6 +60,7 @@ uniform sampler2D TEX_SHADOW;
 
 #include "/lib/light/hcm.glsl"
 #include "/lib/light/fresnel.glsl"
+#include "/lib/material.glsl"
 #include "/lib/material_fresnel.glsl"
 
 #include "/lib/utility/blackbody.glsl"
@@ -73,14 +75,13 @@ uniform sampler2D TEX_SHADOW;
 #include "/lib/sky/transmittance.glsl"
 #include "/lib/sky/clouds.glsl"
 
-// #include "/lib/light/sky.glsl"
 #include "/lib/light/volumetric.glsl"
 
-#ifdef MATERIAL_SSR_ENABLED
+#if LIGHTING_REFLECT_MODE == REFLECT_MODE_SSR
     #include "/lib/effects/ssr.glsl"
 #endif
 
-#if defined LPV_ENABLED || defined RT_ENABLED
+#ifdef VOXEL_ENABLED
     #include "/lib/voxel/voxel_common.glsl"
 #endif
 
@@ -204,7 +205,7 @@ void main() {
             skyLightDiffuse += gi_ao.rgb;
         #endif
 
-        #if defined LPV_ENABLED || defined RT_ENABLED
+        #ifdef VOXEL_ENABLED
             vec3 voxelPos = GetVoxelPosition(localPos);
         #endif
 
@@ -227,7 +228,7 @@ void main() {
 
         vec3 blockLighting = blackbody(BLOCKLIGHT_TEMP) * (BLOCKLIGHT_BRIGHTNESS * lmCoord.x);
 
-        #if defined LPV_ENABLED || defined RT_ENABLED
+        #if LIGHTING_MODE != LIGHT_MODE_VANILLA
             // TODO: make fade and not cutover!
             if (IsInVoxelBounds(voxelPos)) blockLighting = vec3(0.0);
         #endif
@@ -239,7 +240,9 @@ void main() {
             diffuse += textureLod(altFrame ? texDiffuseAccum_alt : texDiffuseAccum, uv, 0).rgb;
         #endif
 
-        diffuse *= 1.0 - f0_metal * (1.0 - roughL);
+        float metalness = mat_metalness(f0_metal);
+        diffuse *= 1.0 - metalness * (1.0 - roughL);
+
         diffuse *= occlusion * 0.5 + 0.5;
 
         #ifdef ACCUM_ENABLED
@@ -253,23 +256,27 @@ void main() {
         #endif
 
         // reflections
-        vec3 reflectLocalDir = reflect(localViewDir, localTexNormal);
+        #if LIGHTING_REFLECT_MODE != REFLECT_MODE_WSR
+            vec3 reflectLocalDir = reflect(localViewDir, localTexNormal);
 
-        #ifdef MATERIAL_ROUGH_REFLECT_NOISE
-            randomize_reflection(reflectLocalDir, localTexNormal, roughness);
+            #ifdef MATERIAL_ROUGH_REFLECT_NOISE
+                randomize_reflection(reflectLocalDir, localTexNormal, roughness);
+            #endif
+
+            // vec3 skyReflectColor = GetSkyColor(vec3(0.0), reflectLocalDir, shadow_sss.rgb, lmCoord.y);
+            vec3 skyPos = getSkyPosition(vec3(0.0));
+            vec3 skyReflectColor = lmCoord.y * SKY_LUMINANCE * getValFromSkyLUT(texSkyView, skyPos, reflectLocalDir, Scene_LocalSunDir);
+
+            vec3 reflectSun = SUN_LUMINANCE * sun(reflectLocalDir, Scene_LocalSunDir) * sunTransmit;
+            vec3 reflectMoon = MOON_LUMINANCE * moon(reflectLocalDir, -Scene_LocalSunDir) * moonTransmit;
+            skyReflectColor += shadow_sss.rgb * (reflectSun + reflectMoon);
+
+            // vec3 starViewDir = getStarViewDir(reflectLocalDir);
+            // vec3 starLight = STAR_LUMINANCE * GetStarLight(starViewDir);
+            // skyReflectColor += starLight;
+        #else
+            vec3 skyReflectColor = vec3(0.0);
         #endif
-
-        // vec3 skyReflectColor = GetSkyColor(vec3(0.0), reflectLocalDir, shadow_sss.rgb, lmCoord.y);
-        vec3 skyPos = getSkyPosition(vec3(0.0));
-        vec3 skyReflectColor = lmCoord.y * SKY_LUMINANCE * getValFromSkyLUT(texSkyView, skyPos, reflectLocalDir, Scene_LocalSunDir);
-
-        vec3 reflectSun = SUN_LUMINANCE * sun(reflectLocalDir, Scene_LocalSunDir) * sunTransmit;
-        vec3 reflectMoon = MOON_LUMINANCE * moon(reflectLocalDir, -Scene_LocalSunDir) * moonTransmit;
-        skyReflectColor += shadow_sss.rgb * (reflectSun + reflectMoon);
-
-        // vec3 starViewDir = getStarViewDir(reflectLocalDir);
-        // vec3 starLight = STAR_LUMINANCE * GetStarLight(starViewDir);
-        // skyReflectColor += starLight;
 
         // TODO: vol-fog
         // for (int i = 0; i < 8; i++) {
@@ -281,18 +288,25 @@ void main() {
         //     skyReflectColor += sample_lpv_linear(voxelPos, reflectLocalDir);
         // #endif
 
-        #ifdef MATERIAL_SSR_ENABLED
-            float viewDist = length(localPos);
-            vec3 reflectViewDir = mat3(playerModelView) * reflectLocalDir;
-            vec3 reflectViewPos = viewPos + 0.5*viewDist*reflectViewDir;
-            vec3 reflectClipPos = unproject(playerProjection, reflectViewPos) * 0.5 + 0.5;
+        vec4 reflection = vec4(0.0);
 
-            vec3 clipPos = ndcPos * 0.5 + 0.5;
-            vec3 reflectRay = normalize(reflectClipPos - clipPos);
+        #if LIGHTING_REFLECT_MODE == REFLECT_MODE_SSR
+            float viewDist = length(viewPos);
+            //vec3 reflectViewDir = mat3(playerModelView) * reflectLocalDir;
+            vec3 reflectLocalPos = localPos + 0.5*viewDist*reflectLocalDir;
 
+            vec3 reflectViewStart = mul3(lastPlayerModelView, localPos);
+            vec3 reflectViewEnd = mul3(lastPlayerModelView, reflectLocalPos);
+
+            vec3 reflectNdcStart = unproject(lastPlayerProjection, reflectViewStart);
+            vec3 reflectNdcEnd = unproject(lastPlayerProjection, reflectViewEnd);
+
+            vec3 reflectRay = normalize(reflectNdcEnd - reflectNdcStart);
+
+            vec3 clipPos = reflectNdcStart * 0.5 + 0.5;
             float maxLod = max(log2(minOf(screenSize)) - 2.0, 0.0);
             float roughMip = min(roughness * 6.0, maxLod);
-            vec4 reflection = GetReflectionPosition(mainDepthTex, clipPos, reflectRay);
+            reflection = GetReflectionPosition(mainDepthTex, clipPos, reflectRay);
             vec3 reflectColor = GetRelectColor(texFinalPrevious, reflection.xy, reflection.a, roughMip);
 
             skyReflectColor = mix(skyReflectColor, reflectColor, reflection.a);

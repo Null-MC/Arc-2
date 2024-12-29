@@ -17,26 +17,19 @@ function setupOptions() {
 
     let screen_Material = new Screen("Material")
         .add(asString("MATERIAL_FORMAT", "1", "0", "1", "2"))
-        .add(asBool("MATERIAL_SSR_ENABLED", true))
-        .add(EMPTY)
-        .add(asBool("MATERIAL_ROUGH_REFLECT_NOISE", false))
         .build();
 
-    let screen_Voxel_LPV = new Screen("LPV")
-        .add(asBool("LPV_ENABLED", true))
+    let screen_Lighting = new Screen("Lighting")
+        .add(asString("LIGHTING_MODE", "1", "0", "2"))
+        .add(asString("LIGHTING_REFLECT_MODE", "1", "0", "2"))
+        .add(asBool("LIGHTING_REFLECT_NOISE", false))
+        .add(asBool("LIGHTING_TRACE_TRIANGLE", false))
         .add(asBool("LPV_RSM_ENABLED", true))
-        .build();
-
-    let screen_Voxel_RT = new Screen("RT")
-        .add(asBool("RT_ENABLED", false))
-        .add(asBool("RT_TRI_ENABLED", false))
         .build();
 
     let screen_Voxel = new Screen("Voxels")
         .add(asString("VOXEL_SIZE", "128", "64", "128", "256"))
-        .add(screen_Voxel_LPV)
-        .add(asString("VOXEL_FRUSTUM_OFFSET", "80", "0", "50", "80"))
-        .add(screen_Voxel_RT)
+        .add(asString("VOXEL_FRUSTUM_OFFSET", "0", "50", "80"))
         .build();
 
     const screen_Effects = new Screen("Effects")
@@ -56,7 +49,8 @@ function setupOptions() {
     return new Screen("main")
         .add(screen_Sky, screen_Water)
         .add(screen_Shadows, screen_Material)
-        .add(screen_Voxel, screen_Effects)
-        .add(screen_Post, screen_Debug)
+        .add(screen_Lighting, screen_Voxel)
+        .add(screen_Effects, screen_Post)
+        .add(EMPTY, screen_Debug)
         .build();
 }

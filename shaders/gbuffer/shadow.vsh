@@ -1,6 +1,9 @@
 #version 430 core
 #extension GL_AMD_vertex_shader_layer: enable
 
+#include "/settings.glsl"
+#include "/lib/constants.glsl"
+
 out VertexData2 {
     vec4 color;
     vec2 uv;
@@ -10,14 +13,14 @@ out VertexData2 {
         vec3 localNormal;
     #endif
 
-    #if (defined LPV_ENABLED || defined RT_ENABLED) && defined RENDER_TERRAIN
+    #if defined VOXEL_ENABLED && defined RENDER_TERRAIN
         vec3 localPos;
+        vec2 lmcoord;
         flat vec3 originPos;
         flat uint blockId;
     #endif
 } vOut;
 
-#include "/settings.glsl"
 #include "/lib/common.glsl"
 
 
@@ -25,7 +28,7 @@ void iris_emitVertex(inout VertexData data) {
     vec3 shadowViewPos = mul3(iris_modelViewMatrix, data.modelPos.xyz);
     data.clipPos = iris_projectionMatrix * vec4(shadowViewPos, 1.0);
 
-    #if (defined LPV_ENABLED || defined RT_ENABLED) && defined RENDER_TERRAIN
+    #if defined VOXEL_ENABLED && defined RENDER_TERRAIN
         // WARN: temp workaround
         mat4 shadowModelViewInverse = inverse(shadowModelView);
 
@@ -57,10 +60,11 @@ void iris_sendParameters(in VertexData data) {
         vOut.localNormal = mat3(playerModelViewInverse) * viewNormal;
     #endif
 
-    #if defined LPV_ENABLED || defined RT_ENABLED
-        vOut.currentCascade = iris_currentCascade;
+    vOut.currentCascade = iris_currentCascade;
 
+    #if defined VOXEL_ENABLED && defined RENDER_TERRAIN
         #ifdef RENDER_TERRAIN
+            vOut.lmcoord = clamp((data.light - (0.5/16.0)) / (15.0/16.0), 0.0, 1.0);
             vOut.blockId = data.blockId;
         #endif
     #endif

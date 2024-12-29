@@ -1,3 +1,11 @@
 #define MAT_NONE 0
 #define MAT_LABPBR 1
 #define MAT_OLDPBR 2
+
+#define LIGHT_MODE_VANILLA 0
+#define LIGHT_MODE_LPV 1
+#define LIGHT_MODE_RT 2
+
+#define REFLECT_MODE_NONE 0
+#define REFLECT_MODE_SSR 1
+#define REFLECT_MODE_WSR 2

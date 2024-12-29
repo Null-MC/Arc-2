@@ -40,6 +40,7 @@ const float Bloom_Strength = 0.04;
 
 const float Exposure_minLogLum = -9.5;
 const float Exposure_maxLogLum =  19.0;
+const float Exposure_Speed = 0.2;//2.1;
 
 const float shadowMapResolution = 1024.0;
 const float sunPathRotation = 25.0;

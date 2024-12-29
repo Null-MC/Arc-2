@@ -1,6 +1,9 @@
 #version 430 core
 #extension GL_NV_gpu_shader5: enable
 
+#include "/settings.glsl"
+#include "/lib/constants.glsl"
+
 layout(location = 0) out vec4 outColor;
 
 in vec2 uv;
@@ -23,7 +26,13 @@ uniform sampler2DArray shadowMap;
 uniform sampler2DArray solidShadowMap;
 uniform sampler2DArray texShadowColor;
 
-#ifdef MATERIAL_SSR_ENABLED
+#if defined VOXEL_WSR_ENABLED && defined RT_TRI_ENABLED
+    uniform sampler2D blockAtlas;
+    uniform sampler2D blockAtlasN;
+    uniform sampler2D blockAtlasS;
+#endif
+
+#if LIGHTING_REFLECT_MODE == REFLECT_MODE_SSR
     uniform sampler2D texFinalPrevious;
 #endif
 
@@ -37,12 +46,15 @@ uniform sampler2DArray texShadowColor;
     uniform sampler2D texDiffuseAccum_alt;
 #endif
 
-#include "/settings.glsl"
 #include "/lib/common.glsl"
 #include "/lib/buffers/scene.glsl"
 
 #ifdef LPV_ENABLED
     #include "/lib/buffers/sh-lpv.glsl"
+#endif
+
+#if defined VOXEL_WSR_ENABLED && defined RT_TRI_ENABLED
+    #include "/lib/buffers/triangle-list.glsl"
 #endif
 
 #include "/lib/erp.glsl"
@@ -54,6 +66,7 @@ uniform sampler2DArray texShadowColor;
 
 #include "/lib/light/hcm.glsl"
 #include "/lib/light/fresnel.glsl"
+#include "/lib/material.glsl"
 #include "/lib/material_fresnel.glsl"
 
 #include "/lib/utility/blackbody.glsl"
@@ -67,7 +80,7 @@ uniform sampler2DArray texShadowColor;
 #include "/lib/sky/stars.glsl"
 #include "/lib/sky/transmittance.glsl"
 
-#ifdef MATERIAL_SSR_ENABLED
+#if LIGHTING_REFLECT_MODE == REFLECT_MODE_SSR
     #include "/lib/effects/ssr.glsl"
 #endif
 
@@ -83,6 +96,12 @@ uniform sampler2DArray texShadowColor;
 #ifdef LPV_ENABLED
     #include "/lib/lpv/lpv_common.glsl"
     #include "/lib/lpv/lpv_sample.glsl"
+#endif
+
+#if defined VOXEL_WSR_ENABLED && defined RT_TRI_ENABLED
+    #include "/lib/voxel/triangle-test.glsl"
+    #include "/lib/voxel/triangle-list.glsl"
+    #include "/lib/effects/wsr.glsl"
 #endif
 
 #ifdef EFFECT_TAA_ENABLED
@@ -220,7 +239,8 @@ void main() {
             diffuse += textureLod(altFrame ? texDiffuseAccum_alt : texDiffuseAccum, uv, 0).rgb;
         #endif
 
-        diffuse *= 1.0 - f0_metal * (1.0 - roughL);
+        float metalness = mat_metalness(f0_metal);
+        diffuse *= 1.0 - metalness * (1.0 - roughL);
 
         #ifdef ACCUM_ENABLED
             // specular += textureLod(altFrame ? texSpecularAccum_alt : texSpecularAccum, uv, 0).rgb;
@@ -253,7 +273,9 @@ void main() {
 
         float viewDist = length(localPosTrans);
 
-        #ifdef MATERIAL_SSR_ENABLED
+        vec4 reflection = vec4(0.0);
+
+        #if LIGHTING_REFLECT_MODE == REFLECT_MODE_SSR
             vec3 reflectViewDir = mat3(playerModelView) * reflectLocalDir;
             vec3 reflectViewPos = viewPosTrans + 0.5*viewDist*reflectViewDir;
             vec3 reflectClipPos = unproject(playerProjection, reflectViewPos) * 0.5 + 0.5;
@@ -263,7 +285,7 @@ void main() {
 
             float maxLod = max(log2(minOf(screenSize)) - 2.0, 0.0);
             float roughMip = min(roughness * 6.0, maxLod);
-            vec4 reflection = GetReflectionPosition(mainDepthTex, clipPos, reflectRay);
+            reflection = GetReflectionPosition(mainDepthTex, clipPos, reflectRay);
             vec3 reflectColor = GetRelectColor(texFinalPrevious, reflection.xy, reflection.a, roughMip);
 
             skyReflectColor = mix(skyReflectColor, reflectColor, reflection.a);
@@ -279,49 +301,6 @@ void main() {
         vec4 finalColor = albedo;
         finalColor.rgb = albedo.rgb * diffuse + specular;
         finalColor.a = min(finalColor.a + maxOf(specular), 1.0);
-
-        // vec4 finalColor = albedo;
-        // finalColor.rgb *= skyLighting
-        //     + (BLOCKLIGHT_BRIGHTNESS * blockLighting)
-        //     + (EMISSION_BRIGHTNESS * emission)
-        //     + 0.0016;
-
-        // if (is_fluid) {
-        //     vec3 localViewDir = localPosTrans / viewDist;
-        //     vec3 reflectLocalDir = reflect(localViewDir, localTexNormal);
-        //     vec3 reflectViewDir = mat3(playerModelView) * reflectLocalDir;
-
-        //     vec3 skyReflectColor = lmCoord.y * SKY_LUMINANCE * getValFromSkyLUT(texSkyView, skyPos, reflectLocalDir, Scene_LocalSunDir);
-
-        //     vec3 starViewDir = getStarViewDir(reflectLocalDir);
-        //     vec3 starLight = STAR_LUMINANCE * GetStarLight(starViewDir);
-        //     skyReflectColor += starLight;
-
-        //     float NoVm = max(dot(localTexNormal, -localViewDir), 0.0);
-        //     float F = F_schlick(NoVm, 0.02, 1.0);
-
-        //     #ifdef MATERIAL_SSR_ENABLED
-        //         vec3 reflectViewPos = viewPosTrans + 0.5*viewDist*reflectViewDir;
-        //         vec3 reflectClipPos = unproject(playerProjection, reflectViewPos) * 0.5 + 0.5;
-
-        //         vec3 clipPos = ndcPosTrans * 0.5 + 0.5;
-        //         vec3 reflectRay = normalize(reflectClipPos - clipPos);
-
-        //         vec4 reflection = GetReflectionPosition(mainDepthTex, clipPos, reflectRay);
-        //         vec3 reflectColor = GetRelectColor(texFinalOpaque, reflection.xy, reflection.a, 0.0);
-
-        //         skyReflectColor = mix(skyReflectColor, reflectColor, reflection.a);
-        //     #endif
-
-        //     finalColor.rgb = F * skyReflectColor;
-
-        //     vec3 reflectSun = SUN_LUMINANCE * sun(reflectLocalDir, Scene_LocalSunDir) * sunTransmit;
-        //     vec3 reflectMoon = MOON_LUMINANCE * moon(reflectLocalDir, -Scene_LocalSunDir) * moonTransmit;
-        //     vec3 specular = shadowSample * (reflectSun + reflectMoon);
-
-        //     finalColor.rgb += F * specular;
-        //     finalColor.a = min(F + maxOf(specular), 1.0);
-        // }
 
         // Refraction
         vec3 refractViewNormal = mat3(playerModelView) * (localTexNormal - localGeoNormal);

@@ -2,6 +2,9 @@
 #extension GL_NV_gpu_shader5: enable
 #extension GL_AMD_vertex_shader_layer : require
 
+#include "/settings.glsl"
+#include "/lib/constants.glsl"
+
 layout(triangles) in;
 layout(triangle_strip, max_vertices=3) out;
 
@@ -14,8 +17,9 @@ in VertexData2 {
         vec3 localNormal;
     #endif
 
-    #if (defined LPV_ENABLED || defined RT_ENABLED) && defined RENDER_TERRAIN
+    #if defined VOXEL_ENABLED && defined RENDER_TERRAIN
         vec3 localPos;
+        vec2 lmcoord;
         flat vec3 originPos;
         flat uint blockId;
     #endif
@@ -30,25 +34,22 @@ out VertexData2 {
     #endif
 } vOut;
 
-#if defined LPV_ENABLED || defined RT_ENABLED
+#if defined VOXEL_ENABLED && defined RENDER_TERRAIN
     layout(r32ui) uniform writeonly uimage3D imgVoxelBlock;
 #endif
 
-#include "/settings.glsl"
 #include "/lib/common.glsl"
 
-#if defined RT_ENABLED && defined RENDER_TERRAIN
-    // #include "/lib/buffers/light-list.glsl"
-    #include "/lib/buffers/triangle-list.glsl"
-#endif
+#if defined VOXEL_ENABLED && defined RENDER_TERRAIN
+    #if defined VOXEL_TRI_ENABLED
+        #include "/lib/buffers/triangle-list.glsl"
+    #endif
 
-#if defined RT_ENABLED || defined LPV_ENABLED
     #include "/lib/voxel/voxel_common.glsl"
-#endif
 
-#if defined RT_ENABLED && defined RENDER_TERRAIN
-    // #include "/lib/voxel/light-list.glsl"
-    #include "/lib/voxel/triangle-list.glsl"
+    #if defined VOXEL_TRI_ENABLED
+        #include "/lib/voxel/triangle-list.glsl"
+    #endif
 #endif
 
 
@@ -70,16 +71,16 @@ void main() {
     EndPrimitive();
 
 
-    #if (defined LPV_ENABLED || defined RT_ENABLED) && defined RENDER_TERRAIN
+    #if defined VOXEL_ENABLED && defined RENDER_TERRAIN
         vec3 voxelPos = GetVoxelPosition(vIn[0].originPos);
 
         if (IsInVoxelBounds(voxelPos)) {
             imageStore(imgVoxelBlock, ivec3(voxelPos), uvec4(vIn[0].blockId));
 
-            #if defined RT_ENABLED && defined RT_TRI_ENABLED
-                // bool isFullBlock = iris_isFullBlock(vIn[0].blockId);
+            #if defined VOXEL_TRI_ENABLED
+                bool isFluid = iris_hasFluid(vIn[0].blockId);
 
-                if (vIn[0].currentCascade == 0) {
+                if (vIn[0].currentCascade == 0 && !isFluid) {
                     ivec3 triangleBinPos = ivec3(floor(voxelPos / TRIANGLE_BIN_SIZE));
                     int triangleBinIndex = GetTriangleBinIndex(triangleBinPos);
 
@@ -90,43 +91,22 @@ void main() {
                         vec3 offset = ivec3(voxelPos) - triangleBinPos*TRIANGLE_BIN_SIZE;
 
                         Triangle tri;
-                        tri.pos[0] = f16vec3(vIn[0].localPos - originBase + offset);
-                        tri.pos[1] = f16vec3(vIn[1].localPos - originBase + offset);
-                        tri.pos[2] = f16vec3(vIn[2].localPos - originBase + offset);
+                        tri.tint = packUnorm4x8(vIn[0].color);
+
+                        tri.pos[0] = SetTriangleVertexPos(vIn[0].localPos - originBase + offset);
+                        tri.pos[1] = SetTriangleVertexPos(vIn[1].localPos - originBase + offset);
+                        tri.pos[2] = SetTriangleVertexPos(vIn[2].localPos - originBase + offset);
 
                         tri.uv[0] = f16vec2(vIn[0].uv);
                         tri.uv[1] = f16vec2(vIn[1].uv);
                         tri.uv[2] = f16vec2(vIn[2].uv);
 
+                        tri.lmcoord = SetTriangleLightMapCoord(vIn[0].lmcoord, vIn[1].lmcoord, vIn[2].lmcoord);
+
                         TriangleBinMap[triangleBinIndex].triangleList[triangleIndex] = tri;
 
                         atomicAdd(Scene_TriangleCount, 1u);
                     }
-
-
-                    // vec2 uv_min = min(vIn[0].uv, vIn[1].uv);
-                    // uv_min = min(uv_min, vIn[2].uv);
-
-                    // vec2 uv_max = max(vIn[0].uv, vIn[1].uv);
-                    // uv_max = max(uv_max, vIn[2].uv);
-
-                    // float len_01 = lengthSq(vIn[0].localPos - vIn[1].localPos);
-                    // float len_12 = lengthSq(vIn[1].localPos - vIn[2].localPos);
-                    // float len_20 = lengthSq(vIn[2].localPos - vIn[0].localPos);
-
-                    // vec3 center;
-                    // if (len_01 > max(len_12, len_20)) center = vIn[0].localPos + vIn[1].localPos;
-                    // else if (len_12 > len_20) center = vIn[1].localPos + vIn[2].localPos;
-                    // else center = vIn[2].localPos + vIn[0].localPos;
-                    // center *= 0.5;
-
-                    // TODO: store quads
-                    // vec3 center
-                    // vec3 normal
-                    // float width
-                    // float height
-                    // vec2 uv-min
-                    // vec2 uv-max
                 }
             #endif
         }

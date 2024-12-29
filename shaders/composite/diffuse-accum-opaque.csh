@@ -17,15 +17,17 @@ layout(rgba16f) uniform writeonly image2D imgDiffuseAccumPos;
 layout(rgba16f) uniform writeonly image2D imgDiffuseAccumPos_alt;
 
 uniform sampler2D solidDepthTex;
+
 uniform sampler2D texDiffuseAccum;
 uniform sampler2D texDiffuseAccum_alt;
 uniform sampler2D texSpecularAccum;
 uniform sampler2D texSpecularAccum_alt;
 uniform sampler2D texDiffuseAccumPos;
 uniform sampler2D texDiffuseAccumPos_alt;
+
 uniform sampler2D texSSGIAO;
 
-#ifdef RT_ENABLED
+#if LIGHTING_MODE == LIGHT_MODE_RT || LIGHTING_REFLECT_MODE == REFLECT_MODE_WSR
     uniform sampler2D texDiffuseRT;
     uniform sampler2D texSpecularRT;
 #endif
@@ -142,30 +144,33 @@ void main() {
 
     bool altFrame = (frameCounter % 2) == 1;
 
-    vec4 previousDiffuseCounter = textureLod(altFrame ? texDiffuseAccum : texDiffuseAccum_alt, uvLast, 0);
-    vec3 previousSpecular = textureLod(altFrame ? texSpecularAccum : texSpecularAccum_alt, uvLast, 0).rgb;
+    vec4 previousDiffuse = textureLod(altFrame ? texDiffuseAccum : texDiffuseAccum_alt, uvLast, 0);
+    vec4 previousSpecular = textureLod(altFrame ? texSpecularAccum : texSpecularAccum_alt, uvLast, 0);
     vec3 localPosLast = textureLod(altFrame ? texDiffuseAccumPos : texDiffuseAccumPos_alt, uvLast, 0).rgb;
 
     float depthL = linearizeDepth(depth, nearPlane, farPlane);
 
     float offsetThreshold = clamp(depthL * 0.04, 0.0, 1.0);
 
-    if (clamp(uvLast, 0.0, 1.0) != uvLast) previousDiffuseCounter.a = 0.0;
-    if (distance(localPosPrev, localPosLast) > offsetThreshold) previousDiffuseCounter.a = 0.0;
+    float counterF = 1.0;
+    if (clamp(uvLast, 0.0, 1.0) != uvLast) counterF = 0.0;
+    if (distance(localPosPrev, localPosLast) > offsetThreshold) counterF = 0.0;
 
     vec3 diffuse = sampleSharedBuffer(depthL);
     vec3 specular = vec3(0.0);
 
-    #ifdef RT_ENABLED
+    #if LIGHTING_MODE == LIGHT_MODE_RT || LIGHTING_REFLECT_MODE == REFLECT_MODE_WSR
         diffuse += textureLod(texDiffuseRT, uv, 0).rgb;
         specular += textureLod(texSpecularRT, uv, 0).rgb;
     #endif
 
-    float counter = clamp(previousDiffuseCounter.a + 1.0, 1.0, 30.0);
-    vec3 diffuseFinal = mix(previousDiffuseCounter.rgb, diffuse, 1.0 / counter);
-    vec3 specularFinal = mix(previousSpecular, specular, 1.0 / counter);
+    float diffuseCounter = clamp(previousDiffuse.a * counterF + 1.0, 1.0, 30.0);
+    vec3 diffuseFinal = mix(previousDiffuse.rgb, diffuse, 1.0 / diffuseCounter);
 
-    imageStore(altFrame ? imgDiffuseAccum_alt : imgDiffuseAccum, iuv, vec4(diffuseFinal, counter));
-    imageStore(altFrame ? imgSpecularAccum_alt : imgSpecularAccum, iuv, vec4(specularFinal, counter));
+    float specularCounter = clamp(previousDiffuse.a * counterF + 1.0, 1.0, 3.0);
+    vec3 specularFinal = mix(previousSpecular.rgb, specular, 1.0 / specularCounter);
+
+    imageStore(altFrame ? imgDiffuseAccum_alt : imgDiffuseAccum, iuv, vec4(diffuseFinal, diffuseCounter));
+    imageStore(altFrame ? imgSpecularAccum_alt : imgSpecularAccum, iuv, vec4(specularFinal, specularCounter));
     imageStore(altFrame ? imgDiffuseAccumPos_alt : imgDiffuseAccumPos, iuv, vec4(localPos, 1.0));
 }

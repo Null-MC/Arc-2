@@ -8,6 +8,16 @@ vec3 mat_normal_old(const in vec3 data) {
     return normalize(data * 2.0 - 1.0);
 }
 
+vec3 mat_normal(const in vec4 normalData) {
+    #if MATERIAL_FORMAT == MAT_LABPBR
+        return mat_normal_lab(normalData.xy);
+    #elif MATERIAL_FORMAT == MAT_OLDPBR
+        return mat_normal_old(normalData.xyz);
+    #else
+        return vec3(0.0);
+    #endif
+}
+
 float mat_roughness(const in float data) {
     return 1.0 - data;
 }
@@ -16,10 +26,42 @@ float mat_emission_lab(const in float data) {
     return data * (255.0/254.0) * step(data, (254.5/255.0));
 }
 
+float mat_emission_old(const in float data) {
+    return data;
+}
+
+float mat_emission(const in vec4 specularData) {
+    #if MATERIAL_FORMAT == MAT_LABPBR
+        return mat_emission_lab(specularData.a);
+    #elif MATERIAL_FORMAT == MAT_OLDPBR
+        return mat_emission_old(specularData.b);
+    #else
+        return 0.0;
+    #endif
+}
+
 float mat_porosity_lab(const in float data) {
     return data * (255.0/64.0) * step(data, (64.5/255.0));
 }
 
 float mat_sss_lab(const in float data) {
     return max(data - (64.0/255.0), 0.0) * (255.0/191.0);
+}
+
+float mat_metalness_lab(const in float f0_metal) {
+    return step((229.5/255.0), f0_metal);
+}
+
+float mat_metalness_old(const in float f0_metal) {
+    return f0_metal;
+}
+
+float mat_metalness(const in float f0_metal) {
+    #if MATERIAL_FORMAT == MAT_LABPBR
+        return mat_metalness_lab(f0_metal);
+    #elif MATERIAL_FORMAT == MAT_OLDPBR
+        return mat_metalness_old(f0_metal);
+    #else
+        return 0.0;
+    #endif
 }

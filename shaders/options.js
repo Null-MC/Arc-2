@@ -19,11 +19,16 @@ function setupOptions() {
         .add(asString("MATERIAL_FORMAT", "1", "0", "1", "2"))
         .build();
 
+    let screen_RT = new Screen("RT Options")
+        .add(asString("RT_MAX_SAMPLE_COUNT", "8", "2", "4", "8", "16", "0"))
+        .add(asBool("LIGHTING_TRACE_TRIANGLE", false))
+        .build();
+
     let screen_Lighting = new Screen("Lighting")
         .add(asString("LIGHTING_MODE", "1", "0", "2"))
         .add(asString("LIGHTING_REFLECT_MODE", "1", "0", "2"))
         .add(asBool("LIGHTING_REFLECT_NOISE", false))
-        .add(asBool("LIGHTING_TRACE_TRIANGLE", false))
+        .add(screen_RT)
         .add(asBool("LPV_RSM_ENABLED", true))
         .build();
 

@@ -94,9 +94,6 @@ in vec2 uv;
 #endif
 
 
-#define MAX_SAMPLE_COUNT 16u
-
-
 void main() {
     ivec2 iuv = ivec2(uv * screenSize + 0.5);
     float depth = texelFetch(solidDepthTex, iuv, 0).r;
@@ -162,9 +159,9 @@ void main() {
 
                 vec3 jitter = hash33(vec3(gl_FragCoord.xy, frameCounter)) - 0.5;
 
-                #if MAX_SAMPLE_COUNT > 0
-                    uint maxSampleCount = min(binLightCount, MAX_SAMPLE_COUNT);
-                    float bright_scale = ceil(binLightCount / float(MAX_SAMPLE_COUNT));
+                #if RT_MAX_SAMPLE_COUNT > 0
+                    uint maxSampleCount = min(binLightCount, RT_MAX_SAMPLE_COUNT);
+                    float bright_scale = ceil(binLightCount / float(RT_MAX_SAMPLE_COUNT));
                 #else
                     uint maxSampleCount = binLightCount;
                     const float bright_scale = 1.0;

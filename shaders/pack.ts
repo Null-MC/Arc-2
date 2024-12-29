@@ -38,6 +38,9 @@ function setupSettings() {
             ReflectionNoise: getBoolSetting("LIGHTING_REFLECT_NOISE"),
             TraceTriangles: getBoolSetting("LIGHTING_TRACE_TRIANGLE"),
             LpvRsmEnabled: getBoolSetting("LPV_RSM_ENABLED"),
+            RT: {
+                MaxSampleCount: parseInt(getStringSetting("RT_MAX_SAMPLE_COUNT")),
+            },
         },
         Voxel: {
             Size: parseInt(getStringSetting("VOXEL_SIZE")),
@@ -134,6 +137,7 @@ function setupSettings() {
 
         if (Settings.Lighting.Mode == LightMode_RT) {
             defineGlobally("RT_ENABLED", "1");
+            defineGlobally("RT_MAX_SAMPLE_COUNT", `${Settings.Lighting.RT.MaxSampleCount}u`);
             defineGlobally("LIGHT_BIN_MAX", Settings.Voxel.MaxLightCount.toString());
             defineGlobally("LIGHT_BIN_SIZE", LIGHT_BIN_SIZE.toString());
 

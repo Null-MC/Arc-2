@@ -1,7 +1,7 @@
 vec3 material_fresnel(const in vec3 albedo, const in float metal_f0, const in float roughL, const in float theta, const in bool isUnderWater) {
     #if MATERIAL_FORMAT == MAT_LABPBR
         vec3 f0 = vec3(metal_f0);
-        int hcm = int(metal_f0 * 255.0 + 0.5);
+        int hcm = int(fma(metal_f0, 255.0, 0.5));
 
         if (hcm >= 230 && hcm < 255) {
             // int hcm = int(metal_f0 * 255.0 + 0.5) - 230;

@@ -197,8 +197,14 @@ void main() {
         // float lightAtmosDist = max(SKY_SEA_LEVEL + 200.0 - worldY, 0.0) / Scene_LocalLightDir.y;
         // skyLight *= exp2(-lightAtmosDist * transmitF);
 
-        vec3 skyLight = SUN_BRIGHTNESS * sunTransmit + MOON_BRIGHTNESS * moonTransmit;
-        vec3 skyLightDiffuse = NoLm * skyLight * shadow_sss.rgb;
+        float NoL_sun = dot(localTexNormal, Scene_LocalSunDir);
+        vec3 skyLight = SUN_BRIGHTNESS * sunTransmit
+            + MOON_BRIGHTNESS * moonTransmit;
+
+        vec3 skyLight_NoLm = SUN_BRIGHTNESS * sunTransmit * max(NoL_sun, 0.0)
+            + MOON_BRIGHTNESS * moonTransmit * max(-NoL_sun, 0.0);
+
+        vec3 skyLightDiffuse = skyLight_NoLm * shadow_sss.rgb;
         skyLightDiffuse *= SampleLightDiffuse(NoVm, NoLm, LoHm, roughL);
 
         #if defined EFFECT_SSGI_ENABLED && !defined ACCUM_ENABLED
@@ -211,7 +217,7 @@ void main() {
 
         #ifdef LPV_ENABLED
             // vec3 voxelSamplePos = voxelPos - 0.25*localGeoNormal + 0.75*localTexNormal;
-            vec3 voxelSamplePos = voxelPos + 0.5*localGeoNormal;
+            vec3 voxelSamplePos = fma(localGeoNormal, vec3(0.5), voxelPos);
 
             skyLightDiffuse += sample_lpv_linear(voxelSamplePos, localTexNormal) * SampleLightDiffuse(NoVm, 1.0, 1.0, roughL);
         #endif
@@ -292,8 +298,7 @@ void main() {
 
         #if LIGHTING_REFLECT_MODE == REFLECT_MODE_SSR
             float viewDist = length(viewPos);
-            //vec3 reflectViewDir = mat3(playerModelView) * reflectLocalDir;
-            vec3 reflectLocalPos = 0.5*viewDist*reflectLocalDir + localPos;
+            vec3 reflectLocalPos = fma(reflectLocalDir, vec3(0.5*viewDist), localPos);
 
             vec3 reflectViewStart = mul3(lastPlayerModelView, localPos);
             vec3 reflectViewEnd = mul3(lastPlayerModelView, reflectLocalPos);
@@ -318,12 +323,14 @@ void main() {
 
         vec3 reflectTint = GetMetalTint(albedo.rgb, f0_metal);
 
-        vec3 specular = skyLight * shadow_sss.rgb * SampleLightSpecular(NoLm, NoHm, LoHm, view_F, roughL);
+        vec3 specular = skyLight_NoLm * shadow_sss.rgb * SampleLightSpecular(NoLm, NoHm, LoHm, view_F, roughL);
         specular += view_F * skyReflectColor * reflectTint * (1.0 - roughness);
 
         #ifdef ACCUM_ENABLED
             specular += textureLod(altFrame ? texSpecularAccum_alt : texSpecularAccum, uv, 0).rgb;
         #endif
+
+        diffuse *= 1.0 - view_F;
 
         colorFinal = fma(albedo.rgb, diffuse, specular);
 

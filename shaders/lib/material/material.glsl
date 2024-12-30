@@ -1,11 +1,11 @@
 vec3 mat_normal_lab(const in vec2 data) {
-    vec3 normal = data.xyy * 2.0 - 1.0;
-    normal.z = sqrt(max(1.0 - dot(normal.xy, normal.xy), 0.0));
-    return normal;
+    vec2 normal_xy = fma(data.xy, vec2(2.0), vec2(-1.0));
+    float normal_z = sqrt(max(1.0 - dot(normal_xy, normal_xy), 0.0));
+    return vec3(normal_xy, normal_z);
 }
 
 vec3 mat_normal_old(const in vec3 data) {
-    return normalize(data * 2.0 - 1.0);
+    return normalize(fma(data, vec3(2.0), vec3(-1.0)));
 }
 
 vec3 mat_normal(const in vec4 normalData) {

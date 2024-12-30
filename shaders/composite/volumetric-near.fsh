@@ -83,7 +83,7 @@ void main() {
         sampleAmbient = vec3(VL_AmbientF);
     }
 
-    sampleAmbient *= Scene_SkyIrradianceUp * Scene_SkyBrightnessSmooth;
+    sampleAmbient *= phaseIso * Scene_SkyBrightnessSmooth * Scene_SkyIrradianceUp;
 
     vec3 ndcPos = vec3(uv, depth) * 2.0 - 1.0;
     vec3 viewPos = unproject(playerProjectionInverse, ndcPos);
@@ -164,7 +164,7 @@ void main() {
         #ifdef SHADOWS_ENABLED
             const float shadowRadius = 2.0*shadowPixelSize;
 
-            vec3 shadowViewPos = shadowViewStep*(i+dither) + shadowViewStart;
+            vec3 shadowViewPos = fma(shadowViewStep, vec3(i+dither), shadowViewStart);
 
             int shadowCascade;
             vec3 shadowPos = GetShadowSamplePos(shadowViewPos, shadowRadius, shadowCascade);
@@ -216,7 +216,7 @@ void main() {
         }
 
         vec3 sampleColor = (phase_sun * sunSkyLight) + (phase_moon * moonSkyLight);
-        vec3 sampleLit = sampleColor * shadowSample + phaseIso * sampleAmbient;
+        vec3 sampleLit = fma(sampleColor, shadowSample, sampleAmbient);
         vec3 sampleTransmit = exp(-sampleDensity * transmitF);
 
         // #ifdef CLOUDS_ENABLED
@@ -227,7 +227,7 @@ void main() {
             vec3 voxelPos = GetVoxelPosition(sampleLocalPos);
             if (IsInVoxelBounds(voxelPos)) {
                 vec3 blockLight = sample_lpv_linear(voxelPos, localViewDir);
-                sampleLit += 3.0 * phaseIso * blockLight;
+                sampleLit += phaseIso * blockLight;
             }
         #endif
 
@@ -245,7 +245,7 @@ void main() {
             vec3 moonSkyLight = MOON_BRIGHTNESS * moonTransmit * cloud_shadowMoon;
 
             vec3 sampleColor = (phase_sun * sunSkyLight) + (phase_moon * moonSkyLight);
-            vec3 sampleLit = sampleColor + phaseIso * sampleAmbient;
+            vec3 sampleLit = sampleColor + sampleAmbient;
             vec3 sampleTransmit = exp(-cloudDensity * transmitF);
 
             transmittance *= sampleTransmit;
@@ -261,7 +261,7 @@ void main() {
             vec3 moonSkyLight = MOON_BRIGHTNESS * moonTransmit;// * cloud_shadowMoon;
 
             vec3 sampleColor = (phase_sun * sunSkyLight) + (phase_moon * moonSkyLight);
-            vec3 sampleLit = sampleColor + phaseIso * sampleAmbient;
+            vec3 sampleLit = sampleColor + sampleAmbient;
             vec3 sampleTransmit = exp(-cloudDensity2 * transmitF);
 
             transmittance *= sampleTransmit;

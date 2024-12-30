@@ -17,8 +17,9 @@ float GetSkyDensity(const in vec3 localPos) {
     float sampleY = localPos.y + cameraPos.y;
     float sampleDensity = clamp((sampleY - SKY_SEA_LEVEL) / (200.0), 0.0, 1.0);
 
-    float p = mix(18.0, 4.0, rainStrength);
+    float p = mix(16.0, 4.0, rainStrength);
     sampleDensity = pow(1.0 - sampleDensity, p);
 
-    return sampleDensity;
+    float nightF = max(1.0 - Scene_LocalSunDir.y, 0.0);
+    return 0.5 * (nightF * 0.9 + 0.1) * sampleDensity;
 }

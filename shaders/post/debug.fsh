@@ -1,12 +1,24 @@
 #version 430 core
 #extension GL_NV_gpu_shader5: enable
 
-#include "/settings.glsl"
 #include "/lib/constants.glsl"
+#include "/settings.glsl"
 
 layout(location = 0) out vec4 outColor;
 
 uniform sampler2D texFinal;
+
+#if DEBUG_VIEW == DEBUG_VIEW_SHADOWS
+    uniform sampler2D TEX_SHADOW;
+#elif DEBUG_VIEW == DEBUG_VIEW_SSS
+    uniform sampler2D TEX_SHADOW;
+#endif
+
+#if DEBUG_MATERIAL != DEBUG_MAT_NONE
+    uniform sampler2D texDeferredOpaque_Color;
+    uniform sampler2D texDeferredOpaque_TexNormal;
+    uniform usampler2D texDeferredOpaque_Data;
+#endif
 
 #ifdef DEBUG_HISTOGRAM
     uniform usampler2D texHistogram_debug;
@@ -46,6 +58,46 @@ void main() {
     vec2 previewCoord;
     
     if (!guiHidden) {
+        previewCoord = (uv - 0.01) / vec2(0.25);
+
+        if (clamp(previewCoord, 0.0, 1.0) == previewCoord) {
+            #if DEBUG_VIEW == DEBUG_VIEW_SHADOWS
+                color = textureLod(TEX_SHADOW, previewCoord, 0).rgb;
+            #elif DEBUG_VIEW == DEBUG_VIEW_SSS
+                color = textureLod(TEX_SHADOW, previewCoord, 0).aaa;
+            #endif
+
+            #if DEBUG_MATERIAL == DEBUG_MAT_ALBEDO
+                color = textureLod(texDeferredOpaque_Color, previewCoord, 0).rgb;
+            #elif DEBUG_MATERIAL == DEBUG_MAT_GEO_NORMAL
+                uint data_r = textureLod(texDeferredOpaque_Data, previewCoord, 0).r;
+                color = unpackUnorm4x8(data_r).rgb;
+            #elif DEBUG_MATERIAL == DEBUG_MAT_TEX_NORMAL
+                color = textureLod(texDeferredOpaque_TexNormal, previewCoord, 0).rgb;
+            #elif DEBUG_MATERIAL == DEBUG_MAT_OCCLUSION
+                uint data_b = textureLod(texDeferredOpaque_Data, previewCoord, 0).b;
+                color = unpackUnorm4x8(data_b).bbb;
+            #elif DEBUG_MATERIAL == DEBUG_MAT_ROUGH
+                uint data_g = textureLod(texDeferredOpaque_Data, previewCoord, 0).g;
+                color = unpackUnorm4x8(data_g).rrr;
+            #elif DEBUG_MATERIAL == DEBUG_MAT_F0_METAL
+                uint data_g = textureLod(texDeferredOpaque_Data, previewCoord, 0).g;
+                color = unpackUnorm4x8(data_g).ggg;
+            #elif DEBUG_MATERIAL == DEBUG_MAT_POROSITY
+                //uint data_g = textureLod(texDeferredOpaque_Data, previewCoord, 0).g;
+                //color = unpackUnorm4x8(data_g).ggg;
+            #elif DEBUG_MATERIAL == DEBUG_MAT_SSS
+                uint data_g = textureLod(texDeferredOpaque_Data, previewCoord, 0).g;
+                color = unpackUnorm4x8(data_g).aaa;
+            #elif DEBUG_MATERIAL == DEBUG_MAT_EMISSION
+                uint data_g = textureLod(texDeferredOpaque_Data, previewCoord, 0).g;
+                color = unpackUnorm4x8(data_g).bbb;
+            #elif DEBUG_MATERIAL == DEBUG_MAT_LMCOORD
+                uint data_b = textureLod(texDeferredOpaque_Data, previewCoord, 0).b;
+                color = vec3(unpackUnorm4x8(data_b).xy, 0.0).xzy;
+            #endif
+        }
+
         #ifdef DEBUG_HISTOGRAM
             previewCoord = (uv - 0.01) / vec2(0.25, 0.1);
             if (clamp(previewCoord, 0.0, 1.0) == previewCoord) {
@@ -60,7 +112,7 @@ void main() {
         #endif
         
         #ifdef DEBUG_SSGIAO
-            vec2 previewCoord = (uv - 0.01) / vec2(0.25);
+            previewCoord = (uv - 0.01) / vec2(0.25);
             if (clamp(previewCoord, 0.0, 1.0) == previewCoord) {
                 color = textureLod(TEX_SSGIAO, previewCoord, 0).rgb;
 
@@ -75,7 +127,7 @@ void main() {
         #endif
 
         #ifdef DEBUG_RT
-            vec2 previewCoord = (uv - 0.01) / vec2(0.25);
+            previewCoord = (uv - 0.01) / vec2(0.25);
             if (clamp(previewCoord, 0.0, 1.0) == previewCoord)
                 color = textureLod(texDiffuseRT, previewCoord, 0).rgb;
 

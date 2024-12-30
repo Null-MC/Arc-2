@@ -75,7 +75,7 @@ void main() {
                 const float SSS_MaxPcfSize = 1.5;
                 // vec2 sssRadius = GetPixelRadius(SSS_MaxPcfSize, shadowCascade);
 
-                shadowViewPos.z += SSS_MaxDist * sss * dither;
+                shadowViewPos.z += SSS_MaxDist * sss * (dither*dither);
                 shadowPos = GetShadowSamplePos(shadowViewPos, SSS_MaxPcfSize, shadowCascade);
 
                 vec2 sssRadius = GetPixelRadius(SSS_MaxPcfSize, shadowCascade);

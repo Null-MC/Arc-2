@@ -66,7 +66,7 @@ function setupSettings() {
             Enabled: getBoolSetting("DEBUG_ENABLED"),
             SSGIAO: false,
             HISTOGRAM: false,
-            RT: true,
+            RT: false,
         },
         Internal: {
             Accumulation: false,
@@ -981,6 +981,7 @@ function setupShader() {
             .ssbo(0, sceneBuffer)
             .ssbo(3, lightListBuffer)
             .ssbo(4, triangleListBuffer)
+            .define("TEX_SHADOW", texShadow_src)
             .define("TEX_SSGIAO", "texSSGIAO_final")
             .build());
     }

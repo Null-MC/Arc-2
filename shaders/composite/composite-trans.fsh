@@ -276,12 +276,18 @@ void main() {
         vec4 reflection = vec4(0.0);
 
         #if LIGHTING_REFLECT_MODE == REFLECT_MODE_SSR
-            vec3 reflectViewDir = mat3(playerModelView) * reflectLocalDir;
-            vec3 reflectViewPos = viewPosTrans + 0.5*viewDist*reflectViewDir;
-            vec3 reflectClipPos = unproject(playerProjection, reflectViewPos) * 0.5 + 0.5;
+            //float viewDist = length(viewPosTrans);
+            vec3 reflectLocalPos = fma(reflectLocalDir, vec3(0.5*viewDist), localPosTrans);
 
-            vec3 clipPos = ndcPosTrans * 0.5 + 0.5;
-            vec3 reflectRay = normalize(reflectClipPos - clipPos);
+            vec3 reflectViewStart = mul3(lastPlayerModelView, localPosTrans);
+            vec3 reflectViewEnd = mul3(lastPlayerModelView, reflectLocalPos);
+
+            vec3 reflectNdcStart = unproject(lastPlayerProjection, reflectViewStart);
+            vec3 reflectNdcEnd = unproject(lastPlayerProjection, reflectViewEnd);
+
+            vec3 reflectRay = normalize(reflectNdcEnd - reflectNdcStart);
+
+            vec3 clipPos = fma(reflectNdcStart, vec3(0.5), vec3(0.5));
             reflection = GetReflectionPosition(mainDepthTex, clipPos, reflectRay);
 
             float maxLod = max(log2(minOf(screenSize)) - 2.0, 0.0);

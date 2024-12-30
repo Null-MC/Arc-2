@@ -242,9 +242,9 @@ void main() {
 							vec4 coeffs = dirToSH(vec3(-curDir)) / PI;
 							vec3 flux = exp2(lightRange) * lightColor * tintColor;
 
-							sh_voxel.R = f16vec4(sh_voxel.R + coeffs * flux.r);
-							sh_voxel.G = f16vec4(sh_voxel.G + coeffs * flux.g);
-							sh_voxel.B = f16vec4(sh_voxel.B + coeffs * flux.b);
+							sh_voxel.R = f16vec4(fma(flux.r, coeffs, sh_voxel.R));
+							sh_voxel.G = f16vec4(fma(flux.g, coeffs, sh_voxel.G));
+							sh_voxel.B = f16vec4(fma(flux.b, coeffs, sh_voxel.B));
 						}
 					#endif
 				#endif

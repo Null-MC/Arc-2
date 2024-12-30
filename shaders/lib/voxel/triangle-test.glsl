@@ -5,7 +5,7 @@ bool lineTriangleIntersect(const in vec3 p1, const in vec3 p2, const in vec3 v0,
     float t = (d - dot(normal, p1)) / dot(normal, p2 - p1);
     if (t < 0.0 || t > 1.0) return false;
 
-    vec3 intersection = p1 + t * (p2 - p1);
+    vec3 intersection = fma(p2 - p1, vec3(t), p1);
 
     coord = vec3(
         dot(cross(v2 - v1, intersection - v1), normal) / dot(normal, cross(v2 - v1, v0 - v1)),

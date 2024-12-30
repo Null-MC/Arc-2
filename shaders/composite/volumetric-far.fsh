@@ -92,9 +92,9 @@ void main() {
             sampleAmbient = vec3(VL_AmbientF);
         }
 
-        sampleAmbient *= Scene_SkyIrradianceUp * Scene_SkyBrightnessSmooth;
+        sampleAmbient *= phaseIso * Scene_SkyBrightnessSmooth * Scene_SkyIrradianceUp;
 
-        vec3 ndcPos = vec3(uv, depthOpaque) * 2.0 - 1.0;
+        vec3 ndcPos = fma(vec3(uv, depthOpaque), vec3(2.0), vec3(-1.0));
         vec3 viewPos = unproject(playerProjectionInverse, ndcPos);
         vec3 localPosOpaque = mul3(playerModelViewInverse, viewPos);
         
@@ -104,7 +104,7 @@ void main() {
         if (len > far)
             localPosOpaque = localPosOpaque / len * far;
 
-        ndcPos = vec3(uv, depthTrans) * 2.0 - 1.0;
+        ndcPos = fma(vec3(uv, depthTrans), vec3(2.0), vec3(-1.0));
         viewPos = unproject(playerProjectionInverse, ndcPos);
         vec3 localPosTrans = mul3(playerModelViewInverse, viewPos);
 
@@ -129,14 +129,14 @@ void main() {
             #ifdef SHADOWS_ENABLED
                 const float shadowRadius = 2.0*shadowPixelSize;
 
-                vec3 shadowViewPos = shadowViewStep*(i+dither) + shadowViewStart;
+                vec3 shadowViewPos = fma(shadowViewStep, vec3(i+dither), shadowViewStart);
 
                 int shadowCascade;
                 vec3 shadowPos = GetShadowSamplePos(shadowViewPos, shadowRadius, shadowCascade);
                 shadowSample = SampleShadowColor(shadowPos, shadowCascade);
             #endif
 
-            vec3 sampleLocalPos = (i+dither) * stepLocal + localPosTrans;
+            vec3 sampleLocalPos = fma(stepLocal, vec3(i+dither), localPosTrans);
 
             vec3 skyPos = getSkyPosition(sampleLocalPos);
             vec3 skyLighting = getValFromTLUT(texSkyTransmit, skyPos, Scene_LocalLightDir);
@@ -151,7 +151,7 @@ void main() {
                 sampleColor *= exp2(-0.16 * lightAtmosDist * transmitF);
             }
 
-            vec3 sampleLit = phase * sampleColor + phaseIso * sampleAmbient;
+            vec3 sampleLit = phase * sampleColor + sampleAmbient;
             vec3 sampleTransmit = exp(-sampleDensity * transmitF);
 
             #ifdef LPV_ENABLED

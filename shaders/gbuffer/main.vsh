@@ -1,5 +1,8 @@
 #version 430 core
 
+#include "/settings.glsl"
+#include "/lib/constants.glsl"
+
 // layout(location = 6) in int blockMask;
 
 out VertexData2 {
@@ -11,13 +14,22 @@ out VertexData2 {
 	vec3 localNormal;
 	vec4 localTangent;
 	flat uint blockId;
+
+	#ifdef MATERIAL_PARALLAX_ENABLED
+		vec3 tangentViewPos;
+		flat vec2 atlasMinCoord;
+		flat vec2 atlasMaxCoord;
+	#endif
 } vOut;
 
-#include "/settings.glsl"
 #include "/lib/common.glsl"
 
 #ifdef RENDER_TRANSLUCENT
 	#include "/lib/water_waves.glsl"
+#endif
+
+#ifdef MATERIAL_PARALLAX_ENABLED
+	#include "/lib/utility/tbn.glsl"
 #endif
 
 #ifdef EFFECT_TAA_ENABLED
@@ -64,4 +76,18 @@ void iris_sendParameters(in VertexData data) {
     vec3 viewTangent = mat3(iris_modelViewMatrix) * data.tangent.xyz;
     vOut.localTangent.xyz = mat3(playerModelViewInverse) * viewTangent;
     vOut.localTangent.w = data.tangent.w;
+
+	#ifdef MATERIAL_PARALLAX_ENABLED
+		vOut.atlasMinCoord = iris_getTexture(data.textureId).minCoord;
+		vOut.atlasMaxCoord = iris_getTexture(data.textureId).maxCoord;
+
+		mat3 matViewTBN = GetTBN(viewNormal, viewTangent, data.tangent.w);
+
+		vec3 viewPos = mul3(playerModelView, vOut.localPos);
+		vOut.tangentViewPos = viewPos.xyz * matViewTBN;
+
+//		#ifdef WORLD_SHADOW_ENABLED
+//			vOut.lightPos_T = shadowLightPosition * matViewTBN;
+//		#endif
+	#endif
 }

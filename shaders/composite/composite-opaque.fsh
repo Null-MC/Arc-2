@@ -60,8 +60,8 @@ uniform sampler2D TEX_SHADOW;
 
 #include "/lib/light/hcm.glsl"
 #include "/lib/light/fresnel.glsl"
-#include "/lib/material.glsl"
-#include "/lib/material_fresnel.glsl"
+#include "/lib/material/material.glsl"
+#include "/lib/material/material_fresnel.glsl"
 
 #include "/lib/utility/blackbody.glsl"
 #include "/lib/utility/matrix.glsl"
@@ -108,7 +108,7 @@ void main() {
         depthOpaque = texelFetch(solidDepthTex, iuv, 0).r;
     }
 
-    vec3 ndcPos = vec3(uv, depthOpaque) * 2.0 - 1.0;
+    vec3 ndcPos = fma(vec3(uv, depthOpaque), vec3(2.0), vec3(-1.0));
 
     #ifdef EFFECT_TAA_ENABLED
         unjitter(ndcPos);
@@ -132,10 +132,10 @@ void main() {
 
         albedo.rgb = RgbToLinear(albedo.rgb);
 
-        vec3 localTexNormal = normalize(texNormalData * 2.0 - 1.0);
+        vec3 localTexNormal = normalize(fma(texNormalData, vec3(2.0), vec3(-1.0)));
 
         vec3 data_r = unpackUnorm4x8(data.r).rgb;
-        vec3 localGeoNormal = normalize(data_r * 2.0 - 1.0);
+        vec3 localGeoNormal = normalize(fma(data_r, vec3(2.0), vec3(-1.0)));
 
         vec4 data_g = unpackUnorm4x8(data.g);
         float roughness = data_g.x;
@@ -243,7 +243,7 @@ void main() {
         float metalness = mat_metalness(f0_metal);
         diffuse *= 1.0 - metalness * (1.0 - roughL);
 
-        diffuse *= occlusion * 0.5 + 0.5;
+        diffuse *= fma(occlusion, 0.5, 0.5);
 
         #ifdef ACCUM_ENABLED
             // specular += textureLod(altFrame ? texSpecularAccum_alt : texSpecularAccum, uv, 0).rgb;
@@ -293,7 +293,7 @@ void main() {
         #if LIGHTING_REFLECT_MODE == REFLECT_MODE_SSR
             float viewDist = length(viewPos);
             //vec3 reflectViewDir = mat3(playerModelView) * reflectLocalDir;
-            vec3 reflectLocalPos = localPos + 0.5*viewDist*reflectLocalDir;
+            vec3 reflectLocalPos = 0.5*viewDist*reflectLocalDir + localPos;
 
             vec3 reflectViewStart = mul3(lastPlayerModelView, localPos);
             vec3 reflectViewEnd = mul3(lastPlayerModelView, reflectLocalPos);
@@ -303,10 +303,12 @@ void main() {
 
             vec3 reflectRay = normalize(reflectNdcEnd - reflectNdcStart);
 
-            vec3 clipPos = reflectNdcStart * 0.5 + 0.5;
-            float maxLod = max(log2(minOf(screenSize)) - 2.0, 0.0);
-            float roughMip = min(roughness * 6.0, maxLod);
+            vec3 clipPos = fma(reflectNdcStart, vec3(0.5), vec3(0.5));
             reflection = GetReflectionPosition(mainDepthTex, clipPos, reflectRay);
+
+            float maxLod = max(log2(minOf(screenSize)) - 2.0, 0.0);
+            float screenDist = length((reflection.xy - uv) * screenSize);
+            float roughMip = min(roughness * min(log2(screenDist + 1.0), 6.0), maxLod);
             vec3 reflectColor = GetRelectColor(texFinalPrevious, reflection.xy, reflection.a, roughMip);
 
             skyReflectColor = mix(skyReflectColor, reflectColor, reflection.a);
@@ -323,7 +325,7 @@ void main() {
             specular += textureLod(altFrame ? texSpecularAccum_alt : texSpecularAccum, uv, 0).rgb;
         #endif
 
-        colorFinal = albedo.rgb * diffuse + specular;
+        colorFinal = fma(albedo.rgb, diffuse, specular);
 
         // float viewDist = length(localPos);
         // float fogF = smoothstep(fogStart, fogEnd, viewDist);
@@ -350,7 +352,7 @@ void main() {
     #ifdef EFFECT_VL_ENABLED
         vec3 vlScatter = textureLod(texScatterVL, uv, 0).rgb;
         vec3 vlTransmit = textureLod(texTransmitVL, uv, 0).rgb;
-        colorFinal = colorFinal * vlTransmit + vlScatter;
+        colorFinal = fma(colorFinal, vlTransmit, vlScatter);
     #endif
 
     outColor = vec4(colorFinal, 1.0);

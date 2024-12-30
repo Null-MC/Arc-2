@@ -15,8 +15,16 @@ function setupOptions() {
         .add(asBool("SHADOWS_ENABLED", true))
         .build();
 
+    let screen_Parallax = new Screen("Parallax")
+        .add(asBool("MATERIAL_PARALLAX_ENABLED", true))
+        .add(asBool("MATERIAL_PARALLAX_SHARP", true))
+        .add(asString("MATERIAL_PARALLAX_SAMPLES", "32", "64", "128"))
+        .add(asString("MATERIAL_PARALLAX_DEPTH", "25", "50", "75", "100"))
+        .build();
+
     let screen_Material = new Screen("Material")
         .add(asString("MATERIAL_FORMAT", "1", "0", "1", "2"))
+        .add(screen_Parallax)
         .build();
 
     let screen_RT = new Screen("RT Options")

@@ -65,8 +65,7 @@ void main() {
     vec3 antialiased = lastColor.rgb;
     float mixRate = clamp(lastColor.a, 0.0, TAA_MAX_FRAMES);
 
-    if (clamp(uvLast, 0.0, 1.0) != uvLast)
-        mixRate = 0.0;
+    if (clamp(uvLast, 0.0, 1.0) != uvLast) mixRate = 0.0;
     
     vec3 in0 = textureLod(texFinalOpaque, uv, 0).rgb;
 

@@ -31,6 +31,12 @@ function setupSettings() {
         },
         Material: {
             Format: getStringSetting("MATERIAL_FORMAT"),
+            Parallax: {
+                Enabled: getBoolSetting("MATERIAL_PARALLAX_ENABLED"),
+                Depth: parseInt(getStringSetting("MATERIAL_PARALLAX_DEPTH")),
+                Samples: parseInt(getStringSetting("MATERIAL_PARALLAX_SAMPLES")),
+                Sharp: getBoolSetting("MATERIAL_PARALLAX_SHARP"),
+            },
         },
         Lighting: {
             Mode: parseInt(getStringSetting("LIGHTING_MODE")),
@@ -125,6 +131,12 @@ function setupSettings() {
     if (Settings.Shadows.SS_Fallback) defineGlobally("SHADOW_SCREEN", "1");
 
     defineGlobally("MATERIAL_FORMAT", Settings.Material.Format);
+    if (Settings.Material.Parallax.Enabled) {
+        defineGlobally("MATERIAL_PARALLAX_ENABLED", "1");
+        defineGlobally("MATERIAL_PARALLAX_DEPTH", Settings.Material.Parallax.Depth.toString());
+        defineGlobally("MATERIAL_PARALLAX_SAMPLES", Settings.Material.Parallax.Samples.toString());
+        if (Settings.Material.Parallax.Sharp) defineGlobally("MATERIAL_PARALLAX_SHARP", "1");
+    }
 
     defineGlobally("LIGHTING_MODE", Settings.Lighting.Mode.toString());
     defineGlobally("LIGHTING_REFLECT_MODE", Settings.Lighting.ReflectionMode.toString());
@@ -306,39 +318,41 @@ function setupShader() {
     setLightColor("blue_stained_glass", 0, 0, 255, 255);
     setLightColor("blue_stained_glass_pane", 0, 0, 255, 255);
 
-    registerUniforms("shadowLightPosition",
+    registerUniforms(
+        // "atlasSize",
+        "cameraPos",
+        "cascadeSize",
+        // "cloudHeight",
+        // "dayProgression",
+        "eyeBrightness",
+        "farPlane",
         "fogColor",
         "fogStart",
         "fogEnd",
-        "skyColor",
-        // "cloudHeight",
-        "isEyeInWater",
-        "eyeBrightness",
-        "cameraPos",
-        "lastCameraPos",
-        "screenSize",
         "frameTime",
         "frameCounter",
-        "worldTime",
-        "dayProgression",
-        "timeCounter",
-        "rainStrength",
-        "nearPlane",
-        "farPlane",
-        "renderDistance",
-        "playerModelView",
+        "guiHidden",
+        "isEyeInWater",
+        "lastCameraPos",
+        "lastPlayerProjection",
         "lastPlayerModelView",
+        "nearPlane",
+        "playerModelView",
         "playerModelViewInverse",
         "playerProjection",
-        "lastPlayerProjection",
         "playerProjectionInverse",
-        "sunPosition",
+        "rainStrength",
+        "renderDistance",
+        "screenSize",
+        "shadowLightPosition",
         "shadowModelView",
         // "shadowModelViewInverse",
         "shadowProjection",
         "shadowProjectionSize",
-        "cascadeSize",
-        "guiHidden");
+        "skyColor",
+        "sunPosition",
+        "timeCounter",
+        "worldTime");
 
     finalizeUniforms();
 

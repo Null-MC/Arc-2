@@ -1,5 +1,8 @@
 #version 430
 
+#include "/settings.glsl"
+#include "/lib/constants.glsl"
+
 layout(location = 0) out vec4 outColor;
 layout(location = 1) out vec4 outTexNormal;
 layout(location = 2) out uvec4 outData;
@@ -17,13 +20,25 @@ in VertexData2 {
     #if defined RENDER_TRANSLUCENT && defined WATER_TESSELLATION_ENABLED
         vec3 surfacePos;
     #endif
+
+    #ifdef MATERIAL_PARALLAX_ENABLED
+        vec3 tangentViewPos;
+        flat vec2 atlasMinCoord;
+        flat vec2 atlasMaxCoord;
+    #endif
 } vIn;
 
-#include "/settings.glsl"
 #include "/lib/common.glsl"
-#include "/lib/constants.glsl"
 
-#include "/lib/material.glsl"
+#include "/lib/utility/tbn.glsl"
+
+#include "/lib/material/material.glsl"
+
+#ifdef MATERIAL_PARALLAX_ENABLED
+    #include "/lib/utility/atlas.glsl"
+
+    #include "/lib/material/parallax.glsl"
+#endif
 
 #ifdef RENDER_TRANSLUCENT
     #include "/lib/water_waves.glsl"
@@ -36,11 +51,29 @@ void iris_emitFragment() {
     vec4 mColor = vIn.color;
     iris_modifyBase(mUV, mColor, mLight);
 
-    vec4 albedo = iris_sampleBaseTex(mUV);
+    mat2 dFdXY = mat2(dFdx(mUV), dFdy(mUV));
+
+    #if defined MATERIAL_PARALLAX_ENABLED && MATERIAL_FORMAT != MAT_NONE
+        float texDepth = 1.0;
+        vec3 traceCoordDepth = vec3(1.0);
+
+        float viewDist = length(vIn.localPos);
+        vec3 tanViewDir = normalize(vIn.tangentViewPos);
+        bool skipParallax = false;
+
+        if (!skipParallax && viewDist < MATERIAL_PARALLAX_MAXDIST) {
+            vec2 localCoord = GetLocalCoord(mUV, vIn.atlasMinCoord, vIn.atlasMaxCoord);
+            mUV = GetParallaxCoord(localCoord, dFdXY, tanViewDir, viewDist, texDepth, traceCoordDepth);
+        }
+    #endif
+
+    vec4 albedo = textureGrad(baseTex, mUV, dFdXY[0], dFdXY[1]);
 
     #if MATERIAL_FORMAT != MAT_NONE
         vec4 normalData = iris_sampleNormalMap(mUV);
         vec4 specularData = iris_sampleSpecularMap(mUV);
+//        vec4 normalData = textureGrad(irisInt_normalMap, mUV, dFdXY[0], dFdXY[1]);
+//        vec4 specularData = textureGrad(irisInt_specularMap, mUV, dFdXY[0], dFdXY[1]);
     #endif
 
     vec2 lmcoord = clamp((mLight - (0.5/16.0)) / (15.0/16.0), 0.0, 1.0);
@@ -79,9 +112,17 @@ void iris_emitFragment() {
     #endif
 
     #if MATERIAL_FORMAT != MAT_NONE
-        vec3 localBinormal = normalize(cross(vIn.localTangent.xyz, localGeoNormal) * vIn.localTangent.w);
-        mat3 TBN = mat3(normalize(vIn.localTangent.xyz), localBinormal, localGeoNormal);
+        #if defined MATERIAL_PARALLAX_ENABLED && defined MATERIAL_PARALLAX_SHARP
+            if (!skipParallax) {
+                float depthDiff = max(texDepth - traceCoordDepth.z, 0.0);
 
+                if (depthDiff >= ParallaxSharpThreshold) {
+                    localTexNormal = GetParallaxSlopeNormal(mUV, dFdXY, traceCoordDepth.z, tanViewDir);
+                }
+            }
+        #endif
+
+        mat3 TBN = GetTBN(localGeoNormal, vIn.localTangent.xyz, vIn.localTangent.w);
         localTexNormal = normalize(TBN * localTexNormal);
     #endif
 

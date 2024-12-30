@@ -53,7 +53,7 @@ in vec2 uv;
 #include "/lib/light/fresnel.glsl"
 #include "/lib/light/sampling.glsl"
 
-#include "/lib/material_fresnel.glsl"
+#include "/lib/material/material_fresnel.glsl"
 
 #include "/lib/voxel/voxel_common.glsl"
 
@@ -71,7 +71,7 @@ in vec2 uv;
     #include "/lib/buffers/scene.glsl"
 
     #include "/lib/erp.glsl"
-    #include "/lib/material.glsl"
+    #include "/lib/material/material.glsl"
 
     #include "/lib/sky/common.glsl"
     #include "/lib/sky/view.glsl"
@@ -95,7 +95,7 @@ in vec2 uv;
 
 
 void main() {
-    ivec2 iuv = ivec2(uv * screenSize + 0.5);
+    ivec2 iuv = ivec2(fma(uv, screenSize, 0.5));
     float depth = texelFetch(solidDepthTex, iuv, 0).r;
 
     vec3 diffuseFinal = vec3(0.0);
@@ -381,10 +381,11 @@ void main() {
 
                     vec3 clipPos = ndcPos * 0.5 + 0.5;
                     vec3 reflectRay = normalize(reflectClipPos - clipPos);
+                    reflection = GetReflectionPosition(solidDepthTex, clipPos, reflectRay);
 
                     float maxLod = max(log2(minOf(screenSize)) - 2.0, 0.0);
-                    float roughMip = min(roughness * 6.0, maxLod);
-                    reflection = GetReflectionPosition(solidDepthTex, clipPos, reflectRay);
+                    float screenDist = length((reflection.xy - uv) * (screenSize/2.0));
+                    float roughMip = min(roughness * min(log2(screenDist + 1.0), 6.0), maxLod);
                     vec3 reflectColor = GetRelectColor(texFinalPrevious, reflection.xy, reflection.a, roughMip);
 
                     skyReflectColor = mix(skyReflectColor, reflectColor, reflection.a);

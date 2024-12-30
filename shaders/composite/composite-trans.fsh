@@ -66,8 +66,8 @@ uniform sampler2DArray texShadowColor;
 
 #include "/lib/light/hcm.glsl"
 #include "/lib/light/fresnel.glsl"
-#include "/lib/material.glsl"
-#include "/lib/material_fresnel.glsl"
+#include "/lib/material/material.glsl"
+#include "/lib/material/material_fresnel.glsl"
 
 #include "/lib/utility/blackbody.glsl"
 #include "/lib/utility/matrix.glsl"
@@ -282,10 +282,11 @@ void main() {
 
             vec3 clipPos = ndcPosTrans * 0.5 + 0.5;
             vec3 reflectRay = normalize(reflectClipPos - clipPos);
+            reflection = GetReflectionPosition(mainDepthTex, clipPos, reflectRay);
 
             float maxLod = max(log2(minOf(screenSize)) - 2.0, 0.0);
-            float roughMip = min(roughness * 6.0, maxLod);
-            reflection = GetReflectionPosition(mainDepthTex, clipPos, reflectRay);
+            float screenDist = length((reflection.xy - uv) * screenSize);
+            float roughMip = min(roughness * min(log2(screenDist + 1.0), 6.0), maxLod);
             vec3 reflectColor = GetRelectColor(texFinalPrevious, reflection.xy, reflection.a, roughMip);
 
             skyReflectColor = mix(skyReflectColor, reflectColor, reflection.a);

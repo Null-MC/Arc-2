@@ -12,6 +12,10 @@ uniform sampler2D texFinal;
     uniform sampler2D TEX_SHADOW;
 #elif DEBUG_VIEW == DEBUG_VIEW_SSS
     uniform sampler2D TEX_SHADOW;
+#elif DEBUG_VIEW == DEBUG_VIEW_SSAO
+    uniform sampler2D TEX_SSGIAO;
+#elif DEBUG_VIEW == DEBUG_VIEW_SSGI
+    uniform sampler2D TEX_SSGIAO;
 #endif
 
 #if DEBUG_MATERIAL != DEBUG_MAT_NONE
@@ -22,10 +26,6 @@ uniform sampler2D texFinal;
 
 #ifdef DEBUG_HISTOGRAM
     uniform usampler2D texHistogram_debug;
-#endif
-
-#ifdef DEBUG_SSGIAO
-    uniform sampler2D TEX_SSGIAO;
 #endif
 
 #ifdef DEBUG_RT
@@ -65,6 +65,12 @@ void main() {
                 color = textureLod(TEX_SHADOW, previewCoord, 0).rgb;
             #elif DEBUG_VIEW == DEBUG_VIEW_SSS
                 color = textureLod(TEX_SHADOW, previewCoord, 0).aaa;
+            #elif DEBUG_VIEW == DEBUG_VIEW_SSAO
+                color = textureLod(TEX_SSGIAO, previewCoord, 0).aaa;
+            #elif DEBUG_VIEW == DEBUG_VIEW_SSGI
+                color = textureLod(TEX_SSGIAO, previewCoord, 0).rgb;
+                ApplyAutoExposure(color, Scene_AvgExposure);
+                color = tonemap_ACESFit2(color);
             #endif
 
             #if DEBUG_MATERIAL == DEBUG_MAT_ALBEDO
@@ -108,21 +114,6 @@ void main() {
             previewCoord = (uv - vec2(0.27, 0.01)) / vec2(0.04, 0.1);
             if (clamp(previewCoord, 0.0, 1.0) == previewCoord) {
                 color = vec3(Scene_AvgExposure);
-            }
-        #endif
-        
-        #ifdef DEBUG_SSGIAO
-            previewCoord = (uv - 0.01) / vec2(0.25);
-            if (clamp(previewCoord, 0.0, 1.0) == previewCoord) {
-                color = textureLod(TEX_SSGIAO, previewCoord, 0).rgb;
-
-                ApplyAutoExposure(color, Scene_AvgExposure);
-                color = tonemap_ACESFit2(color);
-            }
-
-            previewCoord = (uv - vec2(0.27, 0.01)) / vec2(0.25);
-            if (clamp(previewCoord, 0.0, 1.0) == previewCoord) {
-                color = textureLod(TEX_SSGIAO, previewCoord, 0).aaa;
             }
         #endif
 

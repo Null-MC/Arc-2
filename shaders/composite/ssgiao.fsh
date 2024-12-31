@@ -30,7 +30,7 @@ const float GOLDEN_ANGLE = 2.39996323;
 
 
 void main() {
-    ivec2 iuv = ivec2(uv * screenSize + 0.5);
+    ivec2 iuv = ivec2(fma(uv, screenSize, vec2(0.5)));
     float depth = texelFetch(solidDepthTex, iuv, 0).r;
 
     // vec2 uv_j = uv;
@@ -43,11 +43,11 @@ void main() {
     float occlusion = 0.0;
 
     if (depth < 1.0) {
-        // #if defined EFFECT_TAA_ENABLED || defined ACCUM_ENABLED
-        //     float dither = InterleavedGradientNoiseTime(ivec2(gl_FragCoord.xy));
-        // #else
+         #if defined EFFECT_TAA_ENABLED || defined ACCUM_ENABLED
+             float dither = InterleavedGradientNoiseTime(ivec2(gl_FragCoord.xy));
+         #else
             float dither = InterleavedGradientNoise(ivec2(gl_FragCoord.xy));
-        // #endif
+         #endif
 
         vec2 pixelSize = 1.0 / screenSize;
 
@@ -63,18 +63,18 @@ void main() {
 
         float viewDist = length(viewPos);
 
-        float max_radius = mix(0.5, 8.0, min(viewDist * 0.01, 1.0));
+        float max_radius = mix(0.5, 12.0, min(viewDist * 0.005, 1.0));
         float rStep = max_radius / SSGIAO_SAMPLES;
         float radius = rStep * dither;
 
         // uint data_r = texelFetch(texDeferredOpaque_Data, iuv, 0).r;
         // vec3 normalData = unpackUnorm4x8(data_r).xyz;
         vec3 normalData = texelFetch(texDeferredOpaque_TexNormal, iuv, 0).xyz;
-        vec3 localNormal = normalize(normalData * 2.0 - 1.0);
+        vec3 localNormal = normalize(fma(normalData, vec3(2.0), vec3(-1.0)));
 
-        vec3 viewNormal = mat3(playerModelView) * localNormal;
+        vec3 viewNormal = normalize(mat3(playerModelView) * localNormal);
 
-        viewPos += localNormal * 0.06;
+        //viewPos += localNormal * 0.06;
 
         float maxWeight = EPSILON;
 
@@ -100,7 +100,7 @@ void main() {
             sampleViewPos = unproject(playerProjectionInverse, sampleClipPos);
 
             #ifdef EFFECT_SSGI_ENABLED
-                vec3 sampleColor = textureLod(texFinalPrevious, sampleClipPos.xy, 0).rgb;
+                vec3 sampleColor = textureLod(texFinalPrevious, sampleClipPos.xy * 0.5 + 0.5, 0).rgb;
 
                 float gi_weight = 1.0;
                 if (abs(sampleViewPos.z - viewPos.z) > max_radius) gi_weight = 0.0;
@@ -131,9 +131,7 @@ void main() {
             float sampleNoLm = max(dot(viewNormal, sampleNormal), 0.0);
 
             #ifdef EFFECT_SSAO_ENABLED
-                float ao_weight = saturate(sampleDist / max_radius);
-
-                ao_weight = 1.0 - ao_weight;
+                float ao_weight = 1.0 - saturate(sampleDist / max_radius);
 
                 occlusion += sampleNoLm * ao_weight;
 
@@ -143,14 +141,17 @@ void main() {
             #ifdef EFFECT_SSGI_ENABLED
                 // gi_weight *= 1.0 / (1.0 + sampleDist);
 
+                gi_weight *= 1.0 - saturate(sampleDist / max_radius);
                 illumination += sampleColor * sampleNoLm * gi_weight;
             #endif
         }
 
         occlusion = occlusion / max(maxWeight, 1.0);
+        illumination = illumination / max(maxWeight, 1.0);
     }
 
-    occlusion *= 2.0;
+    //occlusion *= 2.0;
+    illumination *= 3.0;
 
     vec3 gi = illumination;
     float ao = 1.0 - min(occlusion, 1.0);

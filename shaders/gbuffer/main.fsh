@@ -7,6 +7,10 @@ layout(location = 0) out vec4 outColor;
 layout(location = 1) out vec4 outTexNormal;
 layout(location = 2) out uvec4 outData;
 
+#if defined PARALLAX_ENABLED && defined MATERIAL_PARALLAX_DEPTHWRITE
+    layout (depth_greater) out float gl_FragDepth;
+#endif
+
 in VertexData2 {
     vec2 uv;
     vec2 light;
@@ -64,7 +68,25 @@ void iris_emitFragment() {
         if (!skipParallax && viewDist < MATERIAL_PARALLAX_MAXDIST) {
             vec2 localCoord = GetLocalCoord(mUV, vIn.atlasMinCoord, vIn.atlasMaxCoord);
             mUV = GetParallaxCoord(localCoord, dFdXY, tanViewDir, viewDist, texDepth, traceCoordDepth);
+
+            #ifdef MATERIAL_PARALLAX_DEPTHWRITE
+                float pomDist = (1.0 - traceCoordDepth.z) / max(-tanViewDir.z, 0.00001);
+
+                if (pomDist > 0.0) {
+                    vec3 viewPos = mul3(playerModelView, vIn.localPos);
+                    float depth = -viewPos.z + pomDist * ParallaxDepthF;
+                    gl_FragDepth = 0.5 * (-playerProjection[2].z*depth + playerProjection[3].z) / depth + 0.5;
+                }
+                else {
+                    gl_FragDepth = gl_FragCoord.z;
+                }
+            #endif
         }
+        #ifdef MATERIAL_PARALLAX_DEPTHWRITE
+            else {
+                gl_FragDepth = gl_FragCoord.z;
+            }
+        #endif
     #endif
 
     vec4 albedo = textureGrad(baseTex, mUV, dFdXY[0], dFdXY[1]);

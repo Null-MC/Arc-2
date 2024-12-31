@@ -64,7 +64,6 @@ function setupSettings() {
         },
         Debug: {
             Enabled: getBoolSetting("DEBUG_ENABLED"),
-            SSGIAO: false,
             HISTOGRAM: false,
             RT: false,
         },
@@ -175,7 +174,6 @@ function setupSettings() {
     if (Settings.Post.TAA) defineGlobally("EFFECT_TAA_ENABLED", "1");
 
     if (Settings.Debug.Enabled) {
-        if (Settings.Debug.SSGIAO) defineGlobally("DEBUG_SSGIAO", "1");
         if (Settings.Debug.HISTOGRAM) defineGlobally("DEBUG_HISTOGRAM", "1");
         if (Settings.Debug.RT) defineGlobally("DEBUG_RT", "1");
     }
@@ -183,111 +181,6 @@ function setupSettings() {
     return Settings;
 }
 
-function setupSky(sceneBuffer) {
-    const texSkyTransmit = new Texture("texSkyTransmit")
-        .format(Format.RGB16F)
-        .clear(false)
-        .width(256)
-        .height(64)
-        .build();
-
-    const texSkyMultiScatter = new Texture("texSkyMultiScatter")
-        .format(Format.RGB16F)
-        .clear(false)
-        .width(32)
-        .height(32)
-        .build();
-
-    const texSkyView = new Texture("texSkyView")
-        .format(Format.RGB16F)
-        .clear(false)
-        .width(256)
-        .height(256)
-        .build();
-
-    const texSkyIrradiance = new Texture("texSkyIrradiance")
-        .format(Format.RGB16F)
-        .clear(false)
-        .width(32)
-        .height(32)
-        .build();
-
-    registerShader(Stage.SCREEN_SETUP, new Composite("sky-transmit")
-        .vertex("shared/bufferless.vsh")
-        .fragment("setup/sky_transmit.fsh")
-        .target(0, texSkyTransmit)
-        .build())
-
-    registerShader(Stage.SCREEN_SETUP, new Composite("sky-multi-scatter")
-        .vertex("shared/bufferless.vsh")
-        .fragment("setup/sky_multi_scatter.fsh")
-        .target(0, texSkyMultiScatter)
-        .build())
-
-    registerShader(Stage.PRE_RENDER, new Composite("sky-view")
-        .vertex("shared/bufferless.vsh")
-        .fragment("setup/sky_view.fsh")
-        .target(0, texSkyView)
-        .ssbo(0, sceneBuffer)
-        .build())
-
-    registerShader(Stage.PRE_RENDER, new Composite("sky-irradiance")
-        .vertex("shared/bufferless.vsh")
-        .fragment("setup/sky_irradiance.fsh")
-        .target(0, texSkyIrradiance)
-        .ssbo(0, sceneBuffer)
-        .build())
-}
-
-function setupBloom(texFinal) {
-    const screenWidth_half = Math.ceil(screenWidth / 2.0);
-    const screenHeight_half = Math.ceil(screenHeight / 2.0);
-
-    let maxLod = Math.log2(Math.min(screenWidth, screenHeight));
-    maxLod = Math.max(Math.min(maxLod, 8), 0);
-
-    print(`Bloom enabled with ${maxLod} LODs`);
-
-    const texBloom = new Texture("texBloom")
-        .format(Format.RGB16F)
-        .width(screenWidth_half)
-        .height(screenHeight_half)
-        .mipmap(true)
-        .clear(false)
-        .build();
-
-    for (let i = 0; i < maxLod; i++) {
-        let texSrc = i == 0
-            ? "texFinal"
-            : "texBloom"
-
-        registerShader(Stage.POST_RENDER, new Composite(`bloom-down-${i}`)
-            .vertex("shared/bufferless.vsh")
-            .fragment("post/bloom/down.fsh")
-            .target(0, texBloom, i)
-            .define("TEX_SRC", texSrc)
-            .define("TEX_SCALE", Math.pow(2, i).toString())
-            .define("BLOOM_INDEX", i.toString())
-            .define("MIP_INDEX", Math.max(i-1, 0).toString())
-            .build());
-    }
-
-    for (let i = maxLod-1; i >= 0; i--) {
-        const shader = new Composite(`bloom-up-${i}`)
-            .vertex("shared/bufferless.vsh")
-            .fragment("post/bloom/up.fsh")
-            .define("TEX_SCALE", Math.pow(2, i+1).toString())
-            .define("BLOOM_INDEX", i.toString())
-            .define("MIP_INDEX", i.toString());
-
-        if (i == 0) shader.target(0, texFinal);
-        else shader.target(0, texBloom, i-1);
-
-        shader.blendFunc(0, Func.ONE, Func.ONE, Func.ONE, Func.ONE);
-
-        registerShader(Stage.POST_RENDER, shader.build());
-    }
-}
 
 function setupShader() {
     print("Setting up shader");
@@ -988,6 +881,112 @@ function setupShader() {
     }
 
     setCombinationPass(new CombinationPass("post/final.fsh").build());
+}
+
+function setupSky(sceneBuffer) {
+    const texSkyTransmit = new Texture("texSkyTransmit")
+        .format(Format.RGB16F)
+        .clear(false)
+        .width(256)
+        .height(64)
+        .build();
+
+    const texSkyMultiScatter = new Texture("texSkyMultiScatter")
+        .format(Format.RGB16F)
+        .clear(false)
+        .width(32)
+        .height(32)
+        .build();
+
+    const texSkyView = new Texture("texSkyView")
+        .format(Format.RGB16F)
+        .clear(false)
+        .width(256)
+        .height(256)
+        .build();
+
+    const texSkyIrradiance = new Texture("texSkyIrradiance")
+        .format(Format.RGB16F)
+        .clear(false)
+        .width(32)
+        .height(32)
+        .build();
+
+    registerShader(Stage.SCREEN_SETUP, new Composite("sky-transmit")
+        .vertex("shared/bufferless.vsh")
+        .fragment("setup/sky_transmit.fsh")
+        .target(0, texSkyTransmit)
+        .build())
+
+    registerShader(Stage.SCREEN_SETUP, new Composite("sky-multi-scatter")
+        .vertex("shared/bufferless.vsh")
+        .fragment("setup/sky_multi_scatter.fsh")
+        .target(0, texSkyMultiScatter)
+        .build())
+
+    registerShader(Stage.PRE_RENDER, new Composite("sky-view")
+        .vertex("shared/bufferless.vsh")
+        .fragment("setup/sky_view.fsh")
+        .target(0, texSkyView)
+        .ssbo(0, sceneBuffer)
+        .build())
+
+    registerShader(Stage.PRE_RENDER, new Composite("sky-irradiance")
+        .vertex("shared/bufferless.vsh")
+        .fragment("setup/sky_irradiance.fsh")
+        .target(0, texSkyIrradiance)
+        .ssbo(0, sceneBuffer)
+        .build())
+}
+
+function setupBloom(texFinal) {
+    const screenWidth_half = Math.ceil(screenWidth / 2.0);
+    const screenHeight_half = Math.ceil(screenHeight / 2.0);
+
+    let maxLod = Math.log2(Math.min(screenWidth, screenHeight));
+    maxLod = Math.max(Math.min(maxLod, 8), 0);
+
+    print(`Bloom enabled with ${maxLod} LODs`);
+
+    const texBloom = new Texture("texBloom")
+        .format(Format.RGB16F)
+        .width(screenWidth_half)
+        .height(screenHeight_half)
+        .mipmap(true)
+        .clear(false)
+        .build();
+
+    for (let i = 0; i < maxLod; i++) {
+        let texSrc = i == 0
+            ? "texFinal"
+            : "texBloom"
+
+        registerShader(Stage.POST_RENDER, new Composite(`bloom-down-${i}`)
+            .vertex("shared/bufferless.vsh")
+            .fragment("post/bloom/down.fsh")
+            .target(0, texBloom, i)
+            .define("TEX_SRC", texSrc)
+            .define("TEX_SCALE", Math.pow(2, i).toString())
+            .define("BLOOM_INDEX", i.toString())
+            .define("MIP_INDEX", Math.max(i-1, 0).toString())
+            .build());
+    }
+
+    for (let i = maxLod-1; i >= 0; i--) {
+        const shader = new Composite(`bloom-up-${i}`)
+            .vertex("shared/bufferless.vsh")
+            .fragment("post/bloom/up.fsh")
+            .define("TEX_SCALE", Math.pow(2, i+1).toString())
+            .define("BLOOM_INDEX", i.toString())
+            .define("MIP_INDEX", i.toString());
+
+        if (i == 0) shader.target(0, texFinal);
+        else shader.target(0, texBloom, i-1);
+
+        shader.blendFunc(0, Func.ONE, Func.ONE, Func.ONE, Func.ONE);
+
+        registerShader(Stage.POST_RENDER, shader.build());
+    }
 }
 
 function cubed(x) {return x*x*x;}

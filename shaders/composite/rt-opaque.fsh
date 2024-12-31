@@ -95,7 +95,7 @@ in vec2 uv;
 
 
 void main() {
-    ivec2 iuv = ivec2(fma(uv, screenSize, 0.5));
+    ivec2 iuv = ivec2(fma(uv, screenSize, vec2(0.5)));
     float depth = texelFetch(solidDepthTex, iuv, 0).r;
 
     vec3 diffuseFinal = vec3(0.0);

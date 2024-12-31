@@ -16,13 +16,13 @@ const ReflectMode_WSR = 2;
 function setupSettings() {
     const Settings = {
         Sky: {
-            SunAngle: parseInt(getStringSetting("SKY_SUN_ANGLE")),
-            SeaLevel: parseInt(getStringSetting("SKY_SEA_LEVEL")),
+            SunAngle: getIntSetting("SKY_SUN_ANGLE"),
+            SeaLevel: getIntSetting("SKY_SEA_LEVEL"),
         },
         Water: {
             Waves: getBoolSetting("WATER_WAVES_ENABLED"),
             Tessellation: getBoolSetting("WATER_TESSELLATION_ENABLED"),
-            Tessellation_Level: parseInt(getStringSetting("WATER_TESSELLATION_LEVEL")),
+            Tessellation_Level: getIntSetting("WATER_TESSELLATION_LEVEL"),
         },
         Shadows: {
             Enabled: getBoolSetting("SHADOWS_ENABLED"),
@@ -30,27 +30,27 @@ function setupSettings() {
             SS_Fallback: true,
         },
         Material: {
-            Format: getStringSetting("MATERIAL_FORMAT"),
+            Format: getIntSetting("MATERIAL_FORMAT"),
             Parallax: {
                 Enabled: getBoolSetting("MATERIAL_PARALLAX_ENABLED"),
-                Depth: parseInt(getStringSetting("MATERIAL_PARALLAX_DEPTH")),
-                Samples: parseInt(getStringSetting("MATERIAL_PARALLAX_SAMPLES")),
+                Depth: getIntSetting("MATERIAL_PARALLAX_DEPTH"),
+                Samples: getIntSetting("MATERIAL_PARALLAX_SAMPLES"),
                 Sharp: getBoolSetting("MATERIAL_PARALLAX_SHARP"),
             },
         },
         Lighting: {
-            Mode: parseInt(getStringSetting("LIGHTING_MODE")),
-            ReflectionMode: parseInt(getStringSetting("LIGHTING_REFLECT_MODE")),
+            Mode: getIntSetting("LIGHTING_MODE"),
+            ReflectionMode: getIntSetting("LIGHTING_REFLECT_MODE"),
             ReflectionNoise: getBoolSetting("LIGHTING_REFLECT_NOISE"),
             TraceTriangles: getBoolSetting("LIGHTING_TRACE_TRIANGLE"),
             LpvRsmEnabled: getBoolSetting("LPV_RSM_ENABLED"),
             RT: {
-                MaxSampleCount: parseInt(getStringSetting("RT_MAX_SAMPLE_COUNT")),
+                MaxSampleCount: getIntSetting("RT_MAX_SAMPLE_COUNT"),
             },
         },
         Voxel: {
-            Size: parseInt(getStringSetting("VOXEL_SIZE")),
-            Offset: parseFloat(getStringSetting("VOXEL_FRUSTUM_OFFSET")),
+            Size: getIntSetting("VOXEL_SIZE"),
+            Offset: getIntSetting("VOXEL_FRUSTUM_OFFSET"),
             MaxLightCount: 64,
             MaxTriangleCount: 64,
         },
@@ -296,18 +296,19 @@ function setupShader() {
 
     setLightColor("campfire", 243, 152, 73, 255);
     setLightColor("candle", 245, 127, 68, 255);
-    setLightColor("lantern", 243, 158, 73, 255);
-    setLightColor("torch", 243, 181, 73, 255);
-    setLightColor("wall_torch", 243, 158, 73, 255);
-    setLightColor("redstone_torch", 249, 50, 28, 255);
-    setLightColor("pearlescent_froglight", 224, 117, 232, 255);
-    setLightColor("ochre_froglight", 223, 172, 71, 255);
-    setLightColor("verdant_froglight", 99, 229, 60, 255);
-    setLightColor("glow_lichen", 107, 238, 172, 255);
     setLightColor("cave_vines", 243, 133, 59, 255);
     setLightColor("cave_vines_plant", 243, 133, 59, 255);
+    setLightColor("glow_lichen", 107, 238, 172, 255);
+    setLightColor("lantern", 243, 158, 73, 255);
+    setLightColor("lava", 193, 100, 38, 255);
+    setLightColor("ochre_froglight", 223, 172, 71, 255);
+    setLightColor("pearlescent_froglight", 224, 117, 232, 255);
+    setLightColor("redstone_torch", 249, 50, 28, 255);
     setLightColor("soul_campfire", 40, 170, 235, 255);
     // setLightColor("soul_torch", 40, 170, 235, 255);
+    setLightColor("torch", 243, 181, 73, 255);
+    setLightColor("verdant_froglight", 99, 229, 60, 255);
+    setLightColor("wall_torch", 243, 158, 73, 255);
 
     setLightColor("red_stained_glass", 255, 0, 0, 255);
     setLightColor("red_stained_glass_pane", 255, 0, 0, 255);
@@ -955,9 +956,9 @@ function setupShader() {
         .workGroups(Math.ceil(screenWidth / 16.0), Math.ceil(screenHeight / 16.0), 1)
         .build());
 
+    registerBarrier(Stage.POST_RENDER, new MemoryBarrier(IMAGE_BIT));
+
     registerShader(Stage.POST_RENDER, new Compute("exposure")
-        // .barrier(true)
-        .imageBarrier()
         .workGroups(1, 1, 1)
         .location("post/exposure.csh")
         .ssbo(0, sceneBuffer)

@@ -650,15 +650,40 @@ function setupShader() {
         // .blendFunc(2, FUNC_ONE, FUNC_ZERO, FUNC_ONE, FUNC_ZERO)
         .build());
 
+    registerShader(new ObjectShader("terrain", Usage.TERRAIN_SOLID)
+        .vertex("gbuffer/main.vsh")
+        .fragment("gbuffer/main.fsh")
+        .target(0, texDeferredOpaque_Color)
+        // .blendFunc(0, FUNC_SRC_ALPHA, FUNC_ONE_MINUS_SRC_ALPHA, FUNC_ONE, FUNC_ZERO)
+        .target(1, texDeferredOpaque_TexNormal)
+        // .blendFunc(1, FUNC_ONE, FUNC_ZERO, FUNC_ONE, FUNC_ZERO)
+        .target(2, texDeferredOpaque_Data)
+        // .blendFunc(2, FUNC_ONE, FUNC_ZERO, FUNC_ONE, FUNC_ZERO)
+        .define("RENDER_TERRAIN", "1")
+        .build());
+
+    registerShader(new ObjectShader("terrain", Usage.TERRAIN_CUTOUT)
+        .vertex("gbuffer/main.vsh")
+        .fragment("gbuffer/main.fsh")
+        .target(0, texDeferredOpaque_Color)
+        // .blendFunc(0, FUNC_SRC_ALPHA, FUNC_ONE_MINUS_SRC_ALPHA, FUNC_ONE, FUNC_ZERO)
+        .target(1, texDeferredOpaque_TexNormal)
+        // .blendFunc(1, FUNC_ONE, FUNC_ZERO, FUNC_ONE, FUNC_ZERO)
+        .target(2, texDeferredOpaque_Data)
+        // .blendFunc(2, FUNC_ONE, FUNC_ZERO, FUNC_ONE, FUNC_ZERO)
+        .define("RENDER_TERRAIN", "1")
+        .build());
+
     const waterShader = new ObjectShader("water", Usage.TERRAIN_TRANSLUCENT)
         .vertex("gbuffer/main.vsh")
         .fragment("gbuffer/main.fsh")
-        .define("RENDER_TRANSLUCENT", "1")
         .target(0, texDeferredTrans_Color)
         // .blendFunc(0, FUNC_SRC_ALPHA, FUNC_ONE_MINUS_SRC_ALPHA, FUNC_ONE, FUNC_ZERO)
         .target(1, texDeferredTrans_TexNormal)
-        .target(2, texDeferredTrans_Data);
+        .target(2, texDeferredTrans_Data)
         // .blendFunc(2, FUNC_ONE, FUNC_ZERO, FUNC_ONE, FUNC_ZERO)
+        .define("RENDER_TRANSLUCENT", "1")
+        .define("RENDER_TERRAIN", "1");
 
     if (Settings.Water.Waves && Settings.Water.Tessellation) {
         waterShader

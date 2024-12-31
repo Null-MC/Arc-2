@@ -1,7 +1,7 @@
 #version 430 core
 
-#include "/settings.glsl"
 #include "/lib/constants.glsl"
+#include "/settings.glsl"
 
 // layout(location = 6) in int blockMask;
 
@@ -15,7 +15,7 @@ out VertexData2 {
 	vec4 localTangent;
 	flat uint blockId;
 
-	#ifdef MATERIAL_PARALLAX_ENABLED
+	#ifdef RENDER_PARALLAX
 		vec3 tangentViewPos;
 		flat vec2 atlasMinCoord;
 		flat vec2 atlasMaxCoord;
@@ -28,7 +28,7 @@ out VertexData2 {
 	#include "/lib/water_waves.glsl"
 #endif
 
-#ifdef MATERIAL_PARALLAX_ENABLED
+#ifdef RENDER_PARALLAX
 	#include "/lib/utility/tbn.glsl"
 #endif
 
@@ -77,7 +77,7 @@ void iris_sendParameters(in VertexData data) {
     vOut.localTangent.xyz = mat3(playerModelViewInverse) * viewTangent;
     vOut.localTangent.w = data.tangent.w;
 
-	#ifdef MATERIAL_PARALLAX_ENABLED
+	#ifdef RENDER_PARALLAX
 		vOut.atlasMinCoord = iris_getTexture(data.textureId).minCoord;
 		vOut.atlasMaxCoord = iris_getTexture(data.textureId).maxCoord;
 

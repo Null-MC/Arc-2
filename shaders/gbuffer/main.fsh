@@ -1,13 +1,13 @@
 #version 430
 
-#include "/settings.glsl"
 #include "/lib/constants.glsl"
+#include "/settings.glsl"
 
 layout(location = 0) out vec4 outColor;
 layout(location = 1) out vec4 outTexNormal;
 layout(location = 2) out uvec4 outData;
 
-#if defined PARALLAX_ENABLED && defined MATERIAL_PARALLAX_DEPTHWRITE
+#if defined RENDER_PARALLAX && defined MATERIAL_PARALLAX_DEPTHWRITE
     layout (depth_greater) out float gl_FragDepth;
 #endif
 
@@ -25,7 +25,7 @@ in VertexData2 {
         vec3 surfacePos;
     #endif
 
-    #ifdef MATERIAL_PARALLAX_ENABLED
+    #ifdef RENDER_PARALLAX
         vec3 tangentViewPos;
         flat vec2 atlasMinCoord;
         flat vec2 atlasMaxCoord;
@@ -38,7 +38,7 @@ in VertexData2 {
 
 #include "/lib/material/material.glsl"
 
-#ifdef MATERIAL_PARALLAX_ENABLED
+#ifdef RENDER_PARALLAX
     #include "/lib/utility/atlas.glsl"
 
     #include "/lib/material/parallax.glsl"
@@ -57,7 +57,7 @@ void iris_emitFragment() {
 
     mat2 dFdXY = mat2(dFdx(mUV), dFdy(mUV));
 
-    #if defined MATERIAL_PARALLAX_ENABLED && MATERIAL_FORMAT != MAT_NONE
+    #ifdef RENDER_PARALLAX
         float texDepth = 1.0;
         vec3 traceCoordDepth = vec3(1.0);
 
@@ -134,7 +134,7 @@ void iris_emitFragment() {
     #endif
 
     #if MATERIAL_FORMAT != MAT_NONE
-        #if defined MATERIAL_PARALLAX_ENABLED && defined MATERIAL_PARALLAX_SHARP
+        #if defined RENDER_PARALLAX && defined MATERIAL_PARALLAX_SHARP
             if (!skipParallax) {
                 float depthDiff = max(texDepth - traceCoordDepth.z, 0.0);
 

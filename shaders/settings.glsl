@@ -5,10 +5,10 @@
 #define MATERIAL_ROUGH_REFRACT
 #define CLOUDS_ENABLED
 
-#define MATERIAL_PARALLAX_DEPTHWRITE
+//#define MATERIAL_PARALLAX_DEPTHWRITE
 #define MATERIAL_PARALLAX_MAXDIST 48
 
-#define DEBUG_VIEW DEBUG_VIEW_SSGI
+#define DEBUG_VIEW DEBUG_VIEW_SSAO
 #define DEBUG_MATERIAL DEBUG_MAT_NONE
 
 const float BLOCKLIGHT_TEMP = 3400.0;
@@ -54,3 +54,7 @@ const float cloudHeight = 320.0;
 
 // DO NOT EDIT
 const float shadowPixelSize = 1.0 / shadowMapResolution;
+
+#if defined MATERIAL_PARALLAX_ENABLED && defined RENDER_TERRAIN && MATERIAL_FORMAT != MAT_NONE
+	#define RENDER_PARALLAX
+#endif

@@ -150,7 +150,7 @@ void main() {
         illumination = illumination / max(maxWeight, 1.0);
     }
 
-    //occlusion *= 2.0;
+    occlusion *= 2.0;
     illumination *= 3.0;
 
     vec3 gi = illumination;

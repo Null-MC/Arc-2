@@ -71,7 +71,7 @@ void main() {
         phase_gB = -0.08;
         phase_gM = 0.96;
 
-        sampleAmbient = VL_WaterAmbient;
+        sampleAmbient = VL_WaterAmbient * Scene_SkyIrradianceUp;
     }
     else {
         scatterF = vec3(mix(VL_Scatter, VL_RainScatter, rainStrength));
@@ -80,10 +80,10 @@ void main() {
         phase_gB = -0.32;
         phase_gM = 0.36;
 
-        sampleAmbient = vec3(VL_AmbientF);
+        sampleAmbient = vec3(VL_AmbientF * mix(Scene_SkyIrradianceUp, vec3(0.3), 0.8*rainStrength));
     }
 
-    sampleAmbient *= phaseIso * Scene_SkyBrightnessSmooth * Scene_SkyIrradianceUp;
+    sampleAmbient *= phaseIso * Scene_SkyBrightnessSmooth;
 
     vec3 ndcPos = vec3(uv, depth) * 2.0 - 1.0;
     vec3 viewPos = unproject(playerProjectionInverse, ndcPos);
@@ -182,7 +182,7 @@ void main() {
         if (isEyeInWater == 0) {
             sampleDensity = stepDist * GetSkyDensity(sampleLocalPos);
 
-            #ifdef CLOUDS_ENABLED
+            #if defined CLOUDS_ENABLED && defined CLOUD_SHADOWS_ENABLED
                 float heightLast = sampleLocalPos.y - stepLocal.y;
                 if (sampleLocalPos.y+cameraPos.y > cloudHeight && heightLast+cameraPos.y <= cloudHeight) {
                     sampleDensity += cloudDensity;

@@ -36,6 +36,7 @@ function setupSettings() {
                 Depth: getIntSetting("MATERIAL_PARALLAX_DEPTH"),
                 Samples: getIntSetting("MATERIAL_PARALLAX_SAMPLES"),
                 Sharp: getBoolSetting("MATERIAL_PARALLAX_SHARP"),
+                DepthWrite: getBoolSetting("MATERIAL_PARALLAX_DEPTHWRITE"),
             },
         },
         Lighting: {
@@ -59,6 +60,11 @@ function setupSettings() {
             SSGI: getBoolSetting("EFFECT_SSGI_ENABLED"),
         },
         Post: {
+            Exposure: {
+                Min: parseFloat(getStringSetting("POST_EXPOSURE_MIN")),
+                Max: parseFloat(getStringSetting("POST_EXPOSURE_MAX")),
+                Speed: parseFloat(getStringSetting("POST_EXPOSURE_SPEED")),
+            },
             Bloom: getBoolSetting("POST_BLOOM_ENABLED"),
             TAA: getBoolSetting("EFFECT_TAA_ENABLED"),
         },
@@ -135,6 +141,7 @@ function setupSettings() {
         defineGlobally("MATERIAL_PARALLAX_DEPTH", Settings.Material.Parallax.Depth.toString());
         defineGlobally("MATERIAL_PARALLAX_SAMPLES", Settings.Material.Parallax.Samples.toString());
         if (Settings.Material.Parallax.Sharp) defineGlobally("MATERIAL_PARALLAX_SHARP", "1");
+        if (Settings.Material.Parallax.DepthWrite) defineGlobally("MATERIAL_PARALLAX_DEPTHWRITE", "1");
     }
 
     defineGlobally("LIGHTING_MODE", Settings.Lighting.Mode.toString());
@@ -172,6 +179,10 @@ function setupSettings() {
     }
 
     if (Settings.Post.TAA) defineGlobally("EFFECT_TAA_ENABLED", "1");
+
+    defineGlobally("POST_EXPOSURE_MIN", Settings.Post.Exposure.Min.toString());
+    defineGlobally("POST_EXPOSURE_MAX", Settings.Post.Exposure.Max.toString());
+    defineGlobally("POST_EXPOSURE_SPEED", Settings.Post.Exposure.Speed.toString());
 
     if (Settings.Debug.Enabled) {
         if (Settings.Debug.HISTOGRAM) defineGlobally("DEBUG_HISTOGRAM", "1");

@@ -23,6 +23,8 @@ option.MATERIAL_PARALLAX_SAMPLES=Samples
 option.MATERIAL_PARALLAX_DEPTH=Depth
 suffix.MATERIAL_PARALLAX_DEPTH=%
 
+option.MATERIAL_PARALLAX_DEPTHWRITE=Depth-Write
+
 option.LIGHTING_MODE=Mode
 value.LIGHTING_MODE.0=LightMap
 value.LIGHTING_MODE.1=LPV
@@ -36,6 +38,8 @@ value.LIGHTING_REFLECT_MODE.2=World-Space
 option.LIGHTING_REFLECT_NOISE=Rough Reflections
 
 option.LIGHTING_TRACE_TRIANGLE=Fully Traced Lighting
+
+value.RT_MAX_SAMPLE_COUNT.0=Infinite
 
 option.VOXEL_SIZE=Size
 suffix.VOXEL_SIZE=^3
@@ -55,3 +59,9 @@ option.EFFECT_SSGI_ENABLED=SSGI
 option.POST_BLOOM_ENABLED=Bloom
 
 option.EFFECT_TAA_ENABLED=TAA
+
+option.POST_EXPOSURE_MIN=Minimum
+
+option.POST_EXPOSURE_MAX=Maximum
+
+option.POST_EXPOSURE_SPEED=Speed

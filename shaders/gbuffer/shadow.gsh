@@ -17,11 +17,14 @@ in VertexData2 {
         vec3 localNormal;
     #endif
 
-    #if defined VOXEL_ENABLED && defined RENDER_TERRAIN
-        vec3 localPos;
-        vec2 lmcoord;
-        flat vec3 originPos;
+    #ifdef RENDER_TERRAIN
         flat uint blockId;
+
+        #ifdef VOXEL_ENABLED
+            vec3 localPos;
+            vec2 lmcoord;
+            flat vec3 originPos;
+        #endif
     #endif
 } vIn[];
 
@@ -32,22 +35,26 @@ out VertexData2 {
     #ifdef LPV_RSM_ENABLED
         vec3 localNormal;
     #endif
+
+    #ifdef RENDER_TERRAIN
+        flat uint blockId;
+    #endif
 } vOut;
 
-#if defined VOXEL_ENABLED && defined RENDER_TERRAIN
+#if defined(VOXEL_ENABLED) && defined(RENDER_TERRAIN)
     layout(r32ui) uniform writeonly uimage3D imgVoxelBlock;
 #endif
 
 #include "/lib/common.glsl"
 
-#if defined VOXEL_ENABLED && defined RENDER_TERRAIN
-    #if defined VOXEL_TRI_ENABLED
+#if defined(VOXEL_ENABLED) && defined(RENDER_TERRAIN)
+    #ifdef VOXEL_TRI_ENABLED
         #include "/lib/buffers/triangle-list.glsl"
     #endif
 
     #include "/lib/voxel/voxel_common.glsl"
 
-    #if defined VOXEL_TRI_ENABLED
+    #ifdef VOXEL_TRI_ENABLED
         #include "/lib/voxel/triangle-list.glsl"
     #endif
 #endif
@@ -58,8 +65,12 @@ void main() {
         vOut.color = vIn[v].color;
         vOut.uv = vIn[v].uv;
 
-        #if defined LPV_ENABLED && defined LPV_RSM_ENABLED
+        #if defined(LPV_ENABLED) && defined(LPV_RSM_ENABLED)
             vOut.localNormal = vIn[v].localNormal;
+        #endif
+
+        #ifdef RENDER_TERRAIN
+            vOut.blockId = vIn[v].blockId;
         #endif
 
         gl_Position = gl_in[v].gl_Position;
@@ -71,13 +82,13 @@ void main() {
     EndPrimitive();
 
 
-    #if defined VOXEL_ENABLED && defined RENDER_TERRAIN
+    #if defined(VOXEL_ENABLED) && defined(RENDER_TERRAIN)
         vec3 voxelPos = GetVoxelPosition(vIn[0].originPos);
 
         if (IsInVoxelBounds(voxelPos)) {
             imageStore(imgVoxelBlock, ivec3(voxelPos), uvec4(vIn[0].blockId));
 
-            #if defined VOXEL_TRI_ENABLED
+            #ifdef VOXEL_TRI_ENABLED
                 bool isFluid = iris_hasFluid(vIn[0].blockId);
 
                 if (vIn[0].currentCascade == 0 && !isFluid) {

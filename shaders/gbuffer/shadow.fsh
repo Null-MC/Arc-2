@@ -7,6 +7,10 @@ in VertexData2 {
     #if defined LPV_ENABLED && defined LPV_RSM_ENABLED
         vec3 localNormal;
     #endif
+
+    #ifdef RENDER_TERRAIN
+        flat uint blockId;
+    #endif
 } vIn;
 
 layout(location = 0) out vec4 outColor;
@@ -17,9 +21,20 @@ layout(location = 0) out vec4 outColor;
 
 
 void iris_emitFragment() {
-    outColor = iris_sampleBaseTex(vIn.uv) * vIn.color;
+    #ifdef RENDER_TERRAIN
+        bool isFluid = iris_hasFluid(vIn.blockId);
 
-    if (outColor.a < 0.2) discard;
+        if (isFluid) {
+            outColor = vec4(1.0, 1.0, 1.0, 0.02);
+        }
+        else {
+            outColor = iris_sampleBaseTex(vIn.uv) * vIn.color;
+            if (outColor.a < 0.2) discard;
+        }
+    #else
+        outColor = iris_sampleBaseTex(vIn.uv) * vIn.color;
+        if (outColor.a < 0.2) discard;
+    #endif
 
     #if defined LPV_ENABLED && defined LPV_RSM_ENABLED
         vec3 localNormal = normalize(vIn.localNormal);

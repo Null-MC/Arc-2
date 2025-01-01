@@ -3,9 +3,10 @@
 #define MATERIAL_EMISSION_POWER 2.2
 // #define LPV_PER_FACE_LIGHTING
 #define MATERIAL_ROUGH_REFRACT
-#define CLOUDS_ENABLED
 
-//#define MATERIAL_PARALLAX_DEPTHWRITE
+#define CLOUDS_ENABLED
+#define CLOUD_SHADOWS_ENABLED
+
 #define MATERIAL_PARALLAX_MAXDIST 48
 
 #define DEBUG_VIEW DEBUG_VIEW_SSAO
@@ -15,7 +16,7 @@ const float BLOCKLIGHT_TEMP = 3400.0;
 
 // const float VOXEL_FRUSTUM_OFFSET = 90.0;
 
-const float ATMOSPHERE_MAX = 2200.0;
+const float ATMOSPHERE_MAX = 4200.0;
 const float SUN_SIZE = 2.2;
 const float MOON_SIZE = 3.4;
 
@@ -43,9 +44,9 @@ const float Shadow_MaxPcfSize = 2.0;
 const float Bloom_Power = 1.3;
 const float Bloom_Strength = 0.04;
 
-const float Exposure_minLogLum = -9.5;
-const float Exposure_maxLogLum =  19.0;
-const float Exposure_Speed = 0.2;//2.1;
+const float Exposure_minLogLum = POST_EXPOSURE_MIN;// -9.5;
+const float Exposure_maxLogLum = POST_EXPOSURE_MAX;//  19.0;
+const float Exposure_Speed = POST_EXPOSURE_SPEED;// 0.2;//2.1;
 
 const float shadowMapResolution = 1024.0;
 const float sunPathRotation = 25.0;

@@ -1,8 +1,8 @@
 #version 430 core
 #extension GL_AMD_vertex_shader_layer: enable
 
-#include "/settings.glsl"
 #include "/lib/constants.glsl"
+#include "/settings.glsl"
 
 out VertexData2 {
     vec4 color;
@@ -13,11 +13,14 @@ out VertexData2 {
         vec3 localNormal;
     #endif
 
-    #if defined VOXEL_ENABLED && defined RENDER_TERRAIN
-        vec3 localPos;
-        vec2 lmcoord;
-        flat vec3 originPos;
+    #ifdef RENDER_TERRAIN
         flat uint blockId;
+
+        #ifdef VOXEL_ENABLED
+            vec3 localPos;
+            vec2 lmcoord;
+            flat vec3 originPos;
+        #endif
     #endif
 } vOut;
 
@@ -62,10 +65,11 @@ void iris_sendParameters(in VertexData data) {
 
     vOut.currentCascade = iris_currentCascade;
 
-    #if defined VOXEL_ENABLED && defined RENDER_TERRAIN
-        #ifdef RENDER_TERRAIN
+    #ifdef RENDER_TERRAIN
+        vOut.blockId = data.blockId;
+
+        #ifdef VOXEL_ENABLED
             vOut.lmcoord = clamp((data.light - (0.5/16.0)) / (15.0/16.0), 0.0, 1.0);
-            vOut.blockId = data.blockId;
         #endif
     #endif
 }

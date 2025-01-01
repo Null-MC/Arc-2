@@ -1,6 +1,6 @@
 // Units are in megameters.
 const float groundRadiusMM = 6.360;
-const float atmosphereRadiusMM = 6.460;
+const float atmosphereRadiusMM = 6.420;
 
 const vec3 groundAlbedo = vec3(0.3);
 

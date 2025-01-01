@@ -208,7 +208,7 @@ void main() {
                     const bool isUnderWater = false;
                     vec3 F = material_fresnel(albedo.rgb, f0_metal, roughL, NoVm, isUnderWater);
                     vec3 S = SampleLightSpecular(NoLm, NoHm, LoHm, F, roughL);
-                    vec3 sampleSpecular = lightAtt.y * S * lightColor;
+                    vec3 sampleSpecular = lightAtt.x * S * lightColor;
 
                     vec3 traceStart = light_voxelPos;
                     vec3 traceEnd = voxelPos_out;

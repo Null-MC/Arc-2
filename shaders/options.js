@@ -1,14 +1,20 @@
 function setupOptions() {
-    let screen_Sky = new Page("Sky")
-        .add(asInt("SKY_SUN_ANGLE", -20, -10, 0, 10, 20).build(-20))
-        .add(asInt("SKY_SEA_LEVEL", -20, -10, 0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100, 110, 120).build(60))
+    const screen_Sky = new Page("Sky")
+        .add(asIntEx(
+            "SKY_SEA_LEVEL", 60,
+            -40, 140, 10))
+        .add(asIntEx(
+            "SKY_SUN_ANGLE", -20,
+            -45, +45, 5))
         .build();
 
     let screen_Water = new Page("Water")
         .add(asBool("WATER_WAVES_ENABLED", true))
         .add(asBool("WATER_TESSELLATION_ENABLED", true))
         .add(EMPTY)
-        .add(asInt("WATER_TESSELLATION_LEVEL", 2, 4, 6, 8, 10, 12).build(4))
+        .add(asIntEx(
+            "WATER_TESSELLATION_LEVEL", 4,
+            2, 12, 1))
         .build();
 
     const screen_Shadows = new Page("Shadows")
@@ -17,9 +23,14 @@ function setupOptions() {
 
     let screen_Parallax = new Page("Parallax")
         .add(asBool("MATERIAL_PARALLAX_ENABLED", true))
+        .add(asIntEx(
+            "MATERIAL_PARALLAX_SAMPLES", 32,
+            8, 128, 8))
         .add(asBool("MATERIAL_PARALLAX_SHARP", true))
-        .add(asInt("MATERIAL_PARALLAX_SAMPLES", 32, 64, 128).build(32))
-        .add(asInt("MATERIAL_PARALLAX_DEPTH", 25, 50, 75, 100).build(25))
+        .add(asIntEx(
+            "MATERIAL_PARALLAX_DEPTH", 25,
+            5, 100, 5))
+        .add(asBool("MATERIAL_PARALLAX_DEPTHWRITE", true))
         .build();
 
     let screen_Material = new Page("Material")
@@ -28,7 +39,7 @@ function setupOptions() {
         .build();
 
     let screen_RT = new Page("RT Options")
-        .add(asInt("RT_MAX_SAMPLE_COUNT", 2, 4, 8, 16, 0).build(8))
+        .add(asInt("RT_MAX_SAMPLE_COUNT", 2, 4, 8, 12, 16, 20, 24, 28, 32, 48, 64, 0).build(8))
         .add(asBool("LIGHTING_TRACE_TRIANGLE", false))
         .build();
 
@@ -42,7 +53,7 @@ function setupOptions() {
 
     let screen_Voxel = new Page("Voxels")
         .add(asInt("VOXEL_SIZE", 64, 128, 256).build(128))
-        .add(asInt("VOXEL_FRUSTUM_OFFSET", 0, 50, 80).build(0))
+        .add(asInt("VOXEL_FRUSTUM_OFFSET", 0, 25, 50, 75).build(0))
         .build();
 
     const screen_Effects = new Page("Effects")
@@ -50,8 +61,21 @@ function setupOptions() {
         .add(asBool("EFFECT_SSGI_ENABLED", false))
         .build();
 
+    const screen_Exposure = new Page("Exposure")
+        .add(asFloatEx(
+            "POST_EXPOSURE_MIN", -9.5,
+            -12.0, -3.0, 0.5))
+        .add(asFloatEx(
+            "POST_EXPOSURE_MAX", 19.0,
+            6.0, 32.0, 0.5))
+        .add(asFloatEx(
+            "POST_EXPOSURE_SPEED", 0.2,
+            0.1, 2.0, 0.1))
+        .build();
+
     const screen_Post = new Page("Post")
         .add(asBool("POST_BLOOM_ENABLED", true))
+        .add(screen_Exposure)
         .add(asBool("EFFECT_TAA_ENABLED", true))
         .build();
 
@@ -66,4 +90,28 @@ function setupOptions() {
         .add(screen_Effects, screen_Post)
         .add(EMPTY, screen_Debug)
         .build();
+}
+
+function asIntEx(keyName, defaultValue, valueMin, valueMax, interval) {
+    const values = getValueRange(valueMin, valueMax, interval);
+    return asInt(keyName, ...values).build(defaultValue);
+}
+
+function asFloatEx(keyName, defaultValue, valueMin, valueMax, interval) {
+    const values = getValueRange(valueMin, valueMax, interval)
+        .map(v => v.toFixed(1).toString());
+
+    return asString(keyName, ...values).build(defaultValue.toFixed(1).toString());
+}
+
+function getValueRange(valueMin, valueMax, interval) {
+    const values = [];
+
+    let value = valueMin;
+    while (value <= valueMax) {
+        values.push(value);
+        value += interval;
+    }
+
+    return values;
 }

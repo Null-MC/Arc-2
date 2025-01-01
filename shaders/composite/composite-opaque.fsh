@@ -154,7 +154,10 @@ void main() {
             ? (depthTrans >= depthOpaque)
             : (depthTrans < depthOpaque && is_trans_fluid);
 
-        if (isWet) albedo.rgb = pow(albedo.rgb, vec3(1.8));
+        if (isWet) {
+            albedo.rgb = pow(albedo.rgb, vec3(1.8));
+            roughness = 0.08;
+        }
 
         lmCoord = lmCoord*lmCoord*lmCoord;
 
@@ -171,9 +174,11 @@ void main() {
             shadow_sss = textureLod(TEX_SHADOW, uv, 0);
         #endif
 
-        vec3 cloudPos = (cloudHeight-cameraPos.y-localPos.y) / Scene_LocalLightDir.y * Scene_LocalLightDir + localPos + cameraPos;
-        float cloudDensity = SampleCloudDensity(cloudPos);
-        shadow_sss.rgb *= max(1.0 - 0.4*cloudDensity, 0.0);
+        #if defined CLOUDS_ENABLED && defined CLOUD_SHADOWS_ENABLED
+            vec3 cloudPos = (cloudHeight-cameraPos.y-localPos.y) / Scene_LocalLightDir.y * Scene_LocalLightDir + localPos + cameraPos;
+            float cloudDensity = SampleCloudDensity(cloudPos);
+            shadow_sss.rgb *= max(1.0 - 0.4*cloudDensity, 0.0);
+        #endif
 
         float occlusion = texOcclusion;
         #if defined EFFECT_SSAO_ENABLED //&& !defined ACCUM_ENABLED

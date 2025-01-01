@@ -631,6 +631,7 @@ function setupShader() {
             .ssbo(3, lightListBuffer)
             .ssbo(4, triangleListBuffer)
             .define("RENDER_TERRAIN", "1")
+            .define("RENDER_TRANSLUCENT", "1")
             .build());
     }
 

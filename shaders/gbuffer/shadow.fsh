@@ -21,11 +21,11 @@ layout(location = 0) out vec4 outColor;
 
 
 void iris_emitFragment() {
-    #ifdef RENDER_TERRAIN
+    #if defined(RENDER_TERRAIN) && defined(RENDER_TRANSLUCENT)
         bool isFluid = iris_hasFluid(vIn.blockId);
 
         if (isFluid) {
-            outColor = vec4(1.0, 1.0, 1.0, 0.02);
+            outColor = vec4(1.0, 1.0, 1.0, 1.0);
         }
         else {
             outColor = iris_sampleBaseTex(vIn.uv) * vIn.color;

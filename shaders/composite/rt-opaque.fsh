@@ -80,7 +80,9 @@ in vec2 uv;
 
     #include "/lib/utility/blackbody.glsl"
 
-    #include "/lib/effects/wsr.glsl"
+    #ifdef LIGHTING_REFLECT_TRIANGLE
+        #include "/lib/effects/wsr.glsl"
+    #endif
 
     #ifdef SHADOWS_ENABLED
         #include "/lib/shadow/csm.glsl"
@@ -275,31 +277,42 @@ void main() {
                 vec4 reflection = vec4(0.0);
 
                 vec2 reflect_uv, reflect_lmcoord;
-                vec3 reflect_voxelPos, reflect_hitCoord, reflect_geoNormal, reflect_tint;
-                vec4 reflect_hitColor;
-                Triangle reflect_hitTriangle;
+                vec3 reflect_voxelPos, reflect_geoNormal, reflect_tint;
 
                 if (roughL < 0.86) {
-                    // reflection = TraceReflection(localPos + 0.05*localGeoNormal, reflectLocalDir, reflect_voxelPos, reflect_geoNormal, reflect_uv, reflect_lmcoord, reflect_tint);
-                    if (TraceReflection(localPos + 0.1*localGeoNormal, reflectLocalDir, reflect_voxelPos, reflect_uv, reflect_hitCoord, reflect_hitColor, reflect_hitTriangle)) {
-                        reflection = reflect_hitColor;
+                    #ifdef LIGHTING_REFLECT_TRIANGLE
+                        // WSR: per-triangle
 
-                        reflect_tint = unpackUnorm4x8(reflect_hitTriangle.tint).rgb;
+                        vec4 reflect_hitColor;
+                        vec3 reflect_hitCoord;
+                        Triangle reflect_hitTriangle;
+                        if (TraceReflection(localPos + 0.1*localGeoNormal, reflectLocalDir, reflect_voxelPos, reflect_uv, reflect_hitCoord, reflect_hitColor, reflect_hitTriangle)) {
+                            reflection = reflect_hitColor;
 
-                        vec2 lmcoords[3];
-                        GetTriangleLightMapCoord(reflect_hitTriangle.lmcoord, lmcoords[0], lmcoords[1], lmcoords[2]);
-                        reflect_lmcoord = lmcoords[0] * reflect_hitCoord.x
-                        + lmcoords[1] * reflect_hitCoord.y
-                        + lmcoords[2] * reflect_hitCoord.z;
+                            reflect_tint = unpackUnorm4x8(reflect_hitTriangle.tint).rgb;
 
-                        vec3 tri_pos_0 = GetTriangleVertexPos(reflect_hitTriangle.pos[0]);
-                        vec3 tri_pos_1 = GetTriangleVertexPos(reflect_hitTriangle.pos[1]);
-                        vec3 tri_pos_2 = GetTriangleVertexPos(reflect_hitTriangle.pos[2]);
+                            vec2 lmcoords[3];
+                            GetTriangleLightMapCoord(reflect_hitTriangle.lmcoord, lmcoords[0], lmcoords[1], lmcoords[2]);
+                            reflect_lmcoord = lmcoords[0] * reflect_hitCoord.x
+                                + lmcoords[1] * reflect_hitCoord.y
+                                + lmcoords[2] * reflect_hitCoord.z;
 
-                        vec3 e1 = normalize(tri_pos_1 - tri_pos_0);
-                        vec3 e2 = normalize(tri_pos_2 - tri_pos_0);
-                        reflect_geoNormal = normalize(cross(e1, e2));
-                    }
+                            vec3 tri_pos_0 = GetTriangleVertexPos(reflect_hitTriangle.pos[0]);
+                            vec3 tri_pos_1 = GetTriangleVertexPos(reflect_hitTriangle.pos[1]);
+                            vec3 tri_pos_2 = GetTriangleVertexPos(reflect_hitTriangle.pos[2]);
+
+                            vec3 e1 = normalize(tri_pos_1 - tri_pos_0);
+                            vec3 e2 = normalize(tri_pos_2 - tri_pos_0);
+                            reflect_geoNormal = normalize(cross(e1, e2));
+                        }
+                    #else
+                        // WSR: block-only
+                        if (TraceReflection(localPos + 0.1*localGeoNormal, reflectLocalDir, reflect_voxelPos, reflect_uv, reflect_hitCoord, reflect_hitColor)) {
+                            reflection = reflect_hitColor;
+
+                            //...
+                        }
+                    #endif
                 }
 
                 if (reflection.a > 0.0) {

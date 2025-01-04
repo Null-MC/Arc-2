@@ -1,6 +1,6 @@
 #version 430 core
 #extension GL_NV_gpu_shader5: enable
-#extension GL_AMD_vertex_shader_layer : require
+#extension GL_ARB_shader_viewport_layer_array : require
 
 #include "/settings.glsl"
 #include "/lib/constants.glsl"

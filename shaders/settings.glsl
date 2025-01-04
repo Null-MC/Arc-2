@@ -9,12 +9,11 @@
 
 #define MATERIAL_PARALLAX_MAXDIST 48
 
+
 #define DEBUG_VIEW DEBUG_VIEW_SSAO
 #define DEBUG_MATERIAL DEBUG_MAT_NONE
 
 const float BLOCKLIGHT_TEMP = 3400.0;
-
-// const float VOXEL_FRUSTUM_OFFSET = 90.0;
 
 const float ATMOSPHERE_MAX = 4200.0;
 const float SUN_SIZE = 2.2;
@@ -31,10 +30,10 @@ const float MOON_BRIGHTNESS = 0.024;
 const float SKY_BRIGHTNESS = 12.0;
 const float BLOCKLIGHT_BRIGHTNESS = 4.0;
 
-#if defined LPV_ENABLED && defined LPV_RSM_ENABLED
+#if (defined LPV_ENABLED && defined LPV_RSM_ENABLED) || defined EFFECT_SSGI_ENABLED
 	const float SKY_AMBIENT = 0.3;
 #else
-	const float SKY_AMBIENT = 0.6;
+	const float SKY_AMBIENT = 0.5;
 #endif
 
 const int SHADOW_PCF_SAMPLES = 8;

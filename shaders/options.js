@@ -30,12 +30,18 @@ function setupOptions() {
         .add(asIntEx(
             "MATERIAL_PARALLAX_DEPTH", 25,
             5, 100, 5))
-        .add(asBool("MATERIAL_PARALLAX_DEPTHWRITE", true))
+        .add(asBool("MATERIAL_PARALLAX_DEPTHWRITE", false))
         .build();
 
     let screen_Material = new Page("Material")
         .add(asInt("MATERIAL_FORMAT", 0, 1, 2).build(1))
         .add(screen_Parallax)
+        .build();
+
+    let screen_Reflections = new Page("Reflections")
+        .add(asInt("LIGHTING_REFLECT_MODE", 0, 1, 2).build(1))
+        .add(asBool("LIGHTING_REFLECT_NOISE", false))
+        .add(asBool("LIGHTING_REFLECT_TRIANGLE", false))
         .build();
 
     let screen_RT = new Page("RT Options")
@@ -45,10 +51,9 @@ function setupOptions() {
 
     let screen_Lighting = new Page("Lighting")
         .add(asInt("LIGHTING_MODE", 0, 1, 2).build(1))
-        .add(asInt("LIGHTING_REFLECT_MODE", 0, 1, 2).build(1))
-        .add(asBool("LIGHTING_REFLECT_NOISE", false))
         .add(screen_RT)
         .add(asBool("LPV_RSM_ENABLED", true))
+        .add(screen_Reflections)
         .build();
 
     let screen_Voxel = new Page("Voxels")
@@ -63,13 +68,13 @@ function setupOptions() {
 
     const screen_Exposure = new Page("Exposure")
         .add(asFloatEx(
-            "POST_EXPOSURE_MIN", -9.5,
+            "POST_EXPOSURE_MIN", -10.5,
             -12.0, -3.0, 0.5))
         .add(asFloatEx(
-            "POST_EXPOSURE_MAX", 19.0,
+            "POST_EXPOSURE_MAX", 17.0,
             6.0, 32.0, 0.5))
         .add(asFloatEx(
-            "POST_EXPOSURE_SPEED", 0.2,
+            "POST_EXPOSURE_SPEED", 0.4,
             0.1, 2.0, 0.1))
         .build();
 

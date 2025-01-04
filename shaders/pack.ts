@@ -41,12 +41,15 @@ function setupSettings() {
         },
         Lighting: {
             Mode: getIntSetting("LIGHTING_MODE"),
-            ReflectionMode: getIntSetting("LIGHTING_REFLECT_MODE"),
-            ReflectionNoise: getBoolSetting("LIGHTING_REFLECT_NOISE"),
-            TraceTriangles: getBoolSetting("LIGHTING_TRACE_TRIANGLE"),
             LpvRsmEnabled: getBoolSetting("LPV_RSM_ENABLED"),
             RT: {
                 MaxSampleCount: getIntSetting("RT_MAX_SAMPLE_COUNT"),
+                TraceTriangles: getBoolSetting("LIGHTING_TRACE_TRIANGLE"),
+            },
+            Reflections: {
+                Mode: getIntSetting("LIGHTING_REFLECT_MODE"),
+                Noise: getBoolSetting("LIGHTING_REFLECT_NOISE"),
+                ReflectTriangles: getBoolSetting("LIGHTING_REFLECT_TRIANGLE"),
             },
         },
         Voxel: {
@@ -92,12 +95,19 @@ function setupSettings() {
     if (Settings.Lighting.Mode == LightMode_RT) {
         Settings.Internal.Voxelization = true;
         Settings.Internal.Accumulation = true;
+
+        if (Settings.Lighting.RT.TraceTriangles) {
+            Settings.Internal.VoxelizeTriangles = true;
+        }
     }
 
-    if (Settings.Lighting.ReflectionMode == ReflectMode_WSR) {
+    if (Settings.Lighting.Reflections.Mode == ReflectMode_WSR) {
         Settings.Internal.Voxelization = true;
-        Settings.Internal.VoxelizeTriangles = true;
         Settings.Internal.Accumulation = true;
+
+        if (Settings.Lighting.Reflections.ReflectTriangles) {
+            Settings.Internal.VoxelizeTriangles = true;
+        }
     }
 
     if (Settings.Lighting.LpvRsmEnabled) {
@@ -145,8 +155,12 @@ function setupSettings() {
     }
 
     defineGlobally("LIGHTING_MODE", Settings.Lighting.Mode.toString());
-    defineGlobally("LIGHTING_REFLECT_MODE", Settings.Lighting.ReflectionMode.toString());
-    if (Settings.Lighting.ReflectionNoise) defineGlobally("MATERIAL_ROUGH_REFLECT_NOISE", "1");
+
+    defineGlobally("LIGHTING_REFLECT_MODE", Settings.Lighting.Reflections.Mode.toString());
+    if (Settings.Lighting.Reflections.Noise) defineGlobally("MATERIAL_ROUGH_REFLECT_NOISE", "1");
+    if (Settings.Lighting.Reflections.Mode == ReflectMode_WSR) {
+        if (Settings.Lighting.Reflections.ReflectTriangles) defineGlobally("LIGHTING_REFLECT_TRIANGLE", "1");
+    }
 
     if (Settings.Internal.Voxelization) {
         defineGlobally("VOXEL_ENABLED", "1");
@@ -159,7 +173,7 @@ function setupSettings() {
             defineGlobally("LIGHT_BIN_MAX", Settings.Voxel.MaxLightCount.toString());
             defineGlobally("LIGHT_BIN_SIZE", LIGHT_BIN_SIZE.toString());
 
-            if (Settings.Lighting.TraceTriangles) defineGlobally("RT_TRI_ENABLED", "1")
+            if (Settings.Lighting.RT.TraceTriangles) defineGlobally("RT_TRI_ENABLED", "1");
         }
 
         if (Settings.Internal.VoxelizeTriangles) {
@@ -368,7 +382,7 @@ function setupShader() {
 
     let texDiffuseRT: BuiltTexture | null = null;
     let texSpecularRT: BuiltTexture | null = null;
-    if (Settings.Lighting.Mode == LightMode_RT || Settings.Lighting.ReflectionMode == ReflectMode_WSR) {
+    if (Settings.Lighting.Mode == LightMode_RT || Settings.Lighting.Reflections.Mode == ReflectMode_WSR) {
         texDiffuseRT = new Texture("texDiffuseRT")
             // .imageName("imgDiffuseRT")
             .format(Format.RGB16F)
@@ -761,7 +775,7 @@ function setupShader() {
 
     const texShadow_src = Settings.Shadows.Filter ? "texShadow_final" : "texShadow";
 
-    if (Settings.Lighting.Mode == LightMode_RT || Settings.Lighting.ReflectionMode == ReflectMode_WSR) {
+    if (Settings.Lighting.Mode == LightMode_RT || Settings.Lighting.Reflections.Mode == ReflectMode_WSR) {
         const rtOpaqueShader = new Composite("rt-opaque")
             .vertex("shared/bufferless.vsh")
             .fragment("composite/rt-opaque.fsh")
@@ -772,7 +786,7 @@ function setupShader() {
             .ssbo(4, triangleListBuffer)
             .define("TEX_SHADOW", texShadow_src);
 
-        if (Settings.Lighting.ReflectionMode == ReflectMode_WSR)
+        if (Settings.Lighting.Reflections.Mode == ReflectMode_WSR)
             rtOpaqueShader.generateMips(texFinalPrevious);
 
         registerShader(Stage.POST_RENDER, rtOpaqueShader.build());
@@ -826,7 +840,7 @@ function setupShader() {
         .define("TEX_SHADOW", texShadow_src)
         .define("TEX_SSGIAO", "texSSGIAO_final");
 
-    if (Settings.Lighting.ReflectionMode == ReflectMode_SSR)
+    if (Settings.Lighting.Reflections.Mode == ReflectMode_SSR)
         compositeOpaqueShader.generateMips(texFinalPrevious);
 
     if (Settings.Internal.LPV) {

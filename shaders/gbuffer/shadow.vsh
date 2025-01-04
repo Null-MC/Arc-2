@@ -1,5 +1,5 @@
 #version 430 core
-#extension GL_AMD_vertex_shader_layer: enable
+#extension GL_ARB_shader_viewport_layer_array: enable
 
 #include "/lib/constants.glsl"
 #include "/settings.glsl"

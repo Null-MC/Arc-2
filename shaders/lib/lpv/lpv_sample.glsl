@@ -4,11 +4,14 @@ vec3 sample_lpv(ivec3 voxelPos, vec4 intensity) {
 	int i = GetLpvIndex(voxelPos);
 	bool altFrame = frameCounter % 2 == 1;
 	lpvShVoxel sh_voxel = altFrame ? SH_LPV_alt[i] : SH_LPV[i];
+
+	vec4 sh_voxel_R, sh_voxel_G, sh_voxel_B;
+	decode_shVoxel(sh_voxel, sh_voxel_R, sh_voxel_G, sh_voxel_B);
 	
 	vec3 lpv_intensity = vec3(
-		dot(intensity, sh_voxel.R),
-		dot(intensity, sh_voxel.G),
-		dot(intensity, sh_voxel.B));
+		dot(intensity, sh_voxel_R),
+		dot(intensity, sh_voxel_G),
+		dot(intensity, sh_voxel_B));
 
 	lpv_intensity = max(lpv_intensity, vec3(0.0));
 

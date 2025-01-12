@@ -1,5 +1,4 @@
 #version 430 core
-#extension GL_NV_gpu_shader5: enable
 
 layout (local_size_x = 8, local_size_y = 8, local_size_z = 8) in;
 

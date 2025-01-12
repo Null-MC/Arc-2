@@ -267,6 +267,7 @@ function setupShader() {
         "shadowModelView",
         // "shadowModelViewInverse",
         "shadowProjection",
+        // "shadowProjectionInverse",
         "shadowProjectionSize",
         "skyColor",
         "sunPosition",

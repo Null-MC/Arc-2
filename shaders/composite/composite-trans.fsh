@@ -1,5 +1,4 @@
 #version 430 core
-#extension GL_NV_gpu_shader5: enable
 
 #include "/settings.glsl"
 #include "/lib/constants.glsl"
@@ -306,8 +305,8 @@ void main() {
         specular += view_F * skyReflectColor * reflectTint * (1.0 - roughness);
 
         vec4 finalColor = albedo;
-        finalColor.rgb = albedo.rgb * diffuse + specular;
-        finalColor.a = min(finalColor.a + maxOf(specular), 1.0);
+        finalColor.rgb = albedo.rgb * diffuse * albedo.a + specular;
+        //finalColor.a = min(finalColor.a + maxOf(specular), 1.0);
 
         // Refraction
         vec3 refractViewNormal = mat3(playerModelView) * (localTexNormal - localGeoNormal);
@@ -344,7 +343,7 @@ void main() {
             refractMip = 6.0 * pow(roughness, 0.25) * min(viewDistFar * 0.2, 1.0);
         #endif
 
-        colorFinal = textureLod(texFinalOpaque, refract_uv, refractMip).rgb;
+        vec3 colorOpaque = textureLod(texFinalOpaque, refract_uv, refractMip).rgb;
 
         // Fog
         // float viewDist = length(localPosTrans);
@@ -352,10 +351,12 @@ void main() {
         // finalColor = mix(finalColor, vec4(fogColor.rgb, 1.0), fogF);
 
         if (!is_fluid) {
-            colorFinal *= mix(vec3(1.0), albedo.rgb, sqrt(albedo.a));
+            colorOpaque *= mix(vec3(1.0), albedo.rgb, sqrt(albedo.a));
         }
 
-        colorFinal = mix(colorFinal, finalColor.rgb, finalColor.a);
+//        colorFinal = mix(colorOpaque, finalColor.rgb, finalColor.a);
+        colorOpaque *= 1.0 - finalColor.a;
+        colorFinal = colorOpaque + finalColor.rgb;
     }
 
     vec4 clouds = textureLod(texClouds, uv, 0);

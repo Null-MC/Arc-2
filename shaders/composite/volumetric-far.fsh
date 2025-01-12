@@ -1,5 +1,4 @@
 #version 430 core
-#extension GL_NV_gpu_shader5: enable
 
 layout(location = 0) out vec3 outScatter;
 layout(location = 1) out vec3 outTransmit;

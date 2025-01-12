@@ -1,5 +1,4 @@
 #version 430 core
-#extension GL_NV_gpu_shader5: enable
 
 #include "/settings.glsl"
 #include "/lib/constants.glsl"
@@ -21,8 +20,6 @@ layout(r32ui) uniform readonly uimage3D imgVoxelBlock;
 #include "/lib/buffers/sh-lpv.glsl"
 
 #include "/lib/noise/hash.glsl"
-
-//#include "/lib/utility/blackbody.glsl"
 
 #include "/lib/voxel/voxel_common.glsl"
 
@@ -152,10 +149,16 @@ void main() {
 	ivec3 cellIndex = ivec3(gl_GlobalInvocationID);
 	bool altFrame = frameCounter % 2 == 1;
 
-	lpvShVoxel sh_voxel = voxel_empty;
+	//lpvShVoxel sh_voxel = voxel_empty;
+	vec4 voxel_R = vec4(0.0);
+	vec4 voxel_G = vec4(0.0);
+	vec4 voxel_B = vec4(0.0);
 
 	#ifdef LPV_RSM_ENABLED
-		lpvShVoxel sh_rsm_voxel = voxel_empty;
+//		lpvShVoxel sh_rsm_voxel = voxel_empty;
+		vec4 voxel_rsm_R = vec4(0.0);
+		vec4 voxel_rsm_G = vec4(0.0);
+		vec4 voxel_rsm_B = vec4(0.0);
 	#endif
 
 	ivec3 voxelFrameOffset = GetVoxelFrameOffset();
@@ -179,31 +182,31 @@ void main() {
 		tintColor = iris_getLightColor(blockId).rgb;
 		tintColor = RgbToLinear(tintColor);
 
-	#ifndef LPV_PER_FACE_LIGHTING
-		int lightRange = iris_getEmission(blockId);
+		#ifndef LPV_PER_FACE_LIGHTING
+			int lightRange = iris_getEmission(blockId);
 
-		#if LIGHTING_MODE == LIGHT_MODE_LPV
-			if (lightRange > 0) {
-				vec3 lightColor = tintColor;//iris_getLightColor(neighborBlockId).rgb;
-				// lightColor = RgbToLinear(lightColor);
+			#if LIGHTING_MODE == LIGHT_MODE_LPV
+				if (lightRange > 0) {
+					vec3 lightColor = tintColor;//iris_getLightColor(neighborBlockId).rgb;
+					// lightColor = RgbToLinear(lightColor);
 
-				// vec4 coeffs = vec4(1.0 / PI);//dirToSH(vec3(-curDir)) / PI;
-				vec4 coeffs = vec4(0.0);
-				coeffs += dirToSH(vec3( 0.0,  1.0,  0.0));
-				coeffs += dirToSH(vec3( 0.0, -1.0,  0.0));
-				coeffs += dirToSH(vec3( 1.0,  0.0,  0.0));
-				coeffs += dirToSH(vec3(-1.0,  0.0,  0.0));
-				coeffs += dirToSH(vec3( 0.0,  0.0,  1.0));
-				coeffs += dirToSH(vec3( 0.0,  0.0, -1.0));
-				coeffs /= PI;
-				vec3 flux = exp2(lightRange) * lightColor;
+					// vec4 coeffs = vec4(1.0 / PI);//dirToSH(vec3(-curDir)) / PI;
+					vec4 coeffs = vec4(0.0);
+					coeffs += dirToSH(vec3( 0.0,  1.0,  0.0));
+					coeffs += dirToSH(vec3( 0.0, -1.0,  0.0));
+					coeffs += dirToSH(vec3( 1.0,  0.0,  0.0));
+					coeffs += dirToSH(vec3(-1.0,  0.0,  0.0));
+					coeffs += dirToSH(vec3( 0.0,  0.0,  1.0));
+					coeffs += dirToSH(vec3( 0.0,  0.0, -1.0));
+					coeffs /= PI;
+					vec3 flux = exp2(lightRange) * lightColor;
 
-				sh_voxel.R = f16vec4(sh_voxel.R + coeffs * flux.r);
-				sh_voxel.G = f16vec4(sh_voxel.G + coeffs * flux.g);
-				sh_voxel.B = f16vec4(sh_voxel.B + coeffs * flux.b);
-			}
+					voxel_R = fma(vec4(flux.r), coeffs, voxel_R);
+					voxel_G = fma(vec4(flux.g), coeffs, voxel_G);
+					voxel_B = fma(vec4(flux.b), coeffs, voxel_B);
+				}
+			#endif
 		#endif
-	#endif
 	}
 
 	if (!isFullBlock) {
@@ -242,9 +245,9 @@ void main() {
 							vec4 coeffs = dirToSH(vec3(-curDir)) / PI;
 							vec3 flux = exp2(lightRange) * lightColor * tintColor;
 
-							sh_voxel.R = f16vec4(fma(flux.r, coeffs, sh_voxel.R));
-							sh_voxel.G = f16vec4(fma(flux.g, coeffs, sh_voxel.G));
-							sh_voxel.B = f16vec4(fma(flux.b, coeffs, sh_voxel.B));
+							voxel_R = fma(vec4(flux.r), coeffs, voxel_R);
+							voxel_G = fma(vec4(flux.g), coeffs, voxel_G);
+							voxel_B = fma(vec4(flux.b), coeffs, voxel_B);
 						}
 					#endif
 				#endif
@@ -259,6 +262,9 @@ void main() {
 			// if (!isNeighborFullBlock) {
 				int neighbor_i = GetLpvIndex(neighbourIndex);
 				lpvShVoxel neighbor_voxel = altFrame ? SH_LPV[neighbor_i] : SH_LPV_alt[neighbor_i];
+
+				vec4 neighbor_R, neighbor_G, neighbor_B;
+				decode_shVoxel(neighbor_voxel, neighbor_R, neighbor_G, neighbor_B);
 
 
 				// for (uint sideFace = 0; sideFace < 4; ++sideFace) {
@@ -287,9 +293,9 @@ void main() {
 
 				vec4 f = (1.0/2.0) * curCosLobe;
 
-				sh_voxel.R = f16vec4(sh_voxel.R + max(dot(neighbor_voxel.R, curDirSH), 0.0) * f * tintColor.r);
-				sh_voxel.G = f16vec4(sh_voxel.G + max(dot(neighbor_voxel.G, curDirSH), 0.0) * f * tintColor.g);
-				sh_voxel.B = f16vec4(sh_voxel.B + max(dot(neighbor_voxel.B, curDirSH), 0.0) * f * tintColor.b);
+				voxel_R += max(dot(neighbor_R, curDirSH), 0.0) * f * tintColor.r;
+				voxel_G += max(dot(neighbor_G, curDirSH), 0.0) * f * tintColor.g;
+				voxel_B += max(dot(neighbor_B, curDirSH), 0.0) * f * tintColor.b;
 			// }
 		}
 
@@ -305,19 +311,23 @@ void main() {
 			vec4 coeffs = dirToSH(sample_normal) / PI;
 			vec3 flux = exp2(13.0) * max(Scene_LocalSunDir.y, 0.0) * skyLight * sample_color;
 
-			sh_rsm_voxel.R = f16vec4(sh_rsm_voxel.R + coeffs * flux.r);
-			sh_rsm_voxel.G = f16vec4(sh_rsm_voxel.G + coeffs * flux.g);
-			sh_rsm_voxel.B = f16vec4(sh_rsm_voxel.B + coeffs * flux.b);
+			voxel_rsm_R += coeffs * flux.r;
+			voxel_rsm_G += coeffs * flux.g;
+			voxel_rsm_B += coeffs * flux.b;
 
 			int rsm_i = GetLpvIndex(cellIndexPrev);
 			lpvShVoxel rsm_voxel_prev = altFrame ? SH_LPV_RSM[rsm_i] : SH_LPV_RSM_alt[rsm_i];
-			sh_rsm_voxel.R = f16vec4(mix(rsm_voxel_prev.R, sh_rsm_voxel.R, 0.02));
-			sh_rsm_voxel.G = f16vec4(mix(rsm_voxel_prev.G, sh_rsm_voxel.G, 0.02));
-			sh_rsm_voxel.B = f16vec4(mix(rsm_voxel_prev.B, sh_rsm_voxel.B, 0.02));
 
-			sh_voxel.R = f16vec4(sh_voxel.R + sh_rsm_voxel.R);
-			sh_voxel.G = f16vec4(sh_voxel.G + sh_rsm_voxel.G);
-			sh_voxel.B = f16vec4(sh_voxel.B + sh_rsm_voxel.B);
+			vec4 rsm_prev_R, rsm_prev_G, rsm_prev_B;
+			decode_shVoxel(rsm_voxel_prev, rsm_prev_R, rsm_prev_G, rsm_prev_B);
+
+			voxel_rsm_R = mix(rsm_prev_R, voxel_rsm_R, 0.02);
+			voxel_rsm_G = mix(rsm_prev_G, voxel_rsm_G, 0.02);
+			voxel_rsm_B = mix(rsm_prev_B, voxel_rsm_B, 0.02);
+
+			voxel_R += voxel_rsm_R;
+			voxel_G += voxel_rsm_G;
+			voxel_B += voxel_rsm_B;
 		#endif
 	}
 
@@ -340,12 +350,18 @@ void main() {
 	// 	cB += coeffs * flux.b;
 	// }
 
+	lpvShVoxel sh_voxel;
+	encode_shVoxel(sh_voxel, voxel_R, voxel_G, voxel_B);
+
 	int i = GetLpvIndex(cellIndex);
 
 	if (altFrame) SH_LPV_alt[i] = sh_voxel;
 	else SH_LPV[i] = sh_voxel;
 
 	#ifdef LPV_RSM_ENABLED
+		lpvShVoxel sh_rsm_voxel;
+		encode_shVoxel(sh_rsm_voxel, voxel_rsm_R, voxel_rsm_G, voxel_rsm_B);
+
 		if (altFrame) SH_LPV_RSM_alt[i] = sh_rsm_voxel;
 		else SH_LPV_RSM[i] = sh_rsm_voxel;
 	#endif

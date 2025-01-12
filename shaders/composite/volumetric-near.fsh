@@ -66,9 +66,9 @@ void main() {
     if (isEyeInWater == 1) {
         scatterF = VL_WaterScatter;
         transmitF = VL_WaterTransmit;
-        phase_gF = VL_WaterPhase;
-        phase_gB = -0.08;
-        phase_gM = 0.96;
+        phase_gF = VL_WaterPhaseF;
+        phase_gB = VL_WaterPhaseB;
+        phase_gM = VL_WaterPhaseM;
 
         sampleAmbient = VL_WaterAmbient * Scene_SkyIrradianceUp;
     }

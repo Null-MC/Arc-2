@@ -176,7 +176,9 @@ void main() {
         #if defined CLOUDS_ENABLED && defined CLOUD_SHADOWS_ENABLED
             vec3 cloudPos = (cloudHeight-cameraPos.y-localPos.y) / Scene_LocalLightDir.y * Scene_LocalLightDir + localPos + cameraPos;
             float cloudDensity = SampleCloudDensity(cloudPos);
-            shadow_sss.rgb *= max(1.0 - 0.4*cloudDensity, 0.0);
+            float cloudShadowF = max(1.0 - 0.2*cloudDensity, 0.3);
+
+            shadow_sss *= cloudShadowF;
         #endif
 
         float occlusion = texOcclusion;
@@ -222,8 +224,9 @@ void main() {
         #ifdef LPV_ENABLED
             // vec3 voxelSamplePos = voxelPos - 0.25*localGeoNormal + 0.75*localTexNormal;
             vec3 voxelSamplePos = fma(localGeoNormal, vec3(0.5), voxelPos);
+            vec3 voxelLight = sample_lpv_linear(voxelSamplePos, localTexNormal);
 
-            skyLightDiffuse += sample_lpv_linear(voxelSamplePos, localTexNormal) * SampleLightDiffuse(NoVm, 1.0, 1.0, roughL);
+            skyLightDiffuse += voxelLight * cloudShadowF * SampleLightDiffuse(NoVm, 1.0, 1.0, roughL);
         #endif
 
         vec2 skyIrradianceCoord = DirectionToUV(localTexNormal);

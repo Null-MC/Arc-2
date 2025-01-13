@@ -40,7 +40,7 @@ function setupOptions() {
 
     let screen_Reflections = new Page("Reflections")
         .add(asInt("LIGHTING_REFLECT_MODE", 0, 1, 2).build(1))
-        .add(asBool("LIGHTING_REFLECT_NOISE", false))
+        .add(asBool("LIGHTING_REFLECT_NOISE", true))
         .add(asBool("LIGHTING_REFLECT_TRIANGLE", false))
         .build();
 
@@ -86,6 +86,9 @@ function setupOptions() {
 
     const screen_Debug = new Page("Debug")
         .add(asBool("DEBUG_ENABLED", false))
+        .add(asInt("DEBUG_VIEW", 0, 1, 2, 3, 4, 5, 6).build(0))
+        .add(EMPTY)
+        .add(asInt("DEBUG_MATERIAL", 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10).build(0))
         .build();
 
     return new Page("main")

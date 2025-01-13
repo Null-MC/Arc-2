@@ -76,10 +76,10 @@ void main() {
         scatterF = vec3(mix(VL_Scatter, VL_RainScatter, rainStrength));
         transmitF = vec3(mix(VL_Transmit, VL_RainTransmit, rainStrength));
         phase_gF = mix(VL_Phase, VL_RainPhase, rainStrength);
-        phase_gB = -0.32;
-        phase_gM = 0.36;
+        phase_gB = -mix(0.16, 0.28, rainStrength);
+        phase_gM =  mix(0.36, 0.24, rainStrength);
 
-        sampleAmbient = vec3(VL_AmbientF * mix(Scene_SkyIrradianceUp, vec3(0.3), 0.8*rainStrength));
+        sampleAmbient = VL_AmbientF * mix(Scene_SkyIrradianceUp, vec3(0.5*luminance(Scene_SkyIrradianceUp)), rainStrength);
     }
 
     sampleAmbient *= phaseIso * Scene_SkyBrightnessSmooth;
@@ -112,8 +112,8 @@ void main() {
 
     #ifdef CLOUDS_ENABLED
         float cloudDensity = 0.0;
-        float cloud_shadowSun = 20.0;
-        float cloud_shadowMoon = 10.0;
+        float cloud_shadowSun = 20.0 * (1.0 - rainStrength);
+        float cloud_shadowMoon = 10.0 * (1.0 - rainStrength);
         if (cameraPos.y < cloudHeight && localViewDir.y > 0.0) {
             vec3 cloudPos = (cloudHeight-cameraPos.y) / stepLocal.y * stepLocal;
             float cloudDist = length(cloudPos);
@@ -140,7 +140,7 @@ void main() {
             }
         }
 
-        float cloudHeight2 = cloudHeight + 120.0;
+//        float cloudHeight2 = cloudHeight + 120.0;
 
         float cloudDensity2 = 0.0;
         if (cameraPos.y < cloudHeight2 && localViewDir.y > 0.0) {
@@ -148,9 +148,9 @@ void main() {
             float cloudDist = length(cloudPos);
             cloudPos += cameraPos;
 
-            if (cloudDist < 5000.0) {
+            if (cloudDist < 8000.0) {
                 cloudDensity2 = SampleCloudDensity2(cloudPos);
-                cloudDensity2 *= 1.0 - smoothstep(2000.0, 5000.0, cloudDist);
+                cloudDensity2 *= 1.0 - smoothstep(5000.0, 8000.0, cloudDist);
             }
         }
     #endif
@@ -195,6 +195,14 @@ void main() {
                     worldPos += (cloudHeight - worldPos.y) / Scene_LocalLightDir.y * Scene_LocalLightDir;
 
                     float cloudShadowDensity = SampleCloudDensity(worldPos);
+                    shadowSample *= exp(-0.2*cloudShadowDensity);
+                }
+
+                if (sampleLocalPos.y+cameraPos.y < cloudHeight2) {
+                    vec3 worldPos = sampleLocalPos + cameraPos;
+                    worldPos += (cloudHeight2 - worldPos.y) / Scene_LocalLightDir.y * Scene_LocalLightDir;
+
+                    float cloudShadowDensity = SampleCloudDensity2(worldPos);
                     shadowSample *= exp(-0.2*cloudShadowDensity);
                 }
             #endif

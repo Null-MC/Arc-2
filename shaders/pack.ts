@@ -73,6 +73,8 @@ function setupSettings() {
         },
         Debug: {
             Enabled: getBoolSetting("DEBUG_ENABLED"),
+            View: getIntSetting("DEBUG_VIEW"),
+            Material: getIntSetting("DEBUG_MATERIAL"),
             HISTOGRAM: false,
             RT: false,
         },
@@ -199,6 +201,8 @@ function setupSettings() {
     defineGlobally("POST_EXPOSURE_SPEED", Settings.Post.Exposure.Speed.toString());
 
     if (Settings.Debug.Enabled) {
+        defineGlobally("DEBUG_VIEW", Settings.Debug.View);
+        defineGlobally("DEBUG_MATERIAL", Settings.Debug.Material);
         if (Settings.Debug.HISTOGRAM) defineGlobally("DEBUG_HISTOGRAM", "1");
         if (Settings.Debug.RT) defineGlobally("DEBUG_RT", "1");
     }
@@ -476,17 +480,21 @@ function setupShader() {
             .build();
     }
 
+    const vlScale = Math.pow(2, 1);
+    const vlWidth = Math.ceil(screenWidth / vlScale);
+    const vlHeight = Math.ceil(screenHeight / vlScale);
+
     const texScatterVL = new Texture("texScatterVL")
         .format(Format.RGB16F)
-        .width(screenWidth_half)
-        .height(screenHeight_half)
+        .width(vlWidth)
+        .height(vlHeight)
         .clear(false)
         .build();
 
     const texTransmitVL = new Texture("texTransmitVL")
         .format(Format.RGB16F)
-        .width(screenWidth_half)
-        .height(screenHeight_half)
+        .width(vlWidth)
+        .height(vlHeight)
         .clear(false)
         .build();
 
@@ -724,6 +732,7 @@ function setupShader() {
         .vertex("gbuffer/weather.vsh")
         .fragment("gbuffer/weather.fsh")
         .target(0, texParticles)
+        .ssbo(0, sceneBuffer)
         .build());
 
     if (Settings.Internal.LPV) {

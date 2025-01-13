@@ -180,6 +180,8 @@ void main() {
             transmittance *= sampleTransmit;
             scattering += scatterF * transmittance * sampleLit * sampleDensity;
         }
+
+//        scattering = vec3(10.0);
     }
 
     outScatter = scattering;

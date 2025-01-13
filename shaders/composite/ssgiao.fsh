@@ -30,7 +30,8 @@ const float GOLDEN_ANGLE = 2.39996323;
 
 
 void main() {
-    ivec2 iuv = ivec2(fma(uv, screenSize, vec2(0.5)));
+//    ivec2 iuv = ivec2(fma(uv, screenSize, vec2(0.5)));
+    ivec2 iuv = ivec2(uv * screenSize);
     float depth = texelFetch(solidDepthTex, iuv, 0).r;
 
     // vec2 uv_j = uv;
@@ -56,7 +57,7 @@ void main() {
         vec3 clipPos = vec3(uv, depth) * 2.0 - 1.0;
 
         #ifdef EFFECT_TAA_ENABLED
-            unjitter(clipPos);
+            //unjitter(clipPos);
         #endif
 
         vec3 viewPos = unproject(playerProjectionInverse, clipPos);

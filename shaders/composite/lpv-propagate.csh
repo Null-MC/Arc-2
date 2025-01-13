@@ -123,13 +123,16 @@ const ivec3 directions[] = {
 			return;
 		}
 
+		float sampleLit = max(dot(sample_normal, Scene_LocalLightDir), 0.0);
+
+		// TODO: cloud shadow
+		sampleLit *= (1.0 - rainStrength);
+
 		sample_color = textureLod(texShadowColor, vec3(shadowCoord.xy, shadowCascade), 0).rgb;
-		sample_color = RgbToLinear(sample_color);
+		sample_color = RgbToLinear(sample_color) * sampleLit;
 
 		sample_normal = textureLod(texShadowNormal, vec3(shadowCoord.xy, shadowCascade), 0).rgb;
 		sample_normal = normalize(sample_normal * 2.0 - 1.0);
-
-		sample_color *= max(dot(sample_normal, Scene_LocalLightDir), 0.0);
 	}
 #endif
 

@@ -174,8 +174,14 @@ void main() {
         #endif
 
         #if defined CLOUDS_ENABLED && defined CLOUD_SHADOWS_ENABLED
-            vec3 cloudPos = (cloudHeight-cameraPos.y-localPos.y) / Scene_LocalLightDir.y * Scene_LocalLightDir + localPos + cameraPos;
+            vec3 worldPos = localPos + cameraPos;
+
+            vec3 cloudPos = (cloudHeight-worldPos.y) / Scene_LocalLightDir.y * Scene_LocalLightDir + worldPos;
             float cloudDensity = SampleCloudDensity(cloudPos);
+
+            cloudPos = (cloudHeight2-worldPos.y) / Scene_LocalLightDir.y * Scene_LocalLightDir + worldPos;
+            cloudDensity += SampleCloudDensity2(cloudPos);
+
             float cloudShadowF = max(1.0 - 0.2*cloudDensity, 0.3);
 
             shadow_sss *= cloudShadowF;
@@ -318,9 +324,14 @@ void main() {
             vec3 clipPos = fma(reflectNdcStart, vec3(0.5), vec3(0.5));
             reflection = GetReflectionPosition(mainDepthTex, clipPos, reflectRay);
 
-            float maxLod = max(log2(minOf(screenSize)) - 2.0, 0.0);
-            float screenDist = length((reflection.xy - uv) * screenSize);
-            float roughMip = min(roughness * min(log2(screenDist + 1.0), 6.0), maxLod);
+            #ifdef MATERIAL_ROUGH_REFLECT_NOISE
+                float maxLod = max(log2(minOf(screenSize)) - 2.0, 0.0);
+                float screenDist = length((reflection.xy - uv) * screenSize);
+                float roughMip = min(roughness * min(log2(screenDist + 1.0), 6.0), maxLod);
+            #else
+                const float roughMip = 0.0;
+            #endif
+
             vec3 reflectColor = GetRelectColor(texFinalPrevious, reflection.xy, reflection.a, roughMip);
 
             skyReflectColor = mix(skyReflectColor, reflectColor, reflection.a);
@@ -330,8 +341,9 @@ void main() {
 
         vec3 reflectTint = GetMetalTint(albedo.rgb, f0_metal);
 
+        float smoothness = 1.0 - roughness;
         vec3 specular = skyLight_NoLm * shadow_sss.rgb * SampleLightSpecular(NoLm, NoHm, LoHm, view_F, roughL);
-        specular += view_F * skyReflectColor * reflectTint * (1.0 - roughness);
+        specular += view_F * skyReflectColor * reflectTint * (smoothness*smoothness);
 
         #ifdef ACCUM_ENABLED
             specular += textureLod(altFrame ? texSpecularAccum_alt : texSpecularAccum, uv, 0).rgb;

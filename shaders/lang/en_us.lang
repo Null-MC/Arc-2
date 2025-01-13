@@ -65,3 +65,27 @@ option.POST_EXPOSURE_MIN=Minimum
 option.POST_EXPOSURE_MAX=Maximum
 
 option.POST_EXPOSURE_SPEED=Speed
+
+option.DEBUG_ENABLED=Enabled
+
+option.DEBUG_VIEW=View
+value.DEBUG_VIEW.0=None
+value.DEBUG_VIEW.1=Material
+value.DEBUG_VIEW.2=Shadows
+value.DEBUG_VIEW.3=SSS
+value.DEBUG_VIEW.4=SSAO
+value.DEBUG_VIEW.5=SSGI
+value.DEBUG_VIEW.6=VL
+
+option.DEBUG_MATERIAL=Material
+value.DEBUG_MATERIAL.0=None
+value.DEBUG_MATERIAL.1=Albedo
+value.DEBUG_MATERIAL.2=Geo-Normal
+value.DEBUG_MATERIAL.3=Tex-Normal
+value.DEBUG_MATERIAL.4=Occlusion
+value.DEBUG_MATERIAL.5=Roughness
+value.DEBUG_MATERIAL.6=F0/Metal
+value.DEBUG_MATERIAL.7=Porosity
+value.DEBUG_MATERIAL.8=SSS
+value.DEBUG_MATERIAL.9=Emission
+value.DEBUG_MATERIAL.10=LightMap

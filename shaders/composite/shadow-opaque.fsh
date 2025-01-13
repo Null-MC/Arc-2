@@ -75,11 +75,13 @@ void main() {
                 const float SSS_MaxPcfSize = 1.5;
                 // vec2 sssRadius = GetPixelRadius(SSS_MaxPcfSize, shadowCascade);
 
-                shadowViewPos.z += SSS_MaxDist * sss * (dither*dither);
-                shadowPos = GetShadowSamplePos(shadowViewPos, SSS_MaxPcfSize, shadowCascade);
+                float sssRadius = sss * SSS_MaxPcfSize;
 
-                vec2 sssRadius = GetPixelRadius(SSS_MaxPcfSize, shadowCascade);
-                sssFinal = (1.0 - NoLm) * sss * SampleShadow_PCF(shadowPos, shadowCascade, minOf(sssRadius));
+                shadowViewPos.z += SSS_MaxDist * sss * (dither*dither);
+                shadowPos = GetShadowSamplePos(shadowViewPos, sssRadius, shadowCascade);
+
+                vec2 sssRadiusFinal = GetPixelRadius(sssRadius, shadowCascade);
+                sssFinal = (1.0 - NoLm) * SampleShadow_PCF(shadowPos, shadowCascade, minOf(sssRadiusFinal));
             }
         }
 

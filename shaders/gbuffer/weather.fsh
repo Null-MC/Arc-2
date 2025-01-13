@@ -1,5 +1,8 @@
 #version 430
 
+#include "/lib/constants.glsl"
+#include "/settings.glsl"
+
 layout(location = 0) out vec4 outColor;
 
 in VertexData2 {
@@ -13,7 +16,7 @@ in VertexData2 {
 uniform sampler2D texSkyTransmit;
 uniform sampler2D texSkyIrradiance;
 
-uniform sampler2D texBloom;
+uniform sampler2D texFinalPrevious;
 
 #ifdef SHADOWS_ENABLED
     uniform sampler2DArray shadowMap;
@@ -21,15 +24,16 @@ uniform sampler2D texBloom;
     uniform sampler2DArray texShadowColor;
 #endif
 
-#include "/settings.glsl"
 #include "/lib/common.glsl"
 #include "/lib/buffers/scene.glsl"
 #include "/lib/noise/ign.glsl"
 #include "/lib/erp.glsl"
+#include "/lib/hg.glsl"
 
 #include "/lib/utility/blackbody.glsl"
 
 #include "/lib/sky/common.glsl"
+#include "/lib/sky/transmittance.glsl"
 
 #include "/lib/light/sky.glsl"
 
@@ -68,12 +72,12 @@ void iris_emitFragment() {
 
     // vec3 skyLight = vec3(0.0);//GetSkyLight(vIn.localPos);
 
-    // vec3 shadowSample = vec3(1.0);
-    // #ifdef SHADOWS_ENABLED
-    //     int shadowCascade;
-    //     vec3 shadowPos = GetShadowSamplePos(vIn.shadowViewPos, Shadow_MaxPcfSize, shadowCascade);
-    //     shadowSample = SampleShadowColor_PCSS(shadowPos, shadowCascade);
-    // #endif
+     vec3 shadowSample = vec3(1.0);
+     #ifdef SHADOWS_ENABLED
+         int shadowCascade;
+         vec3 shadowPos = GetShadowSamplePos(vIn.shadowViewPos, Shadow_MaxPcfSize, shadowCascade);
+         shadowSample = SampleShadowColor_PCSS(shadowPos, shadowCascade);
+     #endif
 
     // // vec3 skyPos = getSkyPosition(vIn.localPos);
     // // vec3 skyLighting = getValFromTLUT(texSkyTransmit, skyPos, Scene_LocalSunDir);
@@ -89,8 +93,22 @@ void iris_emitFragment() {
 
     vec4 finalColor = albedo;
 
+    float viewDist = length(vIn.localPos);
+    float lod = 6.0 / (viewDist*0.1 + 1.0);
+
     vec2 uv = gl_FragCoord.xy / screenSize;
-    finalColor.rgb = 20.0 * textureLod(texBloom, uv, 3).rgb;
+    finalColor.rgb = textureLod(texFinalPrevious, uv, lod).rgb;
+    finalColor.a = 1.0;
+
+    vec3 localViewDir = normalize(vIn.localPos);
+    float VoLm_sun = max(dot(localViewDir, Scene_LocalSunDir), 0.0);
+    float VoLm_moon = max(dot(localViewDir, -Scene_LocalSunDir), 0.0);
+
+    vec3 sunTransmit, moonTransmit;
+    GetSkyLightTransmission(vIn.localPos, sunTransmit, moonTransmit);
+
+    finalColor.rgb += 0.1 * shadowSample * DHG(VoLm_sun, 0.88, -0.12, 0.7) * SUN_BRIGHTNESS * sunTransmit;
+    //finalColor.rgb += HG(VoLm_moon, 0.8) * MOON_BRIGHTNESS * moonTransmit;
 
     // float viewDist = length(vIn.localPos);
     // float fogF = smoothstep(fogStart, fogEnd, viewDist);

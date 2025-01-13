@@ -76,9 +76,13 @@ vec3 TraceDDA(vec3 origin, const in vec3 endPos, const in float range, const in 
 
                     vec3 coord;
                     if (lineTriangleIntersect(rayStart, rayEnd, tri_pos_0, tri_pos_1, tri_pos_2, coord)) {
-                        vec2 uv = tri.uv[0] * coord.x
-                                + tri.uv[1] * coord.y
-                                + tri.uv[2] * coord.z;
+                        vec2 tri_uv_0 = GetTriangleUV(tri.uv[0]);
+                        vec2 tri_uv_1 = GetTriangleUV(tri.uv[1]);
+                        vec2 tri_uv_2 = GetTriangleUV(tri.uv[2]);
+
+                        vec2 uv = tri_uv_0 * coord.x
+                                + tri_uv_1 * coord.y
+                                + tri_uv_2 * coord.z;
 
                         vec4 sampleColor = textureLod(blockAtlas, uv, 0);
                         // sampleColor.rgb = RgbToLinear(sampleColor.rgb);

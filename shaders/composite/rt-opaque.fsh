@@ -12,8 +12,11 @@ uniform sampler2D texDeferredOpaque_Color;
 uniform usampler2D texDeferredOpaque_Data;
 uniform sampler2D texDeferredOpaque_TexNormal;
 
-#if LIGHTING_REFLECT_MODE == REFLECT_MODE_WSR
+#if LIGHTING_REFLECT_MODE == REFLECT_MODE_WSR || (LIGHTING_MODE == LIGHT_MODE_RT && defined(RT_TRI_ENABLED))
     uniform sampler2D blockAtlas;
+#endif
+
+#if LIGHTING_REFLECT_MODE == REFLECT_MODE_WSR
     uniform sampler2D blockAtlasN;
     uniform sampler2D blockAtlasS;
 

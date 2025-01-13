@@ -15,7 +15,7 @@ vec3 VL_WaterScatter = 0.5 * RgbToLinear(vec3(0.263, 0.380, 0.376));
 vec3 VL_WaterTransmit = RgbToLinear(1.0 - vec3(0.051, 0.545, 0.588));
 vec3 VL_WaterAmbient = 0.5*RgbToLinear(vec3(0.157, 0.839, 0.792));
 
-float AirDensityF = 0.1;
+const float AirDensityF = SKY_FOG_DENSITY * 0.01;
 
 
 float GetSkyDensity(const in vec3 localPos) {

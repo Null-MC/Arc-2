@@ -1,6 +1,6 @@
 struct Triangle {       // 12*3+4+4= 44
-    f16vec3 pos[3];     // 8
-    f16vec2 uv[3];      // 4
+    uvec2 pos[3];     // 8
+    uint uv[3];       // 4
     uint lmcoord;
     uint tint;
 };
@@ -15,12 +15,26 @@ layout(binding = 4) buffer triangleListBuffer {
     TriangleBin TriangleBinMap[];
 };
 
-vec3 GetTriangleVertexPos(const in f16vec3 data) {
-    return vec3(data);
+vec3 GetTriangleVertexPos(const in uvec2 data) {
+    return vec3(
+        unpackHalf2x16(data.x),
+        unpackHalf2x16(data.y).x
+    );
 }
 
-f16vec3 SetTriangleVertexPos(const in vec3 pos) {
-    return f16vec3(pos);
+uvec2 SetTriangleVertexPos(const in vec3 pos) {
+    return uvec2(
+        packHalf2x16(pos.xy),
+        packHalf2x16(pos.zz).x
+    );
+}
+
+vec2 GetTriangleUV(const in uint data) {
+    return unpackHalf2x16(data);
+}
+
+uint SetTriangleUV(const in vec2 pos) {
+    return packHalf2x16(pos);
 }
 
 void GetTriangleLightMapCoord(const in uint data, out vec2 v1, out vec2 v2, out vec2 v3) {

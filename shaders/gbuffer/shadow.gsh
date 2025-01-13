@@ -107,9 +107,9 @@ void main() {
                         tri.pos[1] = SetTriangleVertexPos(vIn[1].localPos - originBase + offset);
                         tri.pos[2] = SetTriangleVertexPos(vIn[2].localPos - originBase + offset);
 
-                        tri.uv[0] = f16vec2(vIn[0].uv);
-                        tri.uv[1] = f16vec2(vIn[1].uv);
-                        tri.uv[2] = f16vec2(vIn[2].uv);
+                        tri.uv[0] = SetTriangleUV(vIn[0].uv);
+                        tri.uv[1] = SetTriangleUV(vIn[1].uv);
+                        tri.uv[2] = SetTriangleUV(vIn[2].uv);
 
                         tri.lmcoord = SetTriangleLightMapCoord(vIn[0].lmcoord, vIn[1].lmcoord, vIn[2].lmcoord);
 

@@ -18,6 +18,7 @@ function setupSettings() {
         Sky: {
             SunAngle: getIntSetting("SKY_SUN_ANGLE"),
             SeaLevel: getIntSetting("SKY_SEA_LEVEL"),
+            FogDensity: getIntSetting("SKY_FOG_DENSITY"),
         },
         Water: {
             Waves: getBoolSetting("WATER_WAVES_ENABLED"),
@@ -131,6 +132,7 @@ function setupSettings() {
     if (Settings.Internal.Accumulation) defineGlobally("ACCUM_ENABLED", "1");
 
     defineGlobally("SKY_SEA_LEVEL", Settings.Sky.SeaLevel.toString());
+    defineGlobally("SKY_FOG_DENSITY", Settings.Sky.FogDensity);
 
     if (Settings.Effect.SSAO) defineGlobally("EFFECT_SSAO_ENABLED", "1");
     if (Settings.Effect.SSGI) defineGlobally("EFFECT_SSGI_ENABLED", "1");
@@ -601,7 +603,12 @@ function setupShader() {
         .ssbo(4, triangleListBuffer)
         .build());
 
+    // IMAGE_BIT | SSBO_BIT | UBO_BIT | FETCH_BIT
+    registerBarrier(Stage.PRE_RENDER, new MemoryBarrier(SSBO_BIT));
+
     setupSky(sceneBuffer);
+
+    registerBarrier(Stage.PRE_RENDER, new TextureBarrier());
 
     registerShader(Stage.PRE_RENDER, new Compute("scene-begin")
         // .barrier(true)
@@ -609,6 +616,8 @@ function setupShader() {
         .location("setup/scene-begin.csh")
         .ssbo(0, sceneBuffer)
         .build());
+
+    registerBarrier(Stage.PRE_RENDER, new MemoryBarrier(SSBO_BIT));
 
     if (Settings.Shadows.Enabled) {
         registerShader(new ObjectShader("shadow", Usage.SHADOW)
@@ -753,6 +762,8 @@ function setupShader() {
         }
 
         registerShader(Stage.POST_RENDER, shader.build());
+
+        //registerBarrier(Stage.POST_RENDER, new MemoryBarrier(SSBO_BIT));
     }
 
     if (Settings.Lighting.Mode == LightMode_RT) {
@@ -780,12 +791,16 @@ function setupShader() {
                 .location("composite/shadow-filter-opaque.csh")
                 .workGroups(Math.ceil(screenWidth / 16.0), Math.ceil(screenHeight / 16.0), 1)
                 .build());
+
+            //registerBarrier(Stage.POST_RENDER, new MemoryBarrier(IMAGE_BIT));
         }
     }
 
     const texShadow_src = Settings.Shadows.Filter ? "texShadow_final" : "texShadow";
 
     if (Settings.Lighting.Mode == LightMode_RT || Settings.Lighting.Reflections.Mode == ReflectMode_WSR) {
+        registerBarrier(Stage.POST_RENDER, new MemoryBarrier(SSBO_BIT));
+
         const rtOpaqueShader = new Composite("rt-opaque")
             .vertex("shared/bufferless.vsh")
             .fragment("composite/rt-opaque.fsh")
@@ -840,6 +855,8 @@ function setupShader() {
         .ssbo(1, shLpvBuffer)
         .ssbo(2, shLpvBuffer_alt)
         .build());
+
+    registerBarrier(Stage.POST_RENDER, new MemoryBarrier(SSBO_BIT | IMAGE_BIT));
 
     const compositeOpaqueShader = new Composite("composite-opaque")
         .vertex("shared/bufferless.vsh")

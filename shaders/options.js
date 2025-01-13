@@ -2,10 +2,13 @@ function setupOptions() {
     const screen_Sky = new Page("Sky")
         .add(asIntEx(
             "SKY_SEA_LEVEL", 60,
-            -40, 140, 10))
+            -40, 140, 1))
         .add(asIntEx(
             "SKY_SUN_ANGLE", -20,
-            -45, +45, 5))
+            -45, +45, 1))
+        .add(asIntEx(
+            "SKY_FOG_DENSITY", 10,
+            0, 100, 1))
         .build();
 
     let screen_Water = new Page("Water")

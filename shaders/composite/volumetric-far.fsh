@@ -102,7 +102,7 @@ void main() {
         vec3 localPosOpaque = mul3(playerModelViewInverse, viewPos);
         
         float len = length(localPosOpaque);
-        float far = farPlane * 0.25;
+        float far = farPlane * 0.5;
         
         if (len > far)
             localPosOpaque = localPosOpaque / len * far;

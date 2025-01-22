@@ -27,6 +27,7 @@ function setupSettings() {
         },
         Shadows: {
             Enabled: getBoolSetting("SHADOWS_ENABLED"),
+            CloudsEnabled: getBoolSetting("SHADOWS_CLOUD_ENABLED"),
             Filter: true,
             SS_Fallback: true,
         },
@@ -52,6 +53,7 @@ function setupSettings() {
                 Noise: getBoolSetting("LIGHTING_REFLECT_NOISE"),
                 ReflectTriangles: getBoolSetting("LIGHTING_REFLECT_TRIANGLE"),
             },
+            VolumetricResolution: getIntSetting("LIGHTING_VL_RES"),
         },
         Voxel: {
             Size: getIntSetting("VOXEL_SIZE"),
@@ -147,6 +149,7 @@ function setupSettings() {
     }
 
     if (Settings.Shadows.Enabled) defineGlobally("SHADOWS_ENABLED", "1");
+    if (Settings.Shadows.CloudsEnabled) defineGlobally("SHADOWS_CLOUD_ENABLED", "1");
     if (Settings.Shadows.SS_Fallback) defineGlobally("SHADOW_SCREEN", "1");
 
     defineGlobally("MATERIAL_FORMAT", Settings.Material.Format);
@@ -159,6 +162,7 @@ function setupSettings() {
     }
 
     defineGlobally("LIGHTING_MODE", Settings.Lighting.Mode.toString());
+    //defineGlobally("LIGHTING_VL_RES", Settings.Lighting.VolumetricResolution.toString());
 
     defineGlobally("LIGHTING_REFLECT_MODE", Settings.Lighting.Reflections.Mode.toString());
     if (Settings.Lighting.Reflections.Noise) defineGlobally("MATERIAL_ROUGH_REFLECT_NOISE", "1");
@@ -482,7 +486,7 @@ function setupShader() {
             .build();
     }
 
-    const vlScale = Math.pow(2, 1);
+    const vlScale = Math.pow(2, Settings.Lighting.VolumetricResolution);
     const vlWidth = Math.ceil(screenWidth / vlScale);
     const vlHeight = Math.ceil(screenHeight / vlScale);
 

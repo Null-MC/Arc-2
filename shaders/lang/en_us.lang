@@ -11,6 +11,8 @@ suffix.WATER_TESSELLATION_LEVEL=x
 
 option.SHADOWS_ENABLED=Enabled
 
+option.SHADOWS_CLOUD_ENABLED=Clouds
+
 option.MATERIAL_FORMAT=Format
 value.MATERIAL_FORMAT.0=None
 value.MATERIAL_FORMAT.1=Lab-PBR
@@ -40,6 +42,11 @@ value.LIGHTING_REFLECT_MODE.2=World-Space
 option.LIGHTING_REFLECT_NOISE=Rough Reflections
 
 option.LIGHTING_TRACE_TRIANGLE=Fully Traced Lighting
+
+option.LIGHTING_VL_RES=Volumetric Res
+value.LIGHTING_VL_RES.0=Full
+value.LIGHTING_VL_RES.1=1/2
+value.LIGHTING_VL_RES.2=1/4
 
 value.RT_MAX_SAMPLE_COUNT.0=Infinite
 

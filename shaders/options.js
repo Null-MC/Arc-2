@@ -1,14 +1,16 @@
+//import './iris'
+
 function setupOptions() {
     const screen_Sky = new Page("Sky")
         .add(asIntEx(
             "SKY_SEA_LEVEL", 60,
-            -40, 140, 1))
+            -40, 140, 2))
         .add(asIntEx(
             "SKY_SUN_ANGLE", -20,
-            -45, +45, 1))
+            -60, +60, 2))
         .add(asIntEx(
-            "SKY_FOG_DENSITY", 10,
-            0, 100, 1))
+            "SKY_FOG_DENSITY", 24,
+            0, 100, 2))
         .build();
 
     let screen_Water = new Page("Water")
@@ -22,6 +24,7 @@ function setupOptions() {
 
     const screen_Shadows = new Page("Shadows")
         .add(asBool("SHADOWS_ENABLED", true))
+        .add(asBool("SHADOWS_CLOUD_ENABLED", true))
         .build();
 
     let screen_Parallax = new Page("Parallax")
@@ -41,22 +44,19 @@ function setupOptions() {
         .add(screen_Parallax)
         .build();
 
-    let screen_Reflections = new Page("Reflections")
-        .add(asInt("LIGHTING_REFLECT_MODE", 0, 1, 2).build(1))
-        .add(asBool("LIGHTING_REFLECT_NOISE", true))
-        .add(asBool("LIGHTING_REFLECT_TRIANGLE", false))
-        .build();
-
-    let screen_RT = new Page("RT Options")
-        .add(asInt("RT_MAX_SAMPLE_COUNT", 2, 4, 8, 12, 16, 20, 24, 28, 32, 48, 64, 0).build(8))
-        .add(asBool("LIGHTING_TRACE_TRIANGLE", false))
-        .build();
-
     let screen_Lighting = new Page("Lighting")
         .add(asInt("LIGHTING_MODE", 0, 1, 2).build(1))
-        .add(screen_RT)
+        .add(new Page("RT Options")
+            .add(asInt("RT_MAX_SAMPLE_COUNT", 2, 4, 8, 12, 16, 20, 24, 28, 32, 48, 64, 0).build(8))
+            .add(asBool("LIGHTING_TRACE_TRIANGLE", false))
+            .build())
         .add(asBool("LPV_RSM_ENABLED", true))
-        .add(screen_Reflections)
+        .add(new Page("Reflections")
+            .add(asInt("LIGHTING_REFLECT_MODE", 0, 1, 2).build(1))
+            .add(asBool("LIGHTING_REFLECT_NOISE", true))
+            .add(asBool("LIGHTING_REFLECT_TRIANGLE", false))
+            .build())
+        .add(asInt("LIGHTING_VL_RES", 0, 1, 2).build(1))
         .build();
 
     let screen_Voxel = new Page("Voxels")

@@ -5,13 +5,9 @@
 #define MATERIAL_ROUGH_REFRACT
 
 #define CLOUDS_ENABLED
-#define CLOUD_SHADOWS_ENABLED
 
 #define MATERIAL_PARALLAX_MAXDIST 48
 
-
-//#define DEBUG_VIEW DEBUG_VIEW_VL
-//#define DEBUG_MATERIAL DEBUG_MAT_NONE
 //#define DEBUG_TRANSLUCENT
 
 const float BLOCKLIGHT_TEMP = 3400.0;
@@ -43,6 +39,8 @@ const float Shadow_MaxPcfSize = 2.0;
 
 const float Bloom_Power = 1.3;
 const float Bloom_Strength = 0.04;
+
+const float PurkinjeStrength = 0.08;
 
 const float Exposure_minLogLum = POST_EXPOSURE_MIN;// -9.5;
 const float Exposure_maxLogLum = POST_EXPOSURE_MAX;//  19.0;

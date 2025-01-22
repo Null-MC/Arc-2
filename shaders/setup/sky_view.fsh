@@ -24,7 +24,7 @@ vec3 raymarchScattering(vec3 pos, vec3 rayDir, vec3 sunDir, float tMax, float nu
     
     vec3 lum = vec3(0.0);
     vec3 transmittance = vec3(1.0);
-    float t = 0.0;
+    float t = 0.0;// 0.00001*(0.25 * farPlane);
 
     for (float i = 0.0; i < numSteps; i += 1.0) {
         float newT = ((i + 0.3)/numSteps)*tMax;
@@ -32,7 +32,7 @@ vec3 raymarchScattering(vec3 pos, vec3 rayDir, vec3 sunDir, float tMax, float nu
         t = newT;
         
         vec3 newPos = pos + t*rayDir;
-        
+
         vec3 rayleighScattering, extinction;
         float mieScattering;
         getScatteringValues(newPos, rayleighScattering, mieScattering, extinction);
@@ -41,7 +41,7 @@ vec3 raymarchScattering(vec3 pos, vec3 rayDir, vec3 sunDir, float tMax, float nu
 
         vec3 sunTransmittance = getValFromTLUT(texSkyTransmit, newPos, sunDir);
         vec3 psiMS = getValFromMultiScattLUT(texSkyMultiScatter, newPos, sunDir);
-        
+
         vec3 rayleighInScattering = rayleighScattering*(rayleighPhaseValue*sunTransmittance + psiMS);
         vec3 mieInScattering = mieScattering*(miePhaseValue*sunTransmittance + psiMS);
         vec3 inScattering = (rayleighInScattering + mieInScattering);

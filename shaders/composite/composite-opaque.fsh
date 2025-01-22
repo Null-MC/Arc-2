@@ -173,7 +173,8 @@ void main() {
             shadow_sss = textureLod(TEX_SHADOW, uv, 0);
         #endif
 
-        #if defined CLOUDS_ENABLED && defined CLOUD_SHADOWS_ENABLED
+        float cloudShadowF = 1.0;
+        #if defined CLOUDS_ENABLED && defined SHADOWS_CLOUD_ENABLED
             vec3 worldPos = localPos + cameraPos;
 
             vec3 cloudPos = (cloudHeight-worldPos.y) / Scene_LocalLightDir.y * Scene_LocalLightDir + worldPos;
@@ -182,7 +183,7 @@ void main() {
             cloudPos = (cloudHeight2-worldPos.y) / Scene_LocalLightDir.y * Scene_LocalLightDir + worldPos;
             cloudDensity += SampleCloudDensity2(cloudPos);
 
-            float cloudShadowF = max(1.0 - 0.2*cloudDensity, 0.3);
+            cloudShadowF = max(1.0 - 0.2*cloudDensity, 0.3);
 
             shadow_sss *= cloudShadowF;
         #endif

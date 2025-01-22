@@ -148,11 +148,11 @@ void main() {
         }
 
         occlusion = occlusion / max(maxWeight, 1.0);
-        illumination = illumination / max(maxWeight, 1.0);
+        //illumination = illumination / max(maxWeight, 1.0);
     }
 
     occlusion *= 2.0;
-    illumination *= 3.0;
+    //illumination *= 3.0;
 
     vec3 gi = illumination;
     float ao = 1.0 - min(occlusion, 1.0);

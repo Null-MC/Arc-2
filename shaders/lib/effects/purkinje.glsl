@@ -1,6 +1,3 @@
-const float PurkinjeStrength = 0.86;
-
-
 vec3 PurkinjeShift(const in vec3 light, const in float intensity) {
     const vec3 m = vec3(0.63721, 0.39242, 1.6064); // maximal cone sensitivity
     const vec3 k = vec3(0.2, 0.2, 0.29);           // rod input strength long/medium/short

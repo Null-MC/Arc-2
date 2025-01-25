@@ -16,7 +16,7 @@ const float WEIGHTS[3] = float[3](
 
 
 vec3 BloomUp(in sampler2D texColor, const in float scale) {
-    vec2 pixelSize = (1.0 / screenSize) * scale * 2.0;
+    vec2 pixelSize = (1.0 / ap.game.screenSize) * scale * 2.0;
     vec3 finalColor = vec3(0.0);
 
     for (int y = 0; y <= 2; y++) {

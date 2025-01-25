@@ -101,9 +101,9 @@ const ivec3 directions[] = {
 
 #ifdef LPV_RSM_ENABLED
 	void sample_shadow(vec3 localPos, out vec3 sample_color, out vec3 sample_normal) {
-		localPos += hash33(cameraPos + localPos + (frameCounter % 16));// - 0.5;
+		localPos += hash33(ap.camera.pos + localPos + (ap.frame.counter % 16));// - 0.5;
 
-		vec3 shadowViewPos = mul3(shadowModelView, localPos);
+		vec3 shadowViewPos = mul3(ap.celestial.view, localPos);
 
 		int shadowCascade;
 		vec3 shadowCoord = GetShadowSamplePos(shadowViewPos, 0.0, shadowCascade);
@@ -111,7 +111,7 @@ const ivec3 directions[] = {
 		float shadowDepth = textureLod(solidShadowMap, vec3(shadowCoord.xy, shadowCascade), 0).r;
 
 		// WARN: FIX
-		mat4 shadowProjectionInverse = inverse(shadowProjection[shadowCascade]);
+		mat4 shadowProjectionInverse = inverse(ap.celestial.projection[shadowCascade]);
 
 		vec3 sample_ndcPos = vec3(shadowCoord.xy, shadowDepth) * 2.0 - 1.0;
 		vec3 sample_shadowViewPos = mul3(shadowProjectionInverse, sample_ndcPos);
@@ -126,7 +126,7 @@ const ivec3 directions[] = {
 		float sampleLit = max(dot(sample_normal, Scene_LocalLightDir), 0.0);
 
 		// TODO: cloud shadow
-		sampleLit *= (1.0 - rainStrength);
+		sampleLit *= (1.0 - ap.world.rainStrength);
 
 		sample_color = textureLod(texShadowColor, vec3(shadowCoord.xy, shadowCascade), 0).rgb;
 		sample_color = RgbToLinear(sample_color) * sampleLit;
@@ -137,20 +137,20 @@ const ivec3 directions[] = {
 #endif
 
 ivec3 GetVoxelFrameOffset() {
-    vec3 viewDir = playerModelViewInverse[2].xyz;
-    vec3 posNow = GetVoxelCenter(cameraPos, viewDir);
+    vec3 viewDir = ap.camera.viewInv[2].xyz;
+    vec3 posNow = GetVoxelCenter(ap.camera.pos, viewDir);
 
-    vec3 viewDirPrev = vec3(lastPlayerModelView[0].z, lastPlayerModelView[1].z, lastPlayerModelView[2].z);
-    vec3 posPrev = GetVoxelCenter(lastCameraPos, viewDirPrev);
+    vec3 viewDirPrev = vec3(ap.temporal.view[0].z, ap.temporal.view[1].z, ap.temporal.view[2].z);
+    vec3 posPrev = GetVoxelCenter(ap.temporal.pos, viewDirPrev);
 
-    vec3 posLast = posNow + (lastCameraPos - cameraPos) - (posPrev - posNow);
+    vec3 posLast = posNow + (ap.temporal.pos - ap.camera.pos) - (posPrev - posNow);
 
     return ivec3(posNow) - ivec3(posLast);
 }
 
 void main() {
 	ivec3 cellIndex = ivec3(gl_GlobalInvocationID);
-	bool altFrame = frameCounter % 2 == 1;
+	bool altFrame = ap.frame.counter % 2 == 1;
 
 	//lpvShVoxel sh_voxel = voxel_empty;
 	vec4 voxel_R = vec4(0.0);
@@ -167,8 +167,8 @@ void main() {
 	ivec3 voxelFrameOffset = GetVoxelFrameOffset();
 	ivec3 cellIndexPrev = cellIndex + voxelFrameOffset;
 
-    vec3 viewDir = playerModelViewInverse[2].xyz;
-    vec3 voxelCenter = GetVoxelCenter(cameraPos, viewDir);
+    vec3 viewDir = ap.camera.viewInv[2].xyz;
+    vec3 voxelCenter = GetVoxelCenter(ap.camera.pos, viewDir);
     vec3 localPos = cellIndex - voxelCenter + 0.5;
 
 	uint blockId = imageLoad(imgVoxelBlock, cellIndex).r;
@@ -236,7 +236,7 @@ void main() {
 					neighborfaceMask = bitfieldExtract(neighborBlockData, 0, 6);
 
 					// vec3 lightColor = blackbody(BLOCKLIGHT_TEMP);
-					// vec3 lightColor = hash33(floor(localPos + cameraPos + curDir));
+					// vec3 lightColor = hash33(floor(localPos + ap.camera.pos + curDir));
 					// lightColor = normalize(lightColor);
 					// lightColor = RgbToLinear(lightColor);
 
@@ -334,7 +334,7 @@ void main() {
 		#endif
 	}
 
-	// ivec3 trackPos = ivec3(floor(GetVoxelPosition(Scene_TrackPos - cameraPos)));
+	// ivec3 trackPos = ivec3(floor(GetVoxelPosition(Scene_TrackPos - ap.camera.pos)));
 
 	// if (all(equal(cellIndex, trackPos)) && IsInVoxelBounds(trackPos)) {
 	// 	const float surfelWeight = 0.015;

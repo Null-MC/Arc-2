@@ -51,7 +51,7 @@ void iris_emitFragment() {
 
     vec4 albedo = iris_sampleBaseTex(mUV);
 
-    albedo.a *= 1.0 - smoothstep(cloudHeight - 16.0, cloudHeight + 16.0, vIn.localPos.y + cameraPos.y);
+    albedo.a *= 1.0 - smoothstep(cloudHeight - 16.0, cloudHeight + 16.0, vIn.localPos.y + ap.camera.pos.y);
 
     if (iris_discardFragment(albedo)) {discard; return;}
 
@@ -96,7 +96,7 @@ void iris_emitFragment() {
     float viewDist = length(vIn.localPos);
     float lod = 6.0 / (viewDist*0.1 + 1.0);
 
-    vec2 uv = gl_FragCoord.xy / screenSize;
+    vec2 uv = gl_FragCoord.xy / ap.game.screenSize;
     finalColor.rgb = textureLod(texFinalPrevious, uv, lod).rgb;
     finalColor.a = 1.0;
 

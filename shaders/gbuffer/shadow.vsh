@@ -33,7 +33,7 @@ void iris_emitVertex(inout VertexData data) {
 
     #if defined VOXEL_ENABLED && defined RENDER_TERRAIN
         // WARN: temp workaround
-        mat4 shadowModelViewInverse = inverse(shadowModelView);
+        mat4 shadowModelViewInverse = inverse(ap.celestial.view);
 
         vOut.localPos = mul3(shadowModelViewInverse, shadowViewPos);
         vOut.originPos = vOut.localPos + data.midBlock / 64.0;
@@ -51,16 +51,16 @@ void iris_sendParameters(in VertexData data) {
 
         // const float lmcoord_y = 1.0;
 
-        // vec3 waveOffset = GetWaveHeight(vOut.localPos + cameraPos, lmcoord_y, timeCounter, WaterWaveOctaveMin);
+        // vec3 waveOffset = GetWaveHeight(vOut.localPos + ap.camera.pos, lmcoord_y, ap.frame.time, WaterWaveOctaveMin);
         // vOut.localOffset.y += waveOffset.y;
 
         // vOut.localPos += vOut.localOffset;
-        // viewPos = mul3(playerModelView, vOut.localPos);
+        // viewPos = mul3(ap.camera.view, vOut.localPos);
     }
 
     #ifdef LPV_RSM_ENABLED
         vec3 viewNormal = mat3(iris_modelViewMatrix) * data.normal;
-        vOut.localNormal = mat3(playerModelViewInverse) * viewNormal;
+        vOut.localNormal = mat3(ap.camera.viewInv) * viewNormal;
     #endif
 
     vOut.currentCascade = iris_currentCascade;

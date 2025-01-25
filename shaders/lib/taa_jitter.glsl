@@ -8,25 +8,25 @@ const vec2 taa_offsets[4] = vec2[](
 
 
 vec2 getJitterOffset(const in int frameOffset) {
-	return (taa_offsets[frameOffset % EFFECT_TAA_MAX_FRAMES] - 0.5) / screenSize;
+	return (taa_offsets[frameOffset % EFFECT_TAA_MAX_FRAMES] - 0.5) / ap.game.screenSize;
 }
 
 void jitter(inout vec2 ndcPos) {
-	vec2 offset = getJitterOffset(frameCounter);
+	vec2 offset = getJitterOffset(ap.frame.counter);
 	ndcPos += 2.0 * offset;// * ndcPos.w;
 }
 
 void jitter(inout vec4 ndcPos) {
-	vec2 offset = getJitterOffset(frameCounter);
+	vec2 offset = getJitterOffset(ap.frame.counter);
 	ndcPos.xy += 2.0 * offset * ndcPos.w;
 }
 
 void unjitter(inout vec2 ndcPos) {
-	vec2 offset = getJitterOffset(frameCounter);
+	vec2 offset = getJitterOffset(ap.frame.counter);
 	ndcPos -= 2.0 * offset;// * ndcPos.w;
 }
 
 void unjitter(inout vec3 ndcPos) {
-	vec2 offset = getJitterOffset(frameCounter);
+	vec2 offset = getJitterOffset(ap.frame.counter);
 	ndcPos.xy -= 2.0 * offset;// * ndcPos.w;
 }

@@ -113,8 +113,8 @@ void main() {
         unjitter(ndcPos);
     #endif
 
-    vec3 viewPos = unproject(playerProjectionInverse, ndcPos);
-    vec3 localPos = mul3(playerModelViewInverse, viewPos);
+    vec3 viewPos = unproject(ap.camera.projectionInv, ndcPos);
+    vec3 localPos = mul3(ap.camera.viewInv, viewPos);
 
     vec3 localViewDir = normalize(localPos);
 
@@ -149,7 +149,7 @@ void main() {
         // float data_trans_water = unpackUnorm4x8(data_trans_a).b;
         bool is_trans_fluid = iris_hasFluid(trans_blockId);
 
-        bool isWet = isEyeInWater == 1
+        bool isWet = ap.camera.fluid == 1
             ? (depthTrans >= depthOpaque)
             : (depthTrans < depthOpaque && is_trans_fluid);
 
@@ -175,7 +175,7 @@ void main() {
 
         float cloudShadowF = 1.0;
         #if defined CLOUDS_ENABLED && defined SHADOWS_CLOUD_ENABLED
-            vec3 worldPos = localPos + cameraPos;
+            vec3 worldPos = localPos + ap.camera.pos;
 
             vec3 cloudPos = (cloudHeight-worldPos.y) / Scene_LocalLightDir.y * Scene_LocalLightDir + worldPos;
             float cloudDensity = SampleCloudDensity(cloudPos);
@@ -205,8 +205,8 @@ void main() {
         vec3 sunTransmit, moonTransmit;
         GetSkyLightTransmission(localPos, sunTransmit, moonTransmit);
 
-        // float worldY = localPos.y + cameraPos.y;
-        // float transmitF = mix(VL_Transmit, VL_RainTransmit, rainStrength);
+        // float worldY = localPos.y + ap.camera.pos.y;
+        // float transmitF = mix(VL_Transmit, VL_RainTransmit, ap.world.rainStrength);
         // float lightAtmosDist = max(SKY_SEA_LEVEL + 200.0 - worldY, 0.0) / Scene_LocalLightDir.y;
         // skyLight *= exp2(-lightAtmosDist * transmitF);
 
@@ -256,7 +256,7 @@ void main() {
         vec3 diffuse = skyLightDiffuse + blockLighting + 0.0016 * occlusion;
 
         #ifdef ACCUM_ENABLED
-            bool altFrame = (frameCounter % 2) == 1;
+            bool altFrame = (ap.frame.counter % 2) == 1;
             diffuse += textureLod(altFrame ? texDiffuseAccum_alt : texDiffuseAccum, uv, 0).rgb;
         #endif
 
@@ -314,11 +314,11 @@ void main() {
             float viewDist = length(viewPos);
             vec3 reflectLocalPos = fma(reflectLocalDir, vec3(0.5*viewDist), localPos);
 
-            vec3 reflectViewStart = mul3(lastPlayerModelView, localPos);
-            vec3 reflectViewEnd = mul3(lastPlayerModelView, reflectLocalPos);
+            vec3 reflectViewStart = mul3(ap.temporal.view, localPos);
+            vec3 reflectViewEnd = mul3(ap.temporal.view, reflectLocalPos);
 
-            vec3 reflectNdcStart = unproject(lastPlayerProjection, reflectViewStart);
-            vec3 reflectNdcEnd = unproject(lastPlayerProjection, reflectViewEnd);
+            vec3 reflectNdcStart = unproject(ap.temporal.projection, reflectViewStart);
+            vec3 reflectNdcEnd = unproject(ap.temporal.projection, reflectViewEnd);
 
             vec3 reflectRay = normalize(reflectNdcEnd - reflectNdcStart);
 
@@ -326,8 +326,8 @@ void main() {
             reflection = GetReflectionPosition(mainDepthTex, clipPos, reflectRay);
 
             #ifdef MATERIAL_ROUGH_REFLECT_NOISE
-                float maxLod = max(log2(minOf(screenSize)) - 2.0, 0.0);
-                float screenDist = length((reflection.xy - uv) * screenSize);
+                float maxLod = max(log2(minOf(ap.game.screenSize)) - 2.0, 0.0);
+                float screenDist = length((reflection.xy - uv) * ap.game.screenSize);
                 float roughMip = min(roughness * min(log2(screenDist + 1.0), 6.0), maxLod);
             #else
                 const float roughMip = 0.0;

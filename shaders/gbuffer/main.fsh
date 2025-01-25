@@ -73,9 +73,9 @@ void iris_emitFragment() {
                 float pomDist = (1.0 - traceCoordDepth.z) / max(-tanViewDir.z, 0.00001);
 
                 if (pomDist > 0.0) {
-                    vec3 viewPos = mul3(playerModelView, vIn.localPos);
+                    vec3 viewPos = mul3(ap.camera.view, vIn.localPos);
                     float depth = -viewPos.z + pomDist * ParallaxDepthF;
-                    gl_FragDepth = 0.5 * (-playerProjection[2].z*depth + playerProjection[3].z) / depth + 0.5;
+                    gl_FragDepth = 0.5 * (-ap.camera.projection[2].z*depth + ap.camera.projection[3].z) / depth + 0.5;
                 }
                 else {
                     gl_FragDepth = gl_FragCoord.z;
@@ -89,13 +89,11 @@ void iris_emitFragment() {
         #endif
     #endif
 
-    vec4 albedo = textureGrad(baseTex, mUV, dFdXY[0], dFdXY[1]);
+    vec4 albedo = iris_sampleBaseTexGrad(mUV, dFdXY[0], dFdXY[1]);
 
     #if MATERIAL_FORMAT != MAT_NONE
-        vec4 normalData = iris_sampleNormalMap(mUV);
-        vec4 specularData = iris_sampleSpecularMap(mUV);
-//        vec4 normalData = textureGrad(irisInt_normalMap, mUV, dFdXY[0], dFdXY[1]);
-//        vec4 specularData = textureGrad(irisInt_specularMap, mUV, dFdXY[0], dFdXY[1]);
+        vec4 normalData = iris_sampleNormalMapGrad(mUV, dFdXY[0], dFdXY[1]);
+        vec4 specularData = iris_sampleSpecularMapGrad(mUV, dFdXY[0], dFdXY[1]);
     #endif
 
     vec2 lmcoord = clamp((mLight - (0.5/16.0)) / (15.0/16.0), 0.0, 1.0);
@@ -154,7 +152,7 @@ void iris_emitFragment() {
 
         if (is_fluid) {
             #ifdef WATER_WAVES_ENABLED
-                vec3 waveOffset = GetWaveHeight(vIn.surfacePos + cameraPos, lmcoord.y, timeCounter, WaterWaveOctaveMax);
+                vec3 waveOffset = GetWaveHeight(vIn.surfacePos + ap.camera.pos, lmcoord.y, ap.frame.time, WaterWaveOctaveMax);
 
                 // mUV += 0.1*waveOffset.xz;
 

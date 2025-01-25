@@ -11,23 +11,23 @@ const float VL_WaterPhaseF =  0.86;
 const float VL_WaterPhaseB = -0.14;
 const float VL_WaterPhaseM =  0.65;
 
-vec3 VL_WaterScatter = 0.1 * RgbToLinear(vec3(0.263, 0.380, 0.376));
-vec3 VL_WaterTransmit = RgbToLinear(1.0 - vec3(0.051, 0.545, 0.588));
-vec3 VL_WaterAmbient = 0.5*RgbToLinear(vec3(0.157, 0.839, 0.792));
+vec3 VL_WaterScatter = 0.006 * RgbToLinear(vec3(0.545, 0.682, 0.69));
+vec3 VL_WaterTransmit = 0.2 * RgbToLinear(1.0 - vec3(0.455, 0.529, 0.69));
+vec3 VL_WaterAmbient = 0.2*RgbToLinear(vec3(0.384, 0.435, 0.471));
 
 const float AirDensityF = SKY_FOG_DENSITY * 0.01;
 
 
 float GetSkyDensity(const in vec3 localPos) {
-    float sampleY = localPos.y + cameraPos.y;
+    float sampleY = localPos.y + ap.camera.pos.y;
     float sampleDensity = clamp((sampleY - SKY_SEA_LEVEL) / (200.0), 0.0, 1.0);
 
-    float p = mix(4.0, 1.0, rainStrength);
+    float p = mix(4.0, 1.0, ap.world.rainStrength);
     sampleDensity = pow(1.0 - sampleDensity, p);
 
     float nightF = max(1.0 - Scene_LocalSunDir.y, 0.0);
     float densityF = fma(nightF, 5.0, 1.0);
-    densityF = mix(densityF, 10.0, rainStrength);
+    densityF = mix(densityF, 10.0, ap.world.rainStrength);
 
     return AirDensityF * densityF * sampleDensity;
 }

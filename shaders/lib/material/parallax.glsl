@@ -4,7 +4,7 @@ const float ParallaxDepthF = MATERIAL_PARALLAX_DEPTH * 0.01;
 
 vec2 GetParallaxCoord(const in vec2 texcoord, const in mat2 dFdXY, const in vec3 tanViewDir, const in float viewDist, out float texDepth, out vec3 traceDepth) {
     // WARN: temp workaround
-    vec2 atlasSize = textureSize(irisInt_normalMap, 0);
+    vec2 atlasSize = textureSize(irisInt_NormalMap, 0);
 
     vec2 stepCoord = tanViewDir.xy * ParallaxDepthF / (fma(tanViewDir.z, MATERIAL_PARALLAX_SAMPLES, 1.0));
     const float stepDepth = 1.0 / MATERIAL_PARALLAX_SAMPLES;
@@ -43,10 +43,10 @@ vec2 GetParallaxCoord(const in vec2 texcoord, const in mat2 dFdXY, const in vec3
             uv[2] = GetAtlasCoord(uv[2], vIn.atlasBounds);
             uv[3] = GetAtlasCoord(uv[3], vIn.atlasBounds);
 
-            texDepth = TextureGradLinear(irisInt_normalMap, uv, dFdXY, f, 3);
+            texDepth = TextureGradLinear(irisInt_NormalMap, uv, dFdXY, f, 3);
         #else
             vec2 traceAtlasCoord = GetAtlasCoord(localTraceCoord, vIn.atlasMinCoord, vIn.atlasMaxCoord);
-            texDepth = textureGrad(irisInt_normalMap, traceAtlasCoord, dFdXY[0], dFdXY[1]).a;
+            texDepth = iris_sampleNormalMapGrad(traceAtlasCoord, dFdXY[0], dFdXY[1]).a;
         #endif
 
         depthDist = 1.0 - fma(i, stepDepth, texDepth);
@@ -81,7 +81,7 @@ vec2 GetParallaxCoord(const in vec2 texcoord, const in mat2 dFdXY, const in vec3
 #ifdef MATERIAL_PARALLAX_SHARP
     vec3 GetParallaxSlopeNormal(const in vec2 atlasCoord, const in mat2 dFdXY, const in float traceDepth, const in vec3 tanViewDir) {
         // WARN: temp workaround
-        vec2 atlasSize = textureSize(irisInt_normalMap, 0);
+        vec2 atlasSize = textureSize(irisInt_NormalMap, 0);
 
         vec2 atlasPixelSize = 1.0 / atlasSize;
         float atlasAspect = atlasSize.x / atlasSize.y;
@@ -110,8 +110,8 @@ vec2 GetParallaxCoord(const in vec2 texcoord, const in mat2 dFdXY, const in vec3
         vec2 tY = GetLocalCoord(fma(tex_y, atlasPixelSize, atlasCoord), vIn.atlasMinCoord, vIn.atlasMaxCoord);
         tY = GetAtlasCoord(tY, vIn.atlasMinCoord, vIn.atlasMaxCoord);
 
-        float height_x = textureGrad(irisInt_normalMap, tX, dFdXY[0], dFdXY[1]).a;
-        float height_y = textureGrad(irisInt_normalMap, tY, dFdXY[0], dFdXY[1]).a;
+        float height_x = iris_sampleNormalMapGrad(tX, dFdXY[0], dFdXY[1]).a;
+        float height_y = iris_sampleNormalMapGrad(tY, dFdXY[0], dFdXY[1]).a;
         vec3 signMask = vec3(0.0);
 
         if (dir) {

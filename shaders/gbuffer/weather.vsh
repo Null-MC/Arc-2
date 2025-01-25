@@ -18,7 +18,7 @@ out VertexData2 {
 
 void iris_emitVertex(inout VertexData data) {
 	vec3 viewPos = mul3(iris_modelViewMatrix, data.modelPos.xyz);
-	vOut.localPos = mul3(playerModelViewInverse, viewPos);
+	vOut.localPos = mul3(ap.camera.viewInv, viewPos);
 
     data.clipPos = iris_projectionMatrix * vec4(viewPos, 1.0);
 
@@ -33,6 +33,6 @@ void iris_sendParameters(in VertexData data) {
     vOut.color = data.color;
 
     #ifdef SHADOWS_ENABLED
-        vOut.shadowViewPos = mul3(shadowModelView, vOut.localPos);
+        vOut.shadowViewPos = mul3(ap.celestial.view, vOut.localPos);
     #endif
 }

@@ -23,7 +23,7 @@ void ScaleInput(inout vec3 color) {
 }
 
 void main() {
-    vec2 hp = (1.0 / screenSize) * TEX_SCALE;
+    vec2 hp = (1.0 / ap.game.screenSize) * TEX_SCALE;
 
     vec2 uv1 = uv + vec2(-hp.x, -hp.y);
     vec2 uv2 = uv + vec2( hp.x, -hp.y);

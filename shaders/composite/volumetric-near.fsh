@@ -64,7 +64,7 @@ void main() {
     vec3 scatterF, transmitF;
     vec3 sampleAmbient = vec3(0.0);
 
-    if (isEyeInWater == 1) {
+    if (ap.camera.fluid == 1) {
         scatterF = VL_WaterScatter;
         transmitF = VL_WaterTransmit;
         phase_gF = VL_WaterPhaseF;
@@ -75,23 +75,23 @@ void main() {
         sampleAmbient *= phaseIso * Scene_SkyBrightnessSmooth;
     }
     else {
-//        scatterF = vec3(mix(VL_Scatter, VL_RainScatter, rainStrength));
-//        transmitF = vec3(mix(VL_Transmit, VL_RainTransmit, rainStrength));
-//        phase_gF = mix(VL_Phase, VL_RainPhase, rainStrength);
-//        phase_gB = -mix(0.16, 0.28, rainStrength);
-//        phase_gM =  mix(0.36, 0.24, rainStrength);
+//        scatterF = vec3(mix(VL_Scatter, VL_RainScatter, ap.world.rainStrength));
+//        transmitF = vec3(mix(VL_Transmit, VL_RainTransmit, ap.world.rainStrength));
+//        phase_gF = mix(VL_Phase, VL_RainPhase, ap.world.rainStrength);
+//        phase_gB = -mix(0.16, 0.28, ap.world.rainStrength);
+//        phase_gM =  mix(0.36, 0.24, ap.world.rainStrength);
 //
-//        sampleAmbient = VL_AmbientF * mix(Scene_SkyIrradianceUp, vec3(0.5*luminance(Scene_SkyIrradianceUp)), rainStrength);
+//        sampleAmbient = VL_AmbientF * mix(Scene_SkyIrradianceUp, vec3(0.5*luminance(Scene_SkyIrradianceUp)), ap.world.rainStrength);
     }
 
 //    sampleAmbient *= phaseIso * Scene_SkyBrightnessSmooth;
 
     vec3 ndcPos = vec3(uv, depth) * 2.0 - 1.0;
-    vec3 viewPos = unproject(playerProjectionInverse, ndcPos);
-    vec3 localPos = mul3(playerModelViewInverse, viewPos);
+    vec3 viewPos = unproject(ap.camera.projectionInv, ndcPos);
+    vec3 localPos = mul3(ap.camera.viewInv, viewPos);
 
     float len = length(localPos);
-    float far = farPlane * 0.5;
+    float far = ap.camera.far * 0.5;
 
     vec3 traceEnd = localPos;
     if (len > far)
@@ -106,15 +106,15 @@ void main() {
     float VoL_moon = dot(localViewDir, -Scene_LocalSunDir);
     float phase_moon = DHG(VoL_moon, phase_gB, phase_gF, phase_gM);
 
-    vec3 shadowViewStart = mul3(shadowModelView, vec3(0.0));
-    vec3 shadowViewEnd = mul3(shadowModelView, traceEnd);
+    vec3 shadowViewStart = mul3(ap.celestial.view, vec3(0.0));
+    vec3 shadowViewEnd = mul3(ap.celestial.view, traceEnd);
     vec3 shadowViewStep = (shadowViewEnd - shadowViewStart) * stepScale;
 
     float shadowF = min(Scene_LocalLightDir.y * 10.0, 1.0);
 
     float miePhaseValue, rayleighPhaseValue;
 
-    if (isEyeInWater != 1) {
+    if (ap.camera.fluid != 1) {
         // TODO: add moon
         miePhaseValue = getMiePhase(VoL_sun);
         rayleighPhaseValue = getRayleighPhase(-VoL_sun);
@@ -127,20 +127,20 @@ void main() {
         float cloudDensity = 0.0;
         float cloudDensity2 = 0.0;
 
-        float cloud_shadowSun = 8.0 * (1.0 - rainStrength);
-        float cloud_shadowMoon = 1.0 * (1.0 - rainStrength);
+        float cloud_shadowSun = 8.0 * (1.0 - ap.world.rainStrength);
+        float cloud_shadowMoon = 1.0 * (1.0 - ap.world.rainStrength);
 
         float cloudShadowF = smoothstep(0.1, 0.2, Scene_LocalLightDir.y);
 
         if (abs(localViewDir.y) > 0.0) {
-            if (sign(cloudHeight-cameraPos.y) == sign(localViewDir.y)) {
-                cloudDist = abs(cloudHeight-cameraPos.y) / localViewDir.y;
-                vec3 cloudPos = cloudDist * localViewDir + cameraPos;
+            if (sign(cloudHeight-ap.camera.pos.y) == sign(localViewDir.y)) {
+                cloudDist = abs(cloudHeight-ap.camera.pos.y) / localViewDir.y;
+                vec3 cloudPos = cloudDist * localViewDir + ap.camera.pos;
 
                 if (cloudDist < 5000.0) {
                     cloudDensity = SampleCloudDensity(cloudPos);
 
-                    float cloud_transmitF = mix(VL_Transmit, VL_RainTransmit, rainStrength);
+                    float cloud_transmitF = mix(VL_Transmit, VL_RainTransmit, ap.world.rainStrength);
 
                     float shadowStepLen = 32.0;
 
@@ -160,9 +160,9 @@ void main() {
                 }
             }
 
-            if (sign(cloudHeight2-cameraPos.y) == sign(localViewDir.y)) {
-                cloudDist2 = abs(cloudHeight2-cameraPos.y) / localViewDir.y;
-                vec3 cloudPos = cloudDist2 * localViewDir + cameraPos;
+            if (sign(cloudHeight2-ap.camera.pos.y) == sign(localViewDir.y)) {
+                cloudDist2 = abs(cloudHeight2-ap.camera.pos.y) / localViewDir.y;
+                vec3 cloudPos = cloudDist2 * localViewDir + ap.camera.pos;
 
                 if (cloudDist2 < 8000.0) {
                     cloudDensity2 = SampleCloudDensity2(cloudPos);
@@ -194,12 +194,12 @@ void main() {
         vec3 sunSkyLight = SUN_BRIGHTNESS * sunTransmit * 4.0;
         vec3 moonSkyLight = MOON_BRIGHTNESS * moonTransmit * 4.0;
 
-        float sampleDensity = stepDist;
-        if (isEyeInWater != 1) {
+        float sampleDensity = 4.0 * stepDist;
+        if (ap.camera.fluid != 1) {
             sampleDensity = stepDist * GetSkyDensity(sampleLocalPos) * 0.0001;
 
             #ifdef CLOUDS_ENABLED
-                float sampleHeight = sampleLocalPos.y+cameraPos.y;
+                float sampleHeight = sampleLocalPos.y+ap.camera.pos.y;
                 float heightLast = sampleHeight - stepLocal.y;
 
                 // Clouds
@@ -219,16 +219,16 @@ void main() {
 
                 #ifdef SHADOWS_CLOUD_ENABLED
                     // Cloud Shadows
-                    if (sampleLocalPos.y+cameraPos.y < cloudHeight) {
-                        vec3 worldPos = sampleLocalPos + cameraPos;
+                    if (sampleLocalPos.y+ap.camera.pos.y < cloudHeight) {
+                        vec3 worldPos = sampleLocalPos + ap.camera.pos;
                         worldPos += (cloudHeight - worldPos.y) / Scene_LocalLightDir.y * Scene_LocalLightDir;
 
                         float cloudShadowDensity = SampleCloudDensity(worldPos);
                         shadowSample *= mix(1.0, exp(-0.2*cloudShadowDensity), cloudShadowF);
                     }
 
-                    if (sampleLocalPos.y+cameraPos.y < cloudHeight2) {
-                        vec3 worldPos = sampleLocalPos + cameraPos;
+                    if (sampleLocalPos.y+ap.camera.pos.y < cloudHeight2) {
+                        vec3 worldPos = sampleLocalPos + ap.camera.pos;
                         worldPos += (cloudHeight2 - worldPos.y) / Scene_LocalLightDir.y * Scene_LocalLightDir;
 
                         float cloudShadowDensity = SampleCloudDensity2(worldPos);
@@ -237,7 +237,7 @@ void main() {
                 #endif
             #endif
 
-            // vec3 local_skyPos = sampleLocalPos + cameraPos;
+            // vec3 local_skyPos = sampleLocalPos + ap.camera.pos;
             // local_skyPos.y -= SKY_SEA_LEVEL;
             // local_skyPos /= 200.0;//(ATMOSPHERE_MAX - SKY_SEA_LEVEL);
             // local_skyPos.xz /= (256.0/32.0);// * 4.0;
@@ -271,42 +271,42 @@ void main() {
 
 
 
-        if (isEyeInWater != 1) {
+        vec3 scatteringIntegral, sampleTransmittance, inScattering;
+        if (ap.camera.fluid != 1) {
             vec3 skyPos = getSkyPosition(sampleLocalPos);
             //sampleDensity *= 0.001;
 
             float mieScattering;
-            vec3 rayleighScattering, extinction;
-            getScatteringValues(skyPos, rayleighScattering, mieScattering, extinction);
+            vec3 rayleighScattering;//, extinction;
+            getScatteringValues(skyPos, rayleighScattering, mieScattering, transmitF);
 
-            vec3 sampleTransmittance = exp(-sampleDensity * extinction);
+            sampleTransmittance = exp(-sampleDensity * transmitF);
 
             vec3 psiMS = SKY_LUMINANCE * Scene_SkyBrightnessSmooth * getValFromMultiScattLUT(texSkyMultiScatter, skyPos, Scene_LocalSunDir);
 
             // TODO: add moon
             vec3 rayleighInScattering = rayleighScattering * (rayleighPhaseValue * sunSkyLight * shadowSample + psiMS + sampleLit);
             vec3 mieInScattering = mieScattering * (miePhaseValue * sunSkyLight * shadowSample + psiMS + sampleLit);
-            vec3 inScattering = mieInScattering + rayleighInScattering;
-
-            vec3 scatteringIntegral = (inScattering - inScattering * sampleTransmittance) / extinction;
-
-            scattering += scatteringIntegral*transmittance;
-            transmittance *= sampleTransmittance;
+            inScattering = mieInScattering + rayleighInScattering;
         }
         else {
             vec3 sampleColor = (phase_sun * sunSkyLight) + (phase_moon * moonSkyLight);
             sampleLit += fma(sampleColor, shadowSample, sampleAmbient);
 
-            vec3 sampleTransmit = exp(-sampleDensity * transmitF);
+            sampleTransmittance = exp(-sampleDensity * transmitF);
 
-            transmittance *= sampleTransmit;
-            scattering += scatterF * transmittance * sampleLit * sampleDensity;
+            inScattering = scatterF * sampleLit * sampleDensity;
         }
+
+        scatteringIntegral = (inScattering - inScattering * sampleTransmittance) / transmitF;
+
+        scattering += scatteringIntegral * transmittance;
+        transmittance *= sampleTransmittance;
     }
 
     #ifdef CLOUDS_ENABLED
         if (depth == 1.0) {
-            float endWorldY = traceEnd.y + cameraPos.y;
+            float endWorldY = traceEnd.y + ap.camera.pos.y;
             endWorldY -= (1.0-dither) * stepLocal.y;
 
             if (endWorldY < cloudHeight && cloudDensity > 0.0) {

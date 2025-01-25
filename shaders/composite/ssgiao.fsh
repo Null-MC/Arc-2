@@ -31,12 +31,12 @@ const float GOLDEN_ANGLE = 2.39996323;
 
 void main() {
 //    ivec2 iuv = ivec2(fma(uv, screenSize, vec2(0.5)));
-    ivec2 iuv = ivec2(uv * screenSize);
+    ivec2 iuv = ivec2(uv * ap.game.screenSize);
     float depth = texelFetch(solidDepthTex, iuv, 0).r;
 
     // vec2 uv_j = uv;
     // #ifdef EFFECT_TAA_ENABLED
-    //     vec2 jitterOffset = getJitterOffset(frameCounter);
+    //     vec2 jitterOffset = getJitterOffset(ap.frame.counter);
     //     uv_j -= jitterOffset;
     // #endif
 
@@ -50,7 +50,7 @@ void main() {
             float dither = InterleavedGradientNoise(ivec2(gl_FragCoord.xy));
          #endif
 
-        vec2 pixelSize = 1.0 / screenSize;
+        vec2 pixelSize = 1.0 / ap.game.screenSize;
 
         float rotatePhase = dither * TAU;
 
@@ -60,7 +60,7 @@ void main() {
             //unjitter(clipPos);
         #endif
 
-        vec3 viewPos = unproject(playerProjectionInverse, clipPos);
+        vec3 viewPos = unproject(ap.camera.projectionInv, clipPos);
 
         float viewDist = length(viewPos);
 
@@ -73,7 +73,7 @@ void main() {
         vec3 normalData = texelFetch(texDeferredOpaque_TexNormal, iuv, 0).xyz;
         vec3 localNormal = normalize(fma(normalData, vec3(2.0), vec3(-1.0)));
 
-        vec3 viewNormal = normalize(mat3(playerModelView) * localNormal);
+        vec3 viewNormal = normalize(mat3(ap.camera.view) * localNormal);
 
         //viewPos += localNormal * 0.06;
 
@@ -88,7 +88,7 @@ void main() {
             rotatePhase += GOLDEN_ANGLE;
 
             vec3 sampleViewPos = viewPos + vec3(offset, 0.0);
-            vec3 sampleClipPos = unproject(playerProjection, sampleViewPos) * 0.5 + 0.5;
+            vec3 sampleClipPos = unproject(ap.camera.projection, sampleViewPos) * 0.5 + 0.5;
 
             if (clamp(sampleClipPos.xy, 0.0, 1.0) != sampleClipPos.xy) continue;
             if (all(lessThan(abs(sampleClipPos.xy - uv), pixelSize))) continue;
@@ -98,7 +98,7 @@ void main() {
 
             sampleClipPos.z = sampleClipDepth;
             sampleClipPos = sampleClipPos * 2.0 - 1.0;
-            sampleViewPos = unproject(playerProjectionInverse, sampleClipPos);
+            sampleViewPos = unproject(ap.camera.projectionInv, sampleClipPos);
 
             #ifdef EFFECT_SSGI_ENABLED
                 vec3 sampleColor = textureLod(texFinalPrevious, sampleClipPos.xy * 0.5 + 0.5, 0).rgb;

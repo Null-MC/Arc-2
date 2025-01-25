@@ -1,5 +1,5 @@
 vec2 GetPixelRadius(const in float blockRadius, const in int cascade) {
-    vec2 cascadeSize = 2.0 / vec2(shadowProjection[cascade][0].x, shadowProjection[cascade][1].y);
+    vec2 cascadeSize = 2.0 / vec2(ap.celestial.projection[cascade][0].x, ap.celestial.projection[cascade][1].y);
     // vec2 cascadeSize = shadowProjectionSize[cascade];
 
     // return vec2(8.0 * shadowPixelSize);
@@ -10,7 +10,7 @@ vec2 GetPixelRadius(const in float blockRadius, const in int cascade) {
 float GetShadowBias(const in int shadowCascade) {
     const float cascade_bias[] = {0.02, 0.04, 0.16, 0.2};
 
-    float zRange = -2.0 / shadowProjection[shadowCascade][2].z; //GetShadowRange();
+    float zRange = -2.0 / ap.celestial.projection[shadowCascade][2].z; //GetShadowRange();
 
     return cascade_bias[shadowCascade] / zRange;
 }
@@ -20,7 +20,7 @@ void GetShadowProjection(const in vec3 shadowViewPos, const in float padding, ou
     // float padding2 = 2.0 * padding;
 
     for (int i = 0; i < 4; i++) {
-        shadowPos = (shadowProjection[i] * vec4(shadowViewPos, 1.0)).xyz;
+        shadowPos = (ap.celestial.projection[i] * vec4(shadowViewPos, 1.0)).xyz;
         cascadeIndex = i;
 
         vec3 padding2 = vec3(2.0 * GetPixelRadius(padding, i), 0.0);

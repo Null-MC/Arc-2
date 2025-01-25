@@ -9,13 +9,13 @@ vec3 GetVoxelCenter(const in vec3 viewPos, const in vec3 viewDir) {
 }
 
 vec3 GetVoxelPosition(const in vec3 position) {
-    vec3 viewDir = playerModelViewInverse[2].xyz;
-    return position + GetVoxelCenter(cameraPos, viewDir);
+    vec3 viewDir = ap.camera.viewInv[2].xyz;
+    return position + GetVoxelCenter(ap.camera.pos, viewDir);
 }
 
 vec3 GetVoxelLocalPos(vec3 voxelPos) {
-    vec3 viewDir = playerModelViewInverse[2].xyz;
-    return voxelPos - GetVoxelCenter(cameraPos, viewDir);
+    vec3 viewDir = ap.camera.viewInv[2].xyz;
+    return voxelPos - GetVoxelCenter(ap.camera.pos, viewDir);
 }
 
 bool IsInVoxelBounds(const in ivec3 voxelPos) {

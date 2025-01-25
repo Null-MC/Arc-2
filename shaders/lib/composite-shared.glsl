@@ -1,6 +1,6 @@
 void randomize_reflection(inout vec3 reflectRay, const in vec3 normal, const in float roughL) {
     #ifdef EFFECT_TAA_ENABLED
-        vec3 seed = vec3(gl_FragCoord.xy, 1.0 + frameCounter);
+        vec3 seed = vec3(gl_FragCoord.xy, 1.0 + ap.frame.counter);
     #else
         vec3 seed = vec3(gl_FragCoord.xy, 1.0);
     #endif

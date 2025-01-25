@@ -7,6 +7,6 @@ float InterleavedGradientNoise(const in vec2 pixel) {
 }
 
 float InterleavedGradientNoiseTime(const in vec2 pixel) {
-    vec2 uv = pixel + frameCounter * 5.588238;
+    vec2 uv = pixel + ap.frame.counter * 5.588238;
     return fract(magic.z * fract(dot(magic.xy, uv)));
 }

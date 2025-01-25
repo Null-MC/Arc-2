@@ -18,8 +18,8 @@ layout (local_size_x = 1, local_size_y = 1, local_size_z = 1) in;
 
 
 void main() {
-	Scene_LocalSunDir = normalize(mat3(playerModelViewInverse) * sunPosition);
-	Scene_LocalLightDir = normalize(mat3(playerModelViewInverse) * shadowLightPosition);
+	Scene_LocalSunDir = normalize(mat3(ap.camera.viewInv) * ap.celestial.sunPos);
+	Scene_LocalLightDir = normalize(mat3(ap.camera.viewInv) * ap.celestial.pos);
 
 	#if LIGHTING_MODE == LIGHT_MODE_RT
 		Scene_LightCount = 0u;
@@ -29,7 +29,7 @@ void main() {
 		Scene_TriangleCount = 0u;
 	#endif
 
-	if (!guiHidden) {
-		Scene_TrackPos = cameraPos;
+	if (!ap.game.guiHidden) {
+		Scene_TrackPos = ap.camera.pos;
 	}
 }

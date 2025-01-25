@@ -247,45 +247,6 @@ function setupShader() {
     setLightColor("blue_stained_glass", 0, 0, 255, 255);
     setLightColor("blue_stained_glass_pane", 0, 0, 255, 255);
 
-    registerUniforms(
-        // "atlasSize",
-        "cameraPos",
-        "cascadeSize",
-        // "cloudHeight",
-        // "dayProgression",
-        "eyeBrightness",
-        "farPlane",
-        "fogColor",
-        "fogStart",
-        "fogEnd",
-        "frameTime",
-        "frameCounter",
-        "guiHidden",
-        "isEyeInWater",
-        "lastCameraPos",
-        "lastPlayerProjection",
-        "lastPlayerModelView",
-        "nearPlane",
-        "playerModelView",
-        "playerModelViewInverse",
-        "playerProjection",
-        "playerProjectionInverse",
-        "rainStrength",
-        "renderDistance",
-        "screenSize",
-        "shadowLightPosition",
-        "shadowModelView",
-        // "shadowModelViewInverse",
-        "shadowProjection",
-        // "shadowProjectionInverse",
-        "shadowProjectionSize",
-        "skyColor",
-        "sunPosition",
-        "timeCounter",
-        "worldTime");
-
-    finalizeUniforms();
-
     const screenWidth_half = Math.ceil(screenWidth / 2.0);
     const screenHeight_half = Math.ceil(screenHeight / 2.0);
 

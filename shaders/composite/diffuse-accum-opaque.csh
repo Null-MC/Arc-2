@@ -63,12 +63,12 @@ void populateSharedBuffer() {
 
         ivec2 uv = uv_base + uv_i;
 
-        float depthL = farPlane;
+        float depthL = ap.camera.far;
         vec3 ssgi = vec3(0.0);
-        if (all(greaterThanEqual(uv, ivec2(0))) && all(lessThan(uv, ivec2(screenSize + 0.5)))) {
+        if (all(greaterThanEqual(uv, ivec2(0))) && all(lessThan(uv, ivec2(ap.game.screenSize + 0.5)))) {
             ssgi = texelFetch(texSSGIAO, uv/2, 0).rgb;
             float depth = texelFetch(solidDepthTex, uv/2*2, 0).r;
-            depthL = linearizeDepth(depth, nearPlane, farPlane);
+            depthL = linearizeDepth(depth, ap.camera.near, ap.camera.far);
         }
 
         sharedOcclusionBuffer[i_shared] = ssgi;
@@ -109,12 +109,12 @@ vec3 sampleSharedBuffer(const in float depthL) {
 
 void main() {
     ivec2 iuv = ivec2(gl_GlobalInvocationID.xy);
-    vec2 uv = (iuv + 0.5) / screenSize;
+    vec2 uv = (iuv + 0.5) / ap.game.screenSize;
 
     populateSharedBuffer();
     barrier();
 
-    if (any(greaterThanEqual(iuv, ivec2(screenSize)))) return;
+    if (any(greaterThanEqual(iuv, ivec2(ap.game.screenSize)))) return;
 
     ivec2 uv_shared = ivec2(gl_LocalInvocationID.xy) + 2;
     int i_shared = uv_shared.y * sharedBufferRes + uv_shared.x;
@@ -122,7 +122,7 @@ void main() {
 
 
     // vec2 uv2 = uv;
-    // uv2 += getJitterOffset(frameCounter);
+    // uv2 += getJitterOffset(ap.frame.counter);
 
     float depth = texelFetch(solidDepthTex, iuv, 0).r;
 
@@ -131,26 +131,26 @@ void main() {
 
     vec3 clipPos = vec3(uv, depth) * 2.0 - 1.0;
 
-    vec3 viewPos = unproject(playerProjectionInverse, clipPos);
+    vec3 viewPos = unproject(ap.camera.projectionInv, clipPos);
 
-    vec3 localPos = mul3(playerModelViewInverse, viewPos);
+    vec3 localPos = mul3(ap.camera.viewInv, viewPos);
 
-    vec3 localPosPrev = localPos - velocity + (cameraPos - lastCameraPos);
+    vec3 localPosPrev = localPos - velocity + (ap.camera.pos - ap.temporal.pos);
 
-    vec3 viewPosPrev = mul3(lastPlayerModelView, localPosPrev);
+    vec3 viewPosPrev = mul3(ap.temporal.view, localPosPrev);
 
-    vec3 clipPosPrev = unproject(lastPlayerProjection, viewPosPrev);
+    vec3 clipPosPrev = unproject(ap.temporal.projection, viewPosPrev);
 
     vec2 uvLast = clipPosPrev.xy * 0.5 + 0.5;
 
 
-    bool altFrame = (frameCounter % 2) == 1;
+    bool altFrame = (ap.frame.counter % 2) == 1;
 
     vec4 previousDiffuse = textureLod(altFrame ? texDiffuseAccum : texDiffuseAccum_alt, uvLast, 0);
     vec4 previousSpecular = textureLod(altFrame ? texSpecularAccum : texSpecularAccum_alt, uvLast, 0);
     vec3 localPosLast = textureLod(altFrame ? texDiffuseAccumPos : texDiffuseAccumPos_alt, uvLast, 0).rgb;
 
-    float depthL = linearizeDepth(depth, nearPlane, farPlane);
+    float depthL = linearizeDepth(depth, ap.camera.near, ap.camera.far);
 
     float offsetThreshold = clamp(depthL * 0.04, 0.0, 1.0);
 

@@ -11,9 +11,11 @@ uniform sampler2D texSkyIrradiance;
 
 
 void main() {
-    vec2 skyIrradianceCoord = DirectionToUV(vec3(0.0, 1.0, 0.0));
+    const vec3 worldUp = vec3(0.0, 1.0, 0.0);
+
+    vec2 skyIrradianceCoord = DirectionToUV(worldUp);
     vec3 skyIrradiance = textureLod(texSkyIrradiance, skyIrradianceCoord, 0).rgb;
     Scene_SkyIrradianceUp = skyIrradiance * SKY_BRIGHTNESS;
     
-    Scene_SkyBrightnessSmooth = mix(eyeBrightness.y, Scene_SkyBrightnessSmooth, exp(-2.0 * frameTime));
+    Scene_SkyBrightnessSmooth = mix(ap.camera.brightness.y, Scene_SkyBrightnessSmooth, exp(-2.0 * ap.frame.millis));
 }

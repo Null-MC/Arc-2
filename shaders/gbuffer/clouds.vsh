@@ -20,7 +20,7 @@ struct VertexData {
 
 */
 
-layout(location = 6) in int blockMask;
+//layout(location = 6) in int blockMask;
 
 out VertexData2 {
 	vec2 uv;
@@ -50,7 +50,7 @@ void iris_emitVertex(inout VertexData data) {
 	return;
 	
 	vec3 viewPos = mul3(iris_modelViewMatrix, data.modelPos.xyz);
-	vOut.localPos = mul3(playerModelViewInverse, viewPos);
+	vOut.localPos = mul3(ap.camera.viewInv, viewPos);
 	vOut.localOffset = vec3(0.0);
 
 	#if defined RENDER_TRANSLUCENT && defined WATER_WAVES_ENABLED && !defined WATER_TESSELLATION_ENABLED
@@ -59,11 +59,11 @@ void iris_emitVertex(inout VertexData data) {
         if (isWater) {
 			const float lmcoord_y = 1.0;
 
-            vec3 waveOffset = GetWaveHeight(vOut.localPos + cameraPos, lmcoord_y, timeCounter, WaterWaveOctaveMin);
+            vec3 waveOffset = GetWaveHeight(vOut.localPos + ap.camera.pos, lmcoord_y, ap.frame.time, WaterWaveOctaveMin);
             vOut.localOffset.y += waveOffset.y;
 
             vOut.localPos += vOut.localOffset;
-			viewPos = mul3(playerModelView, vOut.localPos);
+			viewPos = mul3(ap.camera.view, vOut.localPos);
         }
 	#endif
 
@@ -80,11 +80,12 @@ void iris_sendParameters(in VertexData data) {
     vOut.color = data.color;
 
 	vec3 viewNormal = mat3(iris_modelViewMatrix) * data.normal;
-	vOut.localNormal = mat3(playerModelViewInverse) * viewNormal;
+	vOut.localNormal = mat3(ap.camera.viewInv) * viewNormal;
 
     vec3 viewTangent = mat3(iris_modelViewMatrix) * data.tangent.xyz;
-    vOut.localTangent.xyz = mat3(playerModelViewInverse) * viewTangent;
+    vOut.localTangent.xyz = mat3(ap.camera.viewInv) * viewTangent;
     vOut.localTangent.w = data.tangent.w;
 
-    vOut.material = blockMask;
+	// TODO: set to some unique cloud ID
+    vOut.material = 0;
 }

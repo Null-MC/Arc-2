@@ -46,15 +46,15 @@ void main() {
             unjitter(ndcPos);
         #endif
 
-        vec3 viewPos = unproject(playerProjectionInverse, ndcPos);
-        vec3 localPos = mul3(playerModelViewInverse, viewPos);
+        vec3 viewPos = unproject(ap.camera.projectionInv, ndcPos);
+        vec3 localPos = mul3(ap.camera.viewInv, viewPos);
 
         vec3 data_r = unpackUnorm4x8(data.r).xyz;
         vec3 localGeoNormal = normalize(data_r * 2.0 - 1.0);
 
         shadowFinal *= step(0.0, dot(localGeoNormal, Scene_LocalLightDir));
 
-        vec3 shadowViewPos = mul3(shadowModelView, localPos);
+        vec3 shadowViewPos = mul3(ap.celestial.view, localPos);
 
         int shadowCascade;
         vec3 shadowPos = GetShadowSamplePos(shadowViewPos, Shadow_MaxPcfSize, shadowCascade);
@@ -88,10 +88,10 @@ void main() {
         #ifdef SHADOW_SCREEN
             float viewDist = length(viewPos);
             // vec3 lightViewDir = mat3(gbufferModelView) * localSkyLightDirection;
-            vec3 lightViewDir = normalize(shadowLightPosition);
+            vec3 lightViewDir = normalize(ap.celestial.pos);
             vec3 endViewPos = lightViewDir * viewDist * 0.1 + viewPos;
 
-            vec3 clipPosEnd = unproject(playerProjection, endViewPos) * 0.5 + 0.5;
+            vec3 clipPosEnd = unproject(ap.camera.projection, endViewPos) * 0.5 + 0.5;
 
             #ifdef EFFECT_TAA_ENABLED
                 clipPosEnd = clipPosEnd * 2.0 - 1.0;
@@ -105,7 +105,7 @@ void main() {
             //     clipPos.xy += jitterOffset;
             // #endif
 
-            vec2 pixelSize = 1.0 / screenSize;
+            vec2 pixelSize = 1.0 / ap.game.screenSize;
 
             vec3 traceScreenStep = traceScreenDir * pixelSize.y;
             vec2 traceScreenDirAbs = abs(traceScreenDir.xy);
@@ -132,16 +132,16 @@ void main() {
 
                 if (clamp(traceScreenPos, 0.0, 1.0) != traceScreenPos) break;
 
-                ivec2 sampleUV = ivec2(traceScreenPos.xy * screenSize);
+                ivec2 sampleUV = ivec2(traceScreenPos.xy * ap.game.screenSize);
                 float sampleDepth = texelFetch(solidDepthTex, sampleUV, 0).r;
 
-                float sampleDepthL = linearizeDepth(sampleDepth, nearPlane, farPlane);
+                float sampleDepthL = linearizeDepth(sampleDepth, ap.camera.near, ap.camera.far);
 
-                float traceDepthL = linearizeDepth(traceScreenPos.z, nearPlane, farPlane);
+                float traceDepthL = linearizeDepth(traceScreenPos.z, ap.camera.near, ap.camera.far);
 
                 float sampleDiff = traceDepthL - sampleDepthL;
                 if (sampleDiff > 0.001 * viewDist) {
-                    vec3 traceViewPos = unproject(playerProjectionInverse, traceScreenPos * 2.0 - 1.0);
+                    vec3 traceViewPos = unproject(ap.camera.projectionInv, traceScreenPos * 2.0 - 1.0);
 
                     traceDist = length(traceViewPos - viewPos);
                     shadowTrace *= step(traceDist, sampleDiff * ShadowScreenSlope);

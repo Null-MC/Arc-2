@@ -43,12 +43,12 @@ void populateSharedBuffer() {
 
 	    ivec2 uv = uv_base + uv_i;
 
-        float depthL = farPlane;
+        float depthL = ap.camera.far;
         vec4 shadow = vec4(1.0);
-	    if (all(greaterThanEqual(uv, ivec2(0))) && all(lessThan(uv, ivec2(screenSize + 0.5)))) {
+	    if (all(greaterThanEqual(uv, ivec2(0))) && all(lessThan(uv, ivec2(ap.game.screenSize + 0.5)))) {
 	    	shadow = texelFetch(texShadow, uv, 0);
 	    	float depth = texelFetch(solidDepthTex, uv, 0).r;
-	    	depthL = linearizeDepth(depth, nearPlane, farPlane);
+	    	depthL = linearizeDepth(depth, ap.camera.near, ap.camera.far);
 	    }
 
     	sharedShadowBuffer[i_shared] = shadow;
@@ -94,7 +94,7 @@ void main() {
     populateSharedBuffer();
     barrier();
 
-	if (any(greaterThanEqual(uv, ivec2(screenSize)))) return;
+	if (any(greaterThanEqual(uv, ivec2(ap.game.screenSize)))) return;
 
     ivec2 uv_shared = ivec2(gl_LocalInvocationID.xy) + 2;
     int i_shared = uv_shared.y * sharedBufferRes + uv_shared.x;

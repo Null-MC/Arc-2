@@ -37,15 +37,15 @@ vec3 decodePalYuv(vec3 yuv) {
 vec3 getReprojectedClipPos(const in vec2 texcoord, const in float depthNow, const in vec3 velocity) {
     vec3 clipPos = vec3(texcoord, depthNow) * 2.0 - 1.0;
 
-    vec3 viewPos = unproject(playerProjectionInverse, clipPos);
+    vec3 viewPos = unproject(ap.camera.projectionInv, clipPos);
 
-    vec3 localPos = mul3(playerModelViewInverse, viewPos);
+    vec3 localPos = mul3(ap.camera.viewInv, viewPos);
 
-    vec3 localPosPrev = localPos - velocity + (cameraPos - lastCameraPos);
+    vec3 localPosPrev = localPos - velocity + (ap.camera.pos - ap.temporal.pos);
 
-    vec3 viewPosPrev = mul3(lastPlayerModelView, localPosPrev);
+    vec3 viewPosPrev = mul3(ap.temporal.view, localPosPrev);
 
-    vec3 clipPosPrev = unproject(lastPlayerProjection, viewPosPrev);
+    vec3 clipPosPrev = unproject(ap.temporal.projection, viewPosPrev);
 
     return clipPosPrev * 0.5 + 0.5;
 }
@@ -53,7 +53,7 @@ vec3 getReprojectedClipPos(const in vec2 texcoord, const in float depthNow, cons
 void main() {
     vec2 uv2 = uv;
 
-    // uv2 += getJitterOffset(frameCounter);
+    // uv2 += getJitterOffset(ap.frame.counter);
 
     float depth = textureLod(solidDepthTex, uv, 0).r;
 
@@ -72,7 +72,7 @@ void main() {
     antialiased = mix(antialiased * antialiased, in0 * in0, 1.0 / (1.0 + mixRate));
     antialiased = sqrt(antialiased);
 
-    vec2 pixelSize = 1.0 / screenSize;
+    vec2 pixelSize = 1.0 / ap.game.screenSize;
     
     vec3 in1 = textureLod(texFinalOpaque, uv2 + vec2(+pixelSize.x, 0.0), 0).rgb;
     vec3 in2 = textureLod(texFinalOpaque, uv2 + vec2(-pixelSize.x, 0.0), 0).rgb;

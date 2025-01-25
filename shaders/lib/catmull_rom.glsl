@@ -1,5 +1,5 @@
 vec4 sampleHistoryCatmullRom(sampler2D texColor, const in vec2 uv) {
-    vec2 samplePos = uv * screenSize;// - 0.5;
+    vec2 samplePos = uv * ap.game.screenSize;// - 0.5;
     vec2 texPos1 = floor(samplePos);
     //vec2 f = samplePos - texPos1;
     vec2 f = fract(samplePos);
@@ -24,7 +24,7 @@ vec4 sampleHistoryCatmullRom(sampler2D texColor, const in vec2 uv) {
     w3 = clamp(w3, 0.0, 1.0);
 
     // Compute the final UV coordinates we'll use for sampling the texture
-    vec2 pixelSize = 1.0 / screenSize;
+    vec2 pixelSize = 1.0 / ap.game.screenSize;
     vec2 texPos0  = (texPos1 - 1.0) * pixelSize;
     vec2 texPos3  = (texPos1 + 2.0) * pixelSize;
     vec2 texPos12 = (texPos1 + offset12) * pixelSize;

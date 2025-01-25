@@ -97,7 +97,7 @@ vec3 SampleShadowColor_PCF(const in vec3 shadowPos, const in int shadowCascade, 
 
 float ShadowBlockerDistance(const in vec3 shadowPos, const in int shadowCascade, const in vec2 pixelRadius) {
     float dither = GetShadowDither();
-    float zRange = -2.0 / shadowProjection[shadowCascade][2][2]; //GetShadowRange();
+    float zRange = -2.0 / ap.celestial.projection[shadowCascade][2][2]; //GetShadowRange();
     float bias = GetShadowBias(shadowCascade);
 
     float angle = fract(dither) * TAU;

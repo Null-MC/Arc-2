@@ -15,9 +15,9 @@ vec4 GetReflectionPosition(const in sampler2D depthtex, const in vec3 clipPos, c
     //     float dither = InterleavedGradientNoise();
     // #endif
 
-    float startDepthLinear = linearizeDepth(clipPos.z, nearPlane, farPlane);
+    float startDepthLinear = linearizeDepth(clipPos.z, ap.camera.near, ap.camera.far);
 
-    vec2 pixelSize = 1.0 / screenSize;
+    vec2 pixelSize = 1.0 / ap.game.screenSize;
 
     vec2 screenRayAbs = abs(screenRay.xy);
     vec2 pixelRay = pixelSize / screenRayAbs.xy;
@@ -51,8 +51,8 @@ vec4 GetReflectionPosition(const in sampler2D depthtex, const in vec3 clipPos, c
         }
 
         float sampleDepth = textureLod(depthtex, tracePos.xy, 0).r;
-        float sampleDepthL = linearizeDepth(sampleDepth, nearPlane, farPlane);
-        float traceDepthL = linearizeDepth(tracePos.z, nearPlane, farPlane);
+        float sampleDepthL = linearizeDepth(sampleDepth, ap.camera.near, ap.camera.far);
+        float traceDepthL = linearizeDepth(tracePos.z, ap.camera.near, ap.camera.far);
 
         if (traceDepthL < sampleDepthL + 0.002) {
             lastTracePos = tracePos;
@@ -87,8 +87,8 @@ vec4 GetReflectionPosition(const in sampler2D depthtex, const in vec3 clipPos, c
         }
 
         float sampleDepth = textureLod(depthtex, tracePos.xy, 0).r;
-        float sampleDepthL = linearizeDepth(sampleDepth, nearPlane, farPlane);
-        float traceDepthL = linearizeDepth(tracePos.z, nearPlane, farPlane);
+        float sampleDepthL = linearizeDepth(sampleDepth, ap.camera.near, ap.camera.far);
+        float traceDepthL = linearizeDepth(tracePos.z, ap.camera.near, ap.camera.far);
 
         if (traceDepthL < sampleDepthL + 0.002) {
             lastTracePos = tracePos;

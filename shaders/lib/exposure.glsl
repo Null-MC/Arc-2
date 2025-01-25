@@ -9,7 +9,7 @@ const mat3 XYZ_TO_RGB = mat3(
     -0.4985314, 0.0415560, 1.0572252);
 
 const float Exposure_logLumRange = 1.0 / (Exposure_maxLogLum - Exposure_minLogLum);
-float Exposure_numPixels = screenSize.x * screenSize.y;
+float Exposure_numPixels = ap.game.screenSize.x * ap.game.screenSize.y;
 
 
 vec3 xyz_to_xyY(vec3 xyz) {

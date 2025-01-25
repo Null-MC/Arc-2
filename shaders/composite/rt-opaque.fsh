@@ -99,7 +99,7 @@ in vec2 uv;
 
 
 void main() {
-    ivec2 iuv = ivec2(fma(uv, screenSize, vec2(0.5)));
+    ivec2 iuv = ivec2(fma(uv, ap.game.screenSize, vec2(0.5)));
     float depth = texelFetch(solidDepthTex, iuv, 0).r;
 
     vec3 diffuseFinal = vec3(0.0);
@@ -107,18 +107,18 @@ void main() {
 
     if (depth < 1.0) {
         uvec4 data = texelFetch(texDeferredOpaque_Data, iuv, 0);
-        // vec2 pixelSize = 1.0 / screenSize;
+        // vec2 pixelSize = 1.0 / ap.game.screenSize;
 
         vec3 ndcPos = vec3(uv, depth) * 2.0 - 1.0;
-        vec3 viewPos = unproject(playerProjectionInverse, ndcPos);
-        vec3 localPos = mul3(playerModelViewInverse, viewPos);
+        vec3 viewPos = unproject(ap.camera.projectionInv, ndcPos);
+        vec3 localPos = mul3(ap.camera.viewInv, viewPos);
 
         // float viewDist = length(viewPos);
 
         vec3 normalData = texelFetch(texDeferredOpaque_TexNormal, iuv, 0).xyz;
         vec3 localTexNormal = normalize(normalData * 2.0 - 1.0);
 
-        // vec3 viewNormal = mat3(playerModelView) * localNormal;
+        // vec3 viewNormal = mat3(ap.camera.view) * localNormal;
 
         vec3 data_r = unpackUnorm4x8(data.r).rgb;
         vec3 localGeoNormal = normalize(data_r * 2.0 - 1.0);
@@ -161,7 +161,7 @@ void main() {
 
                 vec3 voxelPos_out = voxelPos + 0.02*localGeoNormal;
 
-                vec3 jitter = hash33(vec3(gl_FragCoord.xy, frameCounter)) - 0.5;
+                vec3 jitter = hash33(vec3(gl_FragCoord.xy, ap.frame.counter)) - 0.5;
 
                 #if RT_MAX_SAMPLE_COUNT > 0
                     uint maxSampleCount = min(binLightCount, RT_MAX_SAMPLE_COUNT);
@@ -171,7 +171,7 @@ void main() {
                     const float bright_scale = 1.0;
                 #endif
 
-                int i_offset = int(binLightCount * hash13(vec3(gl_FragCoord.xy, frameCounter)));
+                int i_offset = int(binLightCount * hash13(vec3(gl_FragCoord.xy, ap.frame.counter)));
 
                 for (int i = 0; i < maxSampleCount; i++) {
                     int i2 = (i + i_offset) % int(binLightCount);
@@ -349,7 +349,7 @@ void main() {
 
                     #ifdef SHADOWS_ENABLED
                         int reflect_shadowCascade;
-                        vec3 reflect_shadowViewPos = mul3(shadowModelView, reflect_localPos);
+                        vec3 reflect_shadowViewPos = mul3(ap.celestial.view, reflect_localPos);
                         vec3 reflect_shadowPos = GetShadowSamplePos(reflect_shadowViewPos, 0.0, reflect_shadowCascade);
                         float reflect_shadow = SampleShadow(reflect_shadowPos, reflect_shadowCascade);
                     #else
@@ -390,16 +390,16 @@ void main() {
 
                 if (reflection.a == 0.0) {
                     float viewDist = length(localPos);
-                    vec3 reflectViewDir = mat3(playerModelView) * reflectLocalDir;
+                    vec3 reflectViewDir = mat3(ap.camera.view) * reflectLocalDir;
                     vec3 reflectViewPos = viewPos + 0.5*viewDist*reflectViewDir;
-                    vec3 reflectClipPos = unproject(playerProjection, reflectViewPos) * 0.5 + 0.5;
+                    vec3 reflectClipPos = unproject(ap.camera.projection, reflectViewPos) * 0.5 + 0.5;
 
                     vec3 clipPos = ndcPos * 0.5 + 0.5;
                     vec3 reflectRay = normalize(reflectClipPos - clipPos);
                     reflection = GetReflectionPosition(solidDepthTex, clipPos, reflectRay);
 
-                    float maxLod = max(log2(minOf(screenSize)) - 2.0, 0.0);
-                    float screenDist = length((reflection.xy - uv) * (screenSize/2.0));
+                    float maxLod = max(log2(minOf(ap.game.screenSize)) - 2.0, 0.0);
+                    float screenDist = length((reflection.xy - uv) * (ap.game.screenSize/2.0));
                     float roughMip = min(roughness * min(log2(screenDist + 1.0), 6.0), maxLod);
                     vec3 reflectColor = GetRelectColor(texFinalPrevious, reflection.xy, reflection.a, roughMip);
 

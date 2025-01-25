@@ -129,11 +129,11 @@ void main() {
             unjitter(ndcPosTrans);
         #endif
 
-        vec3 viewPosOpaque = unproject(playerProjectionInverse, ndcPosOpaque);
-        vec3 localPosOpaque = mul3(playerModelViewInverse, viewPosOpaque);
+        vec3 viewPosOpaque = unproject(ap.camera.projectionInv, ndcPosOpaque);
+        vec3 localPosOpaque = mul3(ap.camera.viewInv, viewPosOpaque);
 
-        vec3 viewPosTrans = unproject(playerProjectionInverse, ndcPosTrans);
-        vec3 localPosTrans = mul3(playerModelViewInverse, viewPosTrans);
+        vec3 viewPosTrans = unproject(ap.camera.projectionInv, ndcPosTrans);
+        vec3 localPosTrans = mul3(ap.camera.viewInv, viewPosTrans);
 
         albedo.rgb = RgbToLinear(albedo.rgb);
 
@@ -164,7 +164,7 @@ void main() {
         #ifdef SHADOWS_ENABLED
             const float shadowPixelSize = 1.0 / shadowMapResolution;
 
-            vec3 shadowViewPos = mul3(shadowModelView, localPosTrans);
+            vec3 shadowViewPos = mul3(ap.celestial.view, localPosTrans);
             const float shadowRadius = 2.0*shadowPixelSize;
 
             int shadowCascade;
@@ -234,7 +234,7 @@ void main() {
         vec3 diffuse = skyLightDiffuse + blockLighting + 0.0016 * occlusion;
 
         #ifdef ACCUM_ENABLED
-            bool altFrame = (frameCounter % 2) == 1;
+            bool altFrame = (ap.frame.counter % 2) == 1;
             diffuse += textureLod(altFrame ? texDiffuseAccum_alt : texDiffuseAccum, uv, 0).rgb;
         #endif
 
@@ -278,11 +278,11 @@ void main() {
             //float viewDist = length(viewPosTrans);
             vec3 reflectLocalPos = fma(reflectLocalDir, vec3(0.5*viewDist), localPosTrans);
 
-            vec3 reflectViewStart = mul3(lastPlayerModelView, localPosTrans);
-            vec3 reflectViewEnd = mul3(lastPlayerModelView, reflectLocalPos);
+            vec3 reflectViewStart = mul3(ap.temporal.view, localPosTrans);
+            vec3 reflectViewEnd = mul3(ap.temporal.view, reflectLocalPos);
 
-            vec3 reflectNdcStart = unproject(lastPlayerProjection, reflectViewStart);
-            vec3 reflectNdcEnd = unproject(lastPlayerProjection, reflectViewEnd);
+            vec3 reflectNdcStart = unproject(ap.temporal.projection, reflectViewStart);
+            vec3 reflectNdcEnd = unproject(ap.temporal.projection, reflectViewEnd);
 
             vec3 reflectRay = normalize(reflectNdcEnd - reflectNdcStart);
 
@@ -290,8 +290,8 @@ void main() {
             reflection = GetReflectionPosition(mainDepthTex, clipPos, reflectRay);
 
             #ifdef LIGHTING_REFLECT_NOISE
-                float maxLod = max(log2(minOf(screenSize)) - 2.0, 0.0);
-                float screenDist = length((reflection.xy - uv) * screenSize);
+                float maxLod = max(log2(minOf(ap.game.screenSize)) - 2.0, 0.0);
+                float screenDist = length((reflection.xy - uv) * ap.game.screenSize);
                 float roughMip = min(roughness * min(log2(screenDist + 1.0), 6.0), maxLod);
             #else
                 const float roughMip = 0.0;
@@ -316,7 +316,7 @@ void main() {
         //finalColor.a = min(finalColor.a + maxOf(specular), 1.0);
 
         // Refraction
-        vec3 refractViewNormal = mat3(playerModelView) * (localTexNormal - localGeoNormal);
+        vec3 refractViewNormal = mat3(ap.camera.view) * (localTexNormal - localGeoNormal);
 
         const float refractEta = (IOR_AIR/IOR_WATER);
         const vec3 refractViewDir = vec3(0.0, 0.0, 1.0);
@@ -325,7 +325,7 @@ void main() {
         float linearDist = length(localPosOpaque - localPosTrans);
 
         vec2 refractMax = vec2(0.2);
-        refractMax.x *= screenSize.x / screenSize.y;
+        refractMax.x *= ap.game.screenSize.x / ap.game.screenSize.y;
         vec2 refraction = clamp(vec2(0.025 * linearDist), -refractMax, refractMax) * refractDir.xy;
 
         const int REFRACTION_STEPS = 8;

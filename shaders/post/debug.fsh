@@ -69,7 +69,7 @@ void main() {
     vec3 color = texelFetch(texFinal, iuv, 0).rgb;
     vec2 previewCoord, previewCoord2;
     
-    if (!guiHidden) {
+    if (!ap.game.guiHidden) {
         previewCoord = (uv - 0.01) / vec2(0.25);
         previewCoord2 = (uv - vec2(0.27, 0.01)) / vec2(0.25);
 
@@ -129,7 +129,7 @@ void main() {
             previewCoord = (uv - 0.01) / vec2(0.25, 0.1);
             if (clamp(previewCoord, 0.0, 1.0) == previewCoord) {
                 uint sampleVal = textureLod(texHistogram_debug, previewCoord, 0).r;
-                color = vec3(step(previewCoord.y*previewCoord.y, sampleVal / (screenSize.x*screenSize.y)));
+                color = vec3(step(previewCoord.y*previewCoord.y, sampleVal / (ap.game.screenSize.x*ap.game.screenSize.y)));
             }
 
             previewCoord = (uv - vec2(0.27, 0.01)) / vec2(0.04, 0.1);
@@ -154,7 +154,7 @@ void main() {
 //        }
     }
 
-    beginText(ivec2(gl_FragCoord.xy * 0.5), ivec2(4, screenSize.y/2 - 24));
+    beginText(ivec2(gl_FragCoord.xy * 0.5), ivec2(4, ap.game.screenSize.y/2 - 24));
 
     text.bgCol = vec4(0.0, 0.0, 0.0, 0.6);
     text.fgCol = vec4(1.0, 1.0, 1.0, 1.0);
@@ -165,7 +165,7 @@ void main() {
     // // printLine();
 
 //     printString((_F, _r, _a, _m, _e, _colon, _space));
-//     printUnsignedInt(frameCounter);
+//     printUnsignedInt(ap.frame.counter);
 //     printLine();
 
     #if LIGHTING_MODE == LIGHT_MODE_RT

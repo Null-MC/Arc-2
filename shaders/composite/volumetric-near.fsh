@@ -60,6 +60,12 @@ void main() {
         float dither = InterleavedGradientNoise(gl_FragCoord.xy);
     #endif
 
+    vec3 ndcPos = vec3(uv, depth) * 2.0 - 1.0;
+    vec3 viewPos = unproject(ap.camera.projectionInv, ndcPos);
+    vec3 localPos = mul3(ap.camera.viewInv, viewPos);
+
+    float len = length(localPos);
+
     float phase_gF, phase_gB, phase_gM;
     vec3 scatterF, transmitF;
     vec3 sampleAmbient = vec3(0.0);
@@ -85,12 +91,6 @@ void main() {
     }
 
 //    sampleAmbient *= phaseIso * Scene_SkyBrightnessSmooth;
-
-    vec3 ndcPos = vec3(uv, depth) * 2.0 - 1.0;
-    vec3 viewPos = unproject(ap.camera.projectionInv, ndcPos);
-    vec3 localPos = mul3(ap.camera.viewInv, viewPos);
-
-    float len = length(localPos);
     float far = ap.camera.far * 0.5;
 
     vec3 traceEnd = localPos;
@@ -194,9 +194,9 @@ void main() {
         vec3 sunSkyLight = SUN_BRIGHTNESS * sunTransmit * 4.0;
         vec3 moonSkyLight = MOON_BRIGHTNESS * moonTransmit * 4.0;
 
-        float sampleDensity = 4.0 * stepDist;
+        float sampleDensity = 1.0;
         if (ap.camera.fluid != 1) {
-            sampleDensity = stepDist * GetSkyDensity(sampleLocalPos) * 0.0001;
+            sampleDensity = GetSkyDensity(sampleLocalPos) * 0.0001;
 
             #ifdef CLOUDS_ENABLED
                 float sampleHeight = sampleLocalPos.y+ap.camera.pos.y;
@@ -271,16 +271,16 @@ void main() {
 
 
 
-        vec3 scatteringIntegral, sampleTransmittance, inScattering;
+        vec3 scatteringIntegral, sampleTransmittance, inScattering, extinction;
         if (ap.camera.fluid != 1) {
             vec3 skyPos = getSkyPosition(sampleLocalPos);
             //sampleDensity *= 0.001;
 
             float mieScattering;
             vec3 rayleighScattering;//, extinction;
-            getScatteringValues(skyPos, rayleighScattering, mieScattering, transmitF);
+            getScatteringValues(skyPos, rayleighScattering, mieScattering, extinction);
 
-            sampleTransmittance = exp(-sampleDensity * transmitF);
+            sampleTransmittance = exp(-sampleDensity * stepDist * extinction);
 
             vec3 psiMS = SKY_LUMINANCE * Scene_SkyBrightnessSmooth * getValFromMultiScattLUT(texSkyMultiScatter, skyPos, Scene_LocalSunDir);
 
@@ -293,12 +293,14 @@ void main() {
             vec3 sampleColor = (phase_sun * sunSkyLight) + (phase_moon * moonSkyLight);
             sampleLit += fma(sampleColor, shadowSample, sampleAmbient);
 
-            sampleTransmittance = exp(-sampleDensity * transmitF);
+            extinction = transmitF + scatterF;
+
+            sampleTransmittance = exp(-sampleDensity * stepDist * extinction);
 
             inScattering = scatterF * sampleLit * sampleDensity;
         }
 
-        scatteringIntegral = (inScattering - inScattering * sampleTransmittance) / transmitF;
+        scatteringIntegral = (inScattering - inScattering * sampleTransmittance) / extinction;
 
         scattering += scatteringIntegral * transmittance;
         transmittance *= sampleTransmittance;

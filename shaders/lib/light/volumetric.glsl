@@ -12,8 +12,8 @@ const float VL_WaterPhaseB = -0.14;
 const float VL_WaterPhaseM =  0.65;
 
 vec3 VL_WaterScatter = 0.006 * RgbToLinear(vec3(0.545, 0.682, 0.69));
-vec3 VL_WaterTransmit = 0.2 * RgbToLinear(1.0 - vec3(0.455, 0.529, 0.69));
-vec3 VL_WaterAmbient = 0.2*RgbToLinear(vec3(0.384, 0.435, 0.471));
+vec3 VL_WaterTransmit = RgbToLinear(1.0 - vec3(0.447, 0.627, 0.741));
+vec3 VL_WaterAmbient = 4.0*RgbToLinear(vec3(0.471, 0.729, 0.749));
 
 const float AirDensityF = SKY_FOG_DENSITY * 0.01;
 

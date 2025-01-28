@@ -17,6 +17,7 @@ uniform sampler2D texSkyTransmit;
 uniform sampler2D texSkyIrradiance;
 
 uniform sampler2D texFinalPrevious;
+uniform sampler2D texBloom;
 
 #ifdef SHADOWS_ENABLED
     uniform sampler2DArray shadowMap;
@@ -99,6 +100,8 @@ void iris_emitFragment() {
     vec2 uv = gl_FragCoord.xy / ap.game.screenSize;
     finalColor.rgb = textureLod(texFinalPrevious, uv, lod).rgb;
     finalColor.a = 1.0;
+
+    finalColor.rgb += textureLod(texBloom, uv, 0).rgb;
 
     vec3 localViewDir = normalize(vIn.localPos);
     float VoLm_sun = max(dot(localViewDir, Scene_LocalSunDir), 0.0);

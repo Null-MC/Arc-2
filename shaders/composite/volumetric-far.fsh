@@ -164,9 +164,9 @@ void main() {
             vec3 sunSkyLight = SUN_BRIGHTNESS * sunTransmit;
             vec3 moonSkyLight = MOON_BRIGHTNESS * moonTransmit;
 
-            float sampleDensity = 4.0 * stepDist;
+            float sampleDensity = 1.0;
             if (!isWater) {
-                sampleDensity = stepDist * GetSkyDensity(sampleLocalPos) * 0.0001;
+                sampleDensity = GetSkyDensity(sampleLocalPos) * 0.0001;
 
 //                float worldY = sampleLocalPos.y + ap.camera.pos.y;
 //                float lightAtmosDist = max(SKY_SEA_LEVEL + 200.0 - worldY, 0.0) / Scene_LocalLightDir.y;
@@ -192,16 +192,16 @@ void main() {
 
 
 
-            vec3 scatteringIntegral, sampleTransmittance, inScattering;
+            vec3 scatteringIntegral, sampleTransmittance, inScattering, extinction;
             if (!isWater) {
                 vec3 skyPos = getSkyPosition(sampleLocalPos);
                 //sampleDensity *= 0.001;
 
                 float mieScattering;
                 vec3 rayleighScattering;//, extinction;
-                getScatteringValues(skyPos, rayleighScattering, mieScattering, transmitF);
+                getScatteringValues(skyPos, rayleighScattering, mieScattering, extinction);
 
-                sampleTransmittance = exp(-sampleDensity * transmitF);
+                sampleTransmittance = exp(-sampleDensity * stepDist * extinction);
 
                 vec3 psiMS = SKY_LUMINANCE * Scene_SkyBrightnessSmooth * getValFromMultiScattLUT(texSkyMultiScatter, skyPos, Scene_LocalSunDir);
 
@@ -214,12 +214,14 @@ void main() {
                 vec3 sampleColor = (phase_sun * sunSkyLight) + (phase_moon * moonSkyLight);
                 sampleLit += fma(sampleColor, shadowSample, sampleAmbient);
 
-                sampleTransmittance = exp(-sampleDensity * transmitF);
+                extinction = transmitF + scatterF;
+
+                sampleTransmittance = exp(-sampleDensity * stepDist * extinction);
 
                 inScattering = scatterF * sampleLit * sampleDensity;
             }
 
-            scatteringIntegral = (inScattering - inScattering * sampleTransmittance) / transmitF;
+            scatteringIntegral = (inScattering - inScattering * sampleTransmittance) / extinction;
 
             scattering += scatteringIntegral * transmittance;
             transmittance *= sampleTransmittance;

@@ -21,7 +21,7 @@ in VertexData2 {
     vec4 localTangent;
     flat uint blockId;
 
-    #if defined RENDER_TRANSLUCENT && defined WATER_TESSELLATION_ENABLED
+    #if defined(RENDER_TERRAIN) && defined(RENDER_TRANSLUCENT) && defined(WATER_TESSELLATION_ENABLED)
         vec3 surfacePos;
     #endif
 
@@ -44,7 +44,7 @@ in VertexData2 {
     #include "/lib/material/parallax.glsl"
 #endif
 
-#ifdef RENDER_TRANSLUCENT
+#if defined(RENDER_TERRAIN) && defined(RENDER_TRANSLUCENT)
     #include "/lib/water_waves.glsl"
 #endif
 
@@ -146,7 +146,7 @@ void iris_emitFragment() {
         localTexNormal = normalize(TBN * localTexNormal);
     #endif
 
-    #ifdef RENDER_TRANSLUCENT
+    #if defined(RENDER_TERRAIN) && defined(RENDER_TRANSLUCENT)
         // isWater = bitfieldExtract(vIn.material, 6, 1) != 0;
         bool is_fluid = iris_hasFluid(vIn.blockId);
 

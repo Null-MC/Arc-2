@@ -584,50 +584,31 @@ function setupShader() {
 
     registerBarrier(Stage.PRE_RENDER, new MemoryBarrier(SSBO_BIT));
 
+    function shadowShader(name: string, usage: ProgramUsage) : ObjectShader {
+        return new ObjectShader(name, usage)
+            .vertex("gbuffer/shadow.vsh")
+            .geometry("gbuffer/shadow.gsh")
+            .fragment("gbuffer/shadow.fsh")
+            .target(0, texShadowColor)
+            // .blendFunc(0, Func.ONE, Func.ZERO, Func.ONE, Func.ZERO)
+            .target(1, texShadowNormal);
+    }
+
+    function shadowTerrainShader(name: string, usage: ProgramUsage) : ObjectShader {
+        return shadowShader(name, usage)
+            .ssbo(3, lightListBuffer)
+            .ssbo(4, triangleListBuffer)
+            .define("RENDER_TERRAIN", "1");
+    }
+
     if (Settings.Shadows.Enabled) {
-        registerShader(new ObjectShader("shadow", Usage.SHADOW)
-            .vertex("gbuffer/shadow.vsh")
-            .geometry("gbuffer/shadow.gsh")
-            .fragment("gbuffer/shadow.fsh")
-            .target(0, texShadowColor)
-            // .blendFunc(0, Func.ONE, Func.ZERO, Func.ONE, Func.ZERO)
-            .target(1, texShadowNormal)
-            .build());
+        registerShader(shadowShader("shadow", Usage.SHADOW).build());
 
-        registerShader(new ObjectShader("shadow-terrain-solid", Usage.SHADOW_TERRAIN_SOLID)
-            .vertex("gbuffer/shadow.vsh")
-            .geometry("gbuffer/shadow.gsh")
-            .fragment("gbuffer/shadow.fsh")
-            .target(0, texShadowColor)
-            // .blendFunc(0, Func.ONE, Func.ZERO, Func.ONE, Func.ZERO)
-            .target(1, texShadowNormal)
-            .ssbo(3, lightListBuffer)
-            .ssbo(4, triangleListBuffer)
-            .define("RENDER_TERRAIN", "1")
-            .build());
+        registerShader(shadowTerrainShader("shadow-terrain-solid", Usage.SHADOW_TERRAIN_SOLID).build());
 
-        registerShader(new ObjectShader("shadow-terrain-cutout", Usage.SHADOW_TERRAIN_CUTOUT)
-            .vertex("gbuffer/shadow.vsh")
-            .geometry("gbuffer/shadow.gsh")
-            .fragment("gbuffer/shadow.fsh")
-            .target(0, texShadowColor)
-            // .blendFunc(0, Func.ONE, Func.ZERO, Func.ONE, Func.ZERO)
-            .target(1, texShadowNormal)
-            .ssbo(3, lightListBuffer)
-            .ssbo(4, triangleListBuffer)
-            .define("RENDER_TERRAIN", "1")
-            .build());
+        registerShader(shadowTerrainShader("shadow-terrain-cutout", Usage.SHADOW_TERRAIN_CUTOUT).build());
 
-        registerShader(new ObjectShader("shadow-terrain-translucent", Usage.SHADOW_TERRAIN_TRANSLUCENT)
-            .vertex("gbuffer/shadow.vsh")
-            .geometry("gbuffer/shadow.gsh")
-            .fragment("gbuffer/shadow.fsh")
-            .target(0, texShadowColor)
-            // .blendFunc(0, Func.ONE, Func.ZERO, Func.ONE, Func.ZERO)
-            .target(1, texShadowNormal)
-            .ssbo(3, lightListBuffer)
-            .ssbo(4, triangleListBuffer)
-            .define("RENDER_TERRAIN", "1")
+        registerShader(shadowTerrainShader("shadow-terrain-translucent", Usage.SHADOW_TERRAIN_TRANSLUCENT)
             .define("RENDER_TRANSLUCENT", "1")
             .build());
     }
@@ -648,50 +629,44 @@ function setupShader() {
         .ssbo(0, sceneBuffer)
         .build());
 
-    registerShader(new ObjectShader("terrain", Usage.BASIC)
-        .vertex("gbuffer/main.vsh")
-        .fragment("gbuffer/main.fsh")
-        .target(0, texDeferredOpaque_Color)
-        // .blendFunc(0, FUNC_SRC_ALPHA, FUNC_ONE_MINUS_SRC_ALPHA, FUNC_ONE, FUNC_ZERO)
-        .target(1, texDeferredOpaque_TexNormal)
-        // .blendFunc(1, FUNC_ONE, FUNC_ZERO, FUNC_ONE, FUNC_ZERO)
-        .target(2, texDeferredOpaque_Data)
-        // .blendFunc(2, FUNC_ONE, FUNC_ZERO, FUNC_ONE, FUNC_ZERO)
-        .build());
+    function _mainShader(name: string, usage: ProgramUsage) : ObjectShader {
+        return new ObjectShader(name, usage)
+            .vertex("gbuffer/main.vsh")
+            .fragment("gbuffer/main.fsh");
+    }
 
-    registerShader(new ObjectShader("terrain", Usage.TERRAIN_SOLID)
-        .vertex("gbuffer/main.vsh")
-        .fragment("gbuffer/main.fsh")
-        .target(0, texDeferredOpaque_Color)
-        // .blendFunc(0, FUNC_SRC_ALPHA, FUNC_ONE_MINUS_SRC_ALPHA, FUNC_ONE, FUNC_ZERO)
-        .target(1, texDeferredOpaque_TexNormal)
-        // .blendFunc(1, FUNC_ONE, FUNC_ZERO, FUNC_ONE, FUNC_ZERO)
-        .target(2, texDeferredOpaque_Data)
-        // .blendFunc(2, FUNC_ONE, FUNC_ZERO, FUNC_ONE, FUNC_ZERO)
+    function mainShaderOpaque(name: string, usage: ProgramUsage) : ObjectShader {
+        return _mainShader(name, usage)
+            .target(0, texDeferredOpaque_Color)
+            // .blendFunc(0, FUNC_SRC_ALPHA, FUNC_ONE_MINUS_SRC_ALPHA, FUNC_ONE, FUNC_ZERO)
+            .target(1, texDeferredOpaque_TexNormal)
+            // .blendFunc(1, FUNC_ONE, FUNC_ZERO, FUNC_ONE, FUNC_ZERO)
+            .target(2, texDeferredOpaque_Data);
+            // .blendFunc(2, FUNC_ONE, FUNC_ZERO, FUNC_ONE, FUNC_ZERO)
+    }
+
+    function mainShaderTranslucent(name: string, usage: ProgramUsage) : ObjectShader {
+        return _mainShader(name, usage)
+            .target(0, texDeferredTrans_Color)
+            // .blendFunc(0, FUNC_SRC_ALPHA, FUNC_ONE_MINUS_SRC_ALPHA, FUNC_ONE, FUNC_ZERO)
+            .target(1, texDeferredTrans_TexNormal)
+            // .blendFunc(1, FUNC_ONE, FUNC_ZERO, FUNC_ONE, FUNC_ZERO)
+            .target(2, texDeferredTrans_Data)
+            // .blendFunc(2, FUNC_ONE, FUNC_ZERO, FUNC_ONE, FUNC_ZERO)
+            .define("RENDER_TRANSLUCENT", "1");
+    }
+
+    registerShader(mainShaderOpaque("basic", Usage.BASIC).build());
+
+    registerShader(mainShaderOpaque("terrain-solid", Usage.TERRAIN_SOLID)
         .define("RENDER_TERRAIN", "1")
         .build());
 
-    registerShader(new ObjectShader("terrain", Usage.TERRAIN_CUTOUT)
-        .vertex("gbuffer/main.vsh")
-        .fragment("gbuffer/main.fsh")
-        .target(0, texDeferredOpaque_Color)
-        // .blendFunc(0, FUNC_SRC_ALPHA, FUNC_ONE_MINUS_SRC_ALPHA, FUNC_ONE, FUNC_ZERO)
-        .target(1, texDeferredOpaque_TexNormal)
-        // .blendFunc(1, FUNC_ONE, FUNC_ZERO, FUNC_ONE, FUNC_ZERO)
-        .target(2, texDeferredOpaque_Data)
-        // .blendFunc(2, FUNC_ONE, FUNC_ZERO, FUNC_ONE, FUNC_ZERO)
+    registerShader(mainShaderOpaque("terrain-cutout", Usage.TERRAIN_CUTOUT)
         .define("RENDER_TERRAIN", "1")
         .build());
 
-    const waterShader = new ObjectShader("water", Usage.TERRAIN_TRANSLUCENT)
-        .vertex("gbuffer/main.vsh")
-        .fragment("gbuffer/main.fsh")
-        .target(0, texDeferredTrans_Color)
-        // .blendFunc(0, FUNC_SRC_ALPHA, FUNC_ONE_MINUS_SRC_ALPHA, FUNC_ONE, FUNC_ZERO)
-        .target(1, texDeferredTrans_TexNormal)
-        .target(2, texDeferredTrans_Data)
-        // .blendFunc(2, FUNC_ONE, FUNC_ZERO, FUNC_ONE, FUNC_ZERO)
-        .define("RENDER_TRANSLUCENT", "1")
+    const waterShader = mainShaderTranslucent("terrain-translucent", Usage.TERRAIN_TRANSLUCENT)
         .define("RENDER_TERRAIN", "1");
 
     if (Settings.Water.Waves && Settings.Water.Tessellation) {
@@ -701,6 +676,18 @@ function setupShader() {
     }
 
     registerShader(waterShader.build());
+
+    registerShader(mainShaderOpaque("entity-solid", Usage.ENTITY_SOLID)
+        .define("RENDER_ENTITY", "1")
+        .build());
+
+    registerShader(mainShaderOpaque("entity-cutout", Usage.ENTITY_CUTOUT)
+        .define("RENDER_ENTITY", "1")
+        .build());
+
+    registerShader(mainShaderTranslucent("entity-translucent", Usage.ENTITY_TRANSLUCENT)
+        .define("RENDER_ENTITY", "1")
+        .build());
 
     registerShader(new ObjectShader("weather", Usage.WEATHER)
         .vertex("gbuffer/weather.vsh")

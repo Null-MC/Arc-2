@@ -1,17 +1,17 @@
 // Units are in megameters.
-const float groundRadiusMM = 6.360;
-const float atmosphereRadiusMM = 6.420;
+const float groundRadiusMM = 6.371;
+const float atmosphereRadiusMM = 6.471;
 
 const vec3 groundAlbedo = vec3(0.3);
 
 // These are per megameter.
-const vec3 rayleighScatteringBase = vec3(5.802, 13.558, 33.1);
+const vec3 rayleighScatteringBase = vec3(6.605, 12.344, 29.412);
 const float rayleighAbsorptionBase = 0.0;
 
 const float mieScatteringBase = 3.996;
 const float mieAbsorptionBase = 4.4;
 
-const vec3 ozoneAbsorptionBase = vec3(0.650, 1.881, .085);
+const vec3 ozoneAbsorptionBase = vec3(2.290, 1.540, 0.000)*1e-3;
 
 
 float safeacos(const float x) {

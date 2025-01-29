@@ -21,7 +21,7 @@ void main() {
     
     ApplyAutoExposure(color, Scene_AvgExposure);
 
-    color = PurkinjeShift(color, PurkinjeStrength);
+    //color = PurkinjeShift(color, PurkinjeStrength);
 
     color = tonemap_Lottes(color);
 

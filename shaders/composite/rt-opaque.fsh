@@ -288,6 +288,7 @@ void main() {
 
                 vec4 reflection = vec4(0.0);
                 vec3 reflect_tint = vec3(1.0);
+                float reflect_mip = 0.0;
 
                 vec2 reflect_uv, reflect_lmcoord;
                 vec3 reflect_voxelPos, reflect_geoNormal;
@@ -330,7 +331,8 @@ void main() {
                             iris_TextureInfo tex = iris_getTexture(blockFace.tex_id);
                             reflect_uv = 0.5 * (tex.minCoord + tex.maxCoord);
 
-                            vec3 reflectColor = textureLod(blockAtlas, reflect_uv, 4).rgb;
+                            reflect_mip = 4.0;
+                            vec3 reflectColor = textureLod(blockAtlas, reflect_uv, reflect_mip).rgb;
                             reflection = vec4(reflectColor, 1.0);
                         }
                     #endif
@@ -338,8 +340,8 @@ void main() {
 
                 if (reflection.a > 0.0) {
                     #if MATERIAL_FORMAT != MAT_NONE
-                        vec4 reflect_normalData = textureLod(blockAtlasN, reflect_uv, 0);
-                        vec4 reflect_specularData = textureLod(blockAtlasS, reflect_uv, 0);
+                        vec4 reflect_normalData = textureLod(blockAtlasN, reflect_uv, reflect_mip);
+                        vec4 reflect_specularData = textureLod(blockAtlasS, reflect_uv, reflect_mip);
                     #endif
 
                     reflection.rgb *= reflect_tint;

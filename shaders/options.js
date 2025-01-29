@@ -50,7 +50,7 @@ function setupOptions() {
             .add(asInt("RT_MAX_SAMPLE_COUNT", 2, 4, 8, 12, 16, 20, 24, 28, 32, 48, 64, 0).build(8))
             .add(asBool("LIGHTING_TRACE_TRIANGLE", false))
             .build())
-        .add(asBool("LPV_RSM_ENABLED", true))
+        .add(asBool("LPV_RSM_ENABLED", false))
         .add(new Page("Reflections")
             .add(asInt("LIGHTING_REFLECT_MODE", 0, 1, 2).build(1))
             .add(asBool("LIGHTING_REFLECT_NOISE", true))

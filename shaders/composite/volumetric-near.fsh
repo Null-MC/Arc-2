@@ -258,19 +258,22 @@ void main() {
                 #endif
             #endif
 
-             vec3 local_skyPos = sampleLocalPos + ap.camera.pos;
-             local_skyPos.y -= SKY_SEA_LEVEL;
-             local_skyPos /= 200.0;//(ATMOSPHERE_MAX - SKY_SEA_LEVEL);
-             local_skyPos.xz /= (256.0/32.0);// * 4.0;
+//            #define FOG_NOISE
+            #ifdef FOG_NOISE
+                vec3 local_skyPos = sampleLocalPos + ap.camera.pos;
+                local_skyPos.y -= SKY_SEA_LEVEL;
+                local_skyPos /= 200.0;//(ATMOSPHERE_MAX - SKY_SEA_LEVEL);
+                local_skyPos.xz /= (256.0/32.0);// * 4.0;
 
-             float fogNoise = 0.0;
-             fogNoise = textureLod(texFogNoise, local_skyPos, 0).r;
-             fogNoise *= 1.0 - textureLod(texFogNoise, local_skyPos * 0.33, 0).r;
-             fogNoise = pow(fogNoise, 3);
+                float fogNoise = 0.0;
+                fogNoise = textureLod(texFogNoise, local_skyPos, 0).r;
+                fogNoise *= 1.0 - textureLod(texFogNoise, local_skyPos * 0.33, 0).r;
+                fogNoise = pow(fogNoise, 3);
 
-             fogNoise *= 80.0;
+                fogNoise *= 80.0;
 
-             sampleDensity = sampleDensity * fogNoise + sampleDensity; //pow(fogNoise, 4.0) * 20.0;
+                sampleDensity = sampleDensity * fogNoise + sampleDensity; //pow(fogNoise, 4.0) * 20.0;
+            #endif
         }
 
         vec3 sampleLit = vec3(0.0);

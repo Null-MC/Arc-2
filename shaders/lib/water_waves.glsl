@@ -4,9 +4,9 @@ const float DRAG_MULT = 0.09;
 
 const float WaterWaveSurfaceOffset = 0.6;
 const int WaterWaveOctaveMin = 15;
-const int WaterWaveOctaveMax = 15;
+const int WaterWaveOctaveMax = 20;
 
-const vec3 WaterWaveScaleF = vec3(1.5, 3.0, 1.5);
+const vec3 WaterWaveScaleF = vec3(1.0, 1.0, 1.0);
 
 vec2 waveDx(const in vec2 position, const in vec2 direction, const in float frequency, const in float timeshift) {
     float x = dot(direction, position) * frequency + timeshift;

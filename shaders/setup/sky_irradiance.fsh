@@ -4,6 +4,7 @@ layout(location = 0) out vec4 outColor;
 
 in vec2 uv;
 
+uniform sampler2D texSkyTransmit;
 uniform sampler2D texSkyView;
 
 #include "/settings.glsl"
@@ -13,10 +14,11 @@ uniform sampler2D texSkyView;
 
 #include "/lib/sky/common.glsl"
 #include "/lib/sky/view.glsl"
+#include "/lib/sky/sun.glsl"
 
 
 vec3 CalculateIrradiance(const in vec3 normal) {
-    const float sampleDelta = 0.2;
+    const float sampleDelta = 0.025;
 
     vec3 up    = vec3(0.0, 1.0, 0.0);
     vec3 right = normalize(cross(up, normal));
@@ -27,7 +29,8 @@ vec3 CalculateIrradiance(const in vec3 normal) {
     vec3 skyPos = getSkyPosition(vec3(0.0));
 
     float nrSamples = 0.0;
-    vec3 irradiance = vec3(0.0);  
+    vec3 irradiance = vec3(0.0);
+
     for (float phi = 0.0; phi < TAU; phi += sampleDelta) {
         float cos_phi = cos(phi);
         float sin_phi = sin(phi);
@@ -48,14 +51,23 @@ vec3 CalculateIrradiance(const in vec3 normal) {
             // vec2 uv = DirectionToUV(sampleVec);
             // vec3 skyColor = textureLod(texSkyView, uv, 0).rgb;
 
-            vec3 skyColor = 20.0 * getValFromSkyLUT(texSkyView, skyPos, sampleVec, Scene_LocalSunDir);
+            vec3 skyColor = SKY_LUMINANCE * getValFromSkyLUT(texSkyView, skyPos, sampleVec, Scene_LocalSunDir);
+
+//            if (rayIntersectSphere(skyPos, sampleVec, groundRadiusMM) < 0.0) {
+//                float sunLum = SUN_LUMINANCE * sun(sampleVec, Scene_LocalSunDir);
+//                float moonLum = MOON_LUMINANCE * moon(sampleVec, -Scene_LocalSunDir);
+//
+//                vec3 skyTransmit = getValFromTLUT(texSkyTransmit, skyPos, sampleVec);
+//
+//                skyColor += (sunLum + moonLum) * skyTransmit;
+//            }
 
             irradiance += skyColor * (cos_theta * sin_theta);
             nrSamples++;
         }
     }
 
-    return PI * (irradiance / nrSamples);
+    return irradiance / nrSamples;
 }
 
 void main() {

@@ -233,12 +233,12 @@ void main() {
             vec3 voxelSamplePos = fma(localGeoNormal, vec3(0.5), voxelPos);
             vec3 voxelLight = sample_lpv_linear(voxelSamplePos, localTexNormal);
 
-            skyLightDiffuse += voxelLight * cloudShadowF * SampleLightDiffuse(NoVm, 1.0, 1.0, roughL);
+            skyLightDiffuse += voxelLight * cloudShadowF;// * SampleLightDiffuse(NoVm, 1.0, 1.0, roughL);
         #endif
 
         vec2 skyIrradianceCoord = DirectionToUV(localTexNormal);
         vec3 skyIrradiance = textureLod(texSkyIrradiance, skyIrradianceCoord, 0).rgb;
-        skyLightDiffuse += (SKY_AMBIENT * SKY_BRIGHTNESS * lmCoord.y) * skyIrradiance;
+        skyLightDiffuse += (SKY_AMBIENT * lmCoord.y) * skyIrradiance;
 
         skyLightDiffuse *= occlusion;
 
@@ -263,7 +263,7 @@ void main() {
         float metalness = mat_metalness(f0_metal);
         diffuse *= 1.0 - metalness * (1.0 - roughL);
 
-        diffuse *= fma(occlusion, 0.5, 0.5);
+        //diffuse *= fma(occlusion, 0.5, 0.5);
 
         #ifdef ACCUM_ENABLED
             // specular += textureLod(altFrame ? texSpecularAccum_alt : texSpecularAccum, uv, 0).rgb;

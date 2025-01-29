@@ -103,6 +103,8 @@ const ivec3 directions[] = {
 	void sample_shadow(vec3 localPos, out vec3 sample_color, out vec3 sample_normal) {
 		localPos += hash33(ap.camera.pos + localPos + (ap.frame.counter % 16));// - 0.5;
 
+		//localPos -= 0.5;
+
 		vec3 shadowViewPos = mul3(ap.celestial.view, localPos);
 
 		int shadowCascade;
@@ -116,12 +118,15 @@ const ivec3 directions[] = {
 		vec3 sample_ndcPos = vec3(shadowCoord.xy, shadowDepth) * 2.0 - 1.0;
 		vec3 sample_shadowViewPos = mul3(shadowProjectionInverse, sample_ndcPos);
 
-		shadowViewPos.z -= 3.0;
+		//shadowViewPos.z -= 2.0;
 		if (distance(shadowViewPos, sample_shadowViewPos) > 1.0) {
 			sample_color = vec3(0.0);
 			sample_normal = vec3(0.0);
 			return;
 		}
+
+		sample_normal = textureLod(texShadowNormal, vec3(shadowCoord.xy, shadowCascade), 0).rgb;
+		sample_normal = normalize(sample_normal * 2.0 - 1.0);
 
 		float sampleLit = max(dot(sample_normal, Scene_LocalLightDir), 0.0);
 
@@ -130,9 +135,6 @@ const ivec3 directions[] = {
 
 		sample_color = textureLod(texShadowColor, vec3(shadowCoord.xy, shadowCascade), 0).rgb;
 		sample_color = RgbToLinear(sample_color) * sampleLit;
-
-		sample_normal = textureLod(texShadowNormal, vec3(shadowCoord.xy, shadowCascade), 0).rgb;
-		sample_normal = normalize(sample_normal * 2.0 - 1.0);
 	}
 #endif
 
@@ -312,7 +314,7 @@ void main() {
 	        vec3 skyLight = SUN_BRIGHTNESS * sunTransmit + MOON_BRIGHTNESS * moonTransmit;
 
 			vec4 coeffs = dirToSH(sample_normal) / PI;
-			vec3 flux = exp2(13.0) * max(Scene_LocalSunDir.y, 0.0) * skyLight * sample_color;
+			vec3 flux = exp2(7.0) * max(Scene_LocalSunDir.y, 0.0) * skyLight * sample_color;
 
 			voxel_rsm_R += coeffs * flux.r;
 			voxel_rsm_G += coeffs * flux.g;

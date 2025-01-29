@@ -18,6 +18,7 @@ in VertexData2 {
     flat uint blockId;
 
     vec3 surfacePos;
+    float waveStrength;
 
 	#ifdef RENDER_PARALLAX
 		vec3 tangentViewPos;
@@ -37,6 +38,7 @@ out VertexData2 {
     flat uint blockId;
 
     vec3 surfacePos;
+    float waveStrength;
 
 	#ifdef RENDER_PARALLAX
 		vec3 tangentViewPos;
@@ -55,21 +57,23 @@ out VertexData2 {
 
 
 void main() {
-    gl_Position = _interpolate(gl_in[0].gl_Position, gl_in[1].gl_Position, gl_in[2].gl_Position);
+    gl_Position = _interpolate(gl_in, gl_Position);
 
-    vOut.uv = _interpolate(vIn[0].uv, vIn[1].uv, vIn[2].uv);
-    vOut.light = _interpolate(vIn[0].light, vIn[1].light, vIn[2].light);
-    vOut.color = _interpolate(vIn[0].color, vIn[1].color, vIn[2].color);
-    vOut.localPos = _interpolate(vIn[0].localPos, vIn[1].localPos, vIn[2].localPos);
-    vOut.localOffset = _interpolate(vIn[0].localOffset, vIn[1].localOffset, vIn[2].localOffset);
-    vOut.localNormal = _interpolate(vIn[0].localNormal, vIn[1].localNormal, vIn[2].localNormal);
-    vOut.localTangent = _interpolate(vIn[0].localTangent, vIn[1].localTangent, vIn[2].localTangent);
-    vOut.surfacePos = _interpolate(vIn[0].surfacePos, vIn[1].surfacePos, vIn[2].surfacePos);
+    vOut.uv = _interpolate(vIn, uv);
+    vOut.light = _interpolate(vIn, light);
+    vOut.color = _interpolate(vIn, color);
+    vOut.localPos = _interpolate(vIn, localPos);
+    vOut.localOffset = _interpolate(vIn, localOffset);
+    vOut.localNormal = _interpolate(vIn, localNormal);
+    vOut.localTangent = _interpolate(vIn, localTangent);
 
     vOut.blockId = vIn[0].blockId;
 
+    vOut.surfacePos = _interpolate(vIn, surfacePos);
+    vOut.waveStrength = _interpolate(vIn, waveStrength);
+
     #ifdef RENDER_PARALLAX
-        vOut.tangentViewPos = _interpolate(vIn[0].tangentViewPos, vIn[1].tangentViewPos, vIn[2].tangentViewPos);
+        vOut.tangentViewPos = _interpolate(vIn, tangentViewPos);
 
         vOut.atlasMinCoord = vIn[0].atlasMinCoord;
         vOut.atlasMaxCoord = vIn[0].atlasMaxCoord;
@@ -83,7 +87,7 @@ void main() {
         distF = 1.0 - (distF*distF);
         
         vec3 waveOffset = GetWaveHeight(ap.camera.pos + vOut.localPos, vOut.light.y, ap.frame.time, WaterWaveOctaveMin);
-        vOut.localPos.y += distF * waveOffset.y;
+        vOut.localPos.y += distF * waveOffset.y * vOut.waveStrength;
 
         vec3 viewPos = mul3(ap.camera.view, vOut.localPos);
         gl_Position = ap.camera.projection * vec4(viewPos, 1.0);

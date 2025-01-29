@@ -819,8 +819,8 @@ function setupShader() {
         .define("TEX_SHADOW", texShadow_src)
         .define("TEX_SSGIAO", "texSSGIAO_final");
 
-    if (Settings.Lighting.Reflections.Mode == ReflectMode_SSR)
-        compositeOpaqueShader.generateMips(texFinalPrevious);
+    // if (Settings.Lighting.Reflections.Mode == ReflectMode_SSR)
+    //     compositeOpaqueShader.generateMips(texFinalPrevious);
 
     if (Settings.Internal.LPV) {
         compositeOpaqueShader
@@ -862,6 +862,7 @@ function setupShader() {
             .fragment("post/taa.fsh")
             .target(0, texFinal)
             .target(1, texFinalPrevious)
+            .define("TEX_SRC", "texFinalOpaque")
             .build());
     }
     else {
@@ -872,6 +873,14 @@ function setupShader() {
             .target(0, texFinalPrevious)
             .build());
     }
+
+    registerShader(Stage.POST_RENDER, new Composite("blur-near")
+        .vertex("shared/bufferless.vsh")
+        .fragment("post/blur-near.fsh")
+        .target(0, texFinal)
+        .define("TEX_SRC", "texFinalPrevious")
+        .generateMips(texFinalPrevious)
+        .build());
 
     registerShader(Stage.POST_RENDER, new Compute("histogram")
         // .barrier(true)

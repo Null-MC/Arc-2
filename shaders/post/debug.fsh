@@ -18,6 +18,8 @@ uniform sampler2D texFinal;
 #elif DEBUG_VIEW == DEBUG_VIEW_VL
     uniform sampler2D texScatterVL;
     uniform sampler2D texTransmitVL;
+#elif DEBUG_VIEW == DEBUG_VIEW_SKY_IRRADIANCE
+    uniform sampler2D texSkyIrradiance;
 #endif
 
 #if DEBUG_MATERIAL != DEBUG_MAT_NONE
@@ -86,36 +88,40 @@ void main() {
                 color = tonemap_ACESFit2(color);
             #elif DEBUG_VIEW == DEBUG_VIEW_VL
                 color = textureLod(texScatterVL, previewCoord, 0).rgb;
+            #elif DEBUG_VIEW == DEBUG_VIEW_SKY_IRRADIANCE
+                color = textureLod(texSkyIrradiance, previewCoord, 0).rgb;
             #endif
 
-            #if DEBUG_MATERIAL == DEBUG_MAT_ALBEDO
-                color = textureLod(TEX_COLOR, previewCoord, 0).rgb;
-            #elif DEBUG_MATERIAL == DEBUG_MAT_GEO_NORMAL
-                uint data_r = textureLod(TEX_DATA, previewCoord, 0).r;
-                color = unpackUnorm4x8(data_r).rgb;
-            #elif DEBUG_MATERIAL == DEBUG_MAT_TEX_NORMAL
-                color = textureLod(TEX_NORMAL, previewCoord, 0).rgb;
-            #elif DEBUG_MATERIAL == DEBUG_MAT_OCCLUSION
-                uint data_b = textureLod(TEX_DATA, previewCoord, 0).b;
-                color = unpackUnorm4x8(data_b).bbb;
-            #elif DEBUG_MATERIAL == DEBUG_MAT_ROUGH
-                uint data_g = textureLod(TEX_DATA, previewCoord, 0).g;
-                color = unpackUnorm4x8(data_g).rrr;
-            #elif DEBUG_MATERIAL == DEBUG_MAT_F0_METAL
-                uint data_g = textureLod(TEX_DATA, previewCoord, 0).g;
-                color = unpackUnorm4x8(data_g).ggg;
-            #elif DEBUG_MATERIAL == DEBUG_MAT_POROSITY
-                //uint data_g = textureLod(TEX_DATA, previewCoord, 0).g;
-                //color = unpackUnorm4x8(data_g).ggg;
-            #elif DEBUG_MATERIAL == DEBUG_MAT_SSS
-                uint data_g = textureLod(TEX_DATA, previewCoord, 0).g;
-                color = unpackUnorm4x8(data_g).aaa;
-            #elif DEBUG_MATERIAL == DEBUG_MAT_EMISSION
-                uint data_g = textureLod(TEX_DATA, previewCoord, 0).g;
-                color = unpackUnorm4x8(data_g).bbb;
-            #elif DEBUG_MATERIAL == DEBUG_MAT_LMCOORD
-                uint data_b = textureLod(TEX_DATA, previewCoord, 0).b;
-                color = vec3(unpackUnorm4x8(data_b).xy, 0.0).xzy;
+            #if DEBUG_VIEW == DEBUG_VIEW_MATERIAL
+                #if DEBUG_MATERIAL == DEBUG_MAT_ALBEDO
+                    color = textureLod(TEX_COLOR, previewCoord, 0).rgb;
+                #elif DEBUG_MATERIAL == DEBUG_MAT_GEO_NORMAL
+                    uint data_r = textureLod(TEX_DATA, previewCoord, 0).r;
+                    color = unpackUnorm4x8(data_r).rgb;
+                #elif DEBUG_MATERIAL == DEBUG_MAT_TEX_NORMAL
+                    color = textureLod(TEX_NORMAL, previewCoord, 0).rgb;
+                #elif DEBUG_MATERIAL == DEBUG_MAT_OCCLUSION
+                    uint data_b = textureLod(TEX_DATA, previewCoord, 0).b;
+                    color = unpackUnorm4x8(data_b).bbb;
+                #elif DEBUG_MATERIAL == DEBUG_MAT_ROUGH
+                    uint data_g = textureLod(TEX_DATA, previewCoord, 0).g;
+                    color = unpackUnorm4x8(data_g).rrr;
+                #elif DEBUG_MATERIAL == DEBUG_MAT_F0_METAL
+                    uint data_g = textureLod(TEX_DATA, previewCoord, 0).g;
+                    color = unpackUnorm4x8(data_g).ggg;
+                #elif DEBUG_MATERIAL == DEBUG_MAT_POROSITY
+                    //uint data_g = textureLod(TEX_DATA, previewCoord, 0).g;
+                    //color = unpackUnorm4x8(data_g).ggg;
+                #elif DEBUG_MATERIAL == DEBUG_MAT_SSS
+                    uint data_g = textureLod(TEX_DATA, previewCoord, 0).g;
+                    color = unpackUnorm4x8(data_g).aaa;
+                #elif DEBUG_MATERIAL == DEBUG_MAT_EMISSION
+                    uint data_g = textureLod(TEX_DATA, previewCoord, 0).g;
+                    color = unpackUnorm4x8(data_g).bbb;
+                #elif DEBUG_MATERIAL == DEBUG_MAT_LMCOORD
+                    uint data_b = textureLod(TEX_DATA, previewCoord, 0).b;
+                    color = vec3(unpackUnorm4x8(data_b).xy, 0.0).xzy;
+                #endif
             #endif
         }
 

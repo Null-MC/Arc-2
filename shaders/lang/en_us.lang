@@ -85,6 +85,7 @@ value.DEBUG_VIEW.3=SSS
 value.DEBUG_VIEW.4=SSAO
 value.DEBUG_VIEW.5=SSGI
 value.DEBUG_VIEW.6=VL
+value.DEBUG_VIEW.7=Sky Irradiance
 
 option.DEBUG_MATERIAL=Material
 value.DEBUG_MATERIAL.0=None

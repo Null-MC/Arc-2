@@ -23,6 +23,7 @@ in VertexData2 {
 
     #if defined(RENDER_TERRAIN) && defined(RENDER_TRANSLUCENT) && defined(WATER_TESSELLATION_ENABLED)
         vec3 surfacePos;
+        float waveStrength;
     #endif
 
     #ifdef RENDER_PARALLAX
@@ -157,7 +158,7 @@ void iris_emitFragment() {
                 // mUV += 0.1*waveOffset.xz;
 
                 vec3 wavePos = vIn.surfacePos;
-                wavePos.y += waveOffset.y - vIn.localOffset.y;
+                wavePos.y += (waveOffset.y - vIn.localOffset.y) * vIn.waveStrength;
 
                 vec3 dX = dFdx(wavePos);
                 vec3 dY = dFdy(wavePos);

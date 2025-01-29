@@ -18,7 +18,7 @@ vec3 sample_lpv(ivec3 voxelPos, vec4 intensity) {
 	// lpv_intensity = max(log2(lpv_intensity + 1.0), 0.0);
 	float lum = luminance(lpv_intensity);
 	if (lum > EPSILON) {
-		float lum_new = max(log2(lum + 1.0), 0.0);
+		float lum_new = max(log(lum + 1.0), 0.0);
 		lpv_intensity *= lum_new / lum;
 	}
 
@@ -28,7 +28,7 @@ vec3 sample_lpv(ivec3 voxelPos, vec4 intensity) {
 vec3 sample_lpv_nn(ivec3 voxelPos, vec3 localNormal) {
 	vec4 intensity = dirToSH(-localNormal);
 
-	return sample_lpv(voxelPos, intensity) / PI;
+	return sample_lpv(voxelPos, intensity);
 }
 
 vec3 sample_lpv_linear(vec3 voxelPos, vec3 localNormal) {
@@ -56,7 +56,7 @@ vec3 sample_lpv_linear(vec3 voxelPos, vec3 localNormal) {
 
 	vec3 sample_final = mix(sample_z0, sample_z1, f.z);
 
-	return sample_final / PI;
+	return sample_final;
 
 
 

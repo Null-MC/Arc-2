@@ -5,7 +5,7 @@ layout(location = 1) out vec4 outColorPrev;
 
 in vec2 uv;
 
-uniform sampler2D texFinalOpaque;
+uniform sampler2D TEX_SRC;
 uniform sampler2D texFinalPrevious;
 uniform sampler2D solidDepthTex;
 
@@ -67,21 +67,21 @@ void main() {
 
     if (clamp(uvLast, 0.0, 1.0) != uvLast) mixRate = 0.0;
     
-    vec3 in0 = textureLod(texFinalOpaque, uv, 0).rgb;
+    vec3 in0 = textureLod(TEX_SRC, uv, 0).rgb;
 
     antialiased = mix(antialiased * antialiased, in0 * in0, 1.0 / (1.0 + mixRate));
     antialiased = sqrt(antialiased);
 
     vec2 pixelSize = 1.0 / ap.game.screenSize;
     
-    vec3 in1 = textureLod(texFinalOpaque, uv2 + vec2(+pixelSize.x, 0.0), 0).rgb;
-    vec3 in2 = textureLod(texFinalOpaque, uv2 + vec2(-pixelSize.x, 0.0), 0).rgb;
-    vec3 in3 = textureLod(texFinalOpaque, uv2 + vec2(0.0, +pixelSize.y), 0).rgb;
-    vec3 in4 = textureLod(texFinalOpaque, uv2 + vec2(0.0, -pixelSize.y), 0).rgb;
-    vec3 in5 = textureLod(texFinalOpaque, uv2 + vec2(+pixelSize.x, +pixelSize.y), 0).rgb;
-    vec3 in6 = textureLod(texFinalOpaque, uv2 + vec2(-pixelSize.x, +pixelSize.y), 0).rgb;
-    vec3 in7 = textureLod(texFinalOpaque, uv2 + vec2(+pixelSize.x, -pixelSize.y), 0).rgb;
-    vec3 in8 = textureLod(texFinalOpaque, uv2 + vec2(-pixelSize.x, -pixelSize.y), 0).rgb;
+    vec3 in1 = textureLod(TEX_SRC, uv2 + vec2(+pixelSize.x, 0.0), 0).rgb;
+    vec3 in2 = textureLod(TEX_SRC, uv2 + vec2(-pixelSize.x, 0.0), 0).rgb;
+    vec3 in3 = textureLod(TEX_SRC, uv2 + vec2(0.0, +pixelSize.y), 0).rgb;
+    vec3 in4 = textureLod(TEX_SRC, uv2 + vec2(0.0, -pixelSize.y), 0).rgb;
+    vec3 in5 = textureLod(TEX_SRC, uv2 + vec2(+pixelSize.x, +pixelSize.y), 0).rgb;
+    vec3 in6 = textureLod(TEX_SRC, uv2 + vec2(-pixelSize.x, +pixelSize.y), 0).rgb;
+    vec3 in7 = textureLod(TEX_SRC, uv2 + vec2(+pixelSize.x, -pixelSize.y), 0).rgb;
+    vec3 in8 = textureLod(TEX_SRC, uv2 + vec2(-pixelSize.x, -pixelSize.y), 0).rgb;
     
     antialiased = encodePalYuv(antialiased);
     in0 = encodePalYuv(in0);

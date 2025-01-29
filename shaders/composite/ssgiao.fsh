@@ -1,5 +1,8 @@
 #version 430 core
 
+#include "/lib/constants.glsl"
+#include "/settings.glsl"
+
 layout(location = 0) out vec4 out_GI_AO;
 
 uniform sampler2D solidDepthTex;
@@ -11,22 +14,18 @@ uniform sampler2D texDeferredOpaque_TexNormal;
 
 in vec2 uv;
 
-#include "/settings.glsl"
 #include "/lib/common.glsl"
-
 #include "/lib/noise/ign.glsl"
 
 #ifdef EFFECT_TAA_ENABLED
     #include "/lib/taa_jitter.glsl"
 #endif
 
-const int SSGIAO_SAMPLES = 16;
+const int SSGIAO_SAMPLES = 8;
 // const float SSGIAO_RADIUS = 4.0;
 
 #define SSGIAO_TRACE_ENABLED
 const int SSGIAO_TRACE_SAMPLES = 3;
-
-const float GOLDEN_ANGLE = 2.39996323;
 
 
 void main() {
@@ -64,7 +63,7 @@ void main() {
 
         float viewDist = length(viewPos);
 
-        float max_radius = mix(0.5, 12.0, min(viewDist * 0.005, 1.0));
+        float max_radius = mix(8.0, 12.0, min(viewDist * 0.005, 1.0));
         float rStep = max_radius / SSGIAO_SAMPLES;
         float radius = rStep * dither;
 
@@ -85,7 +84,7 @@ void main() {
                 cos(rotatePhase));
 
             radius += rStep;
-            rotatePhase += GOLDEN_ANGLE;
+            rotatePhase += GoldenAngle;
 
             vec3 sampleViewPos = viewPos + vec3(offset, 0.0);
             vec3 sampleClipPos = unproject(ap.camera.projection, sampleViewPos) * 0.5 + 0.5;
@@ -101,7 +100,7 @@ void main() {
             sampleViewPos = unproject(ap.camera.projectionInv, sampleClipPos);
 
             #ifdef EFFECT_SSGI_ENABLED
-                vec3 sampleColor = textureLod(texFinalPrevious, sampleClipPos.xy * 0.5 + 0.5, 0).rgb;
+                vec3 sampleColor = textureLod(texFinalPrevious, sampleClipPos.xy * 0.5 + 0.5, 2).rgb;
 
                 float gi_weight = 1.0;
                 if (abs(sampleViewPos.z - viewPos.z) > max_radius) gi_weight = 0.0;
@@ -151,7 +150,7 @@ void main() {
         //illumination = illumination / max(maxWeight, 1.0);
     }
 
-    occlusion *= 2.0;
+    occlusion *= 3.0;
     //illumination *= 3.0;
 
     vec3 gi = illumination;

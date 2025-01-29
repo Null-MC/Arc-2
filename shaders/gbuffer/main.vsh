@@ -5,6 +5,10 @@
 
 // layout(location = 6) in int blockMask;
 
+#if defined(RENDER_TERRAIN) && defined(RENDER_TRANSLUCENT)
+	uniform sampler3D texFogNoise;
+#endif
+
 out VertexData2 {
 	vec2 uv;
 	vec2 light;
@@ -14,6 +18,10 @@ out VertexData2 {
 	vec3 localNormal;
 	vec4 localTangent;
 	flat uint blockId;
+
+	#if defined(RENDER_TERRAIN) && defined(RENDER_TRANSLUCENT)
+		float waveStrength;
+	#endif
 
 	#ifdef RENDER_PARALLAX
 		vec3 tangentViewPos;
@@ -76,6 +84,21 @@ void iris_sendParameters(in VertexData data) {
     vec3 viewTangent = mat3(iris_modelViewMatrix) * data.tangent.xyz;
     vOut.localTangent.xyz = mat3(ap.camera.viewInv) * viewTangent;
     vOut.localTangent.w = data.tangent.w;
+
+	#if defined(RENDER_TERRAIN) && defined(RENDER_TRANSLUCENT)
+		vec3 worldPos = vOut.localPos + ap.camera.pos;
+
+		const vec3 windDir1 = vec3(0.01,  0.01, 0.02);
+		const vec3 windDir2 = vec3(0.04, -0.01, 0.02);
+
+		vec3 uvWave = 0.004 * worldPos + windDir1 * ap.frame.time;
+		float waveNoise1 = 1.0 - textureLod(texFogNoise, uvWave, 0).r;
+		uvWave = 0.008 * worldPos + windDir2 * ap.frame.time;
+		float waveNoise2 = 1.0 - textureLod(texFogNoise, uvWave, 0).r;
+		float waveNoise = waveNoise1 * waveNoise2;
+
+		vOut.waveStrength = waveNoise * 0.9 + 0.1;
+	#endif
 
 	#ifdef RENDER_PARALLAX
 		vOut.atlasMinCoord = iris_getTexture(data.textureId).minCoord;

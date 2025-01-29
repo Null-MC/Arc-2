@@ -17,20 +17,20 @@ const float SUN_SIZE = 2.2;
 const float MOON_SIZE = 3.4;
 
 const float SUN_LUMINANCE = 8000.0;
-const float EMISSION_BRIGHTNESS = 80.0;
+const float EMISSION_BRIGHTNESS = 160.0;
 const float MOON_LUMINANCE = 0.16;
 const float STAR_LUMINANCE = 0.10;
-const float SKY_LUMINANCE = 32.0;
+const float SKY_LUMINANCE = 256.0;
 
 const float SUN_BRIGHTNESS = 32.0;
 const float MOON_BRIGHTNESS = 0.024;
-const float SKY_BRIGHTNESS = 12.0;
+const float SKY_BRIGHTNESS = 22.0;
 const float BLOCKLIGHT_BRIGHTNESS = 4.0;
 
 #if (defined LPV_ENABLED && defined LPV_RSM_ENABLED) || defined EFFECT_SSGI_ENABLED
-	const float SKY_AMBIENT = 0.3;
+	const float SKY_AMBIENT = 1.0;
 #else
-	const float SKY_AMBIENT = 0.5;
+	const float SKY_AMBIENT = 1.0;
 #endif
 
 const int SHADOW_PCF_SAMPLES = 8;

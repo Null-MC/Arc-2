@@ -7,11 +7,8 @@
 out VertexData2 {
     vec4 color;
     vec2 uv;
+    vec3 localNormal;
     flat int currentCascade;
-
-    #ifdef LPV_RSM_ENABLED
-        vec3 localNormal;
-    #endif
 
     #ifdef RENDER_TERRAIN
         flat uint blockId;
@@ -20,6 +17,10 @@ out VertexData2 {
             vec3 localPos;
             vec2 lmcoord;
             flat vec3 originPos;
+
+            #ifdef VOXEL_BLOCK_FACE
+                flat uint textureId;
+            #endif
         #endif
     #endif
 } vOut;
@@ -58,10 +59,8 @@ void iris_sendParameters(in VertexData data) {
         // viewPos = mul3(ap.camera.view, vOut.localPos);
     }
 
-    #ifdef LPV_RSM_ENABLED
-        vec3 viewNormal = mat3(iris_modelViewMatrix) * data.normal;
-        vOut.localNormal = mat3(ap.camera.viewInv) * viewNormal;
-    #endif
+    vec3 viewNormal = mat3(iris_modelViewMatrix) * data.normal;
+    vOut.localNormal = mat3(ap.camera.viewInv) * viewNormal;
 
     vOut.currentCascade = iris_currentCascade;
 
@@ -70,6 +69,10 @@ void iris_sendParameters(in VertexData data) {
 
         #ifdef VOXEL_ENABLED
             vOut.lmcoord = clamp((data.light - (0.5/16.0)) / (15.0/16.0), 0.0, 1.0);
+
+            #ifdef VOXEL_BLOCK_FACE
+                vOut.textureId = data.textureId;
+            #endif
         #endif
     #endif
 }

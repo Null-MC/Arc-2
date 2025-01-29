@@ -1,14 +1,14 @@
 const int WSR_MAXSTEPS = 8;
 
 
-//vec4 TraceReflection(const in vec3 localPos, const in vec3 localDir, out vec3 hitPos, out vec3 hitNormal, out vec2 hitUV, out vec2 lmcoord, out vec3 tint) {
 bool TraceReflection(const in vec3 localPos, const in vec3 localDir, out vec3 hitPos, out vec2 hitUV, out vec3 hitCoord, out vec4 hitColor, out Triangle hitTriangle) {
     vec4 colorFinal = vec4(0.0);
     vec3 currPos = GetVoxelPosition(localPos) / TRIANGLE_BIN_SIZE;
 
     vec3 stepDir = sign(localDir);
     vec3 stepSizes = 1.0 / abs(localDir);
-    vec3 nextDist = (stepDir * 0.5 + 0.5 - fract(currPos)) / localDir;
+    vec3 nextDist = stepDir * 0.5 + 0.5;
+    nextDist = (nextDist - fract(currPos)) / localDir;
 
     bool hit = false;
 
@@ -16,17 +16,15 @@ bool TraceReflection(const in vec3 localPos, const in vec3 localDir, out vec3 hi
         vec3 rayStart = currPos;
 
         float closestDist = minOf(nextDist);
-        currPos += localDir * closestDist;
+        currPos = fma(localDir, vec3(closestDist), currPos);
 
         ivec3 triangleBinPos = ivec3(floor(0.5 * (currPos + rayStart)));
 
         vec3 stepAxis = vec3(lessThanEqual(nextDist, vec3(closestDist)));
 
         nextDist -= closestDist;
-        nextDist += stepSizes * stepAxis;
+        nextDist = fma(stepSizes, stepAxis, nextDist);
 
-        // TODO: hit test
-//        ivec3 triangleBinPos = voxelPos;// ivec3(floor(voxelPos / TRIANGLE_BIN_SIZE));
         int triangleBinIndex = GetTriangleBinIndex(triangleBinPos);
         uint triangleCount = TriangleBinMap[triangleBinIndex].triangleCount;
 
@@ -43,16 +41,20 @@ bool TraceReflection(const in vec3 localPos, const in vec3 localDir, out vec3 hi
 
             vec3 coord;
             if (lineTriangleIntersect(traceStart, traceEnd, tri_pos_0, tri_pos_1, tri_pos_2, coord)) {
-                vec3 pos = tri_pos_0 * coord.x
-                    + tri_pos_1 * coord.y
-                    + tri_pos_2 * coord.z;
+                vec3 pos = tri_pos_0 * coord.x;
+                pos = fma(tri_pos_1, vec3(coord.y), pos);
+                pos = fma(tri_pos_2, vec3(coord.z), pos);
 
                 float sampleDist = distance(traceStart, pos);
                 if (sampleDist > hit_dist) continue;
 
-                vec2 uv = tri.uv[0] * coord.x
-                    + tri.uv[1] * coord.y
-                    + tri.uv[2] * coord.z;
+                vec2 tri_uv_0 = GetTriangleUV(tri.uv[0]);
+                vec2 tri_uv_1 = GetTriangleUV(tri.uv[1]);
+                vec2 tri_uv_2 = GetTriangleUV(tri.uv[2]);
+
+                vec2 uv = tri_uv_0 * coord.x;
+                uv = fma(tri_uv_1, vec2(coord.y), uv);
+                uv = fma(tri_uv_2, vec2(coord.z), uv);
 
                 vec4 sampleColor = textureLod(blockAtlas, uv, 0);
 
@@ -61,23 +63,14 @@ bool TraceReflection(const in vec3 localPos, const in vec3 localDir, out vec3 hi
                     hitTriangle = tri;
                     hitColor = sampleColor;
 
-
-//                    colorFinal = sampleColor;
-                    hitPos = pos + triangleBinPos*TRIANGLE_BIN_SIZE;
+                    hitPos = fma(triangleBinPos, vec3(TRIANGLE_BIN_SIZE), pos);
                     hitUV = uv;
                     hit = true;
                     hit_dist = sampleDist;
-//                    tint = unpackUnorm4x8(tri.tint).rgb;
-//                    lmcoord = tri.lmcoord;
-
-//                    vec3 e1 = normalize(tri_pos_1 - tri_pos_0);
-//                    vec3 e2 = normalize(tri_pos_2 - tri_pos_0);
-//                    hitNormal = normalize(cross(e1, e2));
                 }
             }
         }
     }
 
-//    return colorFinal;
     return hit;
 }

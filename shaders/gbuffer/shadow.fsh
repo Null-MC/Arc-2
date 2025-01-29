@@ -4,9 +4,7 @@ in VertexData2 {
     vec4 color;
     vec2 uv;
 
-    #if defined LPV_ENABLED && defined LPV_RSM_ENABLED
-        vec3 localNormal;
-    #endif
+    vec3 localNormal;
 
     #ifdef RENDER_TERRAIN
         flat uint blockId;

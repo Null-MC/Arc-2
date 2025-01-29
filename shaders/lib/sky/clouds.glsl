@@ -10,7 +10,7 @@ float SampleCloudDensity(const in vec3 worldPos) {
     float detailHigh = textureLod(texFogNoise, vec3(samplePos * 0.0064, time+0.2).xzy, 0).r;
     float cloud_sample = detailLow + 0.06*(detailHigh);
 
-    float cloud_density = mix(0.2, 6.4, ap.world.rainStrength);
+    float cloud_density = mix(0.05, 6.4, ap.world.rainStrength);
     float cloud_threshold = mix(0.32, 0.08, ap.world.rainStrength);
     return smoothstep(cloud_threshold, 1.0, cloud_sample) * cloud_density;
     // return pow(max(cloud_sample - 0.3, 0.0) / (7.0/10.0), 0.5) * cloud_density;

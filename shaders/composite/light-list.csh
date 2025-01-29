@@ -2,12 +2,10 @@
 
 layout (local_size_x = 8, local_size_y = 8, local_size_z = 8) in;
 
-layout(r32ui) uniform readonly uimage3D imgVoxelBlock;
-
 #include "/settings.glsl"
 #include "/lib/common.glsl"
+#include "/lib/buffers/voxel-block.glsl"
 #include "/lib/buffers/light-list.glsl"
-// #include "/lib/buffers/triangle-list.glsl"
 
 #include "/lib/voxel/voxel_common.glsl"
 #include "/lib/voxel/light-list.glsl"

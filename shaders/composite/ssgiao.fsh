@@ -53,18 +53,22 @@ void main() {
 
         float rotatePhase = dither * TAU;
 
-        vec3 clipPos = vec3(uv, depth) * 2.0 - 1.0;
+        vec3 clipPos = vec3(uv, depth);
+        vec3 ndcPos = clipPos * 2.0 - 1.0;
 
         #ifdef EFFECT_TAA_ENABLED
-            //unjitter(clipPos);
+            //unjitter(ndcPos);
         #endif
 
-        vec3 viewPos = unproject(ap.camera.projectionInv, clipPos);
+        vec3 viewPos = unproject(ap.camera.projectionInv, ndcPos);
 
         float viewDist = length(viewPos);
 
-        float max_radius = mix(8.0, 12.0, min(viewDist * 0.005, 1.0));
-        float rStep = max_radius / SSGIAO_SAMPLES;
+        float distF = min(viewDist * 0.005, 1.0);
+        float max_radius_ao = mix(0.5, 12.0, distF);
+        float max_radius_gi = mix(2.0, 16.0, distF);
+
+        float rStep = 1.0 / SSGIAO_SAMPLES;
         float radius = rStep * dither;
 
         // uint data_r = texelFetch(texDeferredOpaque_Data, iuv, 0).r;
@@ -79,70 +83,92 @@ void main() {
         float maxWeight = EPSILON;
 
         for (int i = 0; i < SSGIAO_SAMPLES; i++) {
-            vec2 offset = radius * vec2(
-                sin(rotatePhase),
-                cos(rotatePhase));
+            vec2 offset = radius * vec2(sin(rotatePhase), cos(rotatePhase));
+            vec2 offset_ao = offset * max_radius_ao;
+            vec2 offset_gi = offset * max_radius_gi;
 
             radius += rStep;
             rotatePhase += GoldenAngle;
 
-            vec3 sampleViewPos = viewPos + vec3(offset, 0.0);
-            vec3 sampleClipPos = unproject(ap.camera.projection, sampleViewPos) * 0.5 + 0.5;
+            #ifdef EFFECT_SSAO_ENABLED
+                vec3 sampleViewPos_ao = viewPos + vec3(offset_ao, 0.0);
+                vec3 sampleClipPos_ao = unproject(ap.camera.projection, sampleViewPos_ao) * 0.5 + 0.5;
 
-            if (clamp(sampleClipPos.xy, 0.0, 1.0) != sampleClipPos.xy) continue;
-            if (all(lessThan(abs(sampleClipPos.xy - uv), pixelSize))) continue;
+                bool skip_ao = false;
+                if (clamp(sampleClipPos_ao.xy, 0.0, 1.0) != sampleClipPos_ao.xy) skip_ao = true;
+                //if (all(lessThan(abs(sampleClipPos_ao.xy - uv), pixelSize))) skip_ao = true;
 
-            float sampleClipDepth = textureLod(solidDepthTex, sampleClipPos.xy, 0.0).r;
-            if (sampleClipDepth >= 1.0) continue;
+                float sampleClipDepth_ao = textureLod(solidDepthTex, sampleClipPos_ao.xy, 0.0).r;
+                if (sampleClipDepth_ao >= 1.0) skip_ao = true;
 
-            sampleClipPos.z = sampleClipDepth;
-            sampleClipPos = sampleClipPos * 2.0 - 1.0;
-            sampleViewPos = unproject(ap.camera.projectionInv, sampleClipPos);
+                if (!skip_ao) {
+                    sampleClipPos_ao.z = sampleClipDepth_ao;
+                    sampleClipPos_ao = sampleClipPos_ao * 2.0 - 1.0;
+                    sampleViewPos_ao = unproject(ap.camera.projectionInv, sampleClipPos_ao);
+
+                    vec3 diff = sampleViewPos_ao - viewPos;
+                    float sampleDist = length(diff);
+                    vec3 sampleNormal = diff / sampleDist;
+
+                    float sampleNoLm = max(dot(viewNormal, sampleNormal), 0.0);
+
+                    float ao_weight = 1.0 - saturate(sampleDist / max_radius_ao);
+
+                    occlusion += sampleNoLm * ao_weight;
+
+                    maxWeight += ao_weight;
+                }
+            #endif
 
             #ifdef EFFECT_SSGI_ENABLED
-                vec3 sampleColor = textureLod(texFinalPrevious, sampleClipPos.xy * 0.5 + 0.5, 2).rgb;
+                vec3 sampleViewPos_gi = viewPos + vec3(offset_gi, 0.0);
+                vec3 sampleClipPos_gi = unproject(ap.camera.projection, sampleViewPos_gi) * 0.5 + 0.5;
 
-                float gi_weight = 1.0;
-                if (abs(sampleViewPos.z - viewPos.z) > max_radius) gi_weight = 0.0;
+                bool skip_gi = false;
+                if (clamp(sampleClipPos_gi.xy, 0.0, 1.0) != sampleClipPos_gi.xy) skip_gi = true;
+                if (all(lessThan(abs(sampleClipPos_gi.xy - uv), pixelSize))) skip_gi = true;
 
-                #ifdef SSGIAO_TRACE_ENABLED
-                    else {
-                        vec3 traceRay = sampleClipPos - clipPos;
-                        vec3 traceStep = traceRay / (SSGIAO_TRACE_SAMPLES+1);
-                        vec3 tracePos = clipPos;
+                float sampleClipDepth_gi = textureLod(solidDepthTex, sampleClipPos_gi.xy, 0.0).r;
+                if (sampleClipDepth_gi >= 1.0) skip_gi = true;
 
-                        for (int t = 0; t < SSGIAO_TRACE_SAMPLES; t++) {
-                            tracePos += traceStep;
-                            float traceSampleDepth = textureLod(solidDepthTex, tracePos.xy * 0.5 + 0.5, 0.0).r * 2.0 - 1.0;
+                if (!skip_gi) {
+                    vec3 sampleColor = textureLod(texFinalPrevious, sampleClipPos_gi.xy, 0).rgb;
 
-                            if (tracePos.z >= traceSampleDepth) {
-                                gi_weight = 0.0;
-                                break;
+                    sampleClipPos_gi.z = sampleClipDepth_gi;
+                    sampleViewPos_gi = unproject(ap.camera.projectionInv, sampleClipPos_gi * 2.0 - 1.0);
+
+                    float gi_weight = 1.0;
+                    if (abs(sampleViewPos_gi.z - viewPos.z) > max_radius_gi) gi_weight = 0.0;
+
+                    #ifdef SSGIAO_TRACE_ENABLED
+                        else {
+                            vec3 traceRay = sampleClipPos_gi - clipPos;
+                            vec3 traceStep = traceRay / (SSGIAO_TRACE_SAMPLES+1);
+                            vec3 tracePos = clipPos;
+
+                            for (int t = 0; t < SSGIAO_TRACE_SAMPLES; t++) {
+                                tracePos += traceStep;
+                                float traceSampleDepth = textureLod(solidDepthTex, tracePos.xy, 0.0).r;
+
+                                if (tracePos.z >= traceSampleDepth) {
+                                    gi_weight = 0.0;
+                                    break;
+                                }
                             }
                         }
-                    }
-                #endif
-            #endif
+                    #endif
 
-            vec3 diff = sampleViewPos - viewPos;
-            float sampleDist = length(diff);
-            vec3 sampleNormal = diff / sampleDist;
+                    vec3 diff = sampleViewPos_gi - viewPos;
+                    float sampleDist = length(diff);
+                    vec3 sampleNormal = diff / sampleDist;
 
-            float sampleNoLm = max(dot(viewNormal, sampleNormal), 0.0);
+                    float sampleNoLm = max(dot(viewNormal, sampleNormal), 0.0);
 
-            #ifdef EFFECT_SSAO_ENABLED
-                float ao_weight = 1.0 - saturate(sampleDist / max_radius);
+                     gi_weight *= 1.0 / (1.0 + sampleDist);
 
-                occlusion += sampleNoLm * ao_weight;
-
-                maxWeight += ao_weight;
-            #endif
-
-            #ifdef EFFECT_SSGI_ENABLED
-                // gi_weight *= 1.0 / (1.0 + sampleDist);
-
-                gi_weight *= 1.0 - saturate(sampleDist / max_radius);
-                illumination += sampleColor * sampleNoLm * gi_weight;
+//                    gi_weight *= 1.0 - saturate(sampleDist / max_radius_gi);
+                    illumination += sampleColor * sampleNoLm * gi_weight;
+                }
             #endif
         }
 
@@ -151,7 +177,7 @@ void main() {
     }
 
     occlusion *= 3.0;
-    //illumination *= 3.0;
+//    illumination *= 3.0;
 
     vec3 gi = illumination;
     float ao = 1.0 - min(occlusion, 1.0);

@@ -84,6 +84,7 @@ function setupSettings() {
         Internal: {
             Accumulation: false,
             Voxelization: false,
+            VoxelizeBlockFaces: false,
             VoxelizeTriangles: false,
             LPV: false,
         },
@@ -112,6 +113,9 @@ function setupSettings() {
 
         if (Settings.Lighting.Reflections.ReflectTriangles) {
             Settings.Internal.VoxelizeTriangles = true;
+        }
+        else {
+            Settings.Internal.VoxelizeBlockFaces = true;
         }
     }
 
@@ -182,6 +186,10 @@ function setupSettings() {
             defineGlobally("LIGHT_BIN_SIZE", LIGHT_BIN_SIZE.toString());
 
             if (Settings.Lighting.RT.TraceTriangles) defineGlobally("RT_TRI_ENABLED", "1");
+        }
+
+        if (Settings.Internal.VoxelizeBlockFaces) {
+            defineGlobally("VOXEL_BLOCK_FACE", "1");
         }
 
         if (Settings.Internal.VoxelizeTriangles) {
@@ -515,6 +523,7 @@ function setupShader() {
         .build();
 
     let lightListBuffer: BuiltBuffer | null = null;
+    let blockFaceBuffer: BuiltBuffer | null = null;
     let triangleListBuffer: BuiltBuffer | null = null;
     if (Settings.Internal.Voxelization) {
         const lightBinSize = 4 * (1 + Settings.Voxel.MaxLightCount);
@@ -525,6 +534,14 @@ function setupShader() {
         lightListBuffer = new Buffer(lightListBufferSize)
             .clear(true) // TODO: clear with compute
             .build();
+
+        if (Settings.Internal.VoxelizeBlockFaces) {
+            const bufferSize = 6 * 12 * cubed(Settings.Voxel.Size);
+
+            blockFaceBuffer = new Buffer(bufferSize)
+                .clear(true) // TODO: clear with compute
+                .build();
+        }
 
         if (Settings.Internal.VoxelizeTriangles) {
             const triangleBinSize = 4 + 44*Settings.Voxel.MaxTriangleCount;
@@ -598,6 +615,7 @@ function setupShader() {
         return shadowShader(name, usage)
             .ssbo(3, lightListBuffer)
             .ssbo(4, triangleListBuffer)
+            .ssbo(5, blockFaceBuffer)
             .define("RENDER_TERRAIN", "1");
     }
 
@@ -761,6 +779,7 @@ function setupShader() {
             .ssbo(0, sceneBuffer)
             .ssbo(3, lightListBuffer)
             .ssbo(4, triangleListBuffer)
+            .ssbo(5, blockFaceBuffer)
             .define("TEX_SHADOW", texShadow_src);
 
         if (Settings.Lighting.Reflections.Mode == ReflectMode_WSR)

@@ -4,17 +4,16 @@
 #include "/settings.glsl"
 #include "/lib/constants.glsl"
 
+#define VOXEL_WRITE
+
 layout(triangles) in;
 layout(triangle_strip, max_vertices=3) out;
 
 in VertexData2 {
     vec4 color;
     vec2 uv;
+    vec3 localNormal;
     flat int currentCascade;
-
-    #ifdef LPV_RSM_ENABLED
-        vec3 localNormal;
-    #endif
 
     #ifdef RENDER_TERRAIN
         flat uint blockId;
@@ -23,6 +22,10 @@ in VertexData2 {
             vec3 localPos;
             vec2 lmcoord;
             flat vec3 originPos;
+
+            #ifdef VOXEL_BLOCK_FACE
+                flat uint textureId;
+            #endif
         #endif
     #endif
 } vIn[];
@@ -30,23 +33,18 @@ in VertexData2 {
 out VertexData2 {
     vec4 color;
     vec2 uv;
-
-    #ifdef LPV_RSM_ENABLED
-        vec3 localNormal;
-    #endif
+    vec3 localNormal;
 
     #ifdef RENDER_TERRAIN
         flat uint blockId;
     #endif
 } vOut;
 
-#if defined(VOXEL_ENABLED) && defined(RENDER_TERRAIN)
-    layout(r32ui) uniform writeonly uimage3D imgVoxelBlock;
-#endif
-
 #include "/lib/common.glsl"
 
 #if defined(VOXEL_ENABLED) && defined(RENDER_TERRAIN)
+    #include "/lib/buffers/voxel-block.glsl"
+
     #ifdef VOXEL_TRI_ENABLED
         #include "/lib/buffers/triangle-list.glsl"
     #endif
@@ -64,9 +62,7 @@ void main() {
         vOut.color = vIn[v].color;
         vOut.uv = vIn[v].uv;
 
-        #if defined(LPV_ENABLED) && defined(LPV_RSM_ENABLED)
-            vOut.localNormal = vIn[v].localNormal;
-        #endif
+        vOut.localNormal = vIn[v].localNormal;
 
         #ifdef RENDER_TERRAIN
             vOut.blockId = vIn[v].blockId;
@@ -86,6 +82,17 @@ void main() {
 
         if (IsInVoxelBounds(voxelPos)) {
             imageStore(imgVoxelBlock, ivec3(voxelPos), uvec4(vIn[0].blockId));
+
+            #ifdef VOXEL_BLOCK_FACE
+                VoxelBlockFace blockFace;
+                blockFace.tex_id = vIn[0].textureId;
+                blockFace.tint = packUnorm4x8(vOut.color);
+                SetBlockFaceLightMap(vec2(1.0), blockFace.lmcoord);
+
+                int blockFaceIndex = GetVoxelBlockFaceIndex(vOut.localNormal);
+                int blockFaceMapIndex = GetVoxelBlockFaceMapIndex(ivec3(voxelPos), blockFaceIndex);
+                VoxelBlockFaceMap[blockFaceMapIndex] = blockFace;
+            #endif
 
             #ifdef VOXEL_TRI_ENABLED
                 bool isFluid = iris_hasFluid(vIn[0].blockId);

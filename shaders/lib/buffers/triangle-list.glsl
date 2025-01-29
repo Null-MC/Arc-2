@@ -1,3 +1,5 @@
+// lmcoord contains all three vertices packed as bits 0-24
+
 struct Triangle {       // 12*3+4+4= 44
     uvec2 pos[3];     // 8
     uint uv[3];       // 4

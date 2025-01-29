@@ -5,8 +5,6 @@
 
 layout (local_size_x = 8, local_size_y = 8, local_size_z = 8) in;
 
-layout(r32ui) uniform readonly uimage3D imgVoxelBlock;
-
 #ifdef LPV_RSM_ENABLED
 	uniform sampler2DArray solidShadowMap;
 	uniform sampler2DArray texShadowColor;
@@ -17,6 +15,7 @@ layout(r32ui) uniform readonly uimage3D imgVoxelBlock;
 
 #include "/lib/common.glsl"
 #include "/lib/buffers/scene.glsl"
+#include "/lib/buffers/voxel-block.glsl"
 #include "/lib/buffers/sh-lpv.glsl"
 
 #include "/lib/noise/hash.glsl"

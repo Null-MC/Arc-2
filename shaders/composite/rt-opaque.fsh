@@ -6,6 +6,10 @@
 layout(location = 0) out vec4 outDiffuseRT;
 layout(location = 1) out vec4 outSpecularRT;
 
+//#if LIGHTING_REFLECT_MODE == REFLECT_MODE_WSR && !defined(LIGHTING_REFLECT_TRIANGLE)
+//    layout(r32ui) uniform readonly uimage3D imgVoxelBlock;
+//#endif
+
 uniform sampler2D solidDepthTex;
 
 uniform sampler2D texDeferredOpaque_Color;
@@ -34,8 +38,6 @@ uniform sampler2D texDeferredOpaque_TexNormal;
     #endif
 #endif
 
-layout(r32ui) uniform readonly uimage3D imgVoxelBlock;
-
 in vec2 uv;
 
 #include "/lib/common.glsl"
@@ -46,6 +48,8 @@ in vec2 uv;
 
 #ifdef VOXEL_TRI_ENABLED
     #include "/lib/buffers/triangle-list.glsl"
+#else
+    #include "/lib/buffers/voxel-block.glsl"
 #endif
 
 #include "/lib/noise/ign.glsl"
@@ -72,6 +76,10 @@ in vec2 uv;
 #if LIGHTING_REFLECT_MODE == REFLECT_MODE_WSR
     #include "/lib/buffers/scene.glsl"
 
+    #ifndef LIGHTING_REFLECT_TRIANGLE
+//        #include "/lib/buffers/voxel-block.glsl"
+    #endif
+
     #include "/lib/erp.glsl"
     #include "/lib/material/material.glsl"
 
@@ -83,7 +91,9 @@ in vec2 uv;
     #include "/lib/utility/blackbody.glsl"
 
     #ifdef LIGHTING_REFLECT_TRIANGLE
-        #include "/lib/effects/wsr.glsl"
+        #include "/lib/effects/wsr-triangle.glsl"
+    #else
+        #include "/lib/effects/wsr-block.glsl"
     #endif
 
     #ifdef SHADOWS_ENABLED
@@ -277,15 +287,16 @@ void main() {
                 skyReflectColor += shadow_sss.rgb * (reflectSun + reflectMoon);
 
                 vec4 reflection = vec4(0.0);
+                vec3 reflect_tint = vec3(1.0);
 
                 vec2 reflect_uv, reflect_lmcoord;
-                vec3 reflect_voxelPos, reflect_geoNormal, reflect_tint;
+                vec3 reflect_voxelPos, reflect_geoNormal;
+                vec4 reflect_hitColor;
 
                 if (roughL < 0.86) {
                     #ifdef LIGHTING_REFLECT_TRIANGLE
                         // WSR: per-triangle
 
-                        vec4 reflect_hitColor;
                         vec3 reflect_hitCoord;
                         Triangle reflect_hitTriangle;
                         if (TraceReflection(localPos + 0.1*localGeoNormal, reflectLocalDir, reflect_voxelPos, reflect_uv, reflect_hitCoord, reflect_hitColor, reflect_hitTriangle)) {
@@ -295,9 +306,9 @@ void main() {
 
                             vec2 lmcoords[3];
                             GetTriangleLightMapCoord(reflect_hitTriangle.lmcoord, lmcoords[0], lmcoords[1], lmcoords[2]);
-                            reflect_lmcoord = lmcoords[0] * reflect_hitCoord.x
-                                + lmcoords[1] * reflect_hitCoord.y
-                                + lmcoords[2] * reflect_hitCoord.z;
+                            reflect_lmcoord = lmcoords[0] * reflect_hitCoord.x;
+                            reflect_lmcoord = fma(lmcoords[1], vec2(reflect_hitCoord.y), reflect_lmcoord);
+                            reflect_lmcoord = fma(lmcoords[2], vec2(reflect_hitCoord.z), reflect_lmcoord);
 
                             vec3 tri_pos_0 = GetTriangleVertexPos(reflect_hitTriangle.pos[0]);
                             vec3 tri_pos_1 = GetTriangleVertexPos(reflect_hitTriangle.pos[1]);
@@ -309,10 +320,18 @@ void main() {
                         }
                     #else
                         // WSR: block-only
-                        if (TraceReflection(localPos + 0.1*localGeoNormal, reflectLocalDir, reflect_voxelPos, reflect_uv, reflect_hitCoord, reflect_hitColor)) {
-                            reflection = reflect_hitColor;
 
-                            //...
+                        VoxelBlockFace blockFace;
+                        if (TraceReflection(localPos + 0.1*localGeoNormal, reflectLocalDir, reflect_voxelPos, reflect_geoNormal, blockFace)) {
+                            GetBlockFaceLightMap(blockFace.lmcoord, reflect_lmcoord);
+
+                            reflect_tint = unpackUnorm4x8(blockFace.tint).rgb;
+
+                            iris_TextureInfo tex = iris_getTexture(blockFace.tex_id);
+                            reflect_uv = 0.5 * (tex.minCoord + tex.maxCoord);
+
+                            vec3 reflectColor = textureLod(blockAtlas, reflect_uv, 4).rgb;
+                            reflection = vec4(reflectColor, 1.0);
                         }
                     #endif
                 }

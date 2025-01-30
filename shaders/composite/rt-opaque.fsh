@@ -46,10 +46,10 @@ in vec2 uv;
     #include "/lib/buffers/light-list.glsl"
 #endif
 
+#include "/lib/buffers/voxel-block.glsl"
+
 #ifdef VOXEL_TRI_ENABLED
     #include "/lib/buffers/triangle-list.glsl"
-#else
-    #include "/lib/buffers/voxel-block.glsl"
 #endif
 
 #include "/lib/noise/ign.glsl"
@@ -389,7 +389,7 @@ void main() {
 
                     vec2 skyIrradianceCoord = DirectionToUV(reflect_localTexNormal);
                     vec3 reflect_skyIrradiance = textureLod(texSkyIrradiance, skyIrradianceCoord, 0).rgb;
-                    reflect_diffuse += (SKY_AMBIENT * SKY_BRIGHTNESS * reflect_lmcoord.y) * reflect_skyIrradiance;
+                    reflect_diffuse += (SKY_AMBIENT * reflect_lmcoord.y) * reflect_skyIrradiance;
                     reflect_diffuse += blackbody(BLOCKLIGHT_TEMP) * (BLOCKLIGHT_BRIGHTNESS * reflect_lmcoord.x);
                     reflect_diffuse += 0.0016;
 

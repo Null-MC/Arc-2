@@ -1,4 +1,4 @@
-const int WSR_MAXSTEPS = 48;
+const int WSR_MAXSTEPS = 64;
 
 
 bool TraceReflection(const in vec3 localPos, const in vec3 localDir, out vec3 hitPos, out vec3 hitNormal, out VoxelBlockFace blockFace) {

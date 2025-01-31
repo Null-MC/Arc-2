@@ -536,7 +536,7 @@ function setupShader() {
             .build();
 
         if (Settings.Internal.VoxelizeBlockFaces) {
-            const bufferSize = 6 * 12 * cubed(Settings.Voxel.Size);
+            const bufferSize = 6 * 16 * cubed(Settings.Voxel.Size);
 
             blockFaceBuffer = new Buffer(bufferSize)
                 .clear(true) // TODO: clear with compute

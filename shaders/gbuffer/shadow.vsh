@@ -59,8 +59,10 @@ void iris_sendParameters(in VertexData data) {
         // viewPos = mul3(ap.camera.view, vOut.localPos);
     }
 
+    mat4 shadowViewInv = inverse(ap.celestial.view);
+
     vec3 viewNormal = mat3(iris_modelViewMatrix) * data.normal;
-    vOut.localNormal = mat3(ap.camera.viewInv) * viewNormal;
+    vOut.localNormal = mat3(shadowViewInv) * viewNormal;
 
     vOut.currentCascade = iris_currentCascade;
 

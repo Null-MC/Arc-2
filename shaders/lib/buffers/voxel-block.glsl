@@ -16,13 +16,22 @@
     };
 
     int GetVoxelBlockFaceIndex(const in vec3 normal) {
-        // TODO
-        return 0;
+        //return 0;
+
+        if (abs(normal.y) > 0.5) {
+            return normal.y > 0.0 ? 0 : 1;
+        }
+        else if (abs(normal.z) > 0.5) {
+            return normal.z > 0.0 ? 2 : 3;
+        }
+        else {
+            return normal.x > 0.0 ? 4 : 5;
+        }
     }
 
     int GetVoxelBlockFaceMapIndex(const in ivec3 voxelPos, const in int faceIndex) {
-        const ivec3 flatten = 6 * ivec3(1, VOXEL_SIZE, VOXEL_SIZE*VOXEL_SIZE);
-        return sumOf(flatten * voxelPos) + faceIndex;
+        const ivec3 flatten = ivec3(1, VOXEL_SIZE, VOXEL_SIZE*VOXEL_SIZE);
+        return 6 * sumOf(flatten * voxelPos) + faceIndex;
     }
 
     void GetBlockFaceLightMap(const in uint data, out vec2 lmcoord) {
@@ -31,6 +40,7 @@
     }
 
     void SetBlockFaceLightMap(const in vec2 lmcoord, out uint data) {
+        data = 0u;
         data = bitfieldInsert(data, uint(lmcoord.x * 15.0),  0, 4);
         data = bitfieldInsert(data, uint(lmcoord.y * 15.0),  4, 4);
     }

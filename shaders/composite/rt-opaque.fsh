@@ -311,6 +311,8 @@ void main() {
 
                             vec3 reflectColor = textureLod(blockAtlas, reflect_uv, reflect_mip).rgb;
                             reflection = vec4(reflectColor, 1.0);
+
+                            //reflection.rgb = clamp(reflect_geoNormal*0.5+0.5, 0.0, 1.0);
                         }
                     #endif
                 }

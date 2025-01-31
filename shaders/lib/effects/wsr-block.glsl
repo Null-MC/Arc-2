@@ -9,6 +9,8 @@ bool TraceReflection(const in vec3 localPos, const in vec3 localDir, out vec3 hi
     vec3 stepSizes = 1.0 / abs(localDir);
     vec3 nextDist = (stepDir * 0.5 + 0.5 - fract(currPos)) / localDir;
 
+    vec3 stepAxis = vec3(0.0);
+
     bool hit = false;
     ivec3 voxelPos;
 
@@ -18,22 +20,24 @@ bool TraceReflection(const in vec3 localPos, const in vec3 localDir, out vec3 hi
 
         voxelPos = ivec3(floor(currPos + 0.5*step));
 
-        vec3 stepAxis = vec3(lessThanEqual(nextDist, vec3(closestDist)));
-
-        nextDist -= closestDist;
-        nextDist += stepSizes * stepAxis;
-
         uint blockId = imageLoad(imgVoxelBlock, voxelPos).r;
         bool isFullBlock = blockId > 0u && iris_isFullBlock(blockId);
 
         if (isFullBlock) {
-            hitPos = currPos;
-            hitNormal = 1.0 - stepAxis;
+            //stepAxis = vec3(lessThanEqual(nextDist, vec3(closestDist)));
+
+            hitPos = currPos;//+step;
+            hitNormal = -stepDir * stepAxis;
             hit = true;
         }
         else {
             currPos += step;
         }
+
+        stepAxis = vec3(lessThanEqual(nextDist, vec3(closestDist)));
+
+        nextDist -= closestDist;
+        nextDist += stepSizes * stepAxis;
     }
 
     if (hit) {

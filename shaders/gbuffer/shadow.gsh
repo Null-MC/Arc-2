@@ -80,14 +80,14 @@ void main() {
     #if defined(VOXEL_ENABLED) && defined(RENDER_TERRAIN)
         vec3 voxelPos = GetVoxelPosition(vIn[0].originPos);
 
-        if (IsInVoxelBounds(voxelPos)) {
+        if (gl_PrimitiveID % 2 == 0 && IsInVoxelBounds(voxelPos)) {
             imageStore(imgVoxelBlock, ivec3(voxelPos), uvec4(vIn[0].blockId));
 
             #ifdef VOXEL_BLOCK_FACE
                 VoxelBlockFace blockFace;
                 blockFace.tex_id = vIn[0].textureId;
                 blockFace.tint = packUnorm4x8(vOut.color);
-                SetBlockFaceLightMap(vec2(1.0), blockFace.lmcoord);
+                SetBlockFaceLightMap(vIn[0].lmcoord, blockFace.lmcoord);
 
                 int blockFaceIndex = GetVoxelBlockFaceIndex(vOut.localNormal);
                 int blockFaceMapIndex = GetVoxelBlockFaceMapIndex(ivec3(voxelPos), blockFaceIndex);

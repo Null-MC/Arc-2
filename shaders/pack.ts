@@ -246,14 +246,40 @@ function setupShader() {
     setLightColor("verdant_froglight", 99, 229, 60, 255);
     setLightColor("wall_torch", 243, 158, 73, 255);
 
-    setLightColor("red_stained_glass", 255, 0, 0, 255);
-    setLightColor("red_stained_glass_pane", 255, 0, 0, 255);
-    setLightColor("green_stained_glass", 0, 255, 0, 255);
-    setLightColor("green_stained_glass_pane", 0, 255, 0, 255);
-    setLightColor("lime_stained_glass", 102, 255, 0, 255);
-    setLightColor("lime_stained_glass_pane", 102, 255, 0, 255);
-    setLightColor("blue_stained_glass", 0, 0, 255, 255);
-    setLightColor("blue_stained_glass_pane", 0, 0, 255, 255);
+    setLightColor("tinted_glass", 50, 38, 56, 255);
+    setLightColor("white_stained_glass",      255, 255, 255, 255);
+    setLightColor("white_stained_glass_pane", 255, 255, 255, 255);
+    setLightColor("light_gray_stained_glass",      153, 153, 153, 255);
+    setLightColor("light_gray_stained_glass_pane", 153, 153, 153, 255);
+    setLightColor("gray_stained_glass",      76, 76, 76, 255);
+    setLightColor("gray_stained_glass_pane", 76, 76, 76, 255);
+    setLightColor("black_stained_glass",      25, 25, 25, 255);
+    setLightColor("black_stained_glass_pane", 25, 25, 25, 255);
+    setLightColor("brown_stained_glass",      102, 76, 51, 255);
+    setLightColor("brown_stained_glass_pane", 102, 76, 51, 255);
+
+    setLightColor("red_stained_glass",      153, 51, 51, 255);
+    setLightColor("red_stained_glass_pane", 153, 51, 51, 255);
+    setLightColor("orange_stained_glass",      216, 127, 51, 255);
+    setLightColor("orange_stained_glass_pane", 216, 127, 51, 255);
+    setLightColor("yellow_stained_glass",      229, 229, 51, 255);
+    setLightColor("yellow_stained_glass_pane", 229, 229, 51, 255);
+    setLightColor("lime_stained_glass",      127, 204, 25, 255);
+    setLightColor("lime_stained_glass_pane", 127, 204, 25, 255);
+    setLightColor("green_stained_glass",      102, 127, 51, 255);
+    setLightColor("green_stained_glass_pane", 102, 127, 51, 255);
+    setLightColor("cyan_stained_glass",      76, 127, 153, 255);
+    setLightColor("cyan_stained_glass_pane", 76, 127, 153, 255);
+    setLightColor("light_blue_stained_glass",      102, 153, 216, 255);
+    setLightColor("light_blue_stained_glass_pane", 102, 153, 216, 255);
+    setLightColor("blue_stained_glass",      51, 76, 178, 255);
+    setLightColor("blue_stained_glass_pane", 51, 76, 178, 255);
+    setLightColor("purple_stained_glass",      127, 63, 178, 255);
+    setLightColor("purple_stained_glass_pane", 127, 63, 178, 255);
+    setLightColor("magenta_stained_glass",      178, 76, 216, 255);
+    setLightColor("magenta_stained_glass_pane", 178, 76, 216, 255);
+    setLightColor("pink_stained_glass",      242, 127, 165, 255);
+    setLightColor("pink_stained_glass_pane", 242, 127, 165, 255);
 
     const screenWidth_half = Math.ceil(screenWidth / 2.0);
     const screenHeight_half = Math.ceil(screenHeight / 2.0);
@@ -399,55 +425,97 @@ function setupShader() {
             .build();
     }
 
-    let texDiffuseAccum: BuiltTexture | null = null;
-    let texDiffuseAccum_alt: BuiltTexture | null = null;
-    let texSpecularAccum: BuiltTexture | null = null;
-    let texSpecularAccum_alt: BuiltTexture | null = null;
-    let texDiffuseAccumPos: BuiltTexture | null = null;
-    let texDiffuseAccumPos_alt: BuiltTexture | null = null;
     if (Settings.Internal.Accumulation) {
-        texDiffuseAccum = new Texture("texDiffuseAccum")
-            .imageName("imgDiffuseAccum")
+        new Texture("texAccumDiffuse_opaque")
+            .imageName("imgAccumDiffuse_opaque")
             .format(Format.RGBA16F)
             .width(screenWidth)
             .height(screenHeight)
             .clear(false)
             .build();
 
-        texDiffuseAccum_alt = new Texture("texDiffuseAccum_alt")
-            .imageName("imgDiffuseAccum_alt")
+        new Texture("texAccumDiffuse_opaque_alt")
+            .imageName("imgAccumDiffuse_opaque_alt")
             .format(Format.RGBA16F)
             .width(screenWidth)
             .height(screenHeight)
             .clear(false)
             .build();
 
-        texSpecularAccum = new Texture("texSpecularAccum")
-            .imageName("imgSpecularAccum")
+        new Texture("texAccumDiffuse_translucent")
+            .imageName("imgAccumDiffuse_translucent")
             .format(Format.RGBA16F)
             .width(screenWidth)
             .height(screenHeight)
             .clear(false)
             .build();
 
-        texSpecularAccum_alt = new Texture("texSpecularAccum_alt")
-            .imageName("imgSpecularAccum_alt")
+        new Texture("texAccumDiffuse_translucent_alt")
+            .imageName("imgAccumDiffuse_translucent_alt")
             .format(Format.RGBA16F)
             .width(screenWidth)
             .height(screenHeight)
             .clear(false)
             .build();
 
-        texDiffuseAccumPos = new Texture("texDiffuseAccumPos")
-            .imageName("imgDiffuseAccumPos")
+        new Texture("texAccumSpecular_opaque")
+            .imageName("imgAccumSpecular_opaque")
             .format(Format.RGBA16F)
             .width(screenWidth)
             .height(screenHeight)
             .clear(false)
             .build();
 
-        texDiffuseAccumPos_alt = new Texture("texDiffuseAccumPos_alt")
-            .imageName("imgDiffuseAccumPos_alt")
+        new Texture("texAccumSpecular_opaque_alt")
+            .imageName("imgAccumSpecular_opaque_alt")
+            .format(Format.RGBA16F)
+            .width(screenWidth)
+            .height(screenHeight)
+            .clear(false)
+            .build();
+
+        new Texture("texAccumSpecular_translucent")
+            .imageName("imgAccumSpecular_translucent")
+            .format(Format.RGBA16F)
+            .width(screenWidth)
+            .height(screenHeight)
+            .clear(false)
+            .build();
+
+        new Texture("texAccumSpecular_translucent_alt")
+            .imageName("imgAccumSpecular_translucent_alt")
+            .format(Format.RGBA16F)
+            .width(screenWidth)
+            .height(screenHeight)
+            .clear(false)
+            .build();
+
+        new Texture("texAccumPosition_opaque")
+            .imageName("imgAccumPosition_opaque")
+            .format(Format.RGBA16F)
+            .width(screenWidth)
+            .height(screenHeight)
+            .clear(false)
+            .build();
+
+        new Texture("texAccumPosition_opaque_alt")
+            .imageName("imgAccumPosition_opaque_alt")
+            .format(Format.RGBA16F)
+            .width(screenWidth)
+            .height(screenHeight)
+            .clear(false)
+            .build();
+
+        new Texture("texAccumPosition_translucent")
+            .imageName("imgAccumPosition_translucent")
+            .format(Format.RGBA16F)
+            .width(screenWidth)
+            .height(screenHeight)
+            .clear(false)
+            .build();
+
+        new Texture("texAccumPosition_translucent_alt")
+            .imageName("imgAccumPosition_translucent_alt")
             .format(Format.RGBA16F)
             .width(screenWidth)
             .height(screenHeight)
@@ -780,6 +848,10 @@ function setupShader() {
             .ssbo(3, lightListBuffer)
             .ssbo(4, triangleListBuffer)
             .ssbo(5, blockFaceBuffer)
+            .define("TEX_DEFERRED_COLOR", "texDeferredOpaque_Color")
+            .define("TEX_DEFERRED_DATA", "texDeferredOpaque_Data")
+            .define("TEX_DEFERRED_NORMAL", "texDeferredOpaque_TexNormal")
+            .define("TEX_DEPTH", "solidDepthTex")
             .define("TEX_SHADOW", texShadow_src);
 
         if (Settings.Lighting.Reflections.Mode == ReflectMode_WSR)
@@ -803,18 +875,24 @@ function setupShader() {
     }
 
     if (Settings.Internal.Accumulation) {
-        registerShader(Stage.POST_RENDER, new Compute("diffuse-accum-opaque")
+        registerShader(Stage.POST_RENDER, new Compute("accumulation-opaque")
             // .barrier(true)
-            .location("composite/diffuse-accum-opaque.csh")
+            .location("composite/accumulation.csh")
             .workGroups(Math.ceil(screenWidth / 16.0), Math.ceil(screenHeight / 16.0), 1)
+            .define("TEX_DEPTH", "solidDepthTex")
+            .define("IMG_ACCUM_DIFFUSE", "imgAccumDiffuse_opaque")
+            .define("IMG_ACCUM_SPECULAR", "imgAccumSpecular_opaque")
+            .define("IMG_ACCUM_POSITION", "imgAccumPosition_opaque")
+            .define("IMG_ACCUM_DIFFUSE_ALT", "imgAccumDiffuse_opaque_alt")
+            .define("IMG_ACCUM_SPECULAR_ALT", "imgAccumSpecular_opaque_alt")
+            .define("IMG_ACCUM_POSITION_ALT", "imgAccumPosition_opaque_alt")
+            .define("TEX_ACCUM_DIFFUSE", "texAccumDiffuse_opaque")
+            .define("TEX_ACCUM_SPECULAR", "texAccumSpecular_opaque")
+            .define("TEX_ACCUM_POSITION", "texAccumPosition_opaque")
+            .define("TEX_ACCUM_DIFFUSE_ALT", "texAccumDiffuse_opaque_alt")
+            .define("TEX_ACCUM_SPECULAR_ALT", "texAccumSpecular_opaque_alt")
+            .define("TEX_ACCUM_POSITION_ALT", "texAccumPosition_opaque_alt")
             .build());
-
-        // registerShader(Stage.POST_RENDER, new Composite("diffuse-accum-copy-prev")
-        //     .vertex("shared/bufferless.vsh")
-        //     .fragment("shared/copy.fsh")
-        //     .target(0, texDiffuseAccumPrevious)
-        //     .define("TEX_SRC", "texDiffuseAccum")
-        //     .build());
     }
 
     registerShader(Stage.POST_RENDER, new Composite("volumetric-far")
@@ -849,6 +927,53 @@ function setupShader() {
 
     registerShader(Stage.POST_RENDER, compositeOpaqueShader.build());
 
+    if (Settings.Lighting.Mode == LightMode_RT || Settings.Lighting.Reflections.Mode == ReflectMode_WSR) {
+        registerBarrier(Stage.POST_RENDER, new MemoryBarrier(SSBO_BIT));
+
+        const rtTranslucentShader = new Composite("rt-translucent")
+            .vertex("shared/bufferless.vsh")
+            .fragment("composite/rt-opaque.fsh")
+            .target(0, texDiffuseRT)
+            .target(1, texSpecularRT)
+            .ssbo(0, sceneBuffer)
+            .ssbo(3, lightListBuffer)
+            .ssbo(4, triangleListBuffer)
+            .ssbo(5, blockFaceBuffer)
+            .define("RENDER_TRANSLUCENT", "1")
+            .define("TEX_DEFERRED_COLOR", "texDeferredTranslucent_Color")
+            .define("TEX_DEFERRED_DATA", "texDeferredTranslucent_Data")
+            .define("TEX_DEFERRED_NORMAL", "texDeferredTranslucent_TexNormal")
+            .define("TEX_DEPTH", "mainDepthTex")
+            .define("TEX_SHADOW", texShadow_src);
+
+        if (Settings.Lighting.Reflections.Mode == ReflectMode_WSR)
+            rtTranslucentShader.generateMips(texFinalPrevious);
+
+        registerShader(Stage.POST_RENDER, rtTranslucentShader.build());
+    }
+
+    if (Settings.Internal.Accumulation) {
+        registerShader(Stage.POST_RENDER, new Compute("accumulation-translucent")
+            // .barrier(true)
+            .location("composite/accumulation.csh")
+            .workGroups(Math.ceil(screenWidth / 16.0), Math.ceil(screenHeight / 16.0), 1)
+            .define("RENDER_TRANSLUCENT", "1")
+            .define("TEX_DEPTH", "mainDepthTex")
+            .define("IMG_ACCUM_DIFFUSE", "imgAccumDiffuse_translucent")
+            .define("IMG_ACCUM_SPECULAR", "imgAccumSpecular_translucent")
+            .define("IMG_ACCUM_POSITION", "imgAccumPosition_translucent")
+            .define("IMG_ACCUM_DIFFUSE_ALT", "imgAccumDiffuse_translucent_alt")
+            .define("IMG_ACCUM_SPECULAR_ALT", "imgAccumSpecular_translucent_alt")
+            .define("IMG_ACCUM_POSITION_ALT", "imgAccumPosition_translucent_alt")
+            .define("TEX_ACCUM_DIFFUSE", "texAccumDiffuse_translucent")
+            .define("TEX_ACCUM_SPECULAR", "texAccumSpecular_translucent")
+            .define("TEX_ACCUM_POSITION", "texAccumPosition_translucent")
+            .define("TEX_ACCUM_DIFFUSE_ALT", "texAccumDiffuse_translucent_alt")
+            .define("TEX_ACCUM_SPECULAR_ALT", "texAccumSpecular_translucent_alt")
+            .define("TEX_ACCUM_POSITION_ALT", "texAccumPosition_translucent_alt")
+            .build());
+    }
+
     registerShader(Stage.POST_RENDER, new Composite("volumetric-near")
         .vertex("shared/bufferless.vsh")
         .fragment("composite/volumetric-near.fsh")
@@ -861,7 +986,7 @@ function setupShader() {
 
     registerShader(Stage.POST_RENDER, new Composite("composite-translucent")
         .vertex("shared/bufferless.vsh")
-        .fragment("composite/composite-trans.fsh")
+        .fragment("composite/composite-translucent.fsh")
         .target(0, texFinal)
         .ssbo(0, sceneBuffer)
         .ssbo(4, triangleListBuffer)

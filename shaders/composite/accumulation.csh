@@ -12,21 +12,21 @@ shared float gaussianBuffer[5];
 shared vec3 sharedOcclusionBuffer[sharedBufferSize];
 shared float sharedDepthBuffer[sharedBufferSize];
 
-layout(rgba16f) uniform writeonly image2D imgDiffuseAccum;
-layout(rgba16f) uniform writeonly image2D imgDiffuseAccum_alt;
-layout(rgba16f) uniform writeonly image2D imgSpecularAccum;
-layout(rgba16f) uniform writeonly image2D imgSpecularAccum_alt;
-layout(rgba16f) uniform writeonly image2D imgDiffuseAccumPos;
-layout(rgba16f) uniform writeonly image2D imgDiffuseAccumPos_alt;
+layout(rgba16f) uniform writeonly image2D IMG_ACCUM_DIFFUSE;
+layout(rgba16f) uniform writeonly image2D IMG_ACCUM_SPECULAR;
+layout(rgba16f) uniform writeonly image2D IMG_ACCUM_POSITION;
+layout(rgba16f) uniform writeonly image2D IMG_ACCUM_DIFFUSE_ALT;
+layout(rgba16f) uniform writeonly image2D IMG_ACCUM_SPECULAR_ALT;
+layout(rgba16f) uniform writeonly image2D IMG_ACCUM_POSITION_ALT;
 
-uniform sampler2D solidDepthTex;
+uniform sampler2D TEX_DEPTH;
 
-uniform sampler2D texDiffuseAccum;
-uniform sampler2D texDiffuseAccum_alt;
-uniform sampler2D texSpecularAccum;
-uniform sampler2D texSpecularAccum_alt;
-uniform sampler2D texDiffuseAccumPos;
-uniform sampler2D texDiffuseAccumPos_alt;
+uniform sampler2D TEX_ACCUM_DIFFUSE;
+uniform sampler2D TEX_ACCUM_SPECULAR;
+uniform sampler2D TEX_ACCUM_POSITION;
+uniform sampler2D TEX_ACCUM_DIFFUSE_ALT;
+uniform sampler2D TEX_ACCUM_SPECULAR_ALT;
+uniform sampler2D TEX_ACCUM_POSITION_ALT;
 
 uniform sampler2D texSSGIAO;
 
@@ -67,7 +67,7 @@ void populateSharedBuffer() {
         vec3 ssgi = vec3(0.0);
         if (all(greaterThanEqual(uv, ivec2(0))) && all(lessThan(uv, ivec2(ap.game.screenSize + 0.5)))) {
             ssgi = texelFetch(texSSGIAO, uv/2, 0).rgb;
-            float depth = texelFetch(solidDepthTex, uv/2*2, 0).r;
+            float depth = texelFetch(TEX_DEPTH, uv/2*2, 0).r;
             depthL = linearizeDepth(depth, ap.camera.near, ap.camera.far);
         }
 
@@ -124,7 +124,7 @@ void main() {
     // vec2 uv2 = uv;
     // uv2 += getJitterOffset(ap.frame.counter);
 
-    float depth = texelFetch(solidDepthTex, iuv, 0).r;
+    float depth = texelFetch(TEX_DEPTH, iuv, 0).r;
 
     // TODO: add velocity buffer
     vec3 velocity = vec3(0.0); //textureLod(BUFFER_VELOCITY, uv, 0).xyz;
@@ -146,9 +146,9 @@ void main() {
 
     bool altFrame = (ap.frame.counter % 2) == 1;
 
-    vec4 previousDiffuse = textureLod(altFrame ? texDiffuseAccum : texDiffuseAccum_alt, uvLast, 0);
-    vec4 previousSpecular = textureLod(altFrame ? texSpecularAccum : texSpecularAccum_alt, uvLast, 0);
-    vec3 localPosLast = textureLod(altFrame ? texDiffuseAccumPos : texDiffuseAccumPos_alt, uvLast, 0).rgb;
+    vec4 previousDiffuse = textureLod(altFrame ? TEX_ACCUM_DIFFUSE : TEX_ACCUM_DIFFUSE_ALT, uvLast, 0);
+    vec4 previousSpecular = textureLod(altFrame ? TEX_ACCUM_SPECULAR : TEX_ACCUM_SPECULAR_ALT, uvLast, 0);
+    vec3 localPosLast = textureLod(altFrame ? TEX_ACCUM_POSITION : TEX_ACCUM_POSITION_ALT, uvLast, 0).rgb;
 
     float depthL = linearizeDepth(depth, ap.camera.near, ap.camera.far);
 
@@ -172,7 +172,7 @@ void main() {
     float specularCounter = clamp(previousDiffuse.a * counterF + 1.0, 1.0, 3.0);
     vec3 specularFinal = mix(previousSpecular.rgb, specular, 1.0 / specularCounter);
 
-    imageStore(altFrame ? imgDiffuseAccum_alt : imgDiffuseAccum, iuv, vec4(diffuseFinal, diffuseCounter));
-    imageStore(altFrame ? imgSpecularAccum_alt : imgSpecularAccum, iuv, vec4(specularFinal, specularCounter));
-    imageStore(altFrame ? imgDiffuseAccumPos_alt : imgDiffuseAccumPos, iuv, vec4(localPos, 1.0));
+    imageStore(altFrame ? IMG_ACCUM_DIFFUSE_ALT  : IMG_ACCUM_DIFFUSE,  iuv, vec4(diffuseFinal, diffuseCounter));
+    imageStore(altFrame ? IMG_ACCUM_SPECULAR_ALT : IMG_ACCUM_SPECULAR, iuv, vec4(specularFinal, specularCounter));
+    imageStore(altFrame ? IMG_ACCUM_POSITION_ALT : IMG_ACCUM_POSITION, iuv, vec4(localPos, 1.0));
 }

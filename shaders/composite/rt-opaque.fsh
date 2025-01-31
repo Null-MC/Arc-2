@@ -6,11 +6,11 @@
 layout(location = 0) out vec4 outDiffuseRT;
 layout(location = 1) out vec4 outSpecularRT;
 
-uniform sampler2D solidDepthTex;
+uniform sampler2D TEX_DEPTH;
 
-uniform sampler2D texDeferredOpaque_Color;
-uniform usampler2D texDeferredOpaque_Data;
-uniform sampler2D texDeferredOpaque_TexNormal;
+uniform sampler2D TEX_DEFERRED_COLOR;
+uniform usampler2D TEX_DEFERRED_DATA;
+uniform sampler2D TEX_DEFERRED_NORMAL;
 
 #if LIGHTING_REFLECT_MODE == REFLECT_MODE_WSR || (LIGHTING_MODE == LIGHT_MODE_RT && defined(RT_TRI_ENABLED))
     uniform sampler2D blockAtlas;
@@ -102,14 +102,20 @@ in vec2 uv;
 
 void main() {
     ivec2 iuv = ivec2(fma(uv, ap.game.screenSize, vec2(0.5)));
-    float depth = texelFetch(solidDepthTex, iuv, 0).r;
+    float depth = texelFetch(TEX_DEPTH, iuv, 0).r;
 
     vec3 diffuseFinal = vec3(0.0);
     vec3 specularFinal = vec3(0.0);
 
+    vec4 albedo = texelFetch(TEX_DEFERRED_COLOR, iuv, 0);
+
+    #ifdef RENDER_TRANSLUCENT
+        if (albedo.a < EPSILON) depth = 1.0;
+    #endif
+
     if (depth < 1.0) {
-        uvec4 data = texelFetch(texDeferredOpaque_Data, iuv, 0);
-        vec3 normalData = texelFetch(texDeferredOpaque_TexNormal, iuv, 0).xyz;
+        uvec4 data = texelFetch(TEX_DEFERRED_DATA, iuv, 0);
+        vec3 normalData = texelFetch(TEX_DEFERRED_NORMAL, iuv, 0).xyz;
 
         vec3 ndcPos = vec3(uv, depth) * 2.0 - 1.0;
         vec3 viewPos = unproject(ap.camera.projectionInv, ndcPos);
@@ -130,7 +136,7 @@ void main() {
                 float dither = InterleavedGradientNoise(ivec2(gl_FragCoord.xy));
             #endif
 
-            vec4 albedo = texelFetch(texDeferredOpaque_Color, iuv, 0);
+//            vec4 albedo = texelFetch(TEX_DEFERRED_COLOR, iuv, 0);
             albedo.rgb = RgbToLinear(albedo.rgb);
 
             vec4 data_g = unpackUnorm4x8(data.g);
@@ -263,7 +269,6 @@ void main() {
 
                 vec4 reflection = vec4(0.0);
                 vec3 reflect_tint = vec3(1.0);
-                float reflect_mip = 0.0;
 
                 vec2 reflect_uv, reflect_lmcoord;
                 vec3 reflect_voxelPos, reflect_geoNormal;
@@ -297,7 +302,6 @@ void main() {
                     #else
                         // WSR: block-only
 
-                        //vec2 reflect_hitCoord;
                         VoxelBlockFace blockFace;
                         if (TraceReflection(localPos + 0.1*localGeoNormal, reflectLocalDir, reflect_voxelPos, reflect_geoNormal, reflect_uv, blockFace)) {
                             GetBlockFaceLightMap(blockFace.lmcoord, reflect_lmcoord);
@@ -306,21 +310,17 @@ void main() {
 
                             iris_TextureInfo tex = iris_getTexture(blockFace.tex_id);
                             reflect_uv = fma(reflect_uv, tex.maxCoord - tex.minCoord, tex.minCoord);
-                            //reflect_uv = 0.5 * (tex.minCoord + tex.maxCoord);
-                            //reflect_mip = 4.0;
 
-                            vec3 reflectColor = textureLod(blockAtlas, reflect_uv, reflect_mip).rgb;
+                            vec3 reflectColor = textureLod(blockAtlas, reflect_uv, 0).rgb;
                             reflection = vec4(reflectColor, 1.0);
-
-                            //reflection.rgb = clamp(reflect_geoNormal*0.5+0.5, 0.0, 1.0);
                         }
                     #endif
                 }
 
                 if (reflection.a > 0.5) {
                     #if MATERIAL_FORMAT != MAT_NONE
-                        vec4 reflect_normalData = textureLod(blockAtlasN, reflect_uv, reflect_mip);
-                        vec4 reflect_specularData = textureLod(blockAtlasS, reflect_uv, reflect_mip);
+                        vec4 reflect_normalData = textureLod(blockAtlasN, reflect_uv, 0);
+                        vec4 reflect_specularData = textureLod(blockAtlasS, reflect_uv, 0);
                     #endif
 
                     reflection.rgb *= reflect_tint;
@@ -391,8 +391,6 @@ void main() {
                     #endif
 
                     skyReflectColor = reflection.rgb * reflect_diffuse;// + reflect_specular;
-
-                    //skyReflectColor = mix(skyReflectColor, reflectFinal, reflection.a);
                 }
                 else {
                     // SSR fallback
@@ -403,7 +401,7 @@ void main() {
 
                     vec3 clipPos = ndcPos * 0.5 + 0.5;
                     vec3 reflectRay = normalize(reflectClipPos - clipPos);
-                    reflection = GetReflectionPosition(solidDepthTex, clipPos, reflectRay);
+                    reflection = GetReflectionPosition(TEX_DEPTH, clipPos, reflectRay);
 
                     float maxLod = max(log2(minOf(ap.game.screenSize)) - 2.0, 0.0);
                     float screenDist = length((reflection.xy - uv) * (ap.game.screenSize/2.0));

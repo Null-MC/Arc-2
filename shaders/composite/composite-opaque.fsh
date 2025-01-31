@@ -37,10 +37,10 @@ uniform sampler2D TEX_SHADOW;
 #endif
 
 #ifdef ACCUM_ENABLED
-    uniform sampler2D texDiffuseAccum;
-    uniform sampler2D texDiffuseAccum_alt;
-    uniform sampler2D texSpecularAccum;
-    uniform sampler2D texSpecularAccum_alt;
+    uniform sampler2D texAccumDiffuse_opaque;
+    uniform sampler2D texAccumDiffuse_opaque_alt;
+    uniform sampler2D texAccumSpecular_opaque;
+    uniform sampler2D texAccumSpecular_opaque_alt;
 #endif
 
 #include "/lib/common.glsl"
@@ -260,17 +260,13 @@ void main() {
 
         #ifdef ACCUM_ENABLED
             bool altFrame = (ap.frame.counter % 2) == 1;
-            diffuse += textureLod(altFrame ? texDiffuseAccum_alt : texDiffuseAccum, uv, 0).rgb;
+            diffuse += textureLod(altFrame ? texAccumDiffuse_opaque_alt : texAccumDiffuse_opaque, uv, 0).rgb;
         #endif
 
         float metalness = mat_metalness(f0_metal);
         diffuse *= 1.0 - metalness * (1.0 - roughL);
 
         //diffuse *= fma(occlusion, 0.5, 0.5);
-
-        #ifdef ACCUM_ENABLED
-            // specular += textureLod(altFrame ? texSpecularAccum_alt : texSpecularAccum, uv, 0).rgb;
-        #endif
 
         #if MATERIAL_EMISSION_POWER != 1
             diffuse += pow(emission, MATERIAL_EMISSION_POWER) * EMISSION_BRIGHTNESS;
@@ -286,7 +282,6 @@ void main() {
                 randomize_reflection(reflectLocalDir, localTexNormal, roughness);
             #endif
 
-            // vec3 skyReflectColor = GetSkyColor(vec3(0.0), reflectLocalDir, shadow_sss.rgb, lmCoord.y);
             vec3 skyPos = getSkyPosition(vec3(0.0));
             vec3 skyReflectColor = lmCoord.y * SKY_LUMINANCE * getValFromSkyLUT(texSkyView, skyPos, reflectLocalDir, Scene_LocalSunDir);
 
@@ -350,7 +345,7 @@ void main() {
         specular += view_F * skyReflectColor * reflectTint * (smoothness*smoothness);
 
         #ifdef ACCUM_ENABLED
-            specular += textureLod(altFrame ? texSpecularAccum_alt : texSpecularAccum, uv, 0).rgb;
+            specular += textureLod(altFrame ? texAccumSpecular_opaque_alt : texAccumSpecular_opaque, uv, 0).rgb;
         #endif
 
         diffuse *= 1.0 - view_F;

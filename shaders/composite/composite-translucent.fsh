@@ -41,8 +41,10 @@ uniform sampler2DArray texShadowColor;
 #endif
 
 #ifdef ACCUM_ENABLED
-    uniform sampler2D texDiffuseAccum;
-    uniform sampler2D texDiffuseAccum_alt;
+    uniform sampler2D texAccumDiffuse_translucent;
+    uniform sampler2D texAccumDiffuse_translucent_alt;
+    uniform sampler2D texAccumSpecular_translucent;
+    uniform sampler2D texAccumSpecular_translucent_alt;
 #endif
 
 #include "/lib/common.glsl"
@@ -184,6 +186,8 @@ void main() {
         // #ifdef SHADOWS_ENABLED
         //     shadow_sss = textureLod(TEX_SHADOW, uv, 0);
         // #endif
+        // TODO: temp hack!
+        vec4 shadow_sss = vec4(shadowSample, sss);
 
         float occlusion = texOcclusion;
         // #if defined EFFECT_SSAO_ENABLED //&& !defined ACCUM_ENABLED
@@ -235,15 +239,11 @@ void main() {
 
         #ifdef ACCUM_ENABLED
             bool altFrame = (ap.frame.counter % 2) == 1;
-            diffuse += textureLod(altFrame ? texDiffuseAccum_alt : texDiffuseAccum, uv, 0).rgb;
+            diffuse += textureLod(altFrame ? texAccumDiffuse_translucent_alt : texAccumDiffuse_translucent, uv, 0).rgb;
         #endif
 
         float metalness = mat_metalness(f0_metal);
         diffuse *= 1.0 - metalness * (1.0 - roughL);
-
-        #ifdef ACCUM_ENABLED
-            // specular += textureLod(altFrame ? texSpecularAccum_alt : texSpecularAccum, uv, 0).rgb;
-        #endif
 
         #if MATERIAL_EMISSION_POWER != 1
             diffuse += pow(emission, MATERIAL_EMISSION_POWER) * EMISSION_BRIGHTNESS;
@@ -252,23 +252,26 @@ void main() {
         #endif
 
         // reflections
-        vec3 reflectLocalDir = reflect(localViewDir, localTexNormal);
+        #if LIGHTING_REFLECT_MODE != REFLECT_MODE_WSR
+            vec3 reflectLocalDir = reflect(localViewDir, localTexNormal);
 
-        #ifdef MATERIAL_ROUGH_REFLECT_NOISE
-            randomize_reflection(reflectLocalDir, localTexNormal, roughness);
+            #ifdef MATERIAL_ROUGH_REFLECT_NOISE
+                randomize_reflection(reflectLocalDir, localTexNormal, roughness);
+            #endif
+
+            vec3 skyPos = getSkyPosition(vec3(0.0));
+            vec3 skyReflectColor = lmCoord.y * SKY_LUMINANCE * getValFromSkyLUT(texSkyView, skyPos, reflectLocalDir, Scene_LocalSunDir);
+
+            vec3 reflectSun = SUN_LUMINANCE * sun(reflectLocalDir, Scene_LocalSunDir) * sunTransmit;
+            vec3 reflectMoon = MOON_LUMINANCE * moon(reflectLocalDir, -Scene_LocalSunDir) * moonTransmit;
+            skyReflectColor += shadow_sss.rgb * (reflectSun + reflectMoon);
+
+            // vec3 starViewDir = getStarViewDir(reflectLocalDir);
+            // vec3 starLight = STAR_LUMINANCE * GetStarLight(starViewDir);
+            // skyReflectColor += starLight;
+        #else
+            vec3 skyReflectColor = vec3(0.0);
         #endif
-
-        // vec3 skyReflectColor = GetSkyColor(vec3(0.0), reflectLocalDir, shadow_sss.rgb, lmCoord.y);
-        vec3 skyPos = getSkyPosition(vec3(0.0));
-        vec3 skyReflectColor = lmCoord.y * SKY_LUMINANCE * getValFromSkyLUT(texSkyView, skyPos, reflectLocalDir, Scene_LocalSunDir);
-
-        vec3 reflectSun = SUN_LUMINANCE * sun(reflectLocalDir, Scene_LocalSunDir) * sunTransmit;
-        vec3 reflectMoon = MOON_LUMINANCE * moon(reflectLocalDir, -Scene_LocalSunDir) * moonTransmit;
-        skyReflectColor += shadowSample * (reflectSun + reflectMoon);
-
-        // vec3 starViewDir = getStarViewDir(reflectLocalDir);
-        // vec3 starLight = STAR_LUMINANCE * GetStarLight(starViewDir);
-        // skyReflectColor += starLight;
 
         float viewDist = length(localPosTrans);
 
@@ -302,16 +305,16 @@ void main() {
             skyReflectColor = mix(skyReflectColor, reflectColor, reflection.a);
         #endif
 
-        #if LIGHTING_REFLECT_MODE == REFLECT_MODE_WSR
-            skyReflectColor = vec3(0.0);
-        #endif
-
         float NoHm = max(dot(localTexNormal, H), 0.0);
 
         vec3 reflectTint = GetMetalTint(albedo.rgb, f0_metal);
 
         vec3 specular = skyLight * shadowSample * SampleLightSpecular(NoLm, NoHm, LoHm, view_F, roughL);
         specular += view_F * skyReflectColor * reflectTint * (1.0 - roughness);
+
+        #ifdef ACCUM_ENABLED
+            specular += textureLod(altFrame ? texAccumSpecular_translucent_alt : texAccumSpecular_translucent, uv, 0).rgb;
+        #endif
 
         vec4 finalColor = albedo;
         if (is_fluid) finalColor.a = 0.0;

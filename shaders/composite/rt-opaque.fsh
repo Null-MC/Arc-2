@@ -6,10 +6,6 @@
 layout(location = 0) out vec4 outDiffuseRT;
 layout(location = 1) out vec4 outSpecularRT;
 
-//#if LIGHTING_REFLECT_MODE == REFLECT_MODE_WSR && !defined(LIGHTING_REFLECT_TRIANGLE)
-//    layout(r32ui) uniform readonly uimage3D imgVoxelBlock;
-//#endif
-
 uniform sampler2D solidDepthTex;
 
 uniform sampler2D texDeferredOpaque_Color;
@@ -76,10 +72,6 @@ in vec2 uv;
 #if LIGHTING_REFLECT_MODE == REFLECT_MODE_WSR
     #include "/lib/buffers/scene.glsl"
 
-    #ifndef LIGHTING_REFLECT_TRIANGLE
-//        #include "/lib/buffers/voxel-block.glsl"
-    #endif
-
     #include "/lib/erp.glsl"
     #include "/lib/material/material.glsl"
 
@@ -117,18 +109,13 @@ void main() {
 
     if (depth < 1.0) {
         uvec4 data = texelFetch(texDeferredOpaque_Data, iuv, 0);
-        // vec2 pixelSize = 1.0 / ap.game.screenSize;
+        vec3 normalData = texelFetch(texDeferredOpaque_TexNormal, iuv, 0).xyz;
 
         vec3 ndcPos = vec3(uv, depth) * 2.0 - 1.0;
         vec3 viewPos = unproject(ap.camera.projectionInv, ndcPos);
         vec3 localPos = mul3(ap.camera.viewInv, viewPos);
 
-        // float viewDist = length(viewPos);
-
-        vec3 normalData = texelFetch(texDeferredOpaque_TexNormal, iuv, 0).xyz;
         vec3 localTexNormal = normalize(normalData * 2.0 - 1.0);
-
-        // vec3 viewNormal = mat3(ap.camera.view) * localNormal;
 
         vec3 data_r = unpackUnorm4x8(data.r).rgb;
         vec3 localGeoNormal = normalize(data_r * 2.0 - 1.0);
@@ -233,22 +220,10 @@ void main() {
                         vec3 direction = normalize(traceRay);
 
                         vec3 stepDir = sign(direction);
-                        // vec3 stepSizes = 1.0 / abs(direction);
                         vec3 nextDist = (stepDir * 0.5 + 0.5 - fract(traceStart)) / direction;
 
                         float closestDist = minOf(nextDist);
                         traceStart += direction * closestDist;
-
-                        // vec3 stepAxis = vec3(lessThanEqual(nextDist, vec3(closestDist)));
-
-                        // nextDist -= closestDist;
-                        // nextDist += stepSizes * stepAxis;
-
-
-
-                        // ivec3 triangle_offset = ivec3(voxelPos) % TRIANGLE_BIN_SIZE;
-                        // traceStart -= triangle_offset;
-                        // traceEnd -= triangle_offset;
 
                         traceStart /= TRIANGLE_BIN_SIZE;
                         traceEnd /= TRIANGLE_BIN_SIZE;
@@ -322,23 +297,25 @@ void main() {
                     #else
                         // WSR: block-only
 
+                        //vec2 reflect_hitCoord;
                         VoxelBlockFace blockFace;
-                        if (TraceReflection(localPos + 0.1*localGeoNormal, reflectLocalDir, reflect_voxelPos, reflect_geoNormal, blockFace)) {
+                        if (TraceReflection(localPos + 0.1*localGeoNormal, reflectLocalDir, reflect_voxelPos, reflect_geoNormal, reflect_uv, blockFace)) {
                             GetBlockFaceLightMap(blockFace.lmcoord, reflect_lmcoord);
 
                             reflect_tint = unpackUnorm4x8(blockFace.tint).rgb;
 
                             iris_TextureInfo tex = iris_getTexture(blockFace.tex_id);
-                            reflect_uv = 0.5 * (tex.minCoord + tex.maxCoord);
+                            reflect_uv = fma(reflect_uv, tex.maxCoord - tex.minCoord, tex.minCoord);
+                            //reflect_uv = 0.5 * (tex.minCoord + tex.maxCoord);
+                            //reflect_mip = 4.0;
 
-                            reflect_mip = 4.0;
                             vec3 reflectColor = textureLod(blockAtlas, reflect_uv, reflect_mip).rgb;
                             reflection = vec4(reflectColor, 1.0);
                         }
                     #endif
                 }
 
-                if (reflection.a > 0.0) {
+                if (reflection.a > 0.5) {
                     #if MATERIAL_FORMAT != MAT_NONE
                         vec4 reflect_normalData = textureLod(blockAtlasN, reflect_uv, reflect_mip);
                         vec4 reflect_specularData = textureLod(blockAtlasS, reflect_uv, reflect_mip);
@@ -383,13 +360,22 @@ void main() {
                     float reflect_LoHm = max(dot(Scene_LocalLightDir, H), 0.0);
                     float reflect_NoVm = max(dot(reflect_localTexNormal, reflectLocalDir), 0.0);
 
-                    vec3 skyLight = SUN_BRIGHTNESS * sunTransmit + MOON_BRIGHTNESS * moonTransmit;
-                    vec3 reflect_diffuse = reflect_NoLm * skyLight * reflect_shadow;
+                    vec3 reflect_sunTransmit, reflect_moonTransmit;
+                    GetSkyLightTransmission(reflect_localPos, reflect_sunTransmit, reflect_moonTransmit);
+
+                    float NoL_sun = dot(reflect_localTexNormal, Scene_LocalSunDir);
+                    float NoL_moon = -NoL_sun;//dot(localTexNormal, -Scene_LocalSunDir);
+
+                    vec3 skyLight = SUN_BRIGHTNESS * reflect_sunTransmit * max(NoL_sun, 0.0)
+                        + MOON_BRIGHTNESS * reflect_moonTransmit * max(NoL_moon, 0.0);
+
+                    vec3 reflect_diffuse = skyLight * reflect_shadow;
                     reflect_diffuse *= SampleLightDiffuse(reflect_NoVm, reflect_NoLm, reflect_LoHm, reflect_roughL);
 
                     vec2 skyIrradianceCoord = DirectionToUV(reflect_localTexNormal);
                     vec3 reflect_skyIrradiance = textureLod(texSkyIrradiance, skyIrradianceCoord, 0).rgb;
                     reflect_diffuse += (SKY_AMBIENT * reflect_lmcoord.y) * reflect_skyIrradiance;
+
                     reflect_diffuse += blackbody(BLOCKLIGHT_TEMP) * (BLOCKLIGHT_BRIGHTNESS * reflect_lmcoord.x);
                     reflect_diffuse += 0.0016;
 
@@ -402,14 +388,12 @@ void main() {
                         reflect_diffuse += reflect_emission * EMISSION_BRIGHTNESS;
                     #endif
 
-                    //                reflection.rgb = max(reflect_localTexNormal, 0.0);
+                    skyReflectColor = reflection.rgb * reflect_diffuse;// + reflect_specular;
 
-                    vec3 reflectFinal = reflection.rgb * reflect_diffuse;// + reflect_specular;
-
-                    skyReflectColor = mix(skyReflectColor, reflectFinal, reflection.a);
+                    //skyReflectColor = mix(skyReflectColor, reflectFinal, reflection.a);
                 }
-
-                if (reflection.a == 0.0) {
+                else {
+                    // SSR fallback
                     float viewDist = length(localPos);
                     vec3 reflectViewDir = mat3(ap.camera.view) * reflectLocalDir;
                     vec3 reflectViewPos = viewPos + 0.5*viewDist*reflectViewDir;
@@ -431,7 +415,6 @@ void main() {
                 vec3 reflectTint = GetMetalTint(albedo.rgb, f0_metal);
                 vec3 view_F = material_fresnel(albedo.rgb, f0_metal, roughL, NoVm, isWet);
                 specularFinal += view_F * skyReflectColor * reflectTint * (1.0 - roughness);
-//                specularFinal += skyReflectColor;
             #endif
         }
     }

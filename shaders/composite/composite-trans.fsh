@@ -216,7 +216,7 @@ void main() {
 
         vec2 skyIrradianceCoord = DirectionToUV(localTexNormal);
         vec3 skyIrradiance = textureLod(texSkyIrradiance, skyIrradianceCoord, 0).rgb;
-        skyLightDiffuse += (SKY_AMBIENT * SKY_BRIGHTNESS * lmCoord.y) * skyIrradiance;
+        skyLightDiffuse += (SKY_AMBIENT * lmCoord.y) * skyIrradiance;
 
         skyLightDiffuse *= occlusion;
 
@@ -300,6 +300,10 @@ void main() {
             vec3 reflectColor = GetRelectColor(texFinalPrevious, reflection.xy, reflection.a, roughMip);
 
             skyReflectColor = mix(skyReflectColor, reflectColor, reflection.a);
+        #endif
+
+        #if LIGHTING_REFLECT_MODE == REFLECT_MODE_WSR
+            skyReflectColor = vec3(0.0);
         #endif
 
         float NoHm = max(dot(localTexNormal, H), 0.0);

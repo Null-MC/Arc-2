@@ -211,11 +211,12 @@ void main() {
         // skyLight *= exp2(-lightAtmosDist * transmitF);
 
         float NoL_sun = dot(localTexNormal, Scene_LocalSunDir);
-        vec3 skyLight = SUN_BRIGHTNESS * sunTransmit
-            + MOON_BRIGHTNESS * moonTransmit;
+        float NoL_moon = -NoL_sun;//dot(localTexNormal, -Scene_LocalSunDir);
+//        vec3 skyLight = SUN_BRIGHTNESS * sunTransmit
+//            + MOON_BRIGHTNESS * moonTransmit;
 
         vec3 skyLight_NoLm = SUN_BRIGHTNESS * sunTransmit * max(NoL_sun, 0.0)
-            + MOON_BRIGHTNESS * moonTransmit * max(-NoL_sun, 0.0);
+            + MOON_BRIGHTNESS * moonTransmit * max(NoL_moon, 0.0);
 
         vec3 skyLightDiffuse = skyLight_NoLm * shadow_sss.rgb;
         skyLightDiffuse *= SampleLightDiffuse(NoVm, NoLm, LoHm, roughL);
@@ -242,9 +243,11 @@ void main() {
 
         skyLightDiffuse *= occlusion;
 
-        float VoL = dot(localViewDir, Scene_LocalLightDir);
-        float sss_phase = 4.0 * max(HG(VoL, 0.16), 0.0);
-        skyLightDiffuse += skyLight * sss_phase * max(shadow_sss.w, 0.0);// * (1.0 - NoLm);
+        float VoL_sun = dot(localViewDir, Scene_LocalSunDir);
+//        float VoL_moon = dot(localViewDir, -Scene_LocalSunDir);
+        vec3 sss_phase_sun = max(HG(VoL_sun, 0.16), 0.0) * SUN_BRIGHTNESS * sunTransmit * (1.0 - max(NoL_sun, 0.0));
+        vec3 sss_phase_moon = max(HG(-VoL_sun, 0.16), 0.0) * MOON_BRIGHTNESS * moonTransmit * (1.0 - max(NoL_moon, 0.0));
+        skyLightDiffuse += PI * (sss_phase_sun + sss_phase_moon) * max(shadow_sss.w, 0.0);
 
         vec3 blockLighting = blackbody(BLOCKLIGHT_TEMP) * (BLOCKLIGHT_BRIGHTNESS * lmCoord.x);
 

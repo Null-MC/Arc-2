@@ -1,7 +1,7 @@
 const int WSR_MAXSTEPS = 64;
 
 
-bool TraceReflection(const in vec3 localPos, const in vec3 localDir, out vec3 hitPos, out vec3 hitNormal, out VoxelBlockFace blockFace) {
+bool TraceReflection(const in vec3 localPos, const in vec3 localDir, out vec3 hitPos, out vec3 hitNormal, out vec2 hitCoord, out VoxelBlockFace blockFace) {
     vec4 colorFinal = vec4(0.0);
     vec3 currPos = GetVoxelPosition(localPos);
 
@@ -11,28 +11,28 @@ bool TraceReflection(const in vec3 localPos, const in vec3 localDir, out vec3 hi
 
     bool hit = false;
     ivec3 voxelPos;
-    uint blockId;
 
     for (int i = 0; i < WSR_MAXSTEPS && !hit; i++) {
-        vec3 rayStart = currPos;
-
         float closestDist = minOf(nextDist);
-        currPos += localDir * closestDist;
+        vec3 step = localDir * closestDist;
 
-        voxelPos = ivec3(floor(0.5 * (currPos + rayStart)));
+        voxelPos = ivec3(floor(currPos + 0.5*step));
 
         vec3 stepAxis = vec3(lessThanEqual(nextDist, vec3(closestDist)));
 
         nextDist -= closestDist;
         nextDist += stepSizes * stepAxis;
 
-        blockId = imageLoad(imgVoxelBlock, voxelPos).r;
+        uint blockId = imageLoad(imgVoxelBlock, voxelPos).r;
         bool isFullBlock = blockId > 0u && iris_isFullBlock(blockId);
 
         if (isFullBlock) {
-            hitPos = rayStart;
-            hitNormal = stepAxis;
+            hitPos = currPos;
+            hitNormal = 1.0 - stepAxis;
             hit = true;
+        }
+        else {
+            currPos += step;
         }
     }
 
@@ -40,6 +40,16 @@ bool TraceReflection(const in vec3 localPos, const in vec3 localDir, out vec3 hi
         int blockFaceIndex = GetVoxelBlockFaceIndex(hitNormal);
         int blockFaceMapIndex = GetVoxelBlockFaceMapIndex(voxelPos, blockFaceIndex);
         blockFace = VoxelBlockFaceMap[blockFaceMapIndex];
+
+        if (abs(hitNormal.y) > 0.5) {
+            hitCoord = fract(hitPos.xz);
+        }
+        else if (abs(hitNormal.z) > 0.5) {
+            hitCoord = fract(hitPos.xy);
+        }
+        else {
+            hitCoord = fract(hitPos.yz);
+        }
     }
 
     return hit;

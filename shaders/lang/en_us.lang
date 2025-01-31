@@ -86,6 +86,8 @@ value.DEBUG_VIEW.4=SSAO
 value.DEBUG_VIEW.5=SSGI
 value.DEBUG_VIEW.6=VL
 value.DEBUG_VIEW.7=Sky Irradiance
+value.DEBUG_VIEW.8=ShadowMap Color
+value.DEBUG_VIEW.9=ShadowMap Normal
 
 option.DEBUG_MATERIAL=Material
 value.DEBUG_MATERIAL.0=None

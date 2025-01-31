@@ -89,7 +89,7 @@ function setupOptions() {
 
     const screen_Debug = new Page("Debug")
         .add(asBool("DEBUG_ENABLED", false))
-        .add(asInt("DEBUG_VIEW", 0, 1, 2, 3, 4, 5, 6, 7).build(0))
+        .add(asInt("DEBUG_VIEW", 0, 1, 2, 3, 4, 5, 6, 7, 8, 9).build(0))
         .add(EMPTY)
         .add(asInt("DEBUG_MATERIAL", 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10).build(0))
         .build();

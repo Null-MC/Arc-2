@@ -20,6 +20,10 @@ uniform sampler2D texFinal;
     uniform sampler2D texTransmitVL;
 #elif DEBUG_VIEW == DEBUG_VIEW_SKY_IRRADIANCE
     uniform sampler2D texSkyIrradiance;
+#elif DEBUG_VIEW == DEBUG_VIEW_SHADOWMAP_COLOR
+    uniform sampler2DArray texShadowColor;
+#elif DEBUG_VIEW == DEBUG_VIEW_SHADOWMAP_NORMAL
+    uniform sampler2DArray texShadowNormal;
 #endif
 
 #if DEBUG_MATERIAL != DEBUG_MAT_NONE
@@ -69,11 +73,14 @@ in vec2 uv;
 void main() {
     ivec2 iuv = ivec2(gl_FragCoord.xy);
     vec3 color = texelFetch(texFinal, iuv, 0).rgb;
-    vec2 previewCoord, previewCoord2;
+    vec2 previewCoord, previewCoord2, previewCoordSq;
     
     if (!ap.game.guiHidden) {
+        float aspect = ap.game.screenSize.y / ap.game.screenSize.x;
+
         previewCoord = (uv - 0.01) / vec2(0.25);
         previewCoord2 = (uv - vec2(0.27, 0.01)) / vec2(0.25);
+        previewCoordSq = (uv - 0.01) / vec2(0.25 * aspect, 0.25);
 
         if (clamp(previewCoord, 0.0, 1.0) == previewCoord) {
             #if DEBUG_VIEW == DEBUG_VIEW_SHADOWS
@@ -128,6 +135,14 @@ void main() {
         if (clamp(previewCoord2, 0.0, 1.0) == previewCoord2) {
             #if DEBUG_VIEW == DEBUG_VIEW_VL
                 color = textureLod(texTransmitVL, previewCoord2, 0).rgb;
+            #endif
+        }
+
+        if (clamp(previewCoordSq, 0.0, 1.0) == previewCoordSq) {
+            #if DEBUG_VIEW == DEBUG_VIEW_SHADOWMAP_COLOR
+                color = textureLod(texShadowColor, vec3(previewCoordSq, 0), 0).rgb;
+            #elif DEBUG_VIEW == DEBUG_VIEW_SHADOWMAP_NORMAL
+                color = textureLod(texShadowNormal, vec3(previewCoordSq, 0), 0).rgb;
             #endif
         }
 

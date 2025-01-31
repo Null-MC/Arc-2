@@ -940,9 +940,9 @@ function setupShader() {
             .ssbo(4, triangleListBuffer)
             .ssbo(5, blockFaceBuffer)
             .define("RENDER_TRANSLUCENT", "1")
-            .define("TEX_DEFERRED_COLOR", "texDeferredTranslucent_Color")
-            .define("TEX_DEFERRED_DATA", "texDeferredTranslucent_Data")
-            .define("TEX_DEFERRED_NORMAL", "texDeferredTranslucent_TexNormal")
+            .define("TEX_DEFERRED_COLOR", "texDeferredTrans_Color")
+            .define("TEX_DEFERRED_DATA", "texDeferredTrans_Data")
+            .define("TEX_DEFERRED_NORMAL", "texDeferredTrans_TexNormal")
             .define("TEX_DEPTH", "mainDepthTex")
             .define("TEX_SHADOW", texShadow_src);
 

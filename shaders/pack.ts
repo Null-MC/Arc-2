@@ -826,9 +826,9 @@ function setupShader() {
             .build());
 
         if (Settings.Shadows.Filter) {
-            registerShader(Stage.POST_RENDER, new Compute("shadow-filter-opaque")
+            registerShader(Stage.POST_RENDER, new Compute("shadow-opaque-filter")
                 // .barrier(true)
-                .location("composite/shadow-filter-opaque.csh")
+                .location("composite/shadow-opaque-filter.csh")
                 .workGroups(Math.ceil(screenWidth / 16.0), Math.ceil(screenHeight / 16.0), 1)
                 .build());
 
@@ -843,7 +843,7 @@ function setupShader() {
 
         const rtOpaqueShader = new Composite("rt-opaque")
             .vertex("shared/bufferless.vsh")
-            .fragment("composite/rt-opaque.fsh")
+            .fragment("composite/rt.fsh")
             .target(0, texDiffuseRT)
             .target(1, texSpecularRT)
             .ssbo(0, sceneBuffer)
@@ -934,7 +934,7 @@ function setupShader() {
 
         const rtTranslucentShader = new Composite("rt-translucent")
             .vertex("shared/bufferless.vsh")
-            .fragment("composite/rt-opaque.fsh")
+            .fragment("composite/rt.fsh")
             .target(0, texDiffuseRT)
             .target(1, texSpecularRT)
             .ssbo(0, sceneBuffer)

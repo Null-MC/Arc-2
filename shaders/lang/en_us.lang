@@ -41,6 +41,8 @@ value.LIGHTING_REFLECT_MODE.2=World-Space
 
 option.LIGHTING_REFLECT_NOISE=Rough Reflections
 
+option.LIGHTING_REFLECT_MAXSTEP=WSR Max Step Count
+
 option.LIGHTING_TRACE_TRIANGLE=Fully Traced Lighting
 
 option.LIGHTING_VL_RES=Volumetric Res

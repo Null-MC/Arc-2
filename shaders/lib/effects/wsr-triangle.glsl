@@ -1,6 +1,3 @@
-const int WSR_MAXSTEPS = 8;
-
-
 bool TraceReflection(const in vec3 localPos, const in vec3 localDir, out vec3 hitPos, out vec2 hitUV, out vec3 hitCoord, out vec4 hitColor, out Triangle hitTriangle) {
     vec4 colorFinal = vec4(0.0);
     vec3 currPos = GetVoxelPosition(localPos) / TRIANGLE_BIN_SIZE;
@@ -12,7 +9,7 @@ bool TraceReflection(const in vec3 localPos, const in vec3 localDir, out vec3 hi
 
     bool hit = false;
 
-    for (int i = 0; i < WSR_MAXSTEPS && !hit; i++) {
+    for (int i = 0; i < LIGHTING_REFLECT_MAXSTEP && !hit; i++) {
         vec3 rayStart = currPos;
 
         float closestDist = minOf(nextDist);

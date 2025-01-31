@@ -52,6 +52,7 @@ function setupSettings() {
                 Mode: getIntSetting("LIGHTING_REFLECT_MODE"),
                 Noise: getBoolSetting("LIGHTING_REFLECT_NOISE"),
                 ReflectTriangles: getBoolSetting("LIGHTING_REFLECT_TRIANGLE"),
+                MaxStepCount: getIntSetting("LIGHTING_REFLECT_MAXSTEP"),
             },
             VolumetricResolution: getIntSetting("LIGHTING_VL_RES"),
         },
@@ -169,6 +170,7 @@ function setupSettings() {
     //defineGlobally("LIGHTING_VL_RES", Settings.Lighting.VolumetricResolution.toString());
 
     defineGlobally("LIGHTING_REFLECT_MODE", Settings.Lighting.Reflections.Mode.toString());
+    defineGlobally("LIGHTING_REFLECT_MAXSTEP", Settings.Lighting.Reflections.MaxStepCount.toString())
     if (Settings.Lighting.Reflections.Noise) defineGlobally("MATERIAL_ROUGH_REFLECT_NOISE", "1");
     if (Settings.Lighting.Reflections.Mode == ReflectMode_WSR) {
         if (Settings.Lighting.Reflections.ReflectTriangles) defineGlobally("LIGHTING_REFLECT_TRIANGLE", "1");

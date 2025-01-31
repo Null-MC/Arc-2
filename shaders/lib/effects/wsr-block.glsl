@@ -1,6 +1,3 @@
-const int WSR_MAXSTEPS = 64;
-
-
 bool TraceReflection(const in vec3 localPos, const in vec3 localDir, out vec3 hitPos, out vec3 hitNormal, out vec2 hitCoord, out VoxelBlockFace blockFace) {
     vec3 currPos = GetVoxelPosition(localPos);
 
@@ -12,7 +9,7 @@ bool TraceReflection(const in vec3 localPos, const in vec3 localDir, out vec3 hi
     bool hit = false;
     ivec3 voxelPos;
 
-    for (int i = 0; i < WSR_MAXSTEPS && !hit; i++) {
+    for (int i = 0; i < LIGHTING_REFLECT_MAXSTEP && !hit; i++) {
         float closestDist = minOf(nextDist);
         vec3 step = localDir * closestDist;
 

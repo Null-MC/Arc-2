@@ -52,9 +52,12 @@ function setupOptions() {
             .build())
         .add(asBool("LPV_RSM_ENABLED", false))
         .add(new Page("Reflections")
-            .add(asInt("LIGHTING_REFLECT_MODE", 0, 1, 2).build(1))
+            .add(asInt("LIGHTING_REFLECT_MODE", 0, 1, 2).build(2))
             .add(asBool("LIGHTING_REFLECT_NOISE", true))
             .add(asBool("LIGHTING_REFLECT_TRIANGLE", false))
+            .add(asIntEx(
+                "LIGHTING_REFLECT_MAXSTEP", 64,
+                8, 256, 8))
             .build())
         .add(asInt("LIGHTING_VL_RES", 0, 1, 2).build(1))
         .build();

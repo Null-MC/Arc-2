@@ -46,13 +46,13 @@ out VertexData2 {
     #include "/lib/buffers/voxel-block.glsl"
 
     #ifdef VOXEL_TRI_ENABLED
-        #include "/lib/buffers/triangle-list.glsl"
+        #include "/lib/buffers/quad-list.glsl"
     #endif
 
     #include "/lib/voxel/voxel_common.glsl"
 
     #ifdef VOXEL_TRI_ENABLED
-        #include "/lib/voxel/triangle-list.glsl"
+        #include "/lib/voxel/quad-list.glsl"
     #endif
 #endif
 
@@ -76,56 +76,63 @@ void main() {
 
     EndPrimitive();
 
-
     #if defined(VOXEL_ENABLED) && defined(RENDER_TERRAIN)
-        vec3 voxelPos = GetVoxelPosition(vIn[0].originPos);
+        if (gl_PrimitiveID % 2 == 0) {
+            vec3 voxelPos = GetVoxelPosition(vIn[0].originPos);
 
-        if (gl_PrimitiveID % 2 == 0 && IsInVoxelBounds(voxelPos)) {
-            imageStore(imgVoxelBlock, ivec3(voxelPos), uvec4(vIn[0].blockId));
+            if (IsInVoxelBounds(voxelPos)) {
+                imageStore(imgVoxelBlock, ivec3(voxelPos), uvec4(vIn[0].blockId));
 
-            #ifdef VOXEL_BLOCK_FACE
-                VoxelBlockFace blockFace;
-                blockFace.tex_id = vIn[0].textureId;
-                blockFace.tint = packUnorm4x8(vOut.color);
-                SetBlockFaceLightMap(vIn[0].lmcoord, blockFace.lmcoord);
+                #ifdef VOXEL_BLOCK_FACE
+                    VoxelBlockFace blockFace;
+                    blockFace.tex_id = vIn[0].textureId;
+                    blockFace.tint = packUnorm4x8(vOut.color);
+                    SetBlockFaceLightMap(vIn[0].lmcoord, blockFace.lmcoord);
 
-                int blockFaceIndex = GetVoxelBlockFaceIndex(vOut.localNormal);
-                int blockFaceMapIndex = GetVoxelBlockFaceMapIndex(ivec3(voxelPos), blockFaceIndex);
-                VoxelBlockFaceMap[blockFaceMapIndex] = blockFace;
-            #endif
+                    int blockFaceIndex = GetVoxelBlockFaceIndex(vOut.localNormal);
+                    int blockFaceMapIndex = GetVoxelBlockFaceMapIndex(ivec3(voxelPos), blockFaceIndex);
+                    VoxelBlockFaceMap[blockFaceMapIndex] = blockFace;
+                #endif
 
-            #ifdef VOXEL_TRI_ENABLED
-                bool isFluid = iris_hasFluid(vIn[0].blockId);
+                #ifdef VOXEL_TRI_ENABLED
+                    bool isFluid = iris_hasFluid(vIn[0].blockId);
 
-                if (vIn[0].currentCascade == 0 && !isFluid) {
-                    ivec3 triangleBinPos = ivec3(floor(voxelPos / TRIANGLE_BIN_SIZE));
-                    int triangleBinIndex = GetTriangleBinIndex(triangleBinPos);
+                    if (vIn[0].currentCascade == 0 && !isFluid) {
+                        ivec3 quadBinPos = ivec3(floor(voxelPos / QUAD_BIN_SIZE));
+                        int quadBinIndex = GetQuadBinIndex(quadBinPos);
 
-                    uint triangleIndex = atomicAdd(TriangleBinMap[triangleBinIndex].triangleCount, 1u);
+                        uint quadIndex = atomicAdd(SceneQuads.bin[quadBinIndex].count, 1u);
 
-                    if (triangleIndex < TRIANGLE_BIN_MAX) {
-                        vec3 originBase = vIn[0].originPos - 0.5;
-                        vec3 offset = ivec3(voxelPos) - triangleBinPos*TRIANGLE_BIN_SIZE;
+                        if (quadIndex < QUAD_BIN_MAX) {
+                            //vec3 offset = ivec3(voxelPos) - quadBinPos*QUAD_BIN_SIZE;
+                            //vec3 originBase = vIn[0].originPos - 0.5 - offset;
 
-                        Triangle tri;
-                        tri.tint = packUnorm4x8(vIn[0].color);
+                            vec3 originBase = GetVoxelLocalPos(quadBinPos*QUAD_BIN_SIZE);// - 0.5;
 
-                        tri.pos[0] = SetTriangleVertexPos(vIn[0].localPos - originBase + offset);
-                        tri.pos[1] = SetTriangleVertexPos(vIn[1].localPos - originBase + offset);
-                        tri.pos[2] = SetTriangleVertexPos(vIn[2].localPos - originBase + offset);
+                            Quad quad;
+                            quad.tint = packUnorm4x8(vIn[0].color);
 
-                        tri.uv[0] = SetTriangleUV(vIn[0].uv);
-                        tri.uv[1] = SetTriangleUV(vIn[1].uv);
-                        tri.uv[2] = SetTriangleUV(vIn[2].uv);
+                            quad.pos[0] = SetQuadVertexPos(vIn[0].localPos - originBase);
+                            quad.pos[1] = SetQuadVertexPos(vIn[1].localPos - originBase);
+                            quad.pos[2] = SetQuadVertexPos(vIn[2].localPos - originBase);
 
-                        tri.lmcoord = SetTriangleLightMapCoord(vIn[0].lmcoord, vIn[1].lmcoord, vIn[2].lmcoord);
+                            vec2 uv_min = min(min(vIn[0].uv, vIn[1].uv), vIn[2].uv);
+                            quad.uv_min = SetQuadUV(uv_min);
 
-                        TriangleBinMap[triangleBinIndex].triangleList[triangleIndex] = tri;
+                            vec2 uv_max = max(max(vIn[0].uv, vIn[1].uv), vIn[2].uv);
+                            quad.uv_max = SetQuadUV(uv_max);
 
-                        atomicAdd(Scene_TriangleCount, 1u);
+                            vec2 vIn3_lmcoord = vec2(0.0); // TODO: idk!
+                            SetQuadLightMapCoord(quad.lmcoord, vIn[0].lmcoord, vIn[1].lmcoord, vIn[2].lmcoord, vIn3_lmcoord);
+
+                            SceneQuads.bin[quadBinIndex].quadList[quadIndex] = quad;
+
+                            // TODO: for debug only!
+                            atomicAdd(SceneQuads.total, 1u);
+                        }
                     }
-                }
-            #endif
+                #endif
+            }
         }
     #endif
 }

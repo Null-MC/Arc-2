@@ -1,7 +1,7 @@
 import './iris'
 
 const LIGHT_BIN_SIZE = 8;
-const TRIANGLE_BIN_SIZE = 2;
+const QUAD_BIN_SIZE = 4;
 
 // CONSTANTS
 const LightMode_LightMap = 0;
@@ -196,8 +196,8 @@ function setupSettings() {
 
         if (Settings.Internal.VoxelizeTriangles) {
             defineGlobally("VOXEL_TRI_ENABLED", "1");
-            defineGlobally("TRIANGLE_BIN_MAX", Settings.Voxel.MaxTriangleCount.toString());
-            defineGlobally("TRIANGLE_BIN_SIZE", TRIANGLE_BIN_SIZE.toString());
+            defineGlobally("QUAD_BIN_MAX", Settings.Voxel.MaxTriangleCount.toString());
+            defineGlobally("QUAD_BIN_SIZE", QUAD_BIN_SIZE.toString());
         }
 
         // if (Settings.Lighting.ReflectionMode == ReflectMode_WSR) defineGlobally("VOXEL_WSR_ENABLED", "1");
@@ -594,7 +594,7 @@ function setupShader() {
 
     let lightListBuffer: BuiltBuffer | null = null;
     let blockFaceBuffer: BuiltBuffer | null = null;
-    let triangleListBuffer: BuiltBuffer | null = null;
+    let quadListBuffer: BuiltBuffer | null = null;
     if (Settings.Internal.Voxelization) {
         const lightBinSize = 4 * (1 + Settings.Voxel.MaxLightCount);
         const lightListBinCount = Math.ceil(Settings.Voxel.Size / LIGHT_BIN_SIZE);
@@ -614,12 +614,12 @@ function setupShader() {
         }
 
         if (Settings.Internal.VoxelizeTriangles) {
-            const triangleBinSize = 4 + 44*Settings.Voxel.MaxTriangleCount;
-            const triangleListBinCount = Math.ceil(Settings.Voxel.Size / TRIANGLE_BIN_SIZE);
-            const triangleListBufferSize = triangleBinSize * cubed(triangleListBinCount) + 4;
-            print(`Triangle-List Buffer Size: ${triangleListBufferSize.toLocaleString()}`);
+            const quadBinSize = 4 + 40*Settings.Voxel.MaxTriangleCount;
+            const quadListBinCount = Math.ceil(Settings.Voxel.Size / QUAD_BIN_SIZE);
+            const quadListBufferSize = quadBinSize * cubed(quadListBinCount) + 4;
+            print(`Quad-List Buffer Size: ${quadListBufferSize.toLocaleString()}`);
 
-            triangleListBuffer = new Buffer(triangleListBufferSize)
+            quadListBuffer = new Buffer(quadListBufferSize)
                 .clear(true) // TODO: clear with compute
                 .build();
         }
@@ -652,7 +652,7 @@ function setupShader() {
         .location("setup/scene-prepare.csh")
         .ssbo(0, sceneBuffer)
         .ssbo(3, lightListBuffer)
-        .ssbo(4, triangleListBuffer)
+        .ssbo(4, quadListBuffer)
         .build());
 
     // IMAGE_BIT | SSBO_BIT | UBO_BIT | FETCH_BIT
@@ -684,7 +684,7 @@ function setupShader() {
     function shadowTerrainShader(name: string, usage: ProgramUsage) : ObjectShader {
         return shadowShader(name, usage)
             .ssbo(3, lightListBuffer)
-            .ssbo(4, triangleListBuffer)
+            .ssbo(4, quadListBuffer)
             .ssbo(5, blockFaceBuffer)
             .define("RENDER_TERRAIN", "1");
     }
@@ -848,7 +848,7 @@ function setupShader() {
             .target(1, texSpecularRT)
             .ssbo(0, sceneBuffer)
             .ssbo(3, lightListBuffer)
-            .ssbo(4, triangleListBuffer)
+            .ssbo(4, quadListBuffer)
             .ssbo(5, blockFaceBuffer)
             .define("TEX_DEFERRED_COLOR", "texDeferredOpaque_Color")
             .define("TEX_DEFERRED_DATA", "texDeferredOpaque_Data")
@@ -914,7 +914,7 @@ function setupShader() {
         .fragment("composite/composite-opaque.fsh")
         .target(0, texFinalOpaque)
         .ssbo(0, sceneBuffer)
-        .ssbo(4, triangleListBuffer)
+        .ssbo(4, quadListBuffer)
         .define("TEX_SHADOW", texShadow_src)
         .define("TEX_SSGIAO", "texSSGIAO_final");
 
@@ -939,7 +939,7 @@ function setupShader() {
             .target(1, texSpecularRT)
             .ssbo(0, sceneBuffer)
             .ssbo(3, lightListBuffer)
-            .ssbo(4, triangleListBuffer)
+            .ssbo(4, quadListBuffer)
             .ssbo(5, blockFaceBuffer)
             .define("RENDER_TRANSLUCENT", "1")
             .define("TEX_DEFERRED_COLOR", "texDeferredTrans_Color")
@@ -991,7 +991,7 @@ function setupShader() {
         .fragment("composite/composite-translucent.fsh")
         .target(0, texFinal)
         .ssbo(0, sceneBuffer)
-        .ssbo(4, triangleListBuffer)
+        .ssbo(4, quadListBuffer)
         .generateMips(texFinalOpaque)
         .build());
 
@@ -1059,7 +1059,7 @@ function setupShader() {
             .target(0, texFinal)
             .ssbo(0, sceneBuffer)
             .ssbo(3, lightListBuffer)
-            .ssbo(4, triangleListBuffer)
+            .ssbo(4, quadListBuffer)
             .define("TEX_SHADOW", texShadow_src)
             .define("TEX_SSGIAO", "texSSGIAO_final")
             .build());

@@ -60,31 +60,29 @@ vec3 TraceDDA(vec3 origin, const in vec3 endPos, const in float range, const in 
 
         if (IsInVoxelBounds(voxelPos)) {
             #ifdef RT_TRI_ENABLED
-                ivec3 triangleBinPos = voxelPos;// ivec3(floor(voxelPos / TRIANGLE_BIN_SIZE));
-                int triangleBinIndex = GetTriangleBinIndex(triangleBinPos);
-                uint triangleCount = TriangleBinMap[triangleBinIndex].triangleCount;
+                ivec3 quadBinPos = voxelPos;
+                int quadBinIndex = GetQuadBinIndex(quadBinPos);
+                uint quadCount = SceneQuads.bin[quadBinIndex].count;
 
-                vec3 rayStart = (rayStart - triangleBinPos)*TRIANGLE_BIN_SIZE;
-                vec3 rayEnd = (currPos - triangleBinPos)*TRIANGLE_BIN_SIZE;
+                vec3 rayStart = (rayStart - quadBinPos)*QUAD_BIN_SIZE;
+                vec3 rayEnd = (currPos - quadBinPos)*QUAD_BIN_SIZE;
 
-                for (int t = 0; t < triangleCount && !hit; t++) {
-                    Triangle tri = TriangleBinMap[triangleBinIndex].triangleList[t];
+                for (int t = 0; t < quadCount && !hit; t++) {
+                    Quad quad = SceneQuads.bin[quadBinIndex].quadList[t];
 
-                    vec3 tri_pos_0 = GetTriangleVertexPos(tri.pos[0]);
-                    vec3 tri_pos_1 = GetTriangleVertexPos(tri.pos[1]);
-                    vec3 tri_pos_2 = GetTriangleVertexPos(tri.pos[2]);
+                    vec3 quad_pos_0 = GetQuadVertexPos(quad.pos[0]);
+                    vec3 quad_pos_1 = GetQuadVertexPos(quad.pos[1]);
+                    vec3 quad_pos_2 = GetQuadVertexPos(quad.pos[2]);
 
-                    vec3 coord;
-                    if (lineTriangleIntersect(rayStart, rayEnd, tri_pos_0, tri_pos_1, tri_pos_2, coord)) {
-                        vec2 tri_uv_0 = GetTriangleUV(tri.uv[0]);
-                        vec2 tri_uv_1 = GetTriangleUV(tri.uv[1]);
-                        vec2 tri_uv_2 = GetTriangleUV(tri.uv[2]);
+                    vec3 hit_pos;
+                    vec2 hit_uv;
+                    vec3 rayDir = normalize(rayEnd - rayStart);
+                    if (lineQuadIntersect(rayStart, rayDir, quad_pos_0, quad_pos_1, quad_pos_2, hit_pos, hit_uv)) {
+                        vec2 uv_min = GetQuadUV(quad.uv_min);
+                        vec2 uv_max = GetQuadUV(quad.uv_max);
+                        vec2 uv = fma(hit_uv, uv_max - uv_min, uv_min);
 
-                        vec2 uv = tri_uv_0 * coord.x
-                                + tri_uv_1 * coord.y
-                                + tri_uv_2 * coord.z;
-
-                        vec4 sampleColor = textureLod(blockAtlas, uv, 0);
+                        vec4 sampleColor = vec4(1.0);//textureLod(blockAtlas, uv, 0);
                         // sampleColor.rgb = RgbToLinear(sampleColor.rgb);
 
                         //color *= sampleColor.rgb; //mix(sampleColor.rgb, vec3(1.0), (sampleColor.a*sampleColor.a));

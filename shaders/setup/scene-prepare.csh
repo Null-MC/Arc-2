@@ -13,7 +13,7 @@ layout (local_size_x = 1, local_size_y = 1, local_size_z = 1) in;
 #endif
 
 #ifdef VOXEL_TRI_ENABLED
-    #include "/lib/buffers/triangle-list.glsl"
+    #include "/lib/buffers/quad-list.glsl"
 #endif
 
 
@@ -26,7 +26,7 @@ void main() {
 	#endif
 
 	#ifdef VOXEL_TRI_ENABLED
-		Scene_TriangleCount = 0u;
+		SceneQuads.total = 0u;
 	#endif
 
 	if (!ap.game.guiHidden) {

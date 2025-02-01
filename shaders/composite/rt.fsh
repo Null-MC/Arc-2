@@ -45,7 +45,7 @@ in vec2 uv;
 #include "/lib/buffers/voxel-block.glsl"
 
 #ifdef VOXEL_TRI_ENABLED
-    #include "/lib/buffers/triangle-list.glsl"
+    #include "/lib/buffers/quad-list.glsl"
 #endif
 
 #include "/lib/noise/ign.glsl"
@@ -60,13 +60,13 @@ in vec2 uv;
 #include "/lib/voxel/voxel_common.glsl"
 
 #ifdef VOXEL_TRI_ENABLED
-    #include "/lib/voxel/triangle-test.glsl"
-    #include "/lib/voxel/triangle-list.glsl"
+    #include "/lib/voxel/quad-test.glsl"
+    #include "/lib/voxel/quad-list.glsl"
 #endif
 
 #if LIGHTING_MODE == LIGHT_MODE_RT
     #include "/lib/voxel/light-list.glsl"
-    #include "/lib/voxel/dda-trace.glsl"
+    #include "/lib/voxel/light-trace.glsl"
 #endif
 
 #if LIGHTING_REFLECT_MODE == REFLECT_MODE_WSR
@@ -83,7 +83,7 @@ in vec2 uv;
     #include "/lib/utility/blackbody.glsl"
 
     #ifdef LIGHTING_REFLECT_TRIANGLE
-        #include "/lib/effects/wsr-triangle.glsl"
+        #include "/lib/effects/wsr-quad.glsl"
     #else
         #include "/lib/effects/wsr-block.glsl"
     #endif
@@ -229,8 +229,8 @@ void main() {
                         float closestDist = minOf(nextDist);
                         traceStart += direction * closestDist;
 
-                        traceStart /= TRIANGLE_BIN_SIZE;
-                        traceEnd /= TRIANGLE_BIN_SIZE;
+                        traceStart /= QUAD_BIN_SIZE;
+                        traceEnd /= QUAD_BIN_SIZE;
                         traceSelf = true;
                     #endif
 
@@ -277,25 +277,27 @@ void main() {
                 #ifdef LIGHTING_REFLECT_TRIANGLE
                     // WSR: per-triangle
 
-                    vec3 reflect_hitCoord;
-                    Triangle reflect_hitTriangle;
-                    if (TraceReflection(localPos + 0.1*localGeoNormal, reflectLocalDir, reflect_voxelPos, reflect_uv, reflect_hitCoord, reflect_hitColor, reflect_hitTriangle)) {
+                    //vec2 reflect_hitCoord;
+                    Quad reflect_hitQuad;
+                    if (TraceReflection(localPos + 0.1*localGeoNormal, reflectLocalDir, reflect_voxelPos, reflect_uv, reflect_hitColor, reflect_hitQuad)) {
                         reflection = reflect_hitColor;
 
-                        reflect_tint = unpackUnorm4x8(reflect_hitTriangle.tint).rgb;
+                        reflect_tint = unpackUnorm4x8(reflect_hitQuad.tint).rgb;
 
-                        vec2 lmcoords[3];
-                        GetTriangleLightMapCoord(reflect_hitTriangle.lmcoord, lmcoords[0], lmcoords[1], lmcoords[2]);
-                        reflect_lmcoord = lmcoords[0] * reflect_hitCoord.x;
-                        reflect_lmcoord = fma(lmcoords[1], vec2(reflect_hitCoord.y), reflect_lmcoord);
-                        reflect_lmcoord = fma(lmcoords[2], vec2(reflect_hitCoord.z), reflect_lmcoord);
+                        vec2 lmcoords[4];
+                        GetQuadLightMapCoord(reflect_hitQuad.lmcoord, lmcoords[0], lmcoords[1], lmcoords[2], lmcoords[3]);
 
-                        vec3 tri_pos_0 = GetTriangleVertexPos(reflect_hitTriangle.pos[0]);
-                        vec3 tri_pos_1 = GetTriangleVertexPos(reflect_hitTriangle.pos[1]);
-                        vec3 tri_pos_2 = GetTriangleVertexPos(reflect_hitTriangle.pos[2]);
+//                        reflect_lmcoord = lmcoords[0] * reflect_hitCoord.x;
+//                        reflect_lmcoord = fma(lmcoords[1], vec2(reflect_hitCoord.y), reflect_lmcoord);
+//                        reflect_lmcoord = fma(lmcoords[2], vec2(reflect_hitCoord.z), reflect_lmcoord);
+                        reflect_lmcoord = lmcoords[0];// TODO: also wrong
 
-                        vec3 e1 = normalize(tri_pos_1 - tri_pos_0);
-                        vec3 e2 = normalize(tri_pos_2 - tri_pos_0);
+                        vec3 quad_pos_0 = GetQuadVertexPos(reflect_hitQuad.pos[0]);
+                        vec3 quad_pos_1 = GetQuadVertexPos(reflect_hitQuad.pos[1]);
+                        vec3 quad_pos_2 = GetQuadVertexPos(reflect_hitQuad.pos[2]);
+
+                        vec3 e1 = normalize(quad_pos_1 - quad_pos_0);
+                        vec3 e2 = normalize(quad_pos_2 - quad_pos_0);
                         reflect_geoNormal = normalize(cross(e1, e2));
                     }
                 #else

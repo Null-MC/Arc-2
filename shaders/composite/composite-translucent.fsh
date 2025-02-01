@@ -99,11 +99,11 @@ uniform sampler2DArray texShadowColor;
     #include "/lib/lpv/lpv_sample.glsl"
 #endif
 
-#if defined VOXEL_WSR_ENABLED && defined RT_TRI_ENABLED
-    #include "/lib/voxel/triangle-test.glsl"
-    #include "/lib/voxel/triangle-list.glsl"
-    #include "/lib/effects/wsr.glsl"
-#endif
+//#if defined VOXEL_WSR_ENABLED && defined RT_TRI_ENABLED
+//    #include "/lib/voxel/triangle-test.glsl"
+//    #include "/lib/voxel/triangle-list.glsl"
+//    #include "/lib/effects/wsr.glsl"
+//#endif
 
 #ifdef EFFECT_TAA_ENABLED
     #include "/lib/taa_jitter.glsl"

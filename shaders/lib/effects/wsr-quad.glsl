@@ -26,27 +26,30 @@ bool TraceReflection(const in vec3 localPos, const in vec3 localDir, out vec3 hi
             vec3 quad_pos_1 = GetQuadVertexPos(quad.pos[1]);
             vec3 quad_pos_2 = GetQuadVertexPos(quad.pos[2]);
 
-            vec3 hit_pos;
-            vec2 hit_uv;
-            //vec3 rayDir = normalize(traceEnd - traceStart);
-            if (lineQuadIntersect(traceStart, localDir, quad_pos_0, quad_pos_1, quad_pos_2, hit_pos, hit_uv)) {
-                float sampleDist = distance(traceStart, hit_pos);
-                if (sampleDist > hit_dist) continue;
+            float quadDist = QuadIntersectDistance(traceStart, localDir, quad_pos_0, quad_pos_1, quad_pos_2);
 
-                vec2 uv_min = GetQuadUV(quad.uv_min);
-                vec2 uv_max = GetQuadUV(quad.uv_max);
-                vec2 uv = fma(hit_uv, uv_max - uv_min, uv_min);
+            // TODO: add max-distance check!
+            if (quadDist > -0.0001 && quadDist < hit_dist) {
+                vec3 hit_pos = localDir * quadDist + traceStart;
 
-                vec4 sampleColor = textureLod(blockAtlas, uv, 0);
+                vec2 hit_uv = QuadIntersectUV(hit_pos, quad_pos_0, quad_pos_1, quad_pos_2);
 
-                if (sampleColor.a > 0.5) {
-                    hit_dist = sampleDist;
+                if (clamp(hit_uv, 0.0, 1.0) == hit_uv) {
+                    vec2 uv_min = GetQuadUV(quad.uv_min);
+                    vec2 uv_max = GetQuadUV(quad.uv_max);
+                    vec2 uv = fma(hit_uv, uv_max - uv_min, uv_min);
 
-                    hitPos = fma(quadBinPos, vec3(QUAD_BIN_SIZE), hit_pos);
-                    hitColor = sampleColor;
-                    hitQuad = quad;
-                    hitUV = uv;
-                    hit = true;
+                    vec4 sampleColor = textureLod(blockAtlas, uv, 0);
+
+                    if (sampleColor.a > 0.5) {
+                        hit_dist = quadDist;
+
+                        hitPos = fma(quadBinPos, vec3(QUAD_BIN_SIZE), hit_pos);
+                        hitColor = sampleColor;
+                        hitQuad = quad;
+                        hitUV = uv;
+                        hit = true;
+                    }
                 }
             }
         }

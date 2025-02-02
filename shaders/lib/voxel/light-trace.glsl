@@ -60,21 +60,27 @@ vec3 TraceDDA(vec3 origin, const in vec3 endPos, const in float range, const in 
                     vec3 quad_pos_1 = GetQuadVertexPos(quad.pos[1]);
                     vec3 quad_pos_2 = GetQuadVertexPos(quad.pos[2]);
 
-                    vec3 hit_pos;
-                    vec2 hit_uv;
-                    vec3 rayDir = normalize(rayEnd - rayStart);
-                    if (lineQuadIntersect(rayStart, rayDir, quad_pos_0, quad_pos_1, quad_pos_2, hit_pos, hit_uv)) {
-                        vec2 uv_min = GetQuadUV(quad.uv_min);
-                        vec2 uv_max = GetQuadUV(quad.uv_max);
-                        vec2 uv = fma(hit_uv, uv_max - uv_min, uv_min);
+                    float quadDist = QuadIntersectDistance(rayStart, direction, quad_pos_0, quad_pos_1, quad_pos_2);
 
-                        vec4 sampleColor = textureLod(blockAtlas, uv, 0);
-                        // sampleColor.rgb = RgbToLinear(sampleColor.rgb);
+                    // TODO: add max-distance check!
+                    if (quadDist > -0.0001) {
+                        vec3 hit_pos = direction * quadDist + rayStart;
 
-                        //color *= sampleColor.rgb; //mix(sampleColor.rgb, vec3(1.0), (sampleColor.a*sampleColor.a));
-                        color = sqrt(color) * sampleColor.rgb;
+                        vec2 hit_uv = QuadIntersectUV(hit_pos, quad_pos_0, quad_pos_1, quad_pos_2);
 
-                        hit = sampleColor.a > 0.9;
+                        if (clamp(hit_uv, 0.0, 1.0) == hit_uv) {
+                            vec2 uv_min = GetQuadUV(quad.uv_min);
+                            vec2 uv_max = GetQuadUV(quad.uv_max);
+                            vec2 uv = fma(hit_uv, uv_max - uv_min, uv_min);
+
+                            vec4 sampleColor = textureLod(blockAtlas, uv, 0);
+                            // sampleColor.rgb = RgbToLinear(sampleColor.rgb);
+
+                            //color *= sampleColor.rgb; //mix(sampleColor.rgb, vec3(1.0), (sampleColor.a*sampleColor.a));
+                            color = sqrt(color) * sampleColor.rgb;
+
+                            hit = sampleColor.a > 0.9;
+                        }
                     }
                 }
             #else

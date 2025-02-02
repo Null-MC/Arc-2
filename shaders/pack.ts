@@ -126,7 +126,7 @@ function setupSettings() {
     }
 
     // TODO: debug only
-    Settings.Internal.Accumulation = false;
+    //Settings.Internal.Accumulation = false;
 
     worldSettings.disableShade = true;
     worldSettings.ambientOcclusionLevel = 0.0;

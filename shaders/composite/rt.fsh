@@ -164,7 +164,7 @@ void main() {
                 int lightBinIndex = GetLightBinIndex(lightBinPos);
                 uint binLightCount = LightBinMap[lightBinIndex].lightCount;
 
-                vec3 voxelPos_out = voxelPos + 0.02*localGeoNormal;
+                vec3 voxelPos_out = voxelPos + 0.16*localGeoNormal;
 
                 vec3 jitter = hash33(vec3(gl_FragCoord.xy, ap.time.frames)) - 0.5;
 
@@ -419,7 +419,7 @@ void main() {
             const bool isWet = false;
             vec3 reflectTint = GetMetalTint(albedo.rgb, f0_metal);
             vec3 view_F = material_fresnel(albedo.rgb, f0_metal, roughL, NoVm, isWet);
-            specularFinal += view_F * skyReflectColor * reflectTint * (1.0 - roughness);
+            specularFinal += view_F * skyReflectColor * reflectTint * pow(1.0 - roughness, 3.0);
         #endif
     }
 

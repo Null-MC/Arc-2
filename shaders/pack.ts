@@ -1,4 +1,4 @@
-import './iris'
+import type {} from './iris'
 
 const LIGHT_BIN_SIZE = 8;
 const QUAD_BIN_SIZE = 2;
@@ -60,7 +60,7 @@ function setupSettings() {
             Size: getIntSetting("VOXEL_SIZE"),
             Offset: getIntSetting("VOXEL_FRUSTUM_OFFSET"),
             MaxLightCount: 64,
-            MaxTriangleCount: 32,
+            MaxTriangleCount: 64,
         },
         Effect: {
             SSAO: getBoolSetting("EFFECT_SSAO_ENABLED"),
@@ -126,7 +126,7 @@ function setupSettings() {
     }
 
     // TODO: debug only
-    //Settings.Internal.Accumulation = false;
+    Settings.Internal.Accumulation = false;
 
     worldSettings.disableShade = true;
     worldSettings.ambientOcclusionLevel = 0.0;
@@ -230,7 +230,7 @@ function setupSettings() {
 }
 
 
-function setupShader() {
+export function setupShader() {
     print("Setting up shader");
 
     const Settings = setupSettings();

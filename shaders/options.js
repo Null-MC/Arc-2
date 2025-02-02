@@ -1,6 +1,6 @@
-//import './iris'
+// import type {} from './iris'
 
-function setupOptions() {
+export function setupOptions() {
     const screen_Sky = new Page("Sky")
         .add(asIntEx(
             "SKY_SEA_LEVEL", 60,

@@ -23,10 +23,6 @@ vec3 TraceDDA(vec3 origin, const in vec3 endPos, const in float range, const in 
     float currDist2 = 0.0;
     bool hit = false;
 
-    // #if LIGHTING_TINT_MODE == LIGHT_TINT_BASIC
-    //     uint blockIdLast;
-    // #endif
-
     if (!traceSelf) {
         currPos += dda_step(stepAxis, nextDist, stepSizes, direction);
     }
@@ -63,7 +59,7 @@ vec3 TraceDDA(vec3 origin, const in vec3 endPos, const in float range, const in 
                     float quadDist = QuadIntersectDistance(rayStart, direction, quad_pos_0, quad_pos_1, quad_pos_2);
 
                     // TODO: add max-distance check!
-                    if (quadDist > -0.0001) {
+                    if (quadDist > -0.0001 && quadDist*quadDist < traceRayLen2) {
                         vec3 hit_pos = direction * quadDist + rayStart;
 
                         vec2 hit_uv = QuadIntersectUV(hit_pos, quad_pos_0, quad_pos_1, quad_pos_2);

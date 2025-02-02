@@ -282,7 +282,7 @@ void main() {
             vec3 voxelPos = GetVoxelPosition(sampleLocalPos);
             if (IsInVoxelBounds(voxelPos)) {
                 vec3 blockLight = sample_lpv_linear(voxelPos, localViewDir);
-                sampleLit += blockLight;
+                sampleLit += blockLight; // * phaseIso
             }
         #endif
 

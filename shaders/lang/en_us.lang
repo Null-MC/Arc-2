@@ -67,7 +67,7 @@ option.EFFECT_SSAO_ENABLED=SSAO
 
 option.EFFECT_SSGI_ENABLED=SSGI
 
-option.POST_BLOOM_ENABLED=Bloom
+option.EFFECT_BLOOM_ENABLED=Bloom
 
 option.EFFECT_TAA_ENABLED=TAA
 
@@ -76,6 +76,9 @@ option.POST_EXPOSURE_MIN=Minimum
 option.POST_EXPOSURE_MAX=Maximum
 
 option.POST_EXPOSURE_SPEED=Speed
+
+option.POST_CONTRAST=Contrast
+suffix.POST_CONTRAST=%
 
 option.DEBUG_ENABLED=Enabled
 

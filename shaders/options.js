@@ -70,24 +70,25 @@ export function setupOptions() {
     const screen_Effects = new Page("Effects")
         .add(asBool("EFFECT_SSAO_ENABLED", true))
         .add(asBool("EFFECT_SSGI_ENABLED", false))
-        .build();
-
-    const screen_Exposure = new Page("Exposure")
-        .add(asFloatEx(
-            "POST_EXPOSURE_MIN", -10.5,
-            -12.0, -3.0, 0.5))
-        .add(asFloatEx(
-            "POST_EXPOSURE_MAX", 17.0,
-            6.0, 32.0, 0.5))
-        .add(asFloatEx(
-            "POST_EXPOSURE_SPEED", 0.4,
-            0.1, 2.0, 0.1))
+        .add(asBool("EFFECT_BLOOM_ENABLED", true))
         .build();
 
     const screen_Post = new Page("Post")
-        .add(asBool("POST_BLOOM_ENABLED", true))
-        .add(screen_Exposure)
         .add(asBool("EFFECT_TAA_ENABLED", true))
+        .add(new Page("Exposure")
+            .add(asFloatEx(
+                "POST_EXPOSURE_MIN", -10.5,
+                -12.0, -3.0, 0.5))
+            .add(asFloatEx(
+                "POST_EXPOSURE_MAX", 17.0,
+                6.0, 32.0, 0.5))
+            .add(asFloatEx(
+                "POST_EXPOSURE_SPEED", 0.4,
+                0.1, 2.0, 0.1))
+            .build())
+        .add(asIntEx(
+            "POST_CONTRAST", 120,
+            0, 300, 5))
         .build();
 
     const screen_Debug = new Page("Debug")

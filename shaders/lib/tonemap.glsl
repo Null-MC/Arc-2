@@ -1,3 +1,6 @@
+const float Post_Contrast = POST_CONTRAST * 0.01;
+
+
 vec3 tonemap_jodieReinhard(vec3 c) {
     // From: https://www.shadertoy.com/view/tdSXzD
     float l = dot(c, vec3(0.2126, 0.7152, 0.0722));
@@ -23,7 +26,7 @@ vec3 tonemap_ACESFit2(const in vec3 color) {
 }
 
 vec3 tonemap_Lottes(const in vec3 color) {
-    const vec3 a = vec3(1.65); // contrast
+    const vec3 a = vec3(Post_Contrast); // contrast
     const vec3 d = vec3(0.977); // shoulder
     const vec3 hdrMax = vec3(16.0);
     const vec3 midIn = vec3(0.42);

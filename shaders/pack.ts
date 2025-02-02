@@ -65,15 +65,16 @@ function setupSettings() {
         Effect: {
             SSAO: getBoolSetting("EFFECT_SSAO_ENABLED"),
             SSGI: getBoolSetting("EFFECT_SSGI_ENABLED"),
+            Bloom: getBoolSetting("EFFECT_BLOOM_ENABLED"),
         },
         Post: {
+            TAA: getBoolSetting("EFFECT_TAA_ENABLED"),
             Exposure: {
                 Min: parseFloat(getStringSetting("POST_EXPOSURE_MIN")),
                 Max: parseFloat(getStringSetting("POST_EXPOSURE_MAX")),
                 Speed: parseFloat(getStringSetting("POST_EXPOSURE_SPEED")),
             },
-            Bloom: getBoolSetting("POST_BLOOM_ENABLED"),
-            TAA: getBoolSetting("EFFECT_TAA_ENABLED"),
+            Contrast: getIntSetting("POST_CONTRAST"),
         },
         Debug: {
             Enabled: getBoolSetting("DEBUG_ENABLED"),
@@ -213,6 +214,7 @@ function setupSettings() {
         }
     }
 
+    defineGlobally("POST_CONTRAST", Settings.Post.Contrast.toString());
     if (Settings.Post.TAA) defineGlobally("EFFECT_TAA_ENABLED", "1");
 
     defineGlobally("POST_EXPOSURE_MIN", Settings.Post.Exposure.Min.toString());
@@ -1045,7 +1047,7 @@ export function setupShader() {
         .ssbo(0, sceneBuffer)
         .build());
 
-    if (Settings.Post.Bloom)
+    if (Settings.Effect.Bloom)
         setupBloom(texFinal);
 
     registerShader(Stage.POST_RENDER, new Composite("tonemap")

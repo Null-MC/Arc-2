@@ -100,7 +100,7 @@ const ivec3 directions[] = {
 
 #ifdef LPV_RSM_ENABLED
 	void sample_shadow(vec3 localPos, out vec3 sample_color, out vec3 sample_normal) {
-		localPos += hash33(ap.camera.pos + localPos + (ap.frame.counter % 16));// - 0.5;
+		localPos += hash33(ap.camera.pos + localPos + (ap.time.frames % 16));// - 0.5;
 
 		//localPos -= 0.5;
 
@@ -151,7 +151,7 @@ ivec3 GetVoxelFrameOffset() {
 
 void main() {
 	ivec3 cellIndex = ivec3(gl_GlobalInvocationID);
-	bool altFrame = ap.frame.counter % 2 == 1;
+	bool altFrame = ap.time.frames % 2 == 1;
 
 	//lpvShVoxel sh_voxel = voxel_empty;
 	vec4 voxel_R = vec4(0.0);

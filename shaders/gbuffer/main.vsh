@@ -57,7 +57,7 @@ void iris_emitVertex(inout VertexData data) {
         if (is_fluid) {
 			const float lmcoord_y = 1.0;
 
-            vec3 waveOffset = GetWaveHeight(vOut.localPos + ap.camera.pos, lmcoord_y, ap.frame.time, WaterWaveOctaveMin);
+            vec3 waveOffset = GetWaveHeight(vOut.localPos + ap.camera.pos, lmcoord_y, ap.time.elapsed, WaterWaveOctaveMin);
             vOut.localOffset.y += waveOffset.y;
 
             vOut.localPos += vOut.localOffset;
@@ -91,9 +91,9 @@ void iris_sendParameters(in VertexData data) {
 		const vec3 windDir1 = vec3(0.01,  0.01, 0.02);
 		const vec3 windDir2 = vec3(0.04, -0.01, 0.02);
 
-		vec3 uvWave = 0.004 * worldPos + windDir1 * ap.frame.time;
+		vec3 uvWave = 0.004 * worldPos + windDir1 * ap.time.elapsed;
 		float waveNoise1 = 1.0 - textureLod(texFogNoise, uvWave, 0).r;
-		uvWave = 0.008 * worldPos + windDir2 * ap.frame.time;
+		uvWave = 0.008 * worldPos + windDir2 * ap.time.elapsed;
 		float waveNoise2 = 1.0 - textureLod(texFogNoise, uvWave, 0).r;
 		float waveNoise = waveNoise1 * waveNoise2;
 

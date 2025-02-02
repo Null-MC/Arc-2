@@ -49,11 +49,11 @@ void main() {
 		float weightedAvgLum = 255.0 * exp(((weightedLogAverage) * Exposure_logLumRange) + Exposure_minLogLum);
 
 	    float lumLastFrame = clamp(Scene_AvgExposure, Exposure_minLogLum, Exposure_maxLogLum);
-		float Exposure_timeCoeff = (1.0 - exp(-ap.frame.millis * Exposure_Speed));
+		float Exposure_timeCoeff = (1.0 - exp(-ap.time.delta * Exposure_Speed));
 
 		float adaptedLum = lumLastFrame + (weightedAvgLum - lumLastFrame) * Exposure_timeCoeff;
 
-		if (ap.frame.counter == 0) adaptedLum = weightedAvgLum;
+		if (ap.time.frames == 0) adaptedLum = weightedAvgLum;
 
 		Scene_AvgExposure = adaptedLum;
 	}

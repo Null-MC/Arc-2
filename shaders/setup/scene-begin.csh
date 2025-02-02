@@ -16,5 +16,5 @@ void main() {
     vec2 skyIrradianceCoord = DirectionToUV(worldUp);
     Scene_SkyIrradianceUp = textureLod(texSkyIrradiance, skyIrradianceCoord, 0).rgb;
 
-    Scene_SkyBrightnessSmooth = mix(ap.camera.brightness.y, Scene_SkyBrightnessSmooth, exp(-2.0 * ap.frame.millis));
+    Scene_SkyBrightnessSmooth = mix(ap.camera.brightness.y, Scene_SkyBrightnessSmooth, exp(-2.0 * ap.time.delta));
 }

@@ -1,7 +1,7 @@
 import './iris'
 
 const LIGHT_BIN_SIZE = 8;
-const QUAD_BIN_SIZE = 4;
+const QUAD_BIN_SIZE = 2;
 
 // CONSTANTS
 const LightMode_LightMap = 0;
@@ -60,7 +60,7 @@ function setupSettings() {
             Size: getIntSetting("VOXEL_SIZE"),
             Offset: getIntSetting("VOXEL_FRUSTUM_OFFSET"),
             MaxLightCount: 64,
-            MaxTriangleCount: 64,
+            MaxTriangleCount: 32,
         },
         Effect: {
             SSAO: getBoolSetting("EFFECT_SSAO_ENABLED"),
@@ -124,6 +124,9 @@ function setupSettings() {
         Settings.Internal.Voxelization = true;
         Settings.Internal.LPV = true;
     }
+
+    // TODO: debug only
+    Settings.Internal.Accumulation = false;
 
     worldSettings.disableShade = true;
     worldSettings.ambientOcclusionLevel = 0.0;

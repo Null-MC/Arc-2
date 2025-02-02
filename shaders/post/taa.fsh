@@ -53,7 +53,7 @@ vec3 getReprojectedClipPos(const in vec2 texcoord, const in float depthNow, cons
 void main() {
     vec2 uv2 = uv;
 
-    // uv2 += getJitterOffset(ap.frame.counter);
+    // uv2 += getJitterOffset(ap.time.frames);
 
     float depth = textureLod(solidDepthTex, uv, 0).r;
 

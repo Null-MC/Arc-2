@@ -1,17 +1,16 @@
 bool TraceReflection(const in vec3 localPos, const in vec3 localDir, out vec3 hitPos, out vec3 hitNormal, out vec2 hitCoord, out VoxelBlockFace blockFace) {
     vec3 currPos = GetVoxelPosition(localPos);
 
-    vec3 stepDir = sign(localDir);
-    vec3 stepSizes = 1.0 / abs(localDir);
-    vec3 nextDist = (stepDir * 0.5 + 0.5 - fract(currPos)) / localDir;
+    vec3 stepSizes, nextDist;
+    dda_init(stepSizes, nextDist, currPos, localDir);
 
     vec3 stepAxis = vec3(0.0); // todo: set initial?
     bool hit = false;
     ivec3 voxelPos;
 
     for (int i = 0; i < LIGHTING_REFLECT_MAXSTEP && !hit; i++) {
-        float closestDist = minOf(nextDist);
-        vec3 step = localDir * closestDist;
+        vec3 stepAxisNext;
+        vec3 step = dda_step(stepAxisNext, nextDist, stepSizes, localDir);
 
         voxelPos = ivec3(floor(fma(step, vec3(0.5), currPos)));
 
@@ -19,19 +18,18 @@ bool TraceReflection(const in vec3 localPos, const in vec3 localDir, out vec3 hi
         bool isFullBlock = blockId > 0u && iris_isFullBlock(blockId);
 
         if (isFullBlock) {
-            hitPos = currPos;
-            hitNormal = -stepDir * stepAxis;
             hit = true;
         }
-
-        stepAxis = vec3(lessThanEqual(nextDist, vec3(closestDist)));
-
-        nextDist -= closestDist;
-        nextDist += stepSizes * stepAxis;
-        currPos += step;
+        else {
+            currPos += step;
+            stepAxis = stepAxisNext;
+        }
     }
 
     if (hit) {
+        hitPos = currPos;
+        hitNormal = -sign(localDir) * stepAxis;
+
         int blockFaceIndex = GetVoxelBlockFaceIndex(hitNormal);
         int blockFaceMapIndex = GetVoxelBlockFaceMapIndex(voxelPos, blockFaceIndex);
         blockFace = VoxelBlockFaceMap[blockFaceMapIndex];

@@ -52,7 +52,7 @@ void iris_sendParameters(in VertexData data) {
 
         // const float lmcoord_y = 1.0;
 
-        // vec3 waveOffset = GetWaveHeight(vOut.localPos + ap.camera.pos, lmcoord_y, ap.frame.time, WaterWaveOctaveMin);
+        // vec3 waveOffset = GetWaveHeight(vOut.localPos + ap.camera.pos, lmcoord_y, ap.time.elapsed, WaterWaveOctaveMin);
         // vOut.localOffset.y += waveOffset.y;
 
         // vOut.localPos += vOut.localOffset;

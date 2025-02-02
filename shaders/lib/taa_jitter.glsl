@@ -12,21 +12,21 @@ vec2 getJitterOffset(const in int frameOffset) {
 }
 
 void jitter(inout vec2 ndcPos) {
-	vec2 offset = getJitterOffset(ap.frame.counter);
+	vec2 offset = getJitterOffset(ap.time.frames);
 	ndcPos += 2.0 * offset;// * ndcPos.w;
 }
 
 void jitter(inout vec4 ndcPos) {
-	vec2 offset = getJitterOffset(ap.frame.counter);
+	vec2 offset = getJitterOffset(ap.time.frames);
 	ndcPos.xy += 2.0 * offset * ndcPos.w;
 }
 
 void unjitter(inout vec2 ndcPos) {
-	vec2 offset = getJitterOffset(ap.frame.counter);
+	vec2 offset = getJitterOffset(ap.time.frames);
 	ndcPos -= 2.0 * offset;// * ndcPos.w;
 }
 
 void unjitter(inout vec3 ndcPos) {
-	vec2 offset = getJitterOffset(ap.frame.counter);
+	vec2 offset = getJitterOffset(ap.time.frames);
 	ndcPos.xy -= 2.0 * offset;// * ndcPos.w;
 }

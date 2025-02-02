@@ -45,6 +45,9 @@ uniform sampler2DArray texShadowColor;
     uniform sampler2D texAccumDiffuse_translucent_alt;
     uniform sampler2D texAccumSpecular_translucent;
     uniform sampler2D texAccumSpecular_translucent_alt;
+#elif LIGHTING_MODE == LIGHT_MODE_RT || LIGHTING_REFLECT_MODE == REFLECT_MODE_WSR
+    uniform sampler2D texDiffuseRT;
+    uniform sampler2D texSpecularRT;
 #endif
 
 #include "/lib/common.glsl"
@@ -238,8 +241,10 @@ void main() {
         vec3 diffuse = skyLightDiffuse + blockLighting + 0.0016 * occlusion;
 
         #ifdef ACCUM_ENABLED
-            bool altFrame = (ap.frame.counter % 2) == 1;
+            bool altFrame = (ap.time.frames % 2) == 1;
             diffuse += textureLod(altFrame ? texAccumDiffuse_translucent_alt : texAccumDiffuse_translucent, uv, 0).rgb;
+        #elif LIGHTING_MODE == LIGHT_MODE_RT || LIGHTING_REFLECT_MODE == REFLECT_MODE_WSR
+            diffuse += textureLod(texDiffuseRT, uv, 0).rgb;
         #endif
 
         float metalness = mat_metalness(f0_metal);
@@ -314,6 +319,8 @@ void main() {
 
         #ifdef ACCUM_ENABLED
             specular += textureLod(altFrame ? texAccumSpecular_translucent_alt : texAccumSpecular_translucent, uv, 0).rgb;
+        #elif LIGHTING_MODE == LIGHT_MODE_RT || LIGHTING_REFLECT_MODE == REFLECT_MODE_WSR
+            specular += textureLod(texSpecularRT, uv, 0).rgb;
         #endif
 
         vec4 finalColor = albedo;

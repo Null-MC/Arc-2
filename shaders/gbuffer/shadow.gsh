@@ -77,7 +77,7 @@ void main() {
     EndPrimitive();
 
     #if defined(VOXEL_ENABLED) && defined(RENDER_TERRAIN)
-        if (gl_PrimitiveID % 2 == 0) {
+        if (gl_PrimitiveIDIn % 2 == 0) {
             vec3 voxelPos = GetVoxelPosition(vIn[0].originPos);
 
             if (IsInVoxelBounds(voxelPos)) {
@@ -97,7 +97,7 @@ void main() {
                 #ifdef VOXEL_TRI_ENABLED
                     bool isFluid = iris_hasFluid(vIn[0].blockId);
 
-                    if (vIn[0].currentCascade == 0 && !isFluid) {
+                    if (vIn[0].currentCascade == 1 && !isFluid) {
                         ivec3 quadBinPos = ivec3(floor(voxelPos / QUAD_BIN_SIZE));
                         int quadBinIndex = GetQuadBinIndex(quadBinPos);
 
@@ -107,14 +107,15 @@ void main() {
                             //vec3 offset = ivec3(voxelPos) - quadBinPos*QUAD_BIN_SIZE;
                             //vec3 originBase = vIn[0].originPos - 0.5 - offset;
 
-                            vec3 originBase = GetVoxelLocalPos(quadBinPos*QUAD_BIN_SIZE);// - 0.5;
+                            vec3 originBase = GetVoxelLocalPos(quadBinPos*QUAD_BIN_SIZE);
 
                             Quad quad;
                             quad.tint = packUnorm4x8(vIn[0].color);
 
-                            quad.pos[0] = SetQuadVertexPos(vIn[0].localPos - originBase);
-                            quad.pos[1] = SetQuadVertexPos(vIn[1].localPos - originBase);
-                            quad.pos[2] = SetQuadVertexPos(vIn[2].localPos - originBase);
+                            // Reorder Vertices!
+                            quad.pos[2] = SetQuadVertexPos(vIn[0].localPos - originBase);
+                            quad.pos[0] = SetQuadVertexPos(vIn[1].localPos - originBase);
+                            quad.pos[1] = SetQuadVertexPos(vIn[2].localPos - originBase);
 
                             vec2 uv_min = min(min(vIn[0].uv, vIn[1].uv), vIn[2].uv);
                             quad.uv_min = SetQuadUV(uv_min);

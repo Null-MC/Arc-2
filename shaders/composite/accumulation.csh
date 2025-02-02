@@ -122,7 +122,7 @@ void main() {
 
 
     // vec2 uv2 = uv;
-    // uv2 += getJitterOffset(ap.frame.counter);
+    // uv2 += getJitterOffset(ap.time.frames);
 
     float depth = texelFetch(TEX_DEPTH, iuv, 0).r;
 
@@ -144,7 +144,7 @@ void main() {
     vec2 uvLast = clipPosPrev.xy * 0.5 + 0.5;
 
 
-    bool altFrame = (ap.frame.counter % 2) == 1;
+    bool altFrame = (ap.time.frames % 2) == 1;
 
     vec4 previousDiffuse = textureLod(altFrame ? TEX_ACCUM_DIFFUSE : TEX_ACCUM_DIFFUSE_ALT, uvLast, 0);
     vec4 previousSpecular = textureLod(altFrame ? TEX_ACCUM_SPECULAR : TEX_ACCUM_SPECULAR_ALT, uvLast, 0);

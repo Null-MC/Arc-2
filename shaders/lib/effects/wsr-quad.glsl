@@ -2,33 +2,23 @@ bool TraceReflection(const in vec3 localPos, const in vec3 localDir, out vec3 hi
     vec4 colorFinal = vec4(0.0);
     vec3 currPos = GetVoxelPosition(localPos) / QUAD_BIN_SIZE;
 
-    vec3 stepDir = sign(localDir);
-    vec3 stepSizes = 1.0 / abs(localDir);
-    vec3 nextDist = stepDir * 0.5 + 0.5;
-    nextDist = (nextDist - fract(currPos)) / localDir;
+    vec3 stepSizes, nextDist, stepAxis;
+    dda_init(stepSizes, nextDist, currPos, localDir);
 
     bool hit = false;
 
     for (int i = 0; i < LIGHTING_REFLECT_MAXSTEP && !hit; i++) {
-        vec3 rayStart = currPos;
+        vec3 step = dda_step(stepAxis, nextDist, stepSizes, localDir);
+        vec3 nextPos = currPos + step;
 
-        float closestDist = minOf(nextDist);
-        currPos = fma(localDir, vec3(closestDist), currPos);
-
-        ivec3 quadBinPos = ivec3(floor(0.5 * (currPos + rayStart)));
-
-        vec3 stepAxis = vec3(lessThanEqual(nextDist, vec3(closestDist)));
-
-        nextDist -= closestDist;
-        nextDist = fma(stepSizes, stepAxis, nextDist);
-
+        ivec3 quadBinPos = ivec3(floor(currPos + 0.5*step));
         int quadBinIndex = GetQuadBinIndex(quadBinPos);
         uint quadCount = SceneQuads.bin[quadBinIndex].count;
 
-        vec3 traceStart = (rayStart - quadBinPos)*QUAD_BIN_SIZE;
-        vec3 traceEnd = (currPos - quadBinPos)*QUAD_BIN_SIZE;
+        vec3 traceStart = (currPos - quadBinPos)*QUAD_BIN_SIZE;
+        vec3 traceEnd = (nextPos - quadBinPos)*QUAD_BIN_SIZE;
 
-        float hit_dist = 999.9;
+        float hit_dist = 99999.9;
         for (int t = 0; t < quadCount; t++) {
             Quad quad = SceneQuads.bin[quadBinIndex].quadList[t];
 
@@ -50,17 +40,18 @@ bool TraceReflection(const in vec3 localPos, const in vec3 localDir, out vec3 hi
                 vec4 sampleColor = textureLod(blockAtlas, uv, 0);
 
                 if (sampleColor.a > 0.5) {
-                    //hitCoord = hit_uv;
-                    hitQuad = quad;
-                    hitColor = sampleColor;
-
                     hit_dist = sampleDist;
+
                     hitPos = fma(quadBinPos, vec3(QUAD_BIN_SIZE), hit_pos);
+                    hitColor = sampleColor;
+                    hitQuad = quad;
                     hitUV = uv;
                     hit = true;
                 }
             }
         }
+
+        currPos = nextPos;
     }
 
     return hit;

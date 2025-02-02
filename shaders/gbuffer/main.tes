@@ -86,7 +86,7 @@ void main() {
         float distF = 1.0 - smoothstep(0.2, 2.8, length(vOut.surfacePos));
         distF = 1.0 - (distF*distF);
         
-        vec3 waveOffset = GetWaveHeight(ap.camera.pos + vOut.localPos, vOut.light.y, ap.frame.time, WaterWaveOctaveMin);
+        vec3 waveOffset = GetWaveHeight(ap.camera.pos + vOut.localPos, vOut.light.y, ap.time.elapsed, WaterWaveOctaveMin);
         vOut.localPos.y += distF * waveOffset.y * vOut.waveStrength;
 
         vec3 viewPos = mul3(ap.camera.view, vOut.localPos);

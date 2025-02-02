@@ -2,7 +2,7 @@ vec3 sample_lpv(ivec3 voxelPos, vec4 intensity) {
 	if (!IsInVoxelBounds(voxelPos)) return vec3(0.0);
 
 	int i = GetLpvIndex(voxelPos);
-	bool altFrame = ap.frame.counter % 2 == 1;
+	bool altFrame = ap.time.frames % 2 == 1;
 	lpvShVoxel sh_voxel = altFrame ? SH_LPV_alt[i] : SH_LPV[i];
 
 	vec4 sh_voxel_R, sh_voxel_G, sh_voxel_B;
@@ -62,7 +62,7 @@ vec3 sample_lpv_linear(vec3 voxelPos, vec3 localNormal) {
 
 	// if (!IsInVoxelBounds(voxelPos)) return vec3(0.0);
 
-	// bool altFrame = ap.frame.counter % 2 == 1;
+	// bool altFrame = ap.time.frames % 2 == 1;
 
 	// int i = GetLpvIndex(ivec3(voxelPos));
 	// lpvShVoxel sh_voxel = altFrame ? SH_LPV_alt[i] : SH_LPV[i];

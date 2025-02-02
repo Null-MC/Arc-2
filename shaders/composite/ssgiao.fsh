@@ -35,7 +35,7 @@ void main() {
 
     // vec2 uv_j = uv;
     // #ifdef EFFECT_TAA_ENABLED
-    //     vec2 jitterOffset = getJitterOffset(ap.frame.counter);
+    //     vec2 jitterOffset = getJitterOffset(ap.time.frames);
     //     uv_j -= jitterOffset;
     // #endif
 

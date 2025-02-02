@@ -61,7 +61,7 @@ in vec2 uv;
 #endif
 
 #ifdef VOXEL_TRI_ENABLED
-    #include "/lib/buffers/triangle-list.glsl"
+    #include "/lib/buffers/quad-list.glsl"
 #endif
 
 #include "/lib/exposure.glsl"
@@ -186,7 +186,7 @@ void main() {
     // // printLine();
 
 //     printString((_F, _r, _a, _m, _e, _colon, _space));
-//     printUnsignedInt(ap.frame.counter);
+//     printUnsignedInt(ap.time.frames);
 //     printLine();
 
     #if LIGHTING_MODE == LIGHT_MODE_RT
@@ -196,8 +196,8 @@ void main() {
     #endif
 
     #ifdef VOXEL_TRI_ENABLED
-        printString((_T, _r, _i, _a, _n, _g, _l, _e, _s, _colon, _space));
-        printUnsignedInt(Scene_TriangleCount);
+        printString((_Q, _u, _a, _d, _s, _colon, _space));
+        printUnsignedInt(SceneQuads.total);
         printLine();
     #endif
 

@@ -10,9 +10,8 @@ vec3 TraceDDA(vec3 origin, const in vec3 endPos, const in float range, const in 
 
     vec3 direction = traceRay / traceRayLen;
 
-    vec3 stepDir = sign(direction);
-    vec3 stepSizes = 1.0 / abs(direction);
-    vec3 nextDist = (stepDir * 0.5 + 0.5 - fract(origin)) / direction;
+    vec3 stepSizes, nextDist, stepAxis;
+    dda_init(stepSizes, nextDist, origin, direction);
 
     ivec3 gridCell, blockCell;
 
@@ -29,13 +28,7 @@ vec3 TraceDDA(vec3 origin, const in vec3 endPos, const in float range, const in 
     // #endif
 
     if (!traceSelf) {
-        float closestDist = minOf(nextDist);
-        currPos += direction * closestDist;
-
-        vec3 stepAxis = vec3(lessThanEqual(nextDist, vec3(closestDist)));
-
-        nextDist -= closestDist;
-        nextDist += stepSizes * stepAxis;
+        currPos += dda_step(stepAxis, nextDist, stepSizes, direction);
     }
 
     for (int i = 0; i < DDAStepCount; i++) {
@@ -43,20 +36,13 @@ vec3 TraceDDA(vec3 origin, const in vec3 endPos, const in float range, const in 
 
         vec3 rayStart = currPos;
 
-        float closestDist = minOf(nextDist);
-        currPos += direction * closestDist;
+        vec3 step = dda_step(stepAxis, nextDist, stepSizes, direction);
+        currPos += step;
 
         float currLen2 = lengthSq(currPos - origin);
         if (currLen2 > traceRayLen2) currPos = endPos;
         
         ivec3 voxelPos = ivec3(floor(0.5 * (currPos + rayStart)));
-
-        // if (!traceSelf && ivec3(voxelPos) == ivec3(endPos)) i = 999;
-
-        vec3 stepAxis = vec3(lessThanEqual(nextDist, vec3(closestDist)));
-
-        nextDist -= closestDist;
-        nextDist += stepSizes * stepAxis;
 
         if (IsInVoxelBounds(voxelPos)) {
             #ifdef RT_TRI_ENABLED
@@ -82,7 +68,7 @@ vec3 TraceDDA(vec3 origin, const in vec3 endPos, const in float range, const in 
                         vec2 uv_max = GetQuadUV(quad.uv_max);
                         vec2 uv = fma(hit_uv, uv_max - uv_min, uv_min);
 
-                        vec4 sampleColor = vec4(1.0);//textureLod(blockAtlas, uv, 0);
+                        vec4 sampleColor = textureLod(blockAtlas, uv, 0);
                         // sampleColor.rgb = RgbToLinear(sampleColor.rgb);
 
                         //color *= sampleColor.rgb; //mix(sampleColor.rgb, vec3(1.0), (sampleColor.a*sampleColor.a));

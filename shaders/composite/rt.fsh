@@ -59,6 +59,10 @@ in vec2 uv;
 
 #include "/lib/voxel/voxel_common.glsl"
 
+#if LIGHTING_MODE == LIGHT_MODE_RT || LIGHTING_REFLECT_MODE == REFLECT_MODE_WSR
+    #include "/lib/voxel/dda.glsl"
+#endif
+
 #ifdef VOXEL_TRI_ENABLED
     #include "/lib/voxel/quad-test.glsl"
     #include "/lib/voxel/quad-list.glsl"
@@ -162,7 +166,7 @@ void main() {
 
                 vec3 voxelPos_out = voxelPos + 0.02*localGeoNormal;
 
-                vec3 jitter = hash33(vec3(gl_FragCoord.xy, ap.frame.counter)) - 0.5;
+                vec3 jitter = hash33(vec3(gl_FragCoord.xy, ap.time.frames)) - 0.5;
 
                 #if RT_MAX_SAMPLE_COUNT > 0
                     uint maxSampleCount = min(binLightCount, RT_MAX_SAMPLE_COUNT);
@@ -172,7 +176,7 @@ void main() {
                     const float bright_scale = 1.0;
                 #endif
 
-                int i_offset = int(binLightCount * hash13(vec3(gl_FragCoord.xy, ap.frame.counter)));
+                int i_offset = int(binLightCount * hash13(vec3(gl_FragCoord.xy, ap.time.frames)));
 
                 for (int i = 0; i < maxSampleCount; i++) {
                     int i2 = (i + i_offset) % int(binLightCount);
@@ -220,18 +224,18 @@ void main() {
                     bool traceSelf = false;
 
                     #ifdef RT_TRI_ENABLED
-                        vec3 traceRay = traceEnd - traceStart;
-                        vec3 direction = normalize(traceRay);
-
-                        vec3 stepDir = sign(direction);
-                        vec3 nextDist = (stepDir * 0.5 + 0.5 - fract(traceStart)) / direction;
-
-                        float closestDist = minOf(nextDist);
-                        traceStart += direction * closestDist;
+//                        vec3 traceRay = traceEnd - traceStart;
+//                        vec3 direction = normalize(traceRay);
+//
+//                        vec3 stepDir = sign(direction);
+//                        vec3 nextDist = (stepDir * 0.5 + 0.5 - fract(traceStart)) / direction;
+//
+//                        float closestDist = minOf(nextDist);
+//                        traceStart += direction * closestDist;
 
                         traceStart /= QUAD_BIN_SIZE;
                         traceEnd /= QUAD_BIN_SIZE;
-                        traceSelf = true;
+                        //traceSelf = true;
                     #endif
 
                     vec3 shadow_color = TraceDDA(traceStart, traceEnd, lightRange, traceSelf);

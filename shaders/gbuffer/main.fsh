@@ -153,7 +153,7 @@ void iris_emitFragment() {
 
         if (is_fluid) {
             #ifdef WATER_WAVES_ENABLED
-                vec3 waveOffset = GetWaveHeight(vIn.surfacePos + ap.camera.pos, lmcoord.y, ap.frame.time, WaterWaveOctaveMax);
+                vec3 waveOffset = GetWaveHeight(vIn.surfacePos + ap.camera.pos, lmcoord.y, ap.time.elapsed, WaterWaveOctaveMax);
 
                 // mUV += 0.1*waveOffset.xz;
 

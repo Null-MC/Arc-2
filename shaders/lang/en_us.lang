@@ -13,6 +13,8 @@ option.SHADOWS_ENABLED=Enabled
 
 option.SHADOWS_CLOUD_ENABLED=Clouds
 
+option.SHADOW_RESOLUTION=Resolution
+
 option.MATERIAL_FORMAT=Format
 value.MATERIAL_FORMAT.0=None
 value.MATERIAL_FORMAT.1=Lab-PBR

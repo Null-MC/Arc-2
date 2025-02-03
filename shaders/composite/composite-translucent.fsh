@@ -77,6 +77,7 @@ uniform sampler2DArray texShadowColor;
 #include "/lib/utility/matrix.glsl"
 
 #include "/lib/light/sampling.glsl"
+#include "/lib/light/volumetric.glsl"
 
 #include "/lib/sky/common.glsl"
 #include "/lib/sky/view.glsl"
@@ -117,8 +118,11 @@ uniform sampler2DArray texShadowColor;
 
 void main() {
     ivec2 iuv = ivec2(gl_FragCoord.xy);
-    vec3 colorFinal = texelFetch(texFinalOpaque, iuv, 0).rgb;
+    vec3 colorOpaque = texelFetch(texFinalOpaque, iuv, 0).rgb;
     vec4 albedo = texelFetch(texDeferredTrans_Color, iuv, 0);
+
+    vec4 finalColor = vec4(0.0);
+    bool is_fluid = false;
 
     if (albedo.a > EPSILON) {
         vec3 texNormalData = texelFetch(texDeferredTrans_TexNormal, iuv, 0).rgb;
@@ -163,7 +167,7 @@ void main() {
         float roughL = roughness*roughness;
 
         // bool isWater = bitfieldExtract(material, 6, 1) != 0;
-        bool is_fluid = iris_hasFluid(blockId);
+        is_fluid = iris_hasFluid(blockId);
 
         vec3 shadowSample = vec3(1.0);
         #ifdef SHADOWS_ENABLED
@@ -323,7 +327,7 @@ void main() {
             specular += textureLod(texSpecularRT, uv, 0).rgb;
         #endif
 
-        vec4 finalColor = albedo;
+        finalColor.a = albedo.a;
         if (is_fluid) finalColor.a = 0.0;
 
         finalColor.rgb = albedo.rgb * diffuse * albedo.a + specular;
@@ -364,24 +368,37 @@ void main() {
             refractMip = 6.0 * pow(roughness, 0.25) * min(viewDistFar * 0.2, 1.0);
         #endif
 
-        vec3 colorOpaque = textureLod(texFinalOpaque, refract_uv, refractMip).rgb;
+        colorOpaque = textureLod(texFinalOpaque, refract_uv, refractMip).rgb;
 
         // Fog
         // float viewDist = length(localPosTrans);
         // float fogF = smoothstep(fogStart, fogEnd, viewDist);
         // finalColor = mix(finalColor, vec4(fogColor.rgb, 1.0), fogF);
 
+        if (is_fluid == (ap.camera.fluid != 1)) {
+            colorOpaque *= exp(-WaterTintMinDist * VL_WaterTransmit);
+        }
+
         if (!is_fluid) {
             colorOpaque *= mix(vec3(1.0), albedo.rgb, sqrt(albedo.a));
         }
 
 //        colorFinal = mix(colorOpaque, finalColor.rgb, finalColor.a);
-        colorOpaque *= 1.0 - finalColor.a;
-        colorFinal = colorOpaque + finalColor.rgb;
+//        colorOpaque *= 1.0 - finalColor.a;
+//        colorOpaque += finalColor.rgb;
     }
 
-    vec4 clouds = textureLod(texClouds, uv, 0);
-    colorFinal = mix(colorFinal, clouds.rgb, clouds.a);
+    if (!is_fluid && ap.camera.fluid == 1) {
+        colorOpaque *= exp(-WaterTintMinDist * VL_WaterTransmit);
+    }
+
+    vec3 colorFinal = colorOpaque;
+
+    colorFinal *= 1.0 - finalColor.a;
+    colorFinal += finalColor.rgb;
+
+    //vec4 clouds = textureLod(texClouds, uv, 0);
+    //colorFinal = mix(colorFinal, clouds.rgb, clouds.a);
 
     #ifdef EFFECT_VL_ENABLED
         vec3 vlScatter = textureLod(texScatterVL, uv, 0).rgb;

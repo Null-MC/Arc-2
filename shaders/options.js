@@ -25,6 +25,7 @@ export function setupOptions() {
     const screen_Shadows = new Page("Shadows")
         .add(asBool("SHADOWS_ENABLED", true))
         .add(asBool("SHADOWS_CLOUD_ENABLED", true))
+        .add(asInt("SHADOW_RESOLUTION", 256, 512, 1024, 2048, 4096).build(1024))
         .build();
 
     let screen_Parallax = new Page("Parallax")

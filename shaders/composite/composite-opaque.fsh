@@ -198,13 +198,7 @@ void main() {
         #endif
 
         vec3 view_F = material_fresnel(albedo.rgb, f0_metal, roughL, NoVm, isWet);
-        // vec3 sky_F = material_fresnel(albedo.rgb, f0_metal, roughL, NoLm, isWet);
 
-        // vec3 skyPos = getSkyPosition(localPos);
-        // vec3 sunTransmit = getValFromTLUT(texSkyTransmit, skyPos, Scene_LocalSunDir);
-        // vec3 moonTransmit = getValFromTLUT(texSkyTransmit, skyPos, -Scene_LocalSunDir);
-        // vec3 skyLight = SUN_BRIGHTNESS * sunTransmit + MOON_BRIGHTNESS * moonTransmit;
-        // vec3 skyLight = GetSkyBrightness(localPos);
         vec3 sunTransmit, moonTransmit;
         GetSkyLightTransmission(localPos, sunTransmit, moonTransmit);
 

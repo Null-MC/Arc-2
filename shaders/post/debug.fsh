@@ -173,7 +173,36 @@ void main() {
 //        if (clamp(previewCoord, 0.0, 1.0) == previewCoord) {
 //            color = textureLod(texSpecularRT, previewCoord, 0).rgb;
 //        }
+
+        bool AccumulationEnabled = false;
+        bool VoxelizationEnabled = false;
+
+        #ifdef ACCUM_ENABLED
+            AccumulationEnabled = true;
+        #endif
+
+        #ifdef VOXEL_ENABLED
+            VoxelizationEnabled = true;
+        #endif
+
+        beginText(ivec2(gl_FragCoord.xy*0.5), ivec2(8, ap.game.screenSize.y*0.5-8));
+        text.bgCol = vec4(0.0, 0.0, 0.0, 0.6);
+        text.fgCol = vec4(0.8, 0.8, 0.8, 1.0);
+        printString((_S, _e, _t, _t, _i, _n, _g, _s));
+        printLine();
+        printString((_minus, _minus, _minus, _minus, _minus, _minus, _minus, _minus));
+        printLine();
+        printString((_A, _c, _c, _u, _m, _u, _l, _a, _t, _i, _o, _n, _colon, _space));
+        printBool(AccumulationEnabled);
+        printLine();
+        printString((_V, _o, _x, _e, _l, _i, _z, _a, _t, _i, _o, _n, _colon, _space));
+        printBool(VoxelizationEnabled);
+        printLine();
+        //...
+        endText(color);
     }
+
+
 
     beginText(ivec2(gl_FragCoord.xy * 0.5), ivec2(4, ap.game.screenSize.y/2 - 24));
 

@@ -45,6 +45,10 @@ in VertexData2 {
     #include "/lib/material/parallax.glsl"
 #endif
 
+#if LIGHTING_MODE == LIGHT_MODE_VANILLA
+    #include "/lib/light/lightmap.glsl"
+#endif
+
 #if defined(RENDER_TERRAIN) && defined(RENDER_TRANSLUCENT)
     #include "/lib/water_waves.glsl"
 #endif
@@ -184,6 +188,13 @@ void iris_emitFragment() {
 
     #ifndef RENDER_TRANSLUCENT
         albedo.a = 1.0;
+    #endif
+
+    #if LIGHTING_MODE == LIGHT_MODE_VANILLA
+        vec3 viewPos = mul3(ap.camera.view, vIn.localPos);
+        vec3 viewGeoNormal = mat3(ap.camera.view) * localGeoNormal;
+        vec3 viewTexNormal = mat3(ap.camera.view) * localTexNormal;
+        ApplyDirectionalLightmap(lmcoord.x, viewPos, viewGeoNormal, viewTexNormal);
     #endif
 
     outColor = albedo;

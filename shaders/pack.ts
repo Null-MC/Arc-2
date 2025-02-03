@@ -28,6 +28,7 @@ function setupSettings() {
         Shadows: {
             Enabled: getBoolSetting("SHADOWS_ENABLED"),
             CloudsEnabled: getBoolSetting("SHADOWS_CLOUD_ENABLED"),
+            Resolution: getIntSetting("SHADOW_RESOLUTION"),
             Filter: true,
             SS_Fallback: true,
         },
@@ -132,7 +133,7 @@ function setupSettings() {
     worldSettings.disableShade = true;
     worldSettings.ambientOcclusionLevel = 0.0;
     worldSettings.sunPathRotation = Settings.Sky.SunAngle;
-    worldSettings.shadowMapResolution = 1024;
+    worldSettings.shadowMapResolution = Settings.Shadows.Resolution;
     worldSettings.renderStars = false;
     worldSettings.renderMoon = false;
     worldSettings.renderSun = false;
@@ -160,6 +161,7 @@ function setupSettings() {
     if (Settings.Shadows.Enabled) defineGlobally("SHADOWS_ENABLED", "1");
     if (Settings.Shadows.CloudsEnabled) defineGlobally("SHADOWS_CLOUD_ENABLED", "1");
     if (Settings.Shadows.SS_Fallback) defineGlobally("SHADOW_SCREEN", "1");
+    defineGlobally("SHADOW_RESOLUTION", Settings.Shadows.Resolution.toString());
 
     defineGlobally("MATERIAL_FORMAT", Settings.Material.Format);
     if (Settings.Material.Parallax.Enabled) {

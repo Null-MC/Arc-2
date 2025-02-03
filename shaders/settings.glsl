@@ -46,7 +46,8 @@ const float Exposure_minLogLum = POST_EXPOSURE_MIN;// -9.5;
 const float Exposure_maxLogLum = POST_EXPOSURE_MAX;//  19.0;
 const float Exposure_Speed = POST_EXPOSURE_SPEED;// 0.2;//2.1;
 
-const float shadowMapResolution = 1024.0;
+const float WaterTintMinDist = 3.0;
+const float shadowMapResolution = float(SHADOW_RESOLUTION);
 const float sunPathRotation = 25.0;
 const float cloudHeight = 320.0;
 

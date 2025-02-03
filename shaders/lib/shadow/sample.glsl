@@ -98,7 +98,7 @@ vec3 SampleShadowColor_PCF(const in vec3 shadowPos, const in int shadowCascade, 
 float ShadowBlockerDistance(const in vec3 shadowPos, const in int shadowCascade, const in vec2 pixelRadius) {
     float dither = GetShadowDither();
     float zRange = -2.0 / ap.celestial.projection[shadowCascade][2][2]; //GetShadowRange();
-    float bias = GetShadowBias(shadowCascade);
+    float bias = 1.0;//GetShadowBias(shadowCascade);
 
     float angle = fract(dither) * TAU;
     float s = sin(angle), c = cos(angle);
@@ -115,7 +115,7 @@ float ShadowBlockerDistance(const in vec3 shadowPos, const in int shadowCascade,
 
         float texDepth = textureLod(solidShadowMap, vec3(shadowPos.xy + pixelOffset, shadowCascade), 0).r;
 
-        float hitDist = max(shadowPos.z - texDepth - bias, 0.0) * zRange;
+        float hitDist = max((shadowPos.z - texDepth) * zRange - bias, 0.0);
 
         avgDist += hitDist;
         blockers++;// += step(0.0, hitDist);
@@ -127,15 +127,15 @@ float ShadowBlockerDistance(const in vec3 shadowPos, const in int shadowCascade,
 
 vec3 SampleShadowColor_PCSS(const in vec3 shadowPos, const in int shadowCascade) {
     vec2 maxPixelRadius = GetPixelRadius(Shadow_MaxPcfSize, shadowCascade);
-    float blockerDistance = ShadowBlockerDistance(shadowPos, shadowCascade, 0.5 * maxPixelRadius);
+    float blockerDistance = ShadowBlockerDistance(shadowPos, shadowCascade, maxPixelRadius);
 
     // if (blockerDistance <= 0.0) {
     //     // WARN: Is this faster or just doubling work?!
     //     return SampleShadowColor(shadowPos, shadowCascade);
     // }
 
-    const float SHADOW_PENUMBRA_SCALE = 24.0;
-    const float minShadowPixelRadius = 1.25 * shadowPixelSize;
+    const float SHADOW_PENUMBRA_SCALE = 16.0;
+    const float minShadowPixelRadius = 0.5 * shadowPixelSize;
 
     vec2 pixelRadius = GetPixelRadius(blockerDistance / SHADOW_PENUMBRA_SCALE, shadowCascade);
     pixelRadius = clamp(pixelRadius, vec2(minShadowPixelRadius), maxPixelRadius);

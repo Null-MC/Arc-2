@@ -1,5 +1,3 @@
-// #define DEBUG_WHITE_WORLD
-
 #define MATERIAL_EMISSION_POWER 2.2
 // #define LPV_PER_FACE_LIGHTING
 #define MATERIAL_ROUGH_REFRACT
@@ -50,6 +48,8 @@ const float WaterTintMinDist = 3.0;
 const float shadowMapResolution = float(SHADOW_RESOLUTION);
 const float sunPathRotation = 25.0;
 const float cloudHeight = 320.0;
+
+const vec3 WhiteWorld_Value = vec3(0.8);
 
 
 // DO NOT EDIT

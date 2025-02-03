@@ -82,6 +82,7 @@ function setupSettings() {
             Enabled: getBoolSetting("DEBUG_ENABLED"),
             View: getIntSetting("DEBUG_VIEW"),
             Material: getIntSetting("DEBUG_MATERIAL"),
+            WhiteWorld: getBoolSetting("DEBUG_WHITE_WORLD"),
             HISTOGRAM: false,
             RT: false,
         },
@@ -228,6 +229,7 @@ function setupSettings() {
     if (Settings.Debug.Enabled) {
         defineGlobally("DEBUG_VIEW", Settings.Debug.View);
         defineGlobally("DEBUG_MATERIAL", Settings.Debug.Material);
+        if (Settings.Debug.WhiteWorld) defineGlobally("DEBUG_WHITE_WORLD", "1");
         if (Settings.Debug.HISTOGRAM) defineGlobally("DEBUG_HISTOGRAM", "1");
         if (Settings.Debug.RT) defineGlobally("DEBUG_RT", "1");
     }

@@ -128,7 +128,6 @@ void iris_emitFragment() {
 
         float roughness = 0.92;
         float f0_metal = 0.0;
-        // float emission = bitfieldExtract(vIn.material, 3, 1) != 0 ? 1.0 : 0.0;
         float emission = iris_getEmission(vIn.blockId) / 15.0;
         float porosity = 0.0;
         float sss = 0.0;
@@ -152,7 +151,6 @@ void iris_emitFragment() {
     #endif
 
     #if defined(RENDER_TERRAIN) && defined(RENDER_TRANSLUCENT)
-        // isWater = bitfieldExtract(vIn.material, 6, 1) != 0;
         bool is_fluid = iris_hasFluid(vIn.blockId);
 
         if (is_fluid) {
@@ -181,10 +179,6 @@ void iris_emitFragment() {
     if (iris_discardFragment(albedo)) {discard; return;}
 
     albedo *= mColor;
-
-    #ifdef DEBUG_WHITE_WORLD
-        albedo.rgb = vec3(1.0);
-    #endif
 
     #ifndef RENDER_TRANSLUCENT
         albedo.a = 1.0;

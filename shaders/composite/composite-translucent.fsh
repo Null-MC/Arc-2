@@ -146,6 +146,10 @@ void main() {
 
         albedo.rgb = RgbToLinear(albedo.rgb);
 
+        #ifdef DEBUG_WHITE_WORLD
+            albedo.rgb = WhiteWorld_Value;
+        #endif
+
         vec3 localTexNormal = normalize(texNormalData * 2.0 - 1.0);
 
         vec3 data_r = unpackUnorm4x8(data.r).rgb;

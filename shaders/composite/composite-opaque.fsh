@@ -134,6 +134,10 @@ void main() {
 
         albedo.rgb = RgbToLinear(albedo.rgb);
 
+        #ifdef DEBUG_WHITE_WORLD
+            albedo.rgb = WhiteWorld_Value;
+        #endif
+
         vec3 localTexNormal = normalize(fma(texNormalData, vec3(2.0), vec3(-1.0)));
 
         vec3 data_r = unpackUnorm4x8(data.r).rgb;
@@ -244,7 +248,7 @@ void main() {
 //        float VoL_moon = dot(localViewDir, -Scene_LocalSunDir);
         vec3 sss_phase_sun = max(HG(VoL_sun, 0.16), 0.0) * SUN_BRIGHTNESS * sunTransmit * (1.0 - max(NoL_sun, 0.0));
         vec3 sss_phase_moon = max(HG(-VoL_sun, 0.16), 0.0) * MOON_BRIGHTNESS * moonTransmit * (1.0 - max(NoL_moon, 0.0));
-        skyLightDiffuse += PI * (sss_phase_sun + sss_phase_moon) * max(shadow_sss.w, 0.0);
+        skyLightDiffuse += PI * (sss_phase_sun + sss_phase_moon) * max(shadow_sss.w, 0.0) * abs(Scene_LocalLightDir.y);
 
         vec3 blockLighting = blackbody(BLOCKLIGHT_TEMP) * (BLOCKLIGHT_BRIGHTNESS * lmCoord.x);
 

@@ -84,6 +84,8 @@ suffix.POST_CONTRAST=%
 
 option.DEBUG_ENABLED=Enabled
 
+option.DEBUG_WHITE_WORLD=White-World
+
 option.DEBUG_VIEW=View
 value.DEBUG_VIEW.0=None
 value.DEBUG_VIEW.1=Material

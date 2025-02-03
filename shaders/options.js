@@ -48,14 +48,14 @@ export function setupOptions() {
     let screen_Lighting = new Page("Lighting")
         .add(asInt("LIGHTING_MODE", 0, 1, 2).build(1))
         .add(new Page("RT Options")
-            .add(asInt("RT_MAX_SAMPLE_COUNT", 2, 4, 8, 12, 16, 20, 24, 28, 32, 48, 64, 0).build(8))
+            .add(asInt("RT_MAX_SAMPLE_COUNT", 2, 4, 8, 12, 16, 20, 24, 28, 32, 48, 64, 0).build(16))
             .add(asBool("LIGHTING_TRACE_TRIANGLE", false))
             .build())
         .add(asBool("LPV_RSM_ENABLED", false))
         .add(new Page("Reflections")
             .add(asInt("LIGHTING_REFLECT_MODE", 0, 1, 2).build(2))
-            .add(asBool("LIGHTING_REFLECT_NOISE", true))
             .add(asBool("LIGHTING_REFLECT_TRIANGLE", false))
+            .add(asBool("LIGHTING_REFLECT_NOISE", true))
             .add(asIntEx(
                 "LIGHTING_REFLECT_MAXSTEP", 64,
                 8, 256, 8))
@@ -72,6 +72,9 @@ export function setupOptions() {
         .add(asBool("EFFECT_SSAO_ENABLED", true))
         .add(asBool("EFFECT_SSGI_ENABLED", false))
         .add(asBool("EFFECT_BLOOM_ENABLED", true))
+        .add(asIntEx(
+            "EFFECT_SSGIAO_SAMPLES", 12,
+            1, 64, 1))
         .build();
 
     const screen_Post = new Page("Post")
@@ -81,7 +84,7 @@ export function setupOptions() {
                 "POST_EXPOSURE_MIN", -10.5,
                 -12.0, -3.0, 0.5))
             .add(asFloatEx(
-                "POST_EXPOSURE_MAX", 17.0,
+                "POST_EXPOSURE_MAX", 16.5,
                 6.0, 32.0, 0.5))
             .add(asFloatEx(
                 "POST_EXPOSURE_SPEED", 0.4,

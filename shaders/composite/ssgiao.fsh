@@ -21,9 +21,6 @@ in vec2 uv;
     #include "/lib/taa_jitter.glsl"
 #endif
 
-const int SSGIAO_SAMPLES = 8;
-// const float SSGIAO_RADIUS = 4.0;
-
 #define SSGIAO_TRACE_ENABLED
 const int SSGIAO_TRACE_SAMPLES = 3;
 
@@ -68,7 +65,7 @@ void main() {
         float max_radius_ao = mix(0.5, 12.0, distF);
         float max_radius_gi = mix(2.0, 16.0, distF);
 
-        float rStep = 1.0 / SSGIAO_SAMPLES;
+        float rStep = 1.0 / EFFECT_SSGIAO_SAMPLES;
         float radius = rStep * dither;
 
         // uint data_r = texelFetch(texDeferredOpaque_Data, iuv, 0).r;
@@ -82,7 +79,7 @@ void main() {
 
         float maxWeight = EPSILON;
 
-        for (int i = 0; i < SSGIAO_SAMPLES; i++) {
+        for (int i = 0; i < EFFECT_SSGIAO_SAMPLES; i++) {
             vec2 offset = radius * vec2(sin(rotatePhase), cos(rotatePhase));
             vec2 offset_ao = offset * max_radius_ao;
             vec2 offset_gi = offset * max_radius_gi;

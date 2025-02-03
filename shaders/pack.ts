@@ -67,6 +67,7 @@ function setupSettings() {
             SSAO: getBoolSetting("EFFECT_SSAO_ENABLED"),
             SSGI: getBoolSetting("EFFECT_SSGI_ENABLED"),
             Bloom: getBoolSetting("EFFECT_BLOOM_ENABLED"),
+            SSGIAO_Samples: getIntSetting("EFFECT_SSGIAO_SAMPLES"),
         },
         Post: {
             TAA: getBoolSetting("EFFECT_TAA_ENABLED"),
@@ -128,7 +129,7 @@ function setupSettings() {
     }
 
     // TODO: debug only
-    Settings.Internal.Accumulation = false;
+    //Settings.Internal.Accumulation = false;
 
     worldSettings.disableShade = true;
     worldSettings.ambientOcclusionLevel = 0.0;
@@ -145,9 +146,6 @@ function setupSettings() {
 
     defineGlobally("SKY_SEA_LEVEL", Settings.Sky.SeaLevel.toString());
     defineGlobally("SKY_FOG_DENSITY", Settings.Sky.FogDensity);
-
-    if (Settings.Effect.SSAO) defineGlobally("EFFECT_SSAO_ENABLED", "1");
-    if (Settings.Effect.SSGI) defineGlobally("EFFECT_SSGI_ENABLED", "1");
 
     if (Settings.Water.Waves) {
         defineGlobally("WATER_WAVES_ENABLED", "1");
@@ -215,6 +213,10 @@ function setupSettings() {
                 defineGlobally("LPV_RSM_ENABLED", "1");
         }
     }
+
+    if (Settings.Effect.SSAO) defineGlobally("EFFECT_SSAO_ENABLED", "1");
+    if (Settings.Effect.SSGI) defineGlobally("EFFECT_SSGI_ENABLED", "1");
+    defineGlobally("EFFECT_SSGIAO_SAMPLES", Settings.Effect.SSGIAO_Samples)
 
     defineGlobally("POST_CONTRAST", Settings.Post.Contrast.toString());
     if (Settings.Post.TAA) defineGlobally("EFFECT_TAA_ENABLED", "1");

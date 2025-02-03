@@ -296,8 +296,8 @@ void main() {
 
             sampleTransmittance = exp(-sampleDensity * stepDist * extinction);
 
-            vec3 psiMS = 0.25*SKY_LUMINANCE * Scene_SkyBrightnessSmooth
-                * getValFromMultiScattLUT(texSkyMultiScatter, skyPos, Scene_LocalSunDir);
+            vec3 psiMS = getValFromMultiScattLUT(texSkyMultiScatter, skyPos, Scene_LocalSunDir);
+            psiMS *= SKY_LUMINANCE * Scene_SkyBrightnessSmooth * phaseIso;
 
             // TODO: add moon
             vec3 rayleighInScattering = rayleighScattering * (rayleighPhaseValue * sunSkyLight * shadowSample + psiMS + sampleLit);

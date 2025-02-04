@@ -84,7 +84,7 @@ export function setupOptions() {
                 "POST_EXPOSURE_MIN", -10.5,
                 -12.0, -3.0, 0.5))
             .add(asFloatEx(
-                "POST_EXPOSURE_MAX", 16.5,
+                "POST_EXPOSURE_MAX", 16.0,
                 6.0, 32.0, 0.5))
             .add(asFloatEx(
                 "POST_EXPOSURE_SPEED", 0.4,

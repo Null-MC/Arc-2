@@ -27,7 +27,7 @@ float GetSkyDensity(const in vec3 localPos) {
 
     float nightF = max(1.0 - Scene_LocalSunDir.y, 0.0);
     float densityF = fma(nightF, 5.0, 1.0);
-    densityF = mix(densityF, 10.0, ap.world.rainStrength);
+    densityF = mix(densityF, 40.0, ap.world.rainStrength);
 
     return AirDensityF * densityF * sampleDensity;
 }

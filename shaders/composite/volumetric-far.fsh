@@ -36,6 +36,7 @@ uniform sampler2D texSkyMultiScatter;
 
 #include "/lib/sky/common.glsl"
 #include "/lib/sky/transmittance.glsl"
+#include "/lib/sky/density.glsl"
 
 #include "/lib/light/volumetric.glsl"
 
@@ -166,7 +167,7 @@ void main() {
 
             float sampleDensity = 1.0;
             if (!isWater) {
-                sampleDensity = GetSkyDensity(sampleLocalPos) * 0.0001;
+                sampleDensity = GetSkyDensity(sampleLocalPos);
 
 //                float worldY = sampleLocalPos.y + ap.camera.pos.y;
 //                float lightAtmosDist = max(SKY_SEA_LEVEL + 200.0 - worldY, 0.0) / Scene_LocalLightDir.y;

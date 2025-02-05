@@ -12,10 +12,13 @@ out VertexData2 {
 
     #ifdef RENDER_TERRAIN
         flat uint blockId;
+    #endif
 
-        #ifdef VOXEL_ENABLED
-            vec3 localPos;
-            vec2 lmcoord;
+    #ifdef VOXEL_ENABLED
+        vec3 localPos;
+        vec2 lmcoord;
+
+        #ifdef RENDER_TERRAIN
             flat vec3 originPos;
 
             #ifdef VOXEL_BLOCK_FACE
@@ -32,12 +35,15 @@ void iris_emitVertex(inout VertexData data) {
     vec3 shadowViewPos = mul3(iris_modelViewMatrix, data.modelPos.xyz);
     data.clipPos = iris_projectionMatrix * vec4(shadowViewPos, 1.0);
 
-    #if defined VOXEL_ENABLED && defined RENDER_TERRAIN
+    #ifdef VOXEL_ENABLED
         // WARN: temp workaround
         mat4 shadowModelViewInverse = inverse(ap.celestial.view);
 
         vOut.localPos = mul3(shadowModelViewInverse, shadowViewPos);
-        vOut.originPos = vOut.localPos + data.midBlock / 64.0;
+
+        #ifdef RENDER_TERRAIN
+            vOut.originPos = vOut.localPos + data.midBlock / 64.0;
+        #endif
     #endif
 }
 
@@ -68,13 +74,13 @@ void iris_sendParameters(in VertexData data) {
 
     #ifdef RENDER_TERRAIN
         vOut.blockId = data.blockId;
+    #endif
 
-        #ifdef VOXEL_ENABLED
-            vOut.lmcoord = clamp((data.light - (0.5/16.0)) / (15.0/16.0), 0.0, 1.0);
+    #ifdef VOXEL_ENABLED
+        vOut.lmcoord = clamp((data.light - (0.5/16.0)) / (15.0/16.0), 0.0, 1.0);
 
-            #ifdef VOXEL_BLOCK_FACE
-                vOut.textureId = data.textureId;
-            #endif
+        #if defined(VOXEL_BLOCK_FACE) && defined(RENDER_TERRAIN)
+            vOut.textureId = data.textureId;
         #endif
     #endif
 }

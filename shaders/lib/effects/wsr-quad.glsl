@@ -13,7 +13,7 @@ bool TraceReflection(const in vec3 localPos, const in vec3 localDir, out vec3 hi
 
         ivec3 quadBinPos = ivec3(floor(currPos + 0.5*step));
         int quadBinIndex = GetQuadBinIndex(quadBinPos);
-        uint quadCount = SceneQuads.bin[quadBinIndex].count;
+        uint quadCount = min(SceneQuads.bin[quadBinIndex].count, QUAD_BIN_MAX);
 
         vec3 traceStart = (currPos - quadBinPos)*QUAD_BIN_SIZE;
         vec3 traceEnd = (nextPos - quadBinPos)*QUAD_BIN_SIZE;
@@ -35,11 +35,19 @@ bool TraceReflection(const in vec3 localPos, const in vec3 localDir, out vec3 hi
                 vec2 hit_uv = QuadIntersectUV(hit_pos, quad_pos_0, quad_pos_1, quad_pos_2);
 
                 if (clamp(hit_uv, 0.0, 1.0) == hit_uv) {
-                    vec2 uv_min = GetQuadUV(quad.uv_min);
-                    vec2 uv_max = GetQuadUV(quad.uv_max);
-                    vec2 uv = fma(hit_uv, uv_max - uv_min, uv_min);
+                    vec2 uv;
+                    vec4 sampleColor;
+                    if (quad.uv_min != 0u && quad.uv_max != 0u) {
+                        vec2 uv_min = GetQuadUV(quad.uv_min);
+                        vec2 uv_max = GetQuadUV(quad.uv_max);
+                        uv = fma(hit_uv, uv_max - uv_min, uv_min);
 
-                    vec4 sampleColor = textureLod(blockAtlas, uv, 0);
+                        sampleColor = textureLod(blockAtlas, uv, 0);
+                    }
+                    else {
+                        sampleColor = vec4(1.0);
+                        uv = vec2(0.0);
+                    }
 
                     if (sampleColor.a > 0.5) {
                         hit_dist = quadDist;

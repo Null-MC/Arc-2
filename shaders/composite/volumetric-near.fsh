@@ -35,6 +35,7 @@ uniform sampler2D texSkyMultiScatter;
 
 #include "/lib/sky/common.glsl"
 #include "/lib/sky/transmittance.glsl"
+#include "/lib/sky/density.glsl"
 #include "/lib/sky/clouds.glsl"
 
 #include "/lib/light/volumetric.glsl"
@@ -217,7 +218,7 @@ void main() {
 
         float sampleDensity = 1.0;
         if (ap.camera.fluid != 1) {
-            sampleDensity = GetSkyDensity(sampleLocalPos) * 0.0001;
+            sampleDensity = GetSkyDensity(sampleLocalPos);
 
             #ifdef CLOUDS_ENABLED
                 float sampleHeight = sampleLocalPos.y+ap.camera.pos.y;

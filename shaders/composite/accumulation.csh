@@ -3,6 +3,9 @@
 #include "/settings.glsl"
 #include "/lib/constants.glsl"
 
+const float AccumulationMax_Diffuse = 30.0;
+const float AccumulationMax_Specular = 2.0;
+
 layout (local_size_x = 16, local_size_y = 16, local_size_z = 1) in;
 
 const int sharedBufferRes = 20;
@@ -166,10 +169,10 @@ void main() {
         specular += textureLod(texSpecularRT, uv, 0).rgb;
     #endif
 
-    float diffuseCounter = clamp(previousDiffuse.a * counterF + 1.0, 1.0, 30.0);
+    float diffuseCounter = clamp(previousDiffuse.a * counterF + 1.0, 1.0, AccumulationMax_Diffuse);
     vec3 diffuseFinal = mix(previousDiffuse.rgb, diffuse, 1.0 / diffuseCounter);
 
-    float specularCounter = clamp(previousDiffuse.a * counterF + 1.0, 1.0, 3.0);
+    float specularCounter = clamp(previousDiffuse.a * counterF + 1.0, 1.0, AccumulationMax_Specular);
     vec3 specularFinal = mix(previousSpecular.rgb, specular, 1.0 / specularCounter);
 
     imageStore(altFrame ? IMG_ACCUM_DIFFUSE_ALT  : IMG_ACCUM_DIFFUSE,  iuv, vec4(diffuseFinal, diffuseCounter));

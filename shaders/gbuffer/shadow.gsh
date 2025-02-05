@@ -17,10 +17,13 @@ in VertexData2 {
 
     #ifdef RENDER_TERRAIN
         flat uint blockId;
+    #endif
 
-        #ifdef VOXEL_ENABLED
-            vec3 localPos;
-            vec2 lmcoord;
+    #ifdef VOXEL_ENABLED
+        vec3 localPos;
+        vec2 lmcoord;
+
+        #ifdef RENDER_TERRAIN
             flat vec3 originPos;
 
             #ifdef VOXEL_BLOCK_FACE
@@ -42,8 +45,10 @@ out VertexData2 {
 
 #include "/lib/common.glsl"
 
-#if defined(VOXEL_ENABLED) && defined(RENDER_TERRAIN)
-    #include "/lib/buffers/voxel-block.glsl"
+#ifdef VOXEL_ENABLED
+    #ifdef RENDER_TERRAIN
+        #include "/lib/buffers/voxel-block.glsl"
+    #endif
 
     #ifdef VOXEL_TRI_ENABLED
         #include "/lib/buffers/quad-list.glsl"
@@ -76,26 +81,37 @@ void main() {
 
     EndPrimitive();
 
-    #if defined(VOXEL_ENABLED) && defined(RENDER_TERRAIN)
+    #ifdef VOXEL_ENABLED
         if (gl_PrimitiveIDIn % 2 == 0) {
-            vec3 voxelPos = GetVoxelPosition(vIn[0].originPos);
+            #ifdef RENDER_TERRAIN
+                vec3 voxelPos = GetVoxelPosition(vIn[0].originPos);
+            #else
+                vec3 originPos = (vIn[0].localPos + vIn[1].localPos + vIn[2].localPos) / 3.0;
+                vec3 voxelPos = GetVoxelPosition(originPos);
+            #endif
 
             if (IsInVoxelBounds(voxelPos)) {
-                imageStore(imgVoxelBlock, ivec3(voxelPos), uvec4(vIn[0].blockId));
+                #ifdef RENDER_TERRAIN
+                    imageStore(imgVoxelBlock, ivec3(voxelPos), uvec4(vIn[0].blockId));
 
-                #ifdef VOXEL_BLOCK_FACE
-                    VoxelBlockFace blockFace;
-                    blockFace.tex_id = vIn[0].textureId;
-                    blockFace.tint = packUnorm4x8(vOut.color);
-                    SetBlockFaceLightMap(vIn[0].lmcoord, blockFace.lmcoord);
+                    #ifdef VOXEL_BLOCK_FACE
+                        VoxelBlockFace blockFace;
+                        blockFace.tex_id = vIn[0].textureId;
+                        blockFace.tint = packUnorm4x8(vOut.color);
+                        SetBlockFaceLightMap(vIn[0].lmcoord, blockFace.lmcoord);
 
-                    int blockFaceIndex = GetVoxelBlockFaceIndex(vOut.localNormal);
-                    int blockFaceMapIndex = GetVoxelBlockFaceMapIndex(ivec3(voxelPos), blockFaceIndex);
-                    VoxelBlockFaceMap[blockFaceMapIndex] = blockFace;
+                        int blockFaceIndex = GetVoxelBlockFaceIndex(vOut.localNormal);
+                        int blockFaceMapIndex = GetVoxelBlockFaceMapIndex(ivec3(voxelPos), blockFaceIndex);
+                        VoxelBlockFaceMap[blockFaceMapIndex] = blockFace;
+                    #endif
                 #endif
 
-                #ifdef VOXEL_TRI_ENABLED
-                    bool isFluid = iris_hasFluid(vIn[0].blockId);
+                #if defined(VOXEL_TRI_ENABLED) && (defined(RENDER_TERRAIN) || defined(RENDER_ENTITY))
+                    #ifdef RENDER_TERRAIN
+                        bool isFluid = iris_hasFluid(vIn[0].blockId);
+                    #else
+                        const bool isFluid = false;
+                    #endif
 
                     if (vIn[0].currentCascade == 1 && !isFluid) {
                         ivec3 quadBinPos = ivec3(floor(voxelPos / QUAD_BIN_SIZE));
@@ -108,20 +124,27 @@ void main() {
                             //vec3 originBase = vIn[0].originPos - 0.5 - offset;
 
                             vec3 originBase = GetVoxelLocalPos(quadBinPos*QUAD_BIN_SIZE);
-
                             Quad quad;
-                            quad.tint = packUnorm4x8(vIn[0].color);
 
                             // Reorder Vertices!
                             quad.pos[2] = SetQuadVertexPos(vIn[0].localPos - originBase);
                             quad.pos[0] = SetQuadVertexPos(vIn[1].localPos - originBase);
                             quad.pos[1] = SetQuadVertexPos(vIn[2].localPos - originBase);
 
-                            vec2 uv_min = min(min(vIn[0].uv, vIn[1].uv), vIn[2].uv);
-                            quad.uv_min = SetQuadUV(uv_min);
+                            #ifdef RENDER_TERRAIN
+                                quad.tint = packUnorm4x8(vIn[0].color);
 
-                            vec2 uv_max = max(max(vIn[0].uv, vIn[1].uv), vIn[2].uv);
-                            quad.uv_max = SetQuadUV(uv_max);
+                                vec2 uv_min = min(min(vIn[0].uv, vIn[1].uv), vIn[2].uv);
+                                quad.uv_min = SetQuadUV(uv_min);
+
+                                vec2 uv_max = max(max(vIn[0].uv, vIn[1].uv), vIn[2].uv);
+                                quad.uv_max = SetQuadUV(uv_max);
+                            #else
+                                quad.tint = packUnorm4x8(vec4(1.0));
+
+                                quad.uv_min = 0u;
+                                quad.uv_max = 0u;
+                            #endif
 
                             vec2 vIn3_lmcoord = vec2(0.0); // TODO: idk!
                             SetQuadLightMapCoord(quad.lmcoord, vIn[0].lmcoord, vIn[1].lmcoord, vIn[2].lmcoord, vIn3_lmcoord);

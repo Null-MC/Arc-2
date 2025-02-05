@@ -687,6 +687,7 @@ export function setupShader() {
             .vertex("gbuffer/shadow.vsh")
             .geometry("gbuffer/shadow.gsh")
             .fragment("gbuffer/shadow.fsh")
+            .ssbo(4, quadListBuffer)
             .target(0, texShadowColor)
             // .blendFunc(0, Func.ONE, Func.ZERO, Func.ONE, Func.ZERO)
             .target(1, texShadowNormal);
@@ -695,9 +696,14 @@ export function setupShader() {
     function shadowTerrainShader(name: string, usage: ProgramUsage) : ObjectShader {
         return shadowShader(name, usage)
             .ssbo(3, lightListBuffer)
-            .ssbo(4, quadListBuffer)
+            //.ssbo(4, quadListBuffer)
             .ssbo(5, blockFaceBuffer)
             .define("RENDER_TERRAIN", "1");
+    }
+
+    function shadowEntityShader(name: string, usage: ProgramUsage) : ObjectShader {
+        return shadowShader(name, usage)
+            .define("RENDER_ENTITY", "1");
     }
 
     if (Settings.Shadows.Enabled) {
@@ -708,6 +714,12 @@ export function setupShader() {
         registerShader(shadowTerrainShader("shadow-terrain-cutout", Usage.SHADOW_TERRAIN_CUTOUT).build());
 
         registerShader(shadowTerrainShader("shadow-terrain-translucent", Usage.SHADOW_TERRAIN_TRANSLUCENT)
+            .define("RENDER_TRANSLUCENT", "1")
+            .build());
+
+        registerShader(shadowEntityShader("shadow-entity-solid", Usage.SHADOW_ENTITY_SOLID).build());
+        registerShader(shadowEntityShader("shadow-entity-cutout", Usage.SHADOW_ENTITY_CUTOUT).build());
+        registerShader(shadowEntityShader("shadow-entity-translucent", Usage.SHADOW_ENTITY_TRANSLUCENT)
             .define("RENDER_TRANSLUCENT", "1")
             .build());
     }

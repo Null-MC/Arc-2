@@ -11,6 +11,8 @@ layout(location = 2) out uvec4 outData;
     layout (depth_greater) out float gl_FragDepth;
 #endif
 
+uniform sampler3D texFogNoise;
+
 in VertexData2 {
     vec2 uv;
     vec2 light;
@@ -47,6 +49,12 @@ in VertexData2 {
 
 #if LIGHTING_MODE == LIGHT_MODE_VANILLA
     #include "/lib/light/lightmap.glsl"
+#endif
+
+#ifdef FANCY_LAVA
+    #include "/lib/noise/hash.glsl"
+    #include "/lib/utility/blackbody.glsl"
+    #include "/lib/lava.glsl"
 #endif
 
 #if defined(RENDER_TERRAIN) && defined(RENDER_TRANSLUCENT)
@@ -150,9 +158,12 @@ void iris_emitFragment() {
         localTexNormal = normalize(TBN * localTexNormal);
     #endif
 
-    #if defined(RENDER_TERRAIN) && defined(RENDER_TRANSLUCENT)
+    #ifdef RENDER_TERRAIN
         bool is_fluid = iris_hasFluid(vIn.blockId);
+        uint block_emission = iris_getEmission(vIn.blockId);
+    #endif
 
+    #if defined(RENDER_TERRAIN) && defined(RENDER_TRANSLUCENT)
         if (is_fluid) {
             #ifdef WATER_WAVES_ENABLED
                 vec3 waveOffset = GetWaveHeight(vIn.surfacePos + ap.camera.pos, lmcoord.y, ap.time.elapsed, WaterWaveOctaveMax);
@@ -182,6 +193,22 @@ void iris_emitFragment() {
 
     #ifndef RENDER_TRANSLUCENT
         albedo.a = 1.0;
+    #endif
+
+    #if defined(FANCY_LAVA) && defined(RENDER_TERRAIN)
+        if (is_fluid && block_emission > 0) {
+            vec3 worldPos = ap.camera.pos + vIn.localPos;
+            vec3 viewPos = mul3(ap.camera.view, vIn.localPos);
+            vec3 viewGeoNormal = mat3(ap.camera.view) * localGeoNormal;
+
+            worldPos = floor(worldPos * 16.0) / 16.0;
+
+            ApplyLavaMaterial(albedo.rgb, localTexNormal, roughness, emission, viewGeoNormal, worldPos, viewPos);
+            localTexNormal = mat3(ap.camera.viewInv) * localTexNormal;
+            albedo.a = 1.0;
+            f0_metal = 0.07;
+            sss = 0.0;
+        }
     #endif
 
     #if LIGHTING_MODE == LIGHT_MODE_VANILLA

@@ -37,7 +37,7 @@ bool TraceReflection(const in vec3 localPos, const in vec3 localDir, out vec3 hi
                 if (clamp(hit_uv, 0.0, 1.0) == hit_uv) {
                     vec2 uv;
                     vec4 sampleColor;
-                    if (quad.uv_min != 0u && quad.uv_max != 0u) {
+                    if (quad.uv_max != 0u) {
                         vec2 uv_min = GetQuadUV(quad.uv_min);
                         vec2 uv_max = GetQuadUV(quad.uv_max);
                         uv = fma(hit_uv, uv_max - uv_min, uv_min);
@@ -45,7 +45,7 @@ bool TraceReflection(const in vec3 localPos, const in vec3 localDir, out vec3 hi
                         sampleColor = textureLod(blockAtlas, uv, 0);
                     }
                     else {
-                        sampleColor = vec4(1.0);
+                        sampleColor = vec4(1u);//unpackUnorm4x8(quad.uv_min);
                         uv = vec2(0.0);
                     }
 

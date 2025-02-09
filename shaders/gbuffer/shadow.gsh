@@ -140,9 +140,13 @@ void main() {
                                 vec2 uv_max = max(max(vIn[0].uv, vIn[1].uv), vIn[2].uv);
                                 quad.uv_max = SetQuadUV(uv_max);
                             #else
-                                quad.tint = packUnorm4x8(vec4(1.0));
+                                vec2 midUV = 0.5 * (vIn[1].uv + vIn[2].uv);
+                                vec3 avgColor = iris_sampleBaseTexLod(midUV, 4).rgb;
+                                //                                vec3 avgColor = textureLod(irisInt_BaseTex, midUV, 4).rgb;
 
-                                quad.uv_min = 0u;
+                                quad.tint = packUnorm4x8(vec4(avgColor, 1.0));
+
+                                quad.uv_min = 0u;//packUnorm4x8(vec4(avgColor, 1.0));
                                 quad.uv_max = 0u;
                             #endif
 

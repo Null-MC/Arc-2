@@ -4,6 +4,8 @@
 
 #define CLOUDS_ENABLED
 
+#define FANCY_LAVA
+
 #define MATERIAL_PARALLAX_MAXDIST 48
 
 //#define DEBUG_TRANSLUCENT

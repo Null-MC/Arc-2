@@ -864,7 +864,11 @@ export function setupShader() {
     if (Settings.Lighting.Mode == LightMode_RT || Settings.Lighting.Reflections.Mode == ReflectMode_WSR) {
         registerBarrier(Stage.POST_RENDER, new MemoryBarrier(SSBO_BIT));
 
-        const rtOpaqueShader = new Composite("rt-opaque")
+        if (Settings.Lighting.Reflections.Mode == ReflectMode_WSR)
+            registerShader(Stage.POST_RENDER, new GenerateMips(texFinalPrevious));
+            //rtOpaqueShader.generateMips(texFinalPrevious);
+
+        registerShader(Stage.POST_RENDER, new Composite("rt-opaque")
             .vertex("shared/bufferless.vsh")
             .fragment("composite/rt.fsh")
             .target(0, texDiffuseRT)
@@ -877,12 +881,8 @@ export function setupShader() {
             .define("TEX_DEFERRED_DATA", "texDeferredOpaque_Data")
             .define("TEX_DEFERRED_NORMAL", "texDeferredOpaque_TexNormal")
             .define("TEX_DEPTH", "solidDepthTex")
-            .define("TEX_SHADOW", texShadow_src);
-
-        if (Settings.Lighting.Reflections.Mode == ReflectMode_WSR)
-            rtOpaqueShader.generateMips(texFinalPrevious);
-
-        registerShader(Stage.POST_RENDER, rtOpaqueShader.build());
+            .define("TEX_SHADOW", texShadow_src)
+            .build());
     }
 
     if (Settings.Effect.SSAO || Settings.Effect.SSGI) {
@@ -955,7 +955,11 @@ export function setupShader() {
     if (Settings.Lighting.Mode == LightMode_RT || Settings.Lighting.Reflections.Mode == ReflectMode_WSR) {
         registerBarrier(Stage.POST_RENDER, new MemoryBarrier(SSBO_BIT));
 
-        const rtTranslucentShader = new Composite("rt-translucent")
+        if (Settings.Lighting.Reflections.Mode == ReflectMode_WSR)
+            registerShader(Stage.POST_RENDER, new GenerateMips(texFinalPrevious));
+            //rtTranslucentShader.generateMips(texFinalPrevious);
+
+        registerShader(Stage.POST_RENDER, new Composite("rt-translucent")
             .vertex("shared/bufferless.vsh")
             .fragment("composite/rt.fsh")
             .target(0, texDiffuseRT)
@@ -969,12 +973,8 @@ export function setupShader() {
             .define("TEX_DEFERRED_DATA", "texDeferredTrans_Data")
             .define("TEX_DEFERRED_NORMAL", "texDeferredTrans_TexNormal")
             .define("TEX_DEPTH", "mainDepthTex")
-            .define("TEX_SHADOW", texShadow_src);
-
-        if (Settings.Lighting.Reflections.Mode == ReflectMode_WSR)
-            rtTranslucentShader.generateMips(texFinalPrevious);
-
-        registerShader(Stage.POST_RENDER, rtTranslucentShader.build());
+            .define("TEX_SHADOW", texShadow_src)
+            .build());
     }
 
     if (Settings.Internal.Accumulation) {
@@ -1009,13 +1009,15 @@ export function setupShader() {
         .ssbo(2, shLpvBuffer_alt)
         .build());
 
+    registerShader(Stage.POST_RENDER, new GenerateMips(texFinalOpaque));
+
     registerShader(Stage.POST_RENDER, new Composite("composite-translucent")
         .vertex("shared/bufferless.vsh")
         .fragment("composite/composite-translucent.fsh")
         .target(0, texFinal)
         .ssbo(0, sceneBuffer)
         .ssbo(4, quadListBuffer)
-        .generateMips(texFinalOpaque)
+        // .generateMips(texFinalOpaque)
         .build());
 
     if (Settings.Post.TAA) {
@@ -1043,12 +1045,14 @@ export function setupShader() {
             .build());
     }
 
+    registerShader(Stage.POST_RENDER, new GenerateMips(texFinalPrevious));
+
     registerShader(Stage.POST_RENDER, new Composite("blur-near")
         .vertex("shared/bufferless.vsh")
         .fragment("post/blur-near.fsh")
         .target(0, texFinal)
         .define("TEX_SRC", "texFinalPrevious")
-        .generateMips(texFinalPrevious)
+        //.generateMips(texFinalPrevious)
         .build());
 
     registerShader(Stage.POST_RENDER, new Compute("histogram")

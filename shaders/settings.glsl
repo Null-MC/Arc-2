@@ -4,8 +4,6 @@
 
 #define CLOUDS_ENABLED
 
-#define FANCY_LAVA
-
 #define MATERIAL_PARALLAX_MAXDIST 48
 
 //#define DEBUG_TRANSLUCENT
@@ -17,7 +15,7 @@ const float SUN_SIZE = 2.2;
 const float MOON_SIZE = 3.4;
 
 const float SUN_LUMINANCE = 8000.0;
-const float EMISSION_BRIGHTNESS = 160.0;
+//const float EMISSION_BRIGHTNESS = 160.0;
 const float MOON_LUMINANCE = 0.16;
 const float STAR_LUMINANCE = 0.10;
 const float SKY_LUMINANCE = 200.0;
@@ -37,8 +35,8 @@ const int SHADOW_PCF_SAMPLES = 8;
 const int SHADOW_PCSS_SAMPLES = 6;
 const float Shadow_MaxPcfSize = 2.0;
 
-const float Bloom_Power = 1.3;
-const float Bloom_Strength = 0.04;
+//const float Bloom_Power = 1.0;
+const float Bloom_Strength = 0.03;
 
 const float PurkinjeStrength = 0.08;
 

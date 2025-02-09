@@ -43,6 +43,14 @@ export function setupOptions() {
     let screen_Material = new Page("Material")
         .add(asInt("MATERIAL_FORMAT", 0, 1, 2).build(1))
         .add(screen_Parallax)
+        .add(asIntEx(
+            "EMISSION_BRIGHTNESS", 160,
+            0, 800, 10)
+        )
+        .add(asBool("FANCY_LAVA", true))
+        .add(EMPTY)
+        .add(asInt("FANCY_LAVA_RES", 4, 8, 16, 32, 64, 128, 0).build(16)
+        )
         .build();
 
     let screen_Lighting = new Page("Lighting")

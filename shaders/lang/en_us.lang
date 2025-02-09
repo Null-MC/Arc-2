@@ -31,6 +31,12 @@ suffix.MATERIAL_PARALLAX_DEPTH=%
 
 option.MATERIAL_PARALLAX_DEPTHWRITE=Depth-Write
 
+option.FANCY_LAVA=Custom Lava
+
+option.FANCY_LAVA_RES=Lava Resolution
+value.FANCY_LAVA_RES.0=Infinite
+suffix.FANCY_LAVA_RES=x
+
 option.LIGHTING_MODE=Mode
 value.LIGHTING_MODE.0=LightMap
 value.LIGHTING_MODE.1=LPV

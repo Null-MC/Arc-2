@@ -48,7 +48,7 @@ void ApplyLavaMaterial(out vec3 albedo, out vec3 normal, out float roughness, ou
     float temp = 800.0 + 4000.0 * t;
     albedo = 0.001 + blackbody(temp) * t;// * 2.0;
     roughness = mix(1.0, 0.2, ti*ti*ti);//1.0 - 0.28 * pow(1.0 - t, 2.0);
-    emission = saturate(4.0*t*t);
+    emission = saturate(8.0*t*t);
     //f0 = 0.06 - 0.02 * t;
     //hcm = -1;
 

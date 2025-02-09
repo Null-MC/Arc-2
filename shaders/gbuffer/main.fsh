@@ -201,7 +201,9 @@ void iris_emitFragment() {
             vec3 viewPos = mul3(ap.camera.view, vIn.localPos);
             vec3 viewGeoNormal = mat3(ap.camera.view) * localGeoNormal;
 
-            worldPos = floor(worldPos * 16.0) / 16.0;
+            #if FANCY_LAVA_RES != 0
+                worldPos = floor(worldPos * FANCY_LAVA_RES) / FANCY_LAVA_RES;
+            #endif
 
             ApplyLavaMaterial(albedo.rgb, localTexNormal, roughness, emission, viewGeoNormal, worldPos, viewPos);
             localTexNormal = mat3(ap.camera.viewInv) * localTexNormal;

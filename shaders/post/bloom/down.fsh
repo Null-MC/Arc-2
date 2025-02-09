@@ -11,13 +11,15 @@ in vec2 uv;
 
 
 void ScaleInput(inout vec3 color) {
-    float lum = luminance(color);
-    float lumScaled = lum * Bloom_Strength;
-    float lumCurved = pow(lumScaled, Bloom_Power);
+    color *= Bloom_Strength;
 
-    float lumFinal = min(lumScaled, lumCurved);
-
-    color *= (lumFinal / max(lum, 0.0001));
+//    float lum = luminance(color);
+//    float lumScaled = lum * Bloom_Strength;
+//    float lumCurved = pow(lumScaled, Bloom_Power);
+//
+//    float lumFinal = min(lumScaled, lumCurved);
+//
+//    color *= (lumFinal / max(lum, 0.0001));
 
     // color = clamp(color, 0.0, 64000.0);
 }

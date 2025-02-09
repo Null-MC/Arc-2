@@ -1147,6 +1147,7 @@ function setupSky(sceneBuffer) {
         .vertex("shared/bufferless.vsh")
         .fragment("setup/sky_irradiance.fsh")
         .target(0, texSkyIrradiance)
+        .blendFunc(0, Func.SRC_ALPHA, Func.ONE_MINUS_SRC_ALPHA, Func.ONE, Func.ZERO)
         .ssbo(0, sceneBuffer)
         .build())
 }

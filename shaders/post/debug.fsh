@@ -96,7 +96,7 @@ void main() {
             #elif DEBUG_VIEW == DEBUG_VIEW_VL
                 color = textureLod(texScatterVL, previewCoord, 0).rgb;
             #elif DEBUG_VIEW == DEBUG_VIEW_SKY_IRRADIANCE
-                color = textureLod(texSkyIrradiance, previewCoord, 0).rgb;
+                color = textureLod(texSkyIrradiance, previewCoord, 0).rgb * 0.1;
             #endif
 
             #if DEBUG_VIEW == DEBUG_VIEW_MATERIAL

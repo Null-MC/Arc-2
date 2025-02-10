@@ -160,7 +160,8 @@ void main() {
 
         if (clamp(previewCoordSq, 0.0, 1.0) == previewCoordSq) {
             #if DEBUG_VIEW == DEBUG_VIEW_SHADOWMAP_COLOR
-                color = textureLod(texShadowColor, vec3(previewCoordSq, 0), 0).rgb;
+                vec4 shadowColor = textureLod(texShadowColor, vec3(previewCoordSq, 0), 0);
+                color = shadowColor.rgb * shadowColor.a;
             #elif DEBUG_VIEW == DEBUG_VIEW_SHADOWMAP_NORMAL
                 color = textureLod(texShadowNormal, vec3(previewCoordSq, 0), 0).rgb;
             #endif

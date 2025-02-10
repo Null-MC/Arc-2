@@ -61,7 +61,10 @@ vec3 SampleShadowColor(const in vec3 shadowPos, const in int shadowCascade) {
         if (shadowPos.z + EPSILON <= depthTrans) shadowSample.rgb = vec3(1.0);
         else {
             shadowSample = textureLod(texShadowColor, shadowCoord, 0);
-            shadowSample.rgb = RgbToLinear(shadowSample.rgb);
+            //shadowSample.rgb = RgbToLinear(shadowSample.rgb);
+
+            float a2 = shadowSample.a*shadowSample.a;
+            shadowSample.rgb = mix(shadowSample.rgb, vec3(0.0), a2*a2);
         }
     }
 

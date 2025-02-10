@@ -3,7 +3,10 @@ vec3 sample_lpv(ivec3 voxelPos, vec4 intensity) {
 
 	int i = GetLpvIndex(voxelPos);
 	bool altFrame = ap.time.frames % 2 == 1;
-	lpvShVoxel sh_voxel = altFrame ? SH_LPV_alt[i] : SH_LPV[i];
+
+	lpvShVoxel sh_voxel;
+	if (altFrame) sh_voxel = SH_LPV_alt[i];
+	else sh_voxel = SH_LPV[i];
 
 	vec4 sh_voxel_R, sh_voxel_G, sh_voxel_B;
 	decode_shVoxel(sh_voxel, sh_voxel_R, sh_voxel_G, sh_voxel_B);

@@ -265,7 +265,10 @@ void main() {
 
 			// if (!isNeighborFullBlock) {
 				int neighbor_i = GetLpvIndex(neighbourIndex);
-				lpvShVoxel neighbor_voxel = altFrame ? SH_LPV[neighbor_i] : SH_LPV_alt[neighbor_i];
+
+				lpvShVoxel neighbor_voxel;
+				if (altFrame) neighbor_voxel = SH_LPV[neighbor_i];
+				else neighbor_voxel = SH_LPV_alt[neighbor_i];
 
 				vec4 neighbor_R, neighbor_G, neighbor_B;
 				decode_shVoxel(neighbor_voxel, neighbor_R, neighbor_G, neighbor_B);
@@ -320,7 +323,10 @@ void main() {
 			voxel_rsm_B += coeffs * flux.b;
 
 			int rsm_i = GetLpvIndex(cellIndexPrev);
-			lpvShVoxel rsm_voxel_prev = altFrame ? SH_LPV_RSM[rsm_i] : SH_LPV_RSM_alt[rsm_i];
+
+			lpvShVoxel rsm_voxel_prev;
+			if (altFrame) rsm_voxel_prev = SH_LPV_RSM[rsm_i];
+			else rsm_voxel_prev = SH_LPV_RSM_alt[rsm_i];
 
 			vec4 rsm_prev_R, rsm_prev_G, rsm_prev_B;
 			decode_shVoxel(rsm_voxel_prev, rsm_prev_R, rsm_prev_G, rsm_prev_B);

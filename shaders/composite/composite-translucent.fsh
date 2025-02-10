@@ -250,7 +250,8 @@ void main() {
 
         #ifdef ACCUM_ENABLED
             bool altFrame = (ap.time.frames % 2) == 1;
-            diffuse += textureLod(altFrame ? texAccumDiffuse_translucent_alt : texAccumDiffuse_translucent, uv, 0).rgb;
+            if (altFrame) diffuse += textureLod(texAccumDiffuse_translucent_alt, uv, 0).rgb;
+            else diffuse += textureLod(texAccumDiffuse_translucent, uv, 0).rgb;
         #elif LIGHTING_MODE == LIGHT_MODE_RT || LIGHTING_REFLECT_MODE == REFLECT_MODE_WSR
             diffuse += textureLod(texDiffuseRT, uv, 0).rgb;
         #endif
@@ -326,7 +327,8 @@ void main() {
         specular += view_F * skyReflectColor * reflectTint * (1.0 - roughness);
 
         #ifdef ACCUM_ENABLED
-            specular += textureLod(altFrame ? texAccumSpecular_translucent_alt : texAccumSpecular_translucent, uv, 0).rgb;
+            if (altFrame) specular += textureLod(texAccumSpecular_translucent_alt, uv, 0).rgb;
+            else specular += textureLod(texAccumSpecular_translucent, uv, 0).rgb;
         #elif LIGHTING_MODE == LIGHT_MODE_RT || LIGHTING_REFLECT_MODE == REFLECT_MODE_WSR
             specular += textureLod(texSpecularRT, uv, 0).rgb;
         #endif

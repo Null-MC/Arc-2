@@ -697,8 +697,9 @@ export function setupShader() {
             .fragment("gbuffer/shadow.fsh")
             .ssbo(4, quadListBuffer)
             .target(0, texShadowColor)
-            // .blendFunc(0, Func.ONE, Func.ZERO, Func.ONE, Func.ZERO)
+            //.blendFunc(0, Func.ONE, Func.ZERO, Func.ONE, Func.ZERO)
             .target(1, texShadowNormal);
+            //.blendFunc(1, Func.ONE, Func.ZERO, Func.ONE, Func.ZERO);
     }
 
     function shadowTerrainShader(name: string, usage: ProgramUsage) : ObjectShader {

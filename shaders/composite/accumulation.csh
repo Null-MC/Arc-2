@@ -43,7 +43,7 @@ uniform sampler2D texSSGIAO;
 #include "/lib/gaussian.glsl"
 
 
-const float g_sigmaXY = 3.0;
+const float g_sigmaXY = 1.0;
 const float g_sigmaV = 0.1;
 
 void populateSharedBuffer() {
@@ -70,7 +70,7 @@ void populateSharedBuffer() {
         vec3 ssgi = vec3(0.0);
         if (all(greaterThanEqual(uv, ivec2(0))) && all(lessThan(uv, ivec2(ap.game.screenSize + 0.5)))) {
             ssgi = texelFetch(texSSGIAO, uv/2, 0).rgb;
-            float depth = texelFetch(TEX_DEPTH, uv/2*2, 0).r;
+            float depth = texelFetch(TEX_DEPTH, uv/2*2+1, 0).r;
             depthL = linearizeDepth(depth, ap.camera.near, ap.camera.far);
         }
 
@@ -149,9 +149,19 @@ void main() {
 
     bool altFrame = (ap.time.frames % 2) == 1;
 
-    vec4 previousDiffuse = textureLod(altFrame ? TEX_ACCUM_DIFFUSE : TEX_ACCUM_DIFFUSE_ALT, uvLast, 0);
-    vec4 previousSpecular = textureLod(altFrame ? TEX_ACCUM_SPECULAR : TEX_ACCUM_SPECULAR_ALT, uvLast, 0);
-    vec3 localPosLast = textureLod(altFrame ? TEX_ACCUM_POSITION : TEX_ACCUM_POSITION_ALT, uvLast, 0).rgb;
+    vec4 previousDiffuse, previousSpecular;
+    vec3 localPosLast;
+
+    if (altFrame) {
+        previousDiffuse = textureLod(TEX_ACCUM_DIFFUSE, uvLast, 0);
+        previousSpecular = textureLod(TEX_ACCUM_SPECULAR, uvLast, 0);
+        localPosLast = textureLod(TEX_ACCUM_POSITION, uvLast, 0).rgb;
+    }
+    else {
+        previousDiffuse = textureLod(TEX_ACCUM_DIFFUSE_ALT, uvLast, 0);
+        previousSpecular = textureLod(TEX_ACCUM_SPECULAR_ALT, uvLast, 0);
+        localPosLast = textureLod(TEX_ACCUM_POSITION_ALT, uvLast, 0).rgb;
+    }
 
     float depthL = linearizeDepth(depth, ap.camera.near, ap.camera.far);
 
@@ -175,7 +185,14 @@ void main() {
     float specularCounter = clamp(previousDiffuse.a * counterF + 1.0, 1.0, AccumulationMax_Specular);
     vec3 specularFinal = mix(previousSpecular.rgb, specular, 1.0 / specularCounter);
 
-    imageStore(altFrame ? IMG_ACCUM_DIFFUSE_ALT  : IMG_ACCUM_DIFFUSE,  iuv, vec4(diffuseFinal, diffuseCounter));
-    imageStore(altFrame ? IMG_ACCUM_SPECULAR_ALT : IMG_ACCUM_SPECULAR, iuv, vec4(specularFinal, specularCounter));
-    imageStore(altFrame ? IMG_ACCUM_POSITION_ALT : IMG_ACCUM_POSITION, iuv, vec4(localPos, 1.0));
+    if (altFrame) {
+        imageStore(IMG_ACCUM_DIFFUSE_ALT,  iuv, vec4(diffuseFinal, diffuseCounter));
+        imageStore(IMG_ACCUM_SPECULAR_ALT, iuv, vec4(specularFinal, specularCounter));
+        imageStore(IMG_ACCUM_POSITION_ALT, iuv, vec4(localPos, 1.0));
+    }
+    else {
+        imageStore(IMG_ACCUM_DIFFUSE,  iuv, vec4(diffuseFinal, diffuseCounter));
+        imageStore(IMG_ACCUM_SPECULAR, iuv, vec4(specularFinal, specularCounter));
+        imageStore(IMG_ACCUM_POSITION, iuv, vec4(localPos, 1.0));
+    }
 }

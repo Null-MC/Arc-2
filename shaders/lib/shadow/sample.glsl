@@ -116,7 +116,7 @@ float ShadowBlockerDistance(const in vec3 shadowPos, const in int shadowCascade,
         vec2 pcssDiskOffset = r * vec2(cos(theta), sin(theta));
         vec2 pixelOffset = (rotation * pcssDiskOffset) * pixelRadius;
 
-        float texDepth = textureLod(solidShadowMap, vec3(shadowPos.xy + pixelOffset, shadowCascade), 0).r;
+        float texDepth = textureLod(shadowMap, vec3(shadowPos.xy + pixelOffset, shadowCascade), 0).r;
 
         float hitDist = max((shadowPos.z - texDepth) * zRange - bias, 0.0);
 

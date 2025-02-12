@@ -49,8 +49,7 @@ export function setupOptions() {
         )
         .add(asBool("FANCY_LAVA", true))
         .add(EMPTY)
-        .add(asInt("FANCY_LAVA_RES", 4, 8, 16, 32, 64, 128, 0).build(16)
-        )
+        .add(asInt("FANCY_LAVA_RES", 4, 8, 16, 32, 64, 128, 0).build(0))
         .build();
 
     let screen_Lighting = new Page("Lighting")

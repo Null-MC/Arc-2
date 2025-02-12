@@ -9,6 +9,7 @@ uniform sampler2D mainDepthTex;
 uniform sampler2D solidDepthTex;
 uniform usampler2D texDeferredTrans_Data;
 
+uniform sampler3D texFogNoise;
 uniform sampler2D texSkyTransmit;
 uniform sampler2D texSkyMultiScatter;
 

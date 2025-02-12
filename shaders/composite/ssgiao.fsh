@@ -63,7 +63,7 @@ void main() {
 
         float distF = min(viewDist * 0.005, 1.0);
         float max_radius_ao = mix(0.5, 12.0, distF);
-        float max_radius_gi = mix(2.0, 16.0, distF);
+        float max_radius_gi = mix(2.0, 9.0, distF);
 
         float rStep = 1.0 / EFFECT_SSGIAO_SAMPLES;
         float radius = rStep * dither;
@@ -161,7 +161,7 @@ void main() {
 
                     float sampleNoLm = max(dot(viewNormal, sampleNormal), 0.0);
 
-                     gi_weight *= 1.0 / (1.0 + sampleDist);
+                     //gi_weight *= 1.0 / (1.0 + sampleDist);
 
 //                    gi_weight *= 1.0 - saturate(sampleDist / max_radius_gi);
                     illumination += sampleColor * sampleNoLm * gi_weight;
@@ -171,10 +171,11 @@ void main() {
 
         occlusion = occlusion / max(maxWeight, 1.0);
         //illumination = illumination / max(maxWeight, 1.0);
+        illumination /= EFFECT_SSGIAO_SAMPLES;
     }
 
     occlusion *= 2.0;
-//    illumination *= 3.0;
+    illumination *= 3.0;
 
     vec3 gi = illumination;
     float ao = 1.0 - min(occlusion, 1.0);

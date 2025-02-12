@@ -222,10 +222,6 @@ void main() {
         vec3 skyLightDiffuse = skyLight_NoLm * shadow_sss.rgb;
         skyLightDiffuse *= SampleLightDiffuse(NoVm, NoLm, LoHm, roughL);
 
-        #if defined EFFECT_SSGI_ENABLED && !defined ACCUM_ENABLED
-            skyLightDiffuse += gi_ao.rgb;
-        #endif
-
         #ifdef VOXEL_ENABLED
             vec3 voxelPos = GetVoxelPosition(localPos);
         #endif
@@ -243,6 +239,10 @@ void main() {
         skyLightDiffuse += (SKY_AMBIENT * lmCoord.y) * skyIrradiance;
 
         skyLightDiffuse *= occlusion;
+
+        #if defined EFFECT_SSGI_ENABLED && !defined ACCUM_ENABLED
+            skyLightDiffuse += gi_ao.rgb;
+        #endif
 
         float VoL_sun = dot(localViewDir, Scene_LocalSunDir);
 //        float VoL_moon = dot(localViewDir, -Scene_LocalSunDir);

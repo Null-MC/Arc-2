@@ -1,6 +1,6 @@
 // Units are in megameters.
 const float groundRadiusMM = 6.371;
-const float atmosphereRadiusMM = 6.471;
+const float atmosphereRadiusMM = 6.374;
 
 const vec3 groundAlbedo = vec3(0.3);
 
@@ -20,10 +20,11 @@ float safeacos(const float x) {
 
 vec3 getSkyPosition(const in vec3 localPos) {
     vec3 skyPos = localPos;
-    skyPos.y = max(ap.camera.pos.y + skyPos.y - SKY_SEA_LEVEL, 0.0);
-    skyPos /= (ATMOSPHERE_MAX - SKY_SEA_LEVEL);
+    skyPos.y = max(ap.camera.pos.y + localPos.y - SKY_SEA_LEVEL, 0.0);
+    //skyPos /= (ATMOSPHERE_MAX - SKY_SEA_LEVEL);
 
-    skyPos *= (atmosphereRadiusMM - groundRadiusMM);
+    //skyPos *= (atmosphereRadiusMM - groundRadiusMM);
+    skyPos *= 0.000001;
     skyPos.y += groundRadiusMM;
 
     return skyPos;
@@ -45,12 +46,12 @@ float getRayleighPhase(float cosTheta) {
     return k * (1.0 + cosTheta*cosTheta);
 }
 
-void getScatteringValues(vec3 pos, out vec3 rayleighScattering, out float mieScattering, out vec3 extinction) {
+void getScatteringValues(vec3 pos, float stepDist, float sampleDensity, out vec3 rayleighScattering, out float mieScattering, out vec3 extinction) {
     float altitudeKM = (length(pos)-groundRadiusMM) * 1000.0;
 
     // Note: Paper gets these switched up.
-    float rayleighDensity = exp(-altitudeKM/8.0);
-    float mieDensity = exp(-altitudeKM/1.2);
+    float rayleighDensity = stepDist * 0.0001 * exp(-altitudeKM/8.0);
+    float mieDensity = stepDist*sampleDensity * 0.0001 * exp(-altitudeKM/1.2);
     
     rayleighScattering = rayleighScatteringBase*rayleighDensity;
     float rayleighAbsorption = rayleighAbsorptionBase*rayleighDensity;
@@ -60,6 +61,24 @@ void getScatteringValues(vec3 pos, out vec3 rayleighScattering, out float mieSca
     
     vec3 ozoneAbsorption = ozoneAbsorptionBase * max(0.0, 1.0 - abs(altitudeKM-25.0)/15.0);
     
+    extinction = rayleighScattering + rayleighAbsorption + mieScattering + mieAbsorption + ozoneAbsorption;
+}
+
+void getScatteringValues(vec3 pos, out vec3 rayleighScattering, out float mieScattering, out vec3 extinction) {
+    float altitudeKM = (length(pos)-groundRadiusMM) * 1000.0;
+
+    // Note: Paper gets these switched up.
+    float rayleighDensity = exp(-altitudeKM/8.0);
+    float mieDensity = exp(-altitudeKM/1.2);
+
+    rayleighScattering = rayleighScatteringBase*rayleighDensity;
+    float rayleighAbsorption = rayleighAbsorptionBase*rayleighDensity;
+
+    mieScattering = mieScatteringBase*mieDensity;
+    float mieAbsorption = mieAbsorptionBase*mieDensity;
+
+    vec3 ozoneAbsorption = ozoneAbsorptionBase * max(0.0, 1.0 - abs(altitudeKM-25.0)/15.0);
+
     extinction = rayleighScattering + rayleighAbsorption + mieScattering + mieAbsorption + ozoneAbsorption;
 }
 

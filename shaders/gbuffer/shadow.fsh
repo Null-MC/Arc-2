@@ -23,7 +23,7 @@ void iris_emitFragment() {
         bool isFluid = iris_hasFluid(vIn.blockId);
 
         if (isFluid) {
-            outColor = vec4(1.0, 1.0, 1.0, 1.0);
+            outColor = vec4(1.0, 1.0, 1.0, 0.02);
         }
         else {
             outColor = iris_sampleBaseTex(vIn.uv) * vIn.color;

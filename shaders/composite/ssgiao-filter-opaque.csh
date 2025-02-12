@@ -21,7 +21,7 @@ uniform sampler2D solidDepthTex;
 
 
 const float g_sigmaXY = 3.0;
-const float g_sigmaV = 0.1;
+const float g_sigmaV = 1.0;
 
 void populateSharedBuffer() {
     if (gl_LocalInvocationIndex < 5)
@@ -75,7 +75,7 @@ vec4 sampleSharedBuffer(const in float depthL) {
             float sampleDepthL = sharedDepthBuffer[i_shared];
             
             float depthDiff = sampleDepthL - depthL;
-            float fv = Gaussian(g_sigmaV, depthDiff);
+            float fv = 1.0;//Gaussian(g_sigmaV, depthDiff);
             
             float weight = fx*fy*fv;
             accum += weight * sampleValue;

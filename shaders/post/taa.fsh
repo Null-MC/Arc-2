@@ -14,7 +14,8 @@ uniform sampler2D solidDepthTex;
 #include "/lib/taa_jitter.glsl"
 
 
-const float TAA_MAX_FRAMES = 8.0;
+const float TAA_MIX_MIN = 0.0;
+const float TAA_MAX_FRAMES = 2.0;
 
 vec3 encodePalYuv(vec3 rgb) {
     const mat3 m = mat3(
@@ -63,7 +64,7 @@ void main() {
     vec4 lastColor = sampleHistoryCatmullRom(texFinalPrevious, uvLast);
 
     vec3 antialiased = lastColor.rgb;
-    float mixRate = clamp(lastColor.a, 0.0, TAA_MAX_FRAMES);
+    float mixRate = clamp(lastColor.a, TAA_MIX_MIN, TAA_MAX_FRAMES);
 
     if (clamp(uvLast, 0.0, 1.0) != uvLast) mixRate = 0.0;
     

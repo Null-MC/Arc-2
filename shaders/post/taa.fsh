@@ -15,7 +15,7 @@ uniform sampler2D solidDepthTex;
 
 
 const float TAA_MIX_MIN = 0.0;
-const float TAA_MAX_FRAMES = 2.0;
+const float TAA_MAX_FRAMES = 4.0;
 
 vec3 encodePalYuv(vec3 rgb) {
     const mat3 m = mat3(
@@ -64,7 +64,7 @@ void main() {
     vec4 lastColor = sampleHistoryCatmullRom(texFinalPrevious, uvLast);
 
     vec3 antialiased = lastColor.rgb;
-    float mixRate = clamp(lastColor.a, TAA_MIX_MIN, TAA_MAX_FRAMES);
+    float mixRate = clamp(lastColor.a+1.0, TAA_MIX_MIN, TAA_MAX_FRAMES);
 
     if (clamp(uvLast, 0.0, 1.0) != uvLast) mixRate = 0.0;
     
@@ -74,7 +74,7 @@ void main() {
     antialiased = sqrt(antialiased);
 
     vec2 pixelSize = 1.0 / ap.game.screenSize;
-    
+
     vec3 in1 = textureLod(TEX_SRC, uv2 + vec2(+pixelSize.x, 0.0), 0).rgb;
     vec3 in2 = textureLod(TEX_SRC, uv2 + vec2(-pixelSize.x, 0.0), 0).rgb;
     vec3 in3 = textureLod(TEX_SRC, uv2 + vec2(0.0, +pixelSize.y), 0).rgb;
@@ -111,5 +111,5 @@ void main() {
     antialiased = decodePalYuv(antialiased);
     
     outColor = vec4(antialiased, 1.0);
-    outColorPrev = vec4(antialiased, mixRate + 1.0);
+    outColorPrev = vec4(antialiased, mixRate);
 }

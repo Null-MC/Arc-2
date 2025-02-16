@@ -163,7 +163,7 @@ void main() {
 
             vec3 sunTransmit, moonTransmit;
             GetSkyLightTransmission(sampleLocalPos, sunTransmit, moonTransmit);
-            vec3 sunSkyLight = SUN_BRIGHTNESS * sunTransmit;
+            vec3 sunSkyLight = SUN_LUMINANCE * sunTransmit;
             vec3 moonSkyLight = MOON_BRIGHTNESS * moonTransmit;
 
             float sampleDensity = 1.0;
@@ -197,21 +197,20 @@ void main() {
             vec3 scatteringIntegral, sampleTransmittance, inScattering, extinction;
             if (!isWater) {
                 vec3 skyPos = getSkyPosition(sampleLocalPos);
-                //sampleDensity *= 0.001;
 
-                float mieScattering;
-                vec3 rayleighScattering;//, extinction;
-                getScatteringValues(skyPos, rayleighScattering, mieScattering, extinction);
+                float mieDensity = sampleDensity;
+                float mieScattering = 0.0004 * mieDensity;
+                float mieAbsorption = 0.0020 * mieDensity;
+                extinction = vec3(mieScattering + mieAbsorption);
 
-                sampleTransmittance = exp(-sampleDensity * stepDist * extinction);
+                sampleTransmittance = exp(-extinction * stepDist);
 
                 vec3 psiMS = getValFromMultiScattLUT(texSkyMultiScatter, skyPos, Scene_LocalSunDir);
-                psiMS *= SKY_LUMINANCE * Scene_SkyBrightnessSmooth * phaseIso;
+                psiMS *= SKY_LUMINANCE * Scene_SkyBrightnessSmooth;
 
                 // TODO: add moon
-                vec3 rayleighInScattering = rayleighScattering * (rayleighPhaseValue * sunSkyLight * shadowSample + psiMS + sampleLit);
                 vec3 mieInScattering = mieScattering * (miePhaseValue * sunSkyLight * shadowSample + psiMS + sampleLit);
-                inScattering = mieInScattering + rayleighInScattering;
+                inScattering = mieInScattering;
             }
             else {
                 vec3 sampleColor = (phase_sun * sunSkyLight) + (phase_moon * moonSkyLight);

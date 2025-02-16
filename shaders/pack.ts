@@ -19,6 +19,7 @@ function setupSettings() {
             SunAngle: getIntSetting("SKY_SUN_ANGLE"),
             SeaLevel: getIntSetting("SKY_SEA_LEVEL"),
             FogDensity: getIntSetting("SKY_FOG_DENSITY"),
+            FogNoise: getBoolSetting("SKY_FOG_NOISE"),
         },
         Water: {
             Waves: getBoolSetting("WATER_WAVES_ENABLED"),
@@ -150,6 +151,7 @@ function setupSettings() {
 
     defineGlobally("SKY_SEA_LEVEL", Settings.Sky.SeaLevel.toString());
     defineGlobally("SKY_FOG_DENSITY", Settings.Sky.FogDensity);
+    if (Settings.Sky.FogNoise) defineGlobally1("SKY_FOG_NOISE");
 
     if (Settings.Water.Waves) {
         defineGlobally1("WATER_WAVES_ENABLED");

@@ -9,8 +9,9 @@ export function setupOptions() {
             "SKY_SUN_ANGLE", -20,
             -60, +60, 2))
         .add(asIntEx(
-            "SKY_FOG_DENSITY", 24,
+            "SKY_FOG_DENSITY", 6,
             0, 100, 2))
+        .add(asBool("SKY_FOG_NOISE", false))
         .build();
 
     let screen_Water = new Page("Water")

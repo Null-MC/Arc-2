@@ -50,6 +50,30 @@ uniform sampler2D texSkyMultiScatter;
 const int VL_MaxSamples = 32;
 
 
+#ifdef SKY_FOG_NOISE
+    float SampleFogNoise(const in vec3 localPos) {
+        vec3 skyPos = localPos + ap.camera.pos;
+        skyPos.y -= SKY_SEA_LEVEL;
+        skyPos /= 60.0;//(ATMOSPHERE_MAX - SKY_SEA_LEVEL);
+        skyPos.xz /= (256.0/32.0);// * 4.0;
+
+        float fogNoise = 0.0;
+        fogNoise = textureLod(texFogNoise, skyPos, 0).r;
+        fogNoise *= 1.0 - textureLod(texFogNoise, skyPos * 0.33, 0).r;
+
+        //fogNoise = pow(fogNoise, 3.6);
+        float threshold_min = mix(0.2, 0.25, ap.world.rainStrength);
+        //float threshold_max = threshold_min + 0.3;
+        fogNoise = smoothstep(threshold_min, 1.0, fogNoise);
+
+        fogNoise *= exp(-6.0 * max(skyPos.y, 0.0));
+
+        fogNoise *= 100.0;
+
+        return fogNoise;
+    }
+#endif
+
 void main() {
     const float stepScale = 1.0 / VL_MaxSamples;
 
@@ -92,7 +116,7 @@ void main() {
     }
 
 //    sampleAmbient *= phaseIso * Scene_SkyBrightnessSmooth;
-    float far = ap.camera.far * 0.5;
+    float far = ap.camera.far * 0.25;
 
     vec3 traceEnd = localPos;
     if (len > far)
@@ -117,7 +141,7 @@ void main() {
 
     if (ap.camera.fluid != 1) {
         // TODO: add moon
-        miePhaseValue = getMiePhase(VoL_sun);
+        miePhaseValue = getMiePhase(VoL_sun, 0.4);
         rayleighPhaseValue = getRayleighPhase(-VoL_sun);
     }
 
@@ -211,20 +235,21 @@ void main() {
 
             int shadowCascade;
             vec3 shadowPos = GetShadowSamplePos(shadowViewPos, shadowRadius, shadowCascade);
-            vec3 tint = SampleShadowColor(shadowPos, shadowCascade);
-            shadowSample *= sqrt(tint);
+            //vec3 tint = SampleShadowColor(shadowPos, shadowCascade);
+            shadowSample *= SampleShadow(shadowPos, shadowCascade);
+            //shadowSample *= sqrt(tint);
         #endif
 
         vec3 sampleLocalPos = (i+dither) * stepLocal;
 
         vec3 sunTransmit, moonTransmit;
         GetSkyLightTransmission(sampleLocalPos, sunTransmit, moonTransmit);
-        vec3 sunSkyLight = SUN_BRIGHTNESS * sunTransmit;
+        vec3 sunSkyLight = SUN_LUMINANCE * sunTransmit;
         vec3 moonSkyLight = MOON_BRIGHTNESS * moonTransmit;
 
         float sampleDensity = 1.0;
         if (ap.camera.fluid != 1) {
-            sampleDensity = AirDensityF;//GetSkyDensity(sampleLocalPos);
+            sampleDensity = GetSkyDensity(sampleLocalPos);
 
             #ifdef CLOUDS_ENABLED
                 float sampleHeight = sampleLocalPos.y+ap.camera.pos.y;
@@ -265,22 +290,22 @@ void main() {
                 #endif
             #endif
 
-            #ifdef FOG_NOISE
-                vec3 local_skyPos = sampleLocalPos + ap.camera.pos;
-                local_skyPos.y -= SKY_SEA_LEVEL;
-                local_skyPos /= 10.0;//(ATMOSPHERE_MAX - SKY_SEA_LEVEL);
-                local_skyPos.xz /= (256.0/32.0);// * 4.0;
+            #ifdef SKY_FOG_NOISE
+                float fogNoise = SampleFogNoise(sampleLocalPos);
+                sampleDensity += fogNoise;
 
-                float fogNoise = 0.0;
-                fogNoise = textureLod(texFogNoise, local_skyPos, 0).r;
-                fogNoise *= 1.0 - textureLod(texFogNoise, local_skyPos * 0.33, 0).r;
-                fogNoise = pow(fogNoise, 3.6);
+                float shadow_dither = dither;
 
-                fogNoise *= exp(-3.0 * max(local_skyPos.y, 0.0));
+                float shadowStepDist = 1.0;
+                float shadowDensity = fogNoise;
+                for (float ii = shadow_dither; ii < 6.0; ii++) {
+                    vec3 fogShadow_localPos = (shadowStepDist * ii) * Scene_LocalLightDir + sampleLocalPos;
+                    shadowDensity += SampleFogNoise(fogShadow_localPos) * shadowStepDist;
+                    shadowStepDist *= 1.5;
+                }
 
-                fogNoise *= 8000.0;
-
-                sampleDensity += sampleDensity * fogNoise; //pow(fogNoise, 4.0) * 20.0;
+                if (shadowDensity > 0.0)
+                    shadowSample *= exp(-shadowDensity * 0.2);
             #endif
         }
 
@@ -298,19 +323,20 @@ void main() {
         if (ap.camera.fluid != 1) {
             vec3 skyPos = getSkyPosition(sampleLocalPos);
 
-            float mieScattering;
-            vec3 rayleighScattering;
-            getScatteringValues(skyPos, stepDist, sampleDensity, rayleighScattering, mieScattering, extinction);
+            float mieDensity = sampleDensity;
+            float mieScattering = 0.0004 * mieDensity;
+            float mieAbsorption = 0.0020 * mieDensity;
+            extinction = vec3(mieScattering + mieAbsorption);
 
-            sampleTransmittance = exp(-extinction);
+            sampleTransmittance = exp(-extinction * stepDist);
 
             vec3 psiMS = getValFromMultiScattLUT(texSkyMultiScatter, skyPos, Scene_LocalSunDir);
-            psiMS *= SKY_LUMINANCE * Scene_SkyBrightnessSmooth * phaseIso;
+            psiMS *= SKY_LUMINANCE * Scene_SkyBrightnessSmooth;
 
             // TODO: add moon
-            vec3 rayleighInScattering = rayleighScattering * (rayleighPhaseValue * sunSkyLight * shadowSample + psiMS + sampleLit);
+            //vec3 rayleighInScattering = rayleighScattering * (rayleighPhaseValue * sunSkyLight * shadowSample + psiMS + sampleLit);
             vec3 mieInScattering = mieScattering * (miePhaseValue * sunSkyLight * shadowSample + psiMS + sampleLit);
-            inScattering = (rayleighInScattering + mieInScattering);
+            inScattering = mieInScattering;
         }
         else {
             vec3 sampleColor = (phase_sun * sunSkyLight) + (phase_moon * moonSkyLight);
@@ -318,9 +344,9 @@ void main() {
 
             extinction = transmitF + scatterF;
 
-            sampleTransmittance = exp(-stepDist * extinction);
+            sampleTransmittance = exp(-stepDist * sampleDensity * extinction);
 
-            inScattering = scatterF * sampleLit;
+            inScattering = scatterF * sampleLit * sampleDensity;
         }
 
         scatteringIntegral = (inScattering - inScattering * sampleTransmittance) / extinction;

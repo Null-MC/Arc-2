@@ -1,6 +1,6 @@
 // Units are in megameters.
 const float groundRadiusMM = 6.371;
-const float atmosphereRadiusMM = 6.374;
+const float atmosphereRadiusMM = groundRadiusMM + 0.06;
 
 const vec3 groundAlbedo = vec3(0.3);
 
@@ -30,15 +30,20 @@ vec3 getSkyPosition(const in vec3 localPos) {
     return skyPos;
 }
 
-float getMiePhase(float cosTheta) {
-    const float g = 0.8;
-    const float scale = 3.0 / (8.0*PI);
-    
+float getMiePhase(const in float cosTheta, const in float g) {
     float g2 = g*g;
+
     float num = (1.0 - g2) * (1.0 + cosTheta*cosTheta);
     float denom = (2.0 + g2) * pow((1.0 + g2 - 2.0*g*cosTheta), 1.5);
-    
-    return scale * (num/denom);
+
+    const float scale = 3.0 / (8.0*PI);
+    return scale * (num / denom);
+}
+
+float getMiePhase(float cosTheta) {
+    const float g = 0.8;
+
+    return getMiePhase(cosTheta, g);
 }
 
 float getRayleighPhase(float cosTheta) {
@@ -46,23 +51,23 @@ float getRayleighPhase(float cosTheta) {
     return k * (1.0 + cosTheta*cosTheta);
 }
 
-void getScatteringValues(vec3 pos, float stepDist, float sampleDensity, out vec3 rayleighScattering, out float mieScattering, out vec3 extinction) {
-    float altitudeKM = (length(pos)-groundRadiusMM) * 1000.0;
-
-    // Note: Paper gets these switched up.
-    float rayleighDensity = stepDist * 0.0001 * exp(-altitudeKM/8.0);
-    float mieDensity = stepDist*sampleDensity * 0.0001 * exp(-altitudeKM/1.2);
-    
-    rayleighScattering = rayleighScatteringBase*rayleighDensity;
-    float rayleighAbsorption = rayleighAbsorptionBase*rayleighDensity;
-    
-    mieScattering = mieScatteringBase*mieDensity;
-    float mieAbsorption = mieAbsorptionBase*mieDensity;
-    
-    vec3 ozoneAbsorption = ozoneAbsorptionBase * max(0.0, 1.0 - abs(altitudeKM-25.0)/15.0);
-    
-    extinction = rayleighScattering + rayleighAbsorption + mieScattering + mieAbsorption + ozoneAbsorption;
-}
+//void getScatteringValues(vec3 pos, float stepDist, float sampleDensity, out vec3 rayleighScattering, out float mieScattering, out vec3 extinction) {
+//    float altitudeKM = (length(pos)-groundRadiusMM) * 1000.0;
+//
+//    // Note: Paper gets these switched up.
+//    float rayleighDensity = stepDist * 0.0001 * exp(-altitudeKM/8.0);
+//    float mieDensity = stepDist*sampleDensity * 0.0001 * exp(-altitudeKM/1.2);
+//
+//    rayleighScattering = rayleighScatteringBase*rayleighDensity;
+//    float rayleighAbsorption = rayleighAbsorptionBase*rayleighDensity;
+//
+//    mieScattering = mieScatteringBase*mieDensity;
+//    float mieAbsorption = mieAbsorptionBase*mieDensity;
+//
+//    vec3 ozoneAbsorption = ozoneAbsorptionBase * max(0.0, 1.0 - abs(altitudeKM-25.0)/15.0);
+//
+//    extinction = rayleighScattering + rayleighAbsorption + mieScattering + mieAbsorption + ozoneAbsorption;
+//}
 
 void getScatteringValues(vec3 pos, out vec3 rayleighScattering, out float mieScattering, out vec3 extinction) {
     float altitudeKM = (length(pos)-groundRadiusMM) * 1000.0;

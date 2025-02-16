@@ -4,8 +4,6 @@
 
 //#define CLOUDS_ENABLED
 
-//#define FOG_NOISE
-
 #define MATERIAL_PARALLAX_MAXDIST 48
 
 //#define DEBUG_TRANSLUCENT

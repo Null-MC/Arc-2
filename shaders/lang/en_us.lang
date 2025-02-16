@@ -2,6 +2,8 @@ option.SKY_SUN_ANGLE=Sun Angle
 
 option.SKY_FOG_DENSITY=Fog Density
 
+option.SKY_FOG_NOISE=Fog Clouds
+
 option.WATER_WAVES_ENABLED=Waves
 
 option.WATER_TESSELLATION_ENABLED=Tessellation

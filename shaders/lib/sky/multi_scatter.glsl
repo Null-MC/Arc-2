@@ -17,7 +17,7 @@ void getMulScattValues(vec3 pos, vec3 sunDir, out vec3 lumTotal, out vec3 fms) {
     lumTotal = vec3(0.0);
     fms = vec3(0.0);
     
-    float invSamples = 1.0 / float(sqrtSamples*sqrtSamples);
+    const float invSamples = 1.0 / float(sqrtSamples*sqrtSamples);
     
     for (int i = 0; i < sqrtSamples; i++) {
         for (int j = 0; j < sqrtSamples; j++) {

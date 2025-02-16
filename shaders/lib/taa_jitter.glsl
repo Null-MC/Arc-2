@@ -1,5 +1,3 @@
-const int EFFECT_TAA_MAX_FRAMES = 4;
-
 const vec2 taa_offsets[4] = vec2[](
 	vec2(0.375, 0.125),
 	vec2(0.875, 0.375),
@@ -8,7 +6,7 @@ const vec2 taa_offsets[4] = vec2[](
 
 
 vec2 getJitterOffset(const in int frameOffset) {
-	return (taa_offsets[frameOffset % EFFECT_TAA_MAX_FRAMES] - 0.5) / ap.game.screenSize;
+	return (taa_offsets[frameOffset % 4] - 0.5) / ap.game.screenSize;
 }
 
 void jitter(inout vec2 ndcPos) {

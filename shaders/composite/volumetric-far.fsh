@@ -97,6 +97,11 @@ void main() {
 //            phase_gM = 0.36;
 //
 //            sampleAmbient = vec3(VL_AmbientF * mix(Scene_SkyIrradianceUp, vec3(0.3), 0.8*ap.world.rainStrength));
+            #if SKY_FOG_DENSITY == 0
+                outScatter = vec3(0.0);
+                outTransmit = vec3(1.0);
+                return;
+            #endif
         }
 
         //sampleAmbient *= phaseIso * Scene_SkyBrightnessSmooth;

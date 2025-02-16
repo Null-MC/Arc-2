@@ -103,7 +103,7 @@ void main() {
         phase_gM = VL_WaterPhaseM;
 
         sampleAmbient = VL_WaterAmbient * Scene_SkyIrradianceUp;
-        sampleAmbient *= phaseIso * Scene_SkyBrightnessSmooth;
+        sampleAmbient *= Scene_SkyBrightnessSmooth;
     }
     else {
 //        scatterF = vec3(mix(VL_Scatter, VL_RainScatter, ap.world.rainStrength));
@@ -113,6 +113,11 @@ void main() {
 //        phase_gM =  mix(0.36, 0.24, ap.world.rainStrength);
 //
 //        sampleAmbient = VL_AmbientF * mix(Scene_SkyIrradianceUp, vec3(0.5*luminance(Scene_SkyIrradianceUp)), ap.world.rainStrength);
+        #if SKY_FOG_DENSITY == 0
+            outScatter = vec3(0.0);
+            outTransmit = vec3(1.0);
+            return;
+        #endif
     }
 
 //    sampleAmbient *= phaseIso * Scene_SkyBrightnessSmooth;
@@ -235,9 +240,7 @@ void main() {
 
             int shadowCascade;
             vec3 shadowPos = GetShadowSamplePos(shadowViewPos, shadowRadius, shadowCascade);
-            //vec3 tint = SampleShadowColor(shadowPos, shadowCascade);
-            shadowSample *= SampleShadow(shadowPos, shadowCascade);
-            //shadowSample *= sqrt(tint);
+            shadowSample *= SampleShadowColor(shadowPos, shadowCascade);
         #endif
 
         vec3 sampleLocalPos = (i+dither) * stepLocal;

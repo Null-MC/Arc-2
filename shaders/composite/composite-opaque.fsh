@@ -231,6 +231,10 @@ void main() {
             vec3 voxelSamplePos = fma(localGeoNormal, vec3(0.5), voxelPos);
             vec3 voxelLight = sample_lpv_linear(voxelSamplePos, localTexNormal);
 
+            #if LIGHTING_MODE == LIGHT_MODE_RT
+                voxelLight *= 0.1;
+            #endif
+
             skyLightDiffuse += voxelLight * cloudShadowF;// * SampleLightDiffuse(NoVm, 1.0, 1.0, roughL);
         #endif
 

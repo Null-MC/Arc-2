@@ -263,6 +263,7 @@ export function setupShader() {
     setLightColor("ochre_froglight", 223, 172, 71, 255);
     setLightColor("pearlescent_froglight", 224, 117, 232, 255);
     setLightColor("redstone_torch", 249, 50, 28, 255);
+    setLightColor("redstone_wall_torch", 249, 50, 28, 255);
     setLightColor("soul_campfire", 40, 170, 235, 255);
     // setLightColor("soul_torch", 40, 170, 235, 255);
     setLightColor("torch", 243, 181, 73, 255);
@@ -697,6 +698,7 @@ export function setupShader() {
             .vertex("gbuffer/shadow.vsh")
             .geometry("gbuffer/shadow.gsh")
             .fragment("gbuffer/shadow.fsh")
+            .ssbo(0, sceneBuffer)
             .ssbo(4, quadListBuffer)
             .target(0, texShadowColor)
             //.blendFunc(0, Func.ONE, Func.ZERO, Func.ONE, Func.ZERO)

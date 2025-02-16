@@ -29,6 +29,7 @@ out VertexData2 {
 } vOut;
 
 #include "/lib/common.glsl"
+#include "/lib/buffers/scene.glsl"
 
 
 void iris_emitVertex(inout VertexData data) {
@@ -36,10 +37,7 @@ void iris_emitVertex(inout VertexData data) {
     data.clipPos = iris_projectionMatrix * vec4(shadowViewPos, 1.0);
 
     #ifdef VOXEL_ENABLED
-        // WARN: temp workaround
-        mat4 shadowModelViewInverse = inverse(ap.celestial.view);
-
-        vOut.localPos = mul3(shadowModelViewInverse, shadowViewPos);
+        vOut.localPos = mul3(shadowModelViewInv, shadowViewPos);
 
         #ifdef RENDER_TERRAIN
             vOut.originPos = vOut.localPos + data.midBlock / 64.0;
@@ -65,10 +63,8 @@ void iris_sendParameters(in VertexData data) {
         // viewPos = mul3(ap.camera.view, vOut.localPos);
     }
 
-    mat4 shadowViewInv = inverse(ap.celestial.view);
-
     vec3 viewNormal = mat3(iris_modelViewMatrix) * data.normal;
-    vOut.localNormal = mat3(shadowViewInv) * viewNormal;
+    vOut.localNormal = mat3(shadowModelViewInv) * viewNormal;
 
     vOut.currentCascade = iris_currentCascade;
 

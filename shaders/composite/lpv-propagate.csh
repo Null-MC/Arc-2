@@ -5,6 +5,8 @@
 
 layout (local_size_x = 8, local_size_y = 8, local_size_z = 8) in;
 
+shared uint sharedBlockMap[10*10*10];
+
 #ifdef LPV_RSM_ENABLED
 	uniform sampler2DArray solidShadowMap;
 	uniform sampler2DArray texShadowColor;
@@ -32,8 +34,8 @@ layout (local_size_x = 8, local_size_y = 8, local_size_z = 8) in;
 #endif
 
 
-const float directFaceSubtendedSolidAngle = 0.4006696846 / PI / 2.0;
-const float sideFaceSubtendedSolidAngle = 0.4234413544 / PI / 2.0;
+//const float directFaceSubtendedSolidAngle = 0.4006696846 / PI / 2.0;
+//const float sideFaceSubtendedSolidAngle = 0.4234413544 / PI / 2.0;
 
 const ivec3 directions[] = {
 	ivec3( 0,-1, 0),
@@ -44,59 +46,12 @@ const ivec3 directions[] = {
 	ivec3( 1, 0, 0),
 };
 
-// With a lot of help from: http://blog.blackhc.net/2010/07/light-propagation-volumes/
-// This is a fully functioning LPV implementation
+const ivec3 flattenShared = ivec3(1, 10, 100);
 
-// right up
-// ivec2 side[4] = {
-// 	ivec2( 1.0,  0.0),
-// 	ivec2( 0.0,  1.0),
-// 	ivec2(-1.0,  0.0),
-// 	ivec2( 0.0, -1.0)
-// };
+int getSharedCoord(ivec3 pos) {
+	return sumOf(pos * flattenShared);
+}
 
-// orientation = [ right | up | forward ] = [ x | y | z ]
-// vec3 getEvalSideDirection(uint index, mat3 orientation) {
-// 	return orientation * vec3(side[index] * 0.4472135, 0.894427);
-// }
-
-// vec3 getReprojSideDirection(uint index, mat3 orientation) {
-// 	return orientation * vec3(side[index], 0.0);
-// }
-
-// orientation = [ right | up | forward ] = [ x | y | z ]
-// mat3 neighbourOrientations[6] = {
-// 	// Z+
-// 	mat3(
-// 		-1, 0, 0,
-// 		0, 1, 0, 
-// 		0, 0, -1),
-// 	// Z-
-// 	mat3(
-// 		1, 0,  0,
-// 		 0, 1,  0,
-// 		 0, 0, 1),
-// 	// X+
-// 	mat3(
-// 		 0, 0, 1,
-// 		 0, 1, 0,
-// 		-1, 0, 0),
-// 	// X-
-// 	mat3(
-// 		0, 0, -1,
-// 		0, 1,  0,
-// 		1, 0,  0),
-// 	// Y+
-// 	mat3(
-// 		1,  0, 0,
-// 		0,  0, 1,
-// 		0, -1, 0),
-// 	// Y-
-// 	mat3(
-// 		1, 0,  0,
-// 		0, 0, -1,
-// 		0, 1,  0),
-// };
 
 #ifdef LPV_RSM_ENABLED
 	void sample_shadow(vec3 localPos, out vec3 sample_color, out vec3 sample_normal) {
@@ -111,11 +66,8 @@ const ivec3 directions[] = {
 
 		float shadowDepth = textureLod(solidShadowMap, vec3(shadowCoord.xy, shadowCascade), 0).r;
 
-		// WARN: FIX
-		mat4 shadowProjectionInverse = inverse(ap.celestial.projection[shadowCascade]);
-
 		vec3 sample_ndcPos = vec3(shadowCoord.xy, shadowDepth) * 2.0 - 1.0;
-		vec3 sample_shadowViewPos = mul3(shadowProjectionInverse, sample_ndcPos);
+		vec3 sample_shadowViewPos = mul3(shadowProjectionInv[shadowCascade], sample_ndcPos);
 
 		shadowViewPos.z -= 2.0;
 		if (distance(shadowViewPos, sample_shadowViewPos) > 1.0) {
@@ -149,17 +101,51 @@ ivec3 GetVoxelFrameOffset() {
     return ivec3(posNow) - ivec3(posLast);
 }
 
+void populateShared() {
+	uint i1 = uint(gl_LocalInvocationIndex) * 2u;
+	if (i1 >= 1000u) return;
+
+	uint i2 = i1 + 1u;
+	ivec3 workGroupOffset = ivec3(gl_WorkGroupID * gl_WorkGroupSize) - 1;
+
+	ivec3 pos1 = workGroupOffset + ivec3(i1 / flattenShared) % 10;
+	ivec3 pos2 = workGroupOffset + ivec3(i2 / flattenShared) % 10;
+
+
+	uint blockId1 = 0u;
+	uint blockId2 = 0u;
+
+	if (IsInVoxelBounds(pos1)) {
+		blockId1 = imageLoad(imgVoxelBlock, pos1).r;
+	}
+
+	if (IsInVoxelBounds(pos2)) {
+		blockId2 = imageLoad(imgVoxelBlock, pos2).r;
+	}
+
+	sharedBlockMap[i1] = blockId1;
+	sharedBlockMap[i2] = blockId2;
+}
+
+
 void main() {
+	uvec3 chunkPos = gl_WorkGroupID * gl_WorkGroupSize;
+	if (any(greaterThanEqual(chunkPos, VoxelBufferSize))) return;
+
+	populateShared();
+	barrier();
+
 	ivec3 cellIndex = ivec3(gl_GlobalInvocationID);
+	if (any(greaterThanEqual(cellIndex, VoxelBufferSize))) return;
+
+
 	bool altFrame = ap.time.frames % 2 == 1;
 
-	//lpvShVoxel sh_voxel = voxel_empty;
 	vec4 voxel_R = vec4(0.0);
 	vec4 voxel_G = vec4(0.0);
 	vec4 voxel_B = vec4(0.0);
 
 	#ifdef LPV_RSM_ENABLED
-//		lpvShVoxel sh_rsm_voxel = voxel_empty;
 		vec4 voxel_rsm_R = vec4(0.0);
 		vec4 voxel_rsm_G = vec4(0.0);
 		vec4 voxel_rsm_B = vec4(0.0);
@@ -172,7 +158,9 @@ void main() {
     vec3 voxelCenter = GetVoxelCenter(ap.camera.pos, viewDir);
     vec3 localPos = cellIndex - voxelCenter + 0.5;
 
-	uint blockId = imageLoad(imgVoxelBlock, cellIndex).r;
+	ivec3 localCellIndex = ivec3(gl_LocalInvocationID) + 1;
+
+	uint blockId = sharedBlockMap[getSharedCoord(localCellIndex)];
 
 	bool isFullBlock = false;
 	vec3 tintColor = vec3(1.0);
@@ -189,7 +177,7 @@ void main() {
 		#ifndef LPV_PER_FACE_LIGHTING
 			int lightRange = iris_getEmission(blockId);
 
-			#if LIGHTING_MODE == LIGHT_MODE_LPV
+			//#if LIGHTING_MODE == LIGHT_MODE_LPV
 				if (lightRange > 0) {
 					vec3 lightColor = tintColor;//iris_getLightColor(neighborBlockId).rgb;
 					// lightColor = RgbToLinear(lightColor);
@@ -209,14 +197,12 @@ void main() {
 					voxel_G = fma(vec4(flux.g), coeffs, voxel_G);
 					voxel_B = fma(vec4(flux.b), coeffs, voxel_B);
 				}
-			#endif
+			//#endif
 		#endif
 	}
 
 	if (!isFullBlock) {
 		for (uint neighbour = 0; neighbour < 6; ++neighbour) {
-			// mat3 orientation = neighbourOrientations[neighbour];
-
 			bool isFaceSolid = bitfieldExtract(faceMask, int(neighbour), 1) == 1u;
 			if (isFaceSolid) continue;
 
@@ -224,7 +210,7 @@ void main() {
 			ivec3 neighbourIndex = cellIndexPrev + curDir;
 			if (!IsInVoxelBounds(neighbourIndex)) continue;
 
-			uint neighborBlockId = imageLoad(imgVoxelBlock, cellIndex + curDir).r;
+			uint neighborBlockId = sharedBlockMap[getSharedCoord(localCellIndex + curDir)];
 			bool isNeighborFullBlock = false;
 			uint neighborfaceMask = 0u;
 
@@ -241,7 +227,7 @@ void main() {
 					// lightColor = normalize(lightColor);
 					// lightColor = RgbToLinear(lightColor);
 
-					#if LIGHTING_MODE == LIGHT_MODE_LPV
+					//#if LIGHTING_MODE == LIGHT_MODE_LPV
 						if (lightRange > 0) {
 							vec3 lightColor = iris_getLightColor(neighborBlockId).rgb;
 							lightColor = RgbToLinear(lightColor);
@@ -253,7 +239,7 @@ void main() {
 							voxel_G = fma(vec4(flux.g), coeffs, voxel_G);
 							voxel_B = fma(vec4(flux.b), coeffs, voxel_B);
 						}
-					#endif
+					//#endif
 				#endif
 			}
 
@@ -272,27 +258,6 @@ void main() {
 
 				vec4 neighbor_R, neighbor_G, neighbor_B;
 				decode_shVoxel(neighbor_voxel, neighbor_R, neighbor_G, neighbor_B);
-
-
-				// for (uint sideFace = 0; sideFace < 4; ++sideFace) {
-				// 	vec3 evalDirection = getEvalSideDirection(sideFace, orientation);
-				// 	vec3 reprojDirection = getReprojSideDirection(sideFace, orientation);
-
-				// 	vec4 reprojDirectionCosineLobeSH = dirToCosineLobe(reprojDirection);
-				// 	vec4 evalDirectionSH = dirToSH(evalDirection);
-
-				// 	sh_voxel.R += sideFaceSubtendedSolidAngle * max(dot(neighbor_voxel.R, evalDirectionSH), 0.0) * reprojDirectionCosineLobeSH;
-				// 	sh_voxel.G += sideFaceSubtendedSolidAngle * max(dot(neighbor_voxel.G, evalDirectionSH), 0.0) * reprojDirectionCosineLobeSH;
-				// 	sh_voxel.B += sideFaceSubtendedSolidAngle * max(dot(neighbor_voxel.B, evalDirectionSH), 0.0) * reprojDirectionCosineLobeSH;
-				// }
-
-				// vec4 curCosLobe = dirToCosineLobe(curDir);
-				// vec4 curDirSH = dirToSH(curDir);
-
-				// sh_voxel.R += directFaceSubtendedSolidAngle * max(dot(neighbor_voxel.R, curDirSH), 0.0) * curCosLobe;
-				// sh_voxel.G += directFaceSubtendedSolidAngle * max(dot(neighbor_voxel.G, curDirSH), 0.0) * curCosLobe;
-				// sh_voxel.B += directFaceSubtendedSolidAngle * max(dot(neighbor_voxel.B, curDirSH), 0.0) * curCosLobe;
-
 
 
 				vec4 curCosLobe = dirToCosineLobe(-curDir);
@@ -340,25 +305,6 @@ void main() {
 			voxel_B += voxel_rsm_B;
 		#endif
 	}
-
-	// ivec3 trackPos = ivec3(floor(GetVoxelPosition(Scene_TrackPos - ap.camera.pos)));
-
-	// if (all(equal(cellIndex, trackPos)) && IsInVoxelBounds(trackPos)) {
-	// 	const float surfelWeight = 0.015;
-
-	// 	vec4 coeffs = vec4(0.0);
-	// 	// coeffs += (dirToCosineLobe(vec3( 1.0, 0.0,  0.0)) / PI);// * surfelWeight;
-	// 	// coeffs += (dirToCosineLobe(vec3(-1.0, 0.0,  0.0)) / PI);// * surfelWeight;
-	// 	// coeffs += (dirToCosineLobe(vec3( 0.0, 0.0,  1.0)) / PI);// * surfelWeight;
-	// 	// coeffs += (dirToCosineLobe(vec3( 0.0, 0.0, -1.0)) / PI);// * surfelWeight;
-	// 	coeffs += (dirToCosineLobe(vec3(0.0,  1.0, 0.0)) / PI);// * surfelWeight;
-	// 	coeffs += (dirToCosineLobe(vec3(0.0, -1.0, 0.0)) / PI);// * surfelWeight;
-	// 	vec3 flux = vec3(100.0, 0.0, 0.0);
-
-	// 	cR += coeffs * flux.r;
-	// 	cG += coeffs * flux.g;
-	// 	cB += coeffs * flux.b;
-	// }
 
 	lpvShVoxel sh_voxel;
 	encode_shVoxel(sh_voxel, voxel_R, voxel_G, voxel_B);

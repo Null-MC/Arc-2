@@ -1,10 +1,10 @@
 // based on: https://www.shadertoy.com/view/MdXyzX
 
-const float DRAG_MULT = 0.09;
+const float DRAG_MULT = 0.01;
 
 const float WaterWaveSurfaceOffset = 0.6;
-const int WaterWaveOctaveMin = 15;
-const int WaterWaveOctaveMax = 20;
+const int WaterWaveOctaveMin = 6;
+const int WaterWaveOctaveMax = 8;
 
 const vec3 WaterWaveScaleF = vec3(1.0, 1.0, 1.0);
 

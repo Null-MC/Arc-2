@@ -54,20 +54,27 @@ const int VL_MaxSamples = 32;
     float SampleFogNoise(const in vec3 localPos) {
         vec3 skyPos = localPos + ap.camera.pos;
         skyPos.y -= SKY_SEA_LEVEL;
-        skyPos /= 60.0;//(ATMOSPHERE_MAX - SKY_SEA_LEVEL);
-        skyPos.xz /= (256.0/32.0);// * 4.0;
+
+        vec3 samplePos = skyPos;
+        samplePos /= 60.0;//(ATMOSPHERE_MAX - SKY_SEA_LEVEL);
+        samplePos.xz /= (256.0/32.0);// * 4.0;
 
         float fogNoise = 0.0;
-        fogNoise = textureLod(texFogNoise, skyPos, 0).r;
-        fogNoise *= 1.0 - textureLod(texFogNoise, skyPos * 0.33, 0).r;
+        fogNoise = textureLod(texFogNoise, samplePos, 0).r;
+        fogNoise *= 1.0 - textureLod(texFogNoise, samplePos * 0.33, 0).r;
 
         //fogNoise = pow(fogNoise, 3.6);
-        float threshold_min = mix(0.2, 0.25, ap.world.rainStrength);
-        //float threshold_max = threshold_min + 0.3;
+        float threshold_min = mix(0.3, 0.25, ap.world.rainStrength);
+        float threshold_max = threshold_min + 0.3;
         fogNoise = smoothstep(threshold_min, 1.0, fogNoise);
 
-        fogNoise *= exp(-6.0 * max(skyPos.y, 0.0));
+        float fogStrength = exp(-0.2 * max(skyPos.y, 0.0));
 
+//        float cloudMin = smoothstep(200.0, 220.0, skyPos.y);
+//        float cloudMax = smoothstep(260.0, 240.0, skyPos.y);
+//        fogStrength = max(fogStrength, cloudMin * cloudMax);
+
+        fogNoise *= fogStrength;
         fogNoise *= 100.0;
 
         return fogNoise;
@@ -146,7 +153,7 @@ void main() {
 
     if (ap.camera.fluid != 1) {
         // TODO: add moon
-        miePhaseValue = getMiePhase(VoL_sun, 0.4);
+        miePhaseValue = getMiePhase(VoL_sun, 0.2);
         rayleighPhaseValue = getRayleighPhase(-VoL_sun);
     }
 
@@ -300,11 +307,11 @@ void main() {
                 float shadow_dither = dither;
 
                 float shadowStepDist = 1.0;
-                float shadowDensity = fogNoise;
-                for (float ii = shadow_dither; ii < 6.0; ii++) {
+                float shadowDensity = 0.0;
+                for (float ii = shadow_dither; ii < 8.0; ii += 1.0) {
                     vec3 fogShadow_localPos = (shadowStepDist * ii) * Scene_LocalLightDir + sampleLocalPos;
-                    shadowDensity += SampleFogNoise(fogShadow_localPos) * shadowStepDist;
-                    shadowStepDist *= 1.5;
+                    shadowDensity += SampleFogNoise(fogShadow_localPos) * shadowStepDist;// * (1.0 - max(1.0 - ii, 0.0));
+                    shadowStepDist *= 2.0;
                 }
 
                 if (shadowDensity > 0.0)

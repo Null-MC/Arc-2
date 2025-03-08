@@ -248,7 +248,7 @@ function setupSettings() {
 }
 
 
-export function setupShader() {
+export function setupShader(state : WorldState) {
     print("Setting up shader");
 
     const Settings = setupSettings();
@@ -573,20 +573,20 @@ export function setupShader() {
         // f16vec4[3] * VoxelBufferSize^3
         const bufferSize = 8 * 3 * cubed(Settings.Voxel.Size);
 
-        shLpvBuffer = new Buffer(bufferSize)
+        shLpvBuffer = new GPUBuffer(bufferSize)
             .clear(false)
             .build();
 
-        shLpvBuffer_alt = new Buffer(bufferSize)
+        shLpvBuffer_alt = new GPUBuffer(bufferSize)
             .clear(false)
             .build();
 
         if (Settings.Lighting.LpvRsmEnabled) {
-            shLpvRsmBuffer = new Buffer(bufferSize)
+            shLpvRsmBuffer = new GPUBuffer(bufferSize)
                 .clear(false)
                 .build();
 
-            shLpvRsmBuffer_alt = new Buffer(bufferSize)
+            shLpvRsmBuffer_alt = new GPUBuffer(bufferSize)
                 .clear(false)
                 .build();
         }
@@ -610,7 +610,7 @@ export function setupShader() {
             .build();
     }
 
-    const sceneBuffer = new Buffer(1024)
+    const sceneBuffer = new GPUBuffer(1024)
         .clear(false)
         .build();
 
@@ -623,14 +623,14 @@ export function setupShader() {
         const lightListBufferSize = lightBinSize * cubed(lightListBinCount) + 4;
         print(`Light-List Buffer Size: ${lightListBufferSize.toLocaleString()}`);
 
-        lightListBuffer = new Buffer(lightListBufferSize)
+        lightListBuffer = new GPUBuffer(lightListBufferSize)
             .clear(true) // TODO: clear with compute
             .build();
 
         if (Settings.Internal.VoxelizeBlockFaces) {
             const bufferSize = 6 * 16 * cubed(Settings.Voxel.Size);
 
-            blockFaceBuffer = new Buffer(bufferSize)
+            blockFaceBuffer = new GPUBuffer(bufferSize)
                 .clear(true) // TODO: clear with compute
                 .build();
         }
@@ -641,7 +641,7 @@ export function setupShader() {
             const quadListBufferSize = quadBinSize * cubed(quadListBinCount) + 4;
             print(`Quad-List Buffer Size: ${quadListBufferSize.toLocaleString()}`);
 
-            quadListBuffer = new Buffer(quadListBufferSize)
+            quadListBuffer = new GPUBuffer(quadListBufferSize)
                 .clear(true) // TODO: clear with compute
                 .build();
         }

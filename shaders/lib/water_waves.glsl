@@ -1,8 +1,8 @@
 // based on: https://www.shadertoy.com/view/MdXyzX
 
-const float DRAG_MULT = 0.08;
+const float DRAG_MULT = 0.002;
 
-const float WaterWaveSurfaceOffset = 0.6;
+const float WaterWaveSurfaceOffset = 2.2;
 int WaterWaveOctaveMin = int(ceil(Scene_WaterWaveDetail * 0.75));
 int WaterWaveOctaveMax = Scene_WaterWaveDetail;
 
@@ -43,7 +43,7 @@ vec3 GetWaveHeight(const in vec3 position, const in float skyLight, const in flo
         weight *= 0.82;
     }
 
-    float heightDelta = valueSum / max(weightSum, 0.000001);
+    float heightDelta = 2.4*(valueSum / max(weightSum, 0.000001));
     wavePos.y += heightDelta;//*heightDelta;
     wavePos.y -= WaterWaveSurfaceOffset;
 

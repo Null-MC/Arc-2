@@ -1,11 +1,11 @@
-vec3 GetPatchDistances(const in float distMin, const in float distMax) {
-    vec3 distances = vec3(
-        gl_in[0].gl_Position.z,
-        gl_in[1].gl_Position.z,
-        gl_in[2].gl_Position.z);
+vec3 GetPatchDistances(const in float distMin, const in float distMax, const in vec3 distances) {
+//    vec3 distances = vec3(
+//        gl_in[0].gl_Position.z,
+//        gl_in[1].gl_Position.z,
+//        gl_in[2].gl_Position.z);
 
     //return saturate((abs(distances) - MIN_DISTANCE) / (MATERIAL_DISPLACE_MAX_DIST - MIN_DISTANCE));
-    return smoothstep(distMin, distMax, abs(distances));
+    return smoothstep(distMin, distMax, distances);
 }
 
 float GetTessellationQuality(const in float distance, const in float maxQuality) {

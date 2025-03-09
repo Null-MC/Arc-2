@@ -240,7 +240,7 @@ void main() {
 
         vec2 skyIrradianceCoord = DirectionToUV(localTexNormal);
         vec3 skyIrradiance = textureLod(texSkyIrradiance, skyIrradianceCoord, 0).rgb;
-        skyLightDiffuse += (SKY_AMBIENT * lmCoord.y) * skyIrradiance;
+        skyLightDiffuse += 2.0 * (SKY_AMBIENT * lmCoord.y) * skyIrradiance;
 
         skyLightDiffuse *= occlusion;
 

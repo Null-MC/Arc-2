@@ -10,9 +10,9 @@ export function setupOptions() {
 
     let screen_Water = new Page("Water")
         .add(asBool("WATER_WAVES_ENABLED", true, true))
+        .add(asIntRange("WATER_WAVES_DETAIL", 8, 2, 32, 1, false))
         .add(asBool("WATER_TESSELLATION_ENABLED", true, true))
-        .add(EMPTY)
-        .add(asIntRange("WATER_TESSELLATION_LEVEL", 4, 2, 12, 1))
+        .add(asIntRange("WATER_TESSELLATION_LEVEL", 4, 2, 12, 1, false))
         .build();
 
     const screen_Shadows = new Page("Shadows")

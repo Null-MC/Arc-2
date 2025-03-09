@@ -1,4 +1,4 @@
-#version 430
+#version 450
 
 #include "/lib/constants.glsl"
 #include "/settings.glsl"
@@ -23,8 +23,11 @@ in VertexData2 {
     vec4 localTangent;
     flat uint blockId;
 
-    #if defined(RENDER_TERRAIN) && defined(RENDER_TRANSLUCENT) && defined(WATER_TESSELLATION_ENABLED)
-        vec3 surfacePos;
+    #if defined(RENDER_TERRAIN) && defined(RENDER_TRANSLUCENT)
+        //#ifdef WATER_TESSELLATION_ENABLED
+            vec3 surfacePos;
+        //#endif
+
         float waveStrength;
     #endif
 
@@ -168,13 +171,11 @@ void iris_emitFragment() {
             #ifdef WATER_WAVES_ENABLED
                 vec3 waveOffset = GetWaveHeight(vIn.surfacePos + ap.camera.pos, lmcoord.y, ap.time.elapsed, WaterWaveOctaveMax);
 
-                // mUV += 0.1*waveOffset.xz;
-
                 vec3 wavePos = vIn.surfacePos;
-                wavePos.y += (waveOffset.y - vIn.localOffset.y) * vIn.waveStrength;
+                wavePos.y += (waveOffset.y) * vIn.waveStrength;
 
-                vec3 dX = dFdx(wavePos);
-                vec3 dY = dFdy(wavePos);
+                vec3 dX = normalize(dFdxFine(wavePos));
+                vec3 dY = normalize(dFdyFine(wavePos));
                 localTexNormal = normalize(cross(dX, dY));
             #endif
 

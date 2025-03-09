@@ -6,7 +6,7 @@
 
 #define MATERIAL_PARALLAX_MAXDIST 48
 
-//#define DEBUG_TRANSLUCENT
+#define DEBUG_TRANSLUCENT
 
 const float BLOCKLIGHT_TEMP = 3400.0;
 
@@ -61,6 +61,7 @@ const float shadowPixelSize = 1.0 / shadowMapResolution;
 
 layout (std140, binding = 0) uniform SceneSettings {
 	float Scene_SkyFogDensityF;
+	int Scene_WaterWaveDetail;
 	float Scene_EffectBloomStrength;
 	float Scene_PostContrastF;
 	float Scene_PostExposureMin;

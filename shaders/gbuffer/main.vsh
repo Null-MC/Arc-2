@@ -20,6 +20,10 @@ out VertexData2 {
 	flat uint blockId;
 
 	#if defined(RENDER_TERRAIN) && defined(RENDER_TRANSLUCENT)
+		#ifndef WATER_TESSELLATION_ENABLED
+			vec3 surfacePos;
+		#endif
+
 		float waveStrength;
 	#endif
 
@@ -50,9 +54,10 @@ void iris_emitVertex(inout VertexData data) {
 	vOut.localPos = mul3(ap.camera.viewInv, viewPos);
 	vOut.localOffset = vec3(0.0);
 
-	#if defined RENDER_TRANSLUCENT && defined WATER_WAVES_ENABLED && !defined WATER_TESSELLATION_ENABLED
+	#if defined(RENDER_TERRAIN) && defined(RENDER_TRANSLUCENT) && defined(WATER_WAVES_ENABLED) && !defined(WATER_TESSELLATION_ENABLED)
         // bool isWater = bitfieldExtract(blockMask, 6, 1) != 0;
-	    bool is_fluid = iris_hasFluid(vIn.blockId);
+	    bool is_fluid = iris_hasFluid(data.blockId);
+		vOut.surfacePos = vOut.localPos;
 
         if (is_fluid) {
 			const float lmcoord_y = 1.0;
@@ -86,7 +91,11 @@ void iris_sendParameters(in VertexData data) {
     vOut.localTangent.w = data.tangent.w;
 
 	#if defined(RENDER_TERRAIN) && defined(RENDER_TRANSLUCENT)
-		vec3 worldPos = vOut.localPos + ap.camera.pos;
+		#ifdef WATER_TESSELLATION_ENABLED
+			vec3 worldPos = vOut.localPos + ap.camera.pos;
+		#else
+			vec3 worldPos = vOut.surfacePos + ap.camera.pos;
+		#endif
 
 		const vec3 windDir1 = vec3(0.01,  0.01, 0.02);
 		const vec3 windDir2 = vec3(0.04, -0.01, 0.02);

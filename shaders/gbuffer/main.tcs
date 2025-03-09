@@ -50,7 +50,7 @@ out VertexData2 {
 
 
 const float MIN_DISTANCE = 4;
-const float MAX_DISTANCE = 40;
+const float MAX_DISTANCE = 20;
 
 
 void main() {
@@ -81,7 +81,12 @@ void main() {
 
         float maxQuality = is_fluid ? WATER_TESSELLATION_LEVEL : 1.0;
 
-        vec3 distances = GetPatchDistances(MIN_DISTANCE, MAX_DISTANCE);
+        vec3 viewZ = vec3(
+            length(vIn[0].localPos),
+            length(vIn[1].localPos),
+            length(vIn[2].localPos));
+
+        vec3 distances = GetPatchDistances(MIN_DISTANCE, MAX_DISTANCE, viewZ);
         ApplyPatchControl(distances, maxQuality);
     }
 }

@@ -14,7 +14,7 @@ const ReflectMode_WSR = 2;
 
 
 let SceneSettingsBuffer: BuiltStreamingBuffer;
-const SceneSettingsBufferSize = 24;
+const SceneSettingsBufferSize = 28;
 
 class StreamBufferBuilder {
     buffer: BuiltStreamingBuffer;
@@ -60,13 +60,14 @@ function getSettings() {
         },
         Water: {
             Waves: () => getBoolSetting("WATER_WAVES_ENABLED"),
+            Detail: () => getIntSetting("WATER_WAVES_DETAIL"),
             Tessellation: () => getBoolSetting("WATER_TESSELLATION_ENABLED"),
             Tessellation_Level: () => getIntSetting("WATER_TESSELLATION_LEVEL"),
         },
         Shadows: {
             Enabled: () => getBoolSetting("SHADOWS_ENABLED"),
             CloudsEnabled: () => getBoolSetting("SHADOWS_CLOUD_ENABLED"),
-            Resolution: getIntSetting("SHADOW_RESOLUTION"),
+            Resolution: () => getIntSetting("SHADOW_RESOLUTION"),
             Filter: true,
             SS_Fallback: true,
         },
@@ -182,7 +183,7 @@ function applySettings(settings) {
     worldSettings.disableShade = true;
     worldSettings.ambientOcclusionLevel = 0.0;
     worldSettings.sunPathRotation = settings.Sky.SunAngle();
-    worldSettings.shadowMapResolution = settings.Shadows.Resolution;
+    worldSettings.shadowMapResolution = settings.Shadows.Resolution();
     worldSettings.renderStars = false;
     worldSettings.renderMoon = false;
     worldSettings.renderSun = false;
@@ -198,6 +199,7 @@ function applySettings(settings) {
 
     if (settings.Water.Waves()) {
         defineGlobally1("WATER_WAVES_ENABLED");
+        defineGlobally("WATER_WAVES_DETAIL", settings.Water.Detail().toString());
 
         if (settings.Water.Tessellation()) {
             defineGlobally1("WATER_TESSELLATION_ENABLED");
@@ -208,7 +210,7 @@ function applySettings(settings) {
     if (settings.Shadows.Enabled()) defineGlobally1("SHADOWS_ENABLED");
     if (settings.Shadows.CloudsEnabled()) defineGlobally1("SHADOWS_CLOUD_ENABLED");
     if (settings.Shadows.SS_Fallback) defineGlobally1("SHADOW_SCREEN");
-    defineGlobally("SHADOW_RESOLUTION", settings.Shadows.Resolution.toString());
+    defineGlobally("SHADOW_RESOLUTION", settings.Shadows.Resolution().toString());
 
     defineGlobally("MATERIAL_FORMAT", settings.Material.Format);
     if (settings.Material.Parallax.Enabled) {
@@ -406,7 +408,7 @@ export function setupShader() {
         .build();
 
     const texDeferredOpaque_TexNormal = new Texture("texDeferredOpaque_TexNormal")
-        .format(Format.RGB8)
+        .format(Format.RGB16)
         .clearColor(0.0, 0.0, 0.0, 0.0)
         .build();
 
@@ -421,7 +423,7 @@ export function setupShader() {
         .build();
 
     const texDeferredTrans_TexNormal = new Texture("texDeferredTrans_TexNormal")
-        .format(Format.RGB8)
+        .format(Format.RGB16)
         .clearColor(0.0, 0.0, 0.0, 0.0)
         .build();
 
@@ -835,6 +837,7 @@ export function setupShader() {
         .build());
 
     const waterShader = mainShaderTranslucent("terrain-translucent", Usage.TERRAIN_TRANSLUCENT)
+        .ubo(0, SceneSettingsBuffer)
         .define("RENDER_TERRAIN", "1");
 
     if (Settings.Water.Waves() && Settings.Water.Tessellation()) {
@@ -1164,6 +1167,7 @@ export function onSettingsChanged(state : WorldState) {
 
     new StreamBufferBuilder(SceneSettingsBuffer)
         .appendFloat(Settings.Sky.FogDensity() * 0.01)
+        .appendInt(Settings.Water.Detail())
         .appendFloat(Settings.Effect.Bloom.Strength() * 0.01)
         .appendFloat(Settings.Post.Contrast() * 0.01)
         .appendFloat(Settings.Post.Exposure.Min())

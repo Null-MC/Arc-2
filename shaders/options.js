@@ -2,15 +2,9 @@
 
 export function setupOptions() {
     const screen_Sky = new Page("Sky")
-        .add(asIntEx(
-            "SKY_SEA_LEVEL", 60,
-            -40, 140, 2))
-        .add(asIntEx(
-            "SKY_SUN_ANGLE", -20,
-            -60, +60, 2))
-        .add(asIntEx(
-            "SKY_FOG_DENSITY", 6,
-            0, 100, 2))
+        .add(asIntEx("SKY_SEA_LEVEL", -40, 140, 2).build(60))
+        .add(asIntEx("SKY_SUN_ANGLE", -80, +80, 2).build(-20))
+        .add(asIntEx("SKY_FOG_DENSITY", 0, 100, 2).build(6))
         .add(asBool("SKY_FOG_NOISE", false, true))
         .build();
 
@@ -18,9 +12,7 @@ export function setupOptions() {
         .add(asBool("WATER_WAVES_ENABLED", true, true))
         .add(asBool("WATER_TESSELLATION_ENABLED", true, true))
         .add(EMPTY)
-        .add(asIntEx(
-            "WATER_TESSELLATION_LEVEL", 4,
-            2, 12, 1))
+        .add(asIntEx("WATER_TESSELLATION_LEVEL", 2, 12, 1).build(4))
         .build();
 
     const screen_Shadows = new Page("Shadows")
@@ -31,23 +23,16 @@ export function setupOptions() {
 
     let screen_Parallax = new Page("Parallax")
         .add(asBool("MATERIAL_PARALLAX_ENABLED", true, true))
-        .add(asIntEx(
-            "MATERIAL_PARALLAX_SAMPLES", 32,
-            8, 128, 8))
+        .add(asIntEx("MATERIAL_PARALLAX_SAMPLES", 8, 128, 8).build(32))
         .add(asBool("MATERIAL_PARALLAX_SHARP", true, true))
-        .add(asIntEx(
-            "MATERIAL_PARALLAX_DEPTH", 25,
-            5, 100, 5))
+        .add(asIntEx("MATERIAL_PARALLAX_DEPTH", 5, 100, 5).build(25))
         .add(asBool("MATERIAL_PARALLAX_DEPTHWRITE", false, true))
         .build();
 
     let screen_Material = new Page("Material")
         .add(asInt("MATERIAL_FORMAT", 0, 1, 2).build(1))
         .add(screen_Parallax)
-        .add(asIntEx(
-            "EMISSION_BRIGHTNESS", 160,
-            0, 800, 10)
-        )
+        .add(asIntEx("EMISSION_BRIGHTNESS", 0, 800, 10).build(160))
         .add(asBool("FANCY_LAVA", true, true))
         .add(EMPTY)
         .add(asInt("FANCY_LAVA_RES", 4, 8, 16, 32, 64, 128, 0).build(0))
@@ -64,9 +49,7 @@ export function setupOptions() {
             .add(asInt("LIGHTING_REFLECT_MODE", 0, 1, 2).build(2))
             .add(asBool("LIGHTING_REFLECT_TRIANGLE", false, true))
             .add(asBool("LIGHTING_REFLECT_NOISE", true, true))
-            .add(asIntEx(
-                "LIGHTING_REFLECT_MAXSTEP", 64,
-                8, 256, 8))
+            .add(asIntEx("LIGHTING_REFLECT_MAXSTEP", 8, 256, 8).build(64))
             .build())
         .add(asInt("LIGHTING_VL_RES", 0, 1, 2).build(1))
         .build();
@@ -80,9 +63,7 @@ export function setupOptions() {
         .add(asBool("EFFECT_SSAO_ENABLED", true, true))
         .add(asBool("EFFECT_SSGI_ENABLED", false, true))
         .add(asBool("EFFECT_BLOOM_ENABLED", true, true))
-        .add(asIntEx(
-            "EFFECT_SSGIAO_SAMPLES", 12,
-            1, 64, 1))
+        .add(asIntEx("EFFECT_SSGIAO_SAMPLES", 1, 64, 1).build(12))
         .build();
 
     const screen_Post = new Page("Post")
@@ -98,9 +79,7 @@ export function setupOptions() {
                 "POST_EXPOSURE_SPEED", 0.4,
                 0.1, 2.0, 0.1))
             .build())
-        .add(asIntEx(
-            "POST_CONTRAST", 120,
-            0, 300, 5))
+        .add(asIntEx("POST_CONTRAST",0, 300, 5).build(120))
         .build();
 
     const screen_Debug = new Page("Debug")
@@ -119,10 +98,15 @@ export function setupOptions() {
         .build();
 }
 
-function asIntEx(keyName, defaultValue, valueMin, valueMax, interval) {
+function asIntEx(keyName, valueMin, valueMax, interval) {
     const values = getValueRange(valueMin, valueMax, interval);
-    return asInt(keyName, ...values).build(defaultValue);
+    return asInt(keyName, ...values);
 }
+
+// function asIntEx(keyName, defaultValue, valueMin, valueMax, interval) {
+//     const values = getValueRange(valueMin, valueMax, interval);
+//     return asInt(keyName, ...values).build(defaultValue);
+// }
 
 function asFloatEx(keyName, defaultValue, valueMin, valueMax, interval) {
     const values = getValueRange(valueMin, valueMax, interval)

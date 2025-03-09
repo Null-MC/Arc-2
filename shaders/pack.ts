@@ -248,7 +248,7 @@ function setupSettings() {
 }
 
 
-export function setupShader(state : WorldState) {
+export function setupShader() {
     print("Setting up shader");
 
     const Settings = setupSettings();
@@ -1106,6 +1106,16 @@ export function setupShader(state : WorldState) {
     }
 
     setCombinationPass(new CombinationPass("post/final.fsh").build());
+}
+
+export function setupFrame(state : WorldState) {
+    worldSettings.sunPathRotation = getIntSetting("SKY_SUN_ANGLE");
+
+    // if (isKeyDown(Keys.G)) testVal += 0.07;
+    // if (isKeyDown(Keys.F)) testVal -= 0.07;
+    // TEST_UBO.setFloat(0, testVal);
+    //
+    // TEST_UBO.finishFrame();
 }
 
 function setupSky(sceneBuffer) {

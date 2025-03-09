@@ -954,7 +954,7 @@ export function setupShader() {
             .build());
     }
 
-    if (Settings.Effect.SSAO || Settings.Effect.SSGI) {
+    if (Settings.Effect.SSGIAO.SSAO || Settings.Effect.SSGIAO.SSGI) {
         registerShader(Stage.POST_RENDER, new Composite("ssgiao-opaque")
             .vertex("shared/bufferless.vsh")
             .fragment("composite/ssgiao.fsh")

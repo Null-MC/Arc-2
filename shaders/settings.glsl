@@ -59,19 +59,11 @@ const float shadowPixelSize = 1.0 / shadowMapResolution;
 	#define RENDER_PARALLAX
 #endif
 
-//layout (std140, binding = 0) uniform SceneSettings {
-//	float Scene_SkyFogDensityF;
-//	float Scene_EffectBloomStrength;
-//	float Scene_PostContrastF;
-//	float Scene_PostExposureMin;
-//	float Scene_PostExposureMax;
-//	float Scene_PostExposureSpeed;
-//};
-
-
-const float Scene_SkyFogDensityF = 0.06;
-const float Scene_EffectBloomStrength = 0.03;
-const float Scene_PostContrastF = 2.0;
-const float Scene_PostExposureMin = -10.5;
-const float Scene_PostExposureMax = 16.0;
-const float Scene_PostExposureSpeed = 0.4;
+layout (std140, binding = 0) uniform SceneSettings {
+	float Scene_SkyFogDensityF;
+	float Scene_EffectBloomStrength;
+	float Scene_PostContrastF;
+	float Scene_PostExposureMin;
+	float Scene_PostExposureMax;
+	float Scene_PostExposureSpeed;
+};

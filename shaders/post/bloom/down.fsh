@@ -1,17 +1,19 @@
 #version 430 core
 
+#include "/lib/constants.glsl"
+#include "/settings.glsl"
+
 layout(location = 0) out vec4 outColor;
 
 uniform sampler2D TEX_SRC;
 
 in vec2 uv;
 
-#include "/settings.glsl"
 #include "/lib/common.glsl"
 
 
 void ScaleInput(inout vec3 color) {
-    color *= Bloom_Strength;
+    color *= Scene_EffectBloomStrength;
 
 //    float lum = luminance(color);
 //    float lumScaled = lum * Bloom_Strength;

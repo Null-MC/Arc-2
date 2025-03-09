@@ -36,13 +36,13 @@ const int SHADOW_PCSS_SAMPLES = 6;
 const float Shadow_MaxPcfSize = 2.0;
 
 //const float Bloom_Power = 1.0;
-const float Bloom_Strength = 0.03;
+//const float Bloom_Strength = 0.03;
 
 const float PurkinjeStrength = 0.08;
 
-const float Exposure_minLogLum = POST_EXPOSURE_MIN;// -9.5;
-const float Exposure_maxLogLum = POST_EXPOSURE_MAX;//  19.0;
-const float Exposure_Speed = POST_EXPOSURE_SPEED;// 0.2;//2.1;
+//const float Exposure_minLogLum = POST_EXPOSURE_MIN;// -9.5;
+//const float Exposure_maxLogLum = POST_EXPOSURE_MAX;//  19.0;
+//const float Exposure_Speed = POST_EXPOSURE_SPEED;// 0.2;//2.1;
 
 const float WaterTintMinDist = 3.0;
 const float shadowMapResolution = float(SHADOW_RESOLUTION);
@@ -58,3 +58,12 @@ const float shadowPixelSize = 1.0 / shadowMapResolution;
 #if defined MATERIAL_PARALLAX_ENABLED && defined RENDER_TERRAIN && MATERIAL_FORMAT != MAT_NONE
 	#define RENDER_PARALLAX
 #endif
+
+layout (std140, binding = 0) uniform SceneSettings {
+	float Scene_SkyFogDensityF;
+	float Scene_EffectBloomStrength;
+	float Scene_PostContrastF;
+	float Scene_PostExposureMin;
+	float Scene_PostExposureMax;
+	float Scene_PostExposureSpeed;
+};

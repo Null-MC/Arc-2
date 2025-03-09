@@ -1,6 +1,10 @@
+option.SKY_SEA_LEVEL=Sea Level
+
 option.SKY_SUN_ANGLE=Sun Angle
+suffix.SKY_SUN_ANGLE=°
 
 option.SKY_FOG_DENSITY=Fog Density
+suffix.SKY_FOG_DENSITY=%
 
 option.SKY_FOG_NOISE=Fog Clouds
 
@@ -77,7 +81,10 @@ option.EFFECT_SSAO_ENABLED=SSAO
 
 option.EFFECT_SSGI_ENABLED=SSGI
 
-option.EFFECT_BLOOM_ENABLED=Bloom
+option.EFFECT_BLOOM_ENABLED=Enabled
+
+option.EFFECT_BLOOM_STRENGTH=Strength
+suffix.EFFECT_BLOOM_STRENGTH=%
 
 option.EFFECT_TAA_ENABLED=TAA
 

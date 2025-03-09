@@ -1,5 +1,8 @@
 #version 430 core
 
+#include "/lib/constants.glsl"
+#include "/settings.glsl"
+
 layout (local_size_x = 256, local_size_y = 1, local_size_z = 1) in;
 
 layout(r32ui) uniform uimage2D imgHistogram;
@@ -10,7 +13,6 @@ layout(r32ui) uniform uimage2D imgHistogram;
 
 shared uint histogramShared[256];
 
-#include "/settings.glsl"
 #include "/lib/common.glsl"
 #include "/lib/buffers/scene.glsl"
 #include "/lib/exposure.glsl"
@@ -46,10 +48,10 @@ void main() {
 		float weightedLogAverage = (histogramShared[0] / max(Exposure_numPixels - float(countForThisBin), 1.0)) - 1.0;
 
 		// Map from our histogram space to actual luminance
-		float weightedAvgLum = 255.0 * exp(((weightedLogAverage) * Exposure_logLumRange) + Exposure_minLogLum);
+		float weightedAvgLum = 255.0 * exp(((weightedLogAverage) * Exposure_logLumRange) + Scene_PostExposureMin);
 
-	    float lumLastFrame = clamp(Scene_AvgExposure, Exposure_minLogLum, Exposure_maxLogLum);
-		float Exposure_timeCoeff = (1.0 - exp(-ap.time.delta * Exposure_Speed));
+	    float lumLastFrame = clamp(Scene_AvgExposure, Scene_PostExposureMin, Scene_PostExposureMax);
+		float Exposure_timeCoeff = (1.0 - exp(-ap.time.delta * Scene_PostExposureSpeed));
 
 		float adaptedLum = lumLastFrame + (weightedAvgLum - lumLastFrame) * Exposure_timeCoeff;
 

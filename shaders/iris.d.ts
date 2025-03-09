@@ -88,6 +88,36 @@ declare function getStringSetting(name: string): string;
 declare function getBoolSetting(name: string): boolean;
 declare function getIntSetting(name: string): number;
 
+declare class IntSetting {
+  needsReload(reload: boolean): IntSetting;
+  build(defaultValue: number): BuiltSetting;
+}
+declare class FloatSetting {
+  needsReload(reload: boolean): FloatSetting;
+  build(defaultValue: number): BuiltSetting;
+}
+declare class StringSetting {
+  needsReload(reload: boolean): StringSetting;
+  build(defaultValue: string): BuiltSetting;
+}
+declare class BuiltSetting {}
+
+declare class Page {
+  constructor(name: string);
+
+  add(...settings): Page;
+  build(): BuiltPage;
+}
+declare class BuiltPage {}
+
+declare function asInt(name: string, ...values: number[]): IntSetting;
+declare function asFloat(name: string, ...values: number[]): FloatSetting;
+declare function asString(name: string, ...values: string[]): StringSetting;
+declare function asBool(name: string, defaultValue: boolean, reload: boolean): BuiltSetting;
+
+declare var EMPTY: BuiltPage;
+
+
 /**
  * Sets the light color for the provided block.
  * @param name The colon-separated name of the block (ex. "minecraft:stone")
@@ -341,7 +371,7 @@ class BuiltStreamingBuffer implements BuiltBuffer {
     setInt(offset : number, value: number): void;
     setFloat(offset : number, value: number): void;
     setBool(offset : number, value: boolean): void;
-    finishFrame() : void;
+    uploadData() : void;
 }
 
 /**

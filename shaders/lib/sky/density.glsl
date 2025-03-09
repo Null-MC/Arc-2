@@ -1,8 +1,8 @@
-const float AirDensityF = SKY_FOG_DENSITY * 0.01;
+//const float AirDensityF = Scene_SkyFogDensityF; //SKY_FOG_DENSITY * 0.01;
 
 
 float GetSkyDensity(const in vec3 localPos) {
-    return mix(AirDensityF, 1.0, ap.world.rainStrength);
+    return mix(Scene_SkyFogDensityF, 1.0, ap.world.rainStrength);
 
 
 //    //    float sampleY = localPos.y + ap.camera.pos.y;

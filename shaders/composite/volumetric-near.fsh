@@ -120,11 +120,11 @@ void main() {
 //        phase_gM =  mix(0.36, 0.24, ap.world.rainStrength);
 //
 //        sampleAmbient = VL_AmbientF * mix(Scene_SkyIrradianceUp, vec3(0.5*luminance(Scene_SkyIrradianceUp)), ap.world.rainStrength);
-        #if SKY_FOG_DENSITY == 0
+        if (Scene_SkyFogDensityF < EPSILON) {
             outScatter = vec3(0.0);
             outTransmit = vec3(1.0);
             return;
-        #endif
+        }
     }
 
 //    sampleAmbient *= phaseIso * Scene_SkyBrightnessSmooth;

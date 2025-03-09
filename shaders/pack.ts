@@ -13,12 +13,61 @@ const ReflectMode_SSR = 1;
 const ReflectMode_WSR = 2;
 
 
-function setupSettings() {
+let SceneSettingsBuffer: BuiltStreamingBuffer;
+const SceneSettingsBufferSize = 20;
+
+class StreamBufferBuilder {
+    buffer: BuiltStreamingBuffer;
+    offset: number = 0;
+
+    constructor(buffer: BuiltStreamingBuffer) {
+        this.buffer = buffer;
+    }
+
+    appendInt(value: number) {
+        this.buffer.setInt(this.offset, value);
+        this.offset += 4;
+        return this;
+    }
+
+    appendFloat(value: number) {
+        this.buffer.setFloat(this.offset, value);
+        this.offset += 4;
+        return this;
+    }
+
+    appendBool(value: boolean) {
+        this.buffer.setBool(this.offset, value);
+        this.offset += 4;
+        return this;
+    }
+}
+
+// const lazyValue = (supplier) => {
+//     let value;
+//     return () => {
+//         if (value === undefined) value = supplier();
+//         return value;
+//     };
+// };
+
+// function settingInt(name: String) {
+//     return lazyValue(() => getIntSetting(name));
+// }
+
+function getFloatSetting(name: String): Number {
+    return parseFloat(getStringSetting(name));
+}
+
+function settingInt(name: String) {return () => getIntSetting(name);}
+function settingFloat(name: String) {return () => getFloatSetting(name);}
+
+function getSettings() {
     const Settings = {
         Sky: {
-            SunAngle: getIntSetting("SKY_SUN_ANGLE"),
-            SeaLevel: getIntSetting("SKY_SEA_LEVEL"),
-            FogDensity: getIntSetting("SKY_FOG_DENSITY"),
+            SunAngle: settingInt("SKY_SUN_ANGLE"),
+            SeaLevel: settingInt("SKY_SEA_LEVEL"),
+            FogDensity: settingInt("SKY_FOG_DENSITY"),
             FogNoise: getBoolSetting("SKY_FOG_NOISE"),
         },
         Water: {
@@ -68,19 +117,24 @@ function setupSettings() {
             MaxTriangleCount: 64,
         },
         Effect: {
-            SSAO: getBoolSetting("EFFECT_SSAO_ENABLED"),
-            SSGI: getBoolSetting("EFFECT_SSGI_ENABLED"),
-            Bloom: getBoolSetting("EFFECT_BLOOM_ENABLED"),
-            SSGIAO_Samples: getIntSetting("EFFECT_SSGIAO_SAMPLES"),
+            SSGIAO: {
+                SSAO: getBoolSetting("EFFECT_SSAO_ENABLED"),
+                SSGI: getBoolSetting("EFFECT_SSGI_ENABLED"),
+                Samples: getIntSetting("EFFECT_SSGIAO_SAMPLES"),
+            },
+            Bloom: {
+                Enabled: getBoolSetting("EFFECT_BLOOM_ENABLED"),
+                Strength: settingFloat("EFFECT_BLOOM_STRENGTH"),
+            },
         },
         Post: {
             TAA: getBoolSetting("EFFECT_TAA_ENABLED"),
             Exposure: {
-                Min: parseFloat(getStringSetting("POST_EXPOSURE_MIN")),
-                Max: parseFloat(getStringSetting("POST_EXPOSURE_MAX")),
-                Speed: parseFloat(getStringSetting("POST_EXPOSURE_SPEED")),
+                Min: settingFloat("POST_EXPOSURE_MIN"),
+                Max: settingFloat("POST_EXPOSURE_MAX"),
+                Speed: settingFloat("POST_EXPOSURE_SPEED"),
             },
-            Contrast: getIntSetting("POST_CONTRAST"),
+            Contrast: settingInt("POST_CONTRAST"),
         },
         Debug: {
             Enabled: getBoolSetting("DEBUG_ENABLED"),
@@ -100,20 +154,20 @@ function setupSettings() {
     };
 
     // if (Settings.Voxel.RT.Enabled) Settings.Internal.Accumulation = true;
-    if (Settings.Effect.SSGI) Settings.Internal.Accumulation = true;
+    if (Settings.Effect.SSGIAO.SSGI) Settings.Internal.Accumulation = true;
 
-    if (Settings.Lighting.Mode == LightMode_LPV) {
-        Settings.Internal.Voxelization = true;
-        Settings.Internal.LPV = true;
-    }
+    switch (Settings.Lighting.Mode) {
+        case LightMode_LPV:
+            Settings.Internal.Voxelization = true;
+            Settings.Internal.LPV = true;
+            break;
+        case LightMode_RT:
+            Settings.Internal.Voxelization = true;
+            Settings.Internal.Accumulation = true;
 
-    if (Settings.Lighting.Mode == LightMode_RT) {
-        Settings.Internal.Voxelization = true;
-        Settings.Internal.Accumulation = true;
-
-        if (Settings.Lighting.RT.TraceTriangles) {
-            Settings.Internal.VoxelizeTriangles = true;
-        }
+            if (Settings.Lighting.RT.TraceTriangles)
+                Settings.Internal.VoxelizeTriangles = true;
+            break;
     }
 
     if (Settings.Lighting.Reflections.Mode == ReflectMode_WSR) {
@@ -138,7 +192,7 @@ function setupSettings() {
 
     worldSettings.disableShade = true;
     worldSettings.ambientOcclusionLevel = 0.0;
-    worldSettings.sunPathRotation = Settings.Sky.SunAngle;
+    worldSettings.sunPathRotation = Settings.Sky.SunAngle();
     worldSettings.shadowMapResolution = Settings.Shadows.Resolution;
     worldSettings.renderStars = false;
     worldSettings.renderMoon = false;
@@ -149,8 +203,8 @@ function setupSettings() {
     defineGlobally1("EFFECT_VL_ENABLED");
     if (Settings.Internal.Accumulation) defineGlobally1("ACCUM_ENABLED");
 
-    defineGlobally("SKY_SEA_LEVEL", Settings.Sky.SeaLevel.toString());
-    defineGlobally("SKY_FOG_DENSITY", Settings.Sky.FogDensity);
+    defineGlobally("SKY_SEA_LEVEL", Settings.Sky.SeaLevel().toString());
+    // defineGlobally("SKY_FOG_DENSITY", Settings.Sky.FogDensity);
     if (Settings.Sky.FogNoise) defineGlobally1("SKY_FOG_NOISE");
 
     if (Settings.Water.Waves) {
@@ -225,16 +279,16 @@ function setupSettings() {
         }
     }
 
-    if (Settings.Effect.SSAO) defineGlobally1("EFFECT_SSAO_ENABLED");
-    if (Settings.Effect.SSGI) defineGlobally1("EFFECT_SSGI_ENABLED");
-    defineGlobally("EFFECT_SSGIAO_SAMPLES", Settings.Effect.SSGIAO_Samples)
+    if (Settings.Effect.SSGIAO.SSAO) defineGlobally1("EFFECT_SSAO_ENABLED");
+    if (Settings.Effect.SSGIAO.SSGI) defineGlobally1("EFFECT_SSGI_ENABLED");
+    defineGlobally("EFFECT_SSGIAO_SAMPLES", Settings.Effect.SSGIAO.Samples)
 
-    defineGlobally("POST_CONTRAST", Settings.Post.Contrast.toString());
+    //defineGlobally("POST_CONTRAST", Settings.Post.Contrast().toString());
     if (Settings.Post.TAA) defineGlobally1("EFFECT_TAA_ENABLED");
 
-    defineGlobally("POST_EXPOSURE_MIN", Settings.Post.Exposure.Min.toString());
-    defineGlobally("POST_EXPOSURE_MAX", Settings.Post.Exposure.Max.toString());
-    defineGlobally("POST_EXPOSURE_SPEED", Settings.Post.Exposure.Speed.toString());
+    // defineGlobally("POST_EXPOSURE_MIN", Settings.Post.Exposure.Min().toString());
+    // defineGlobally("POST_EXPOSURE_MAX", Settings.Post.Exposure.Max().toString());
+    // defineGlobally("POST_EXPOSURE_SPEED", Settings.Post.Exposure.Speed().toString());
 
     if (Settings.Debug.Enabled) {
         defineGlobally("DEBUG_VIEW", Settings.Debug.View);
@@ -251,7 +305,7 @@ function setupSettings() {
 export function setupShader() {
     print("Setting up shader");
 
-    const Settings = setupSettings();
+    const Settings = getSettings();
 
     setLightColor("campfire", 243, 152, 73, 255);
     setLightColor("candle", 245, 127, 68, 255);
@@ -307,6 +361,8 @@ export function setupShader() {
 
     const screenWidth_half = Math.ceil(screenWidth / 2.0);
     const screenHeight_half = Math.ceil(screenHeight / 2.0);
+
+    SceneSettingsBuffer = new StreamingBuffer(SceneSettingsBufferSize).build();
 
     const texFogNoise = new RawTexture("texFogNoise", "textures/fog.dat")
         .type(PixelType.UNSIGNED_BYTE)
@@ -432,7 +488,7 @@ export function setupShader() {
 
     let texSSGIAO: BuiltTexture | null = null;
     let texSSGIAO_final: BuiltTexture | null = null;
-    if (Settings.Effect.SSAO || Settings.Effect.SSGI) {
+    if (Settings.Effect.SSGIAO.SSAO || Settings.Effect.SSGIAO.SSGI) {
         texSSGIAO = new Texture("texSSGIAO")
             .format(Format.RGBA16F)
             .width(screenWidth_half)
@@ -941,6 +997,7 @@ export function setupShader() {
         .ssbo(0, sceneBuffer)
         .ssbo(1, shLpvBuffer)
         .ssbo(2, shLpvBuffer_alt)
+        .ubo(0, SceneSettingsBuffer)
         .build());
 
     registerBarrier(Stage.POST_RENDER, new MemoryBarrier(SSBO_BIT | IMAGE_BIT));
@@ -1020,6 +1077,7 @@ export function setupShader() {
         .ssbo(0, sceneBuffer)
         .ssbo(1, shLpvBuffer)
         .ssbo(2, shLpvBuffer_alt)
+        .ubo(0, SceneSettingsBuffer)
         .build());
 
     registerShader(Stage.POST_RENDER, new GenerateMips(texFinalOpaque));
@@ -1072,6 +1130,7 @@ export function setupShader() {
         // .barrier(true)
         .location("post/histogram.csh")
         .workGroups(Math.ceil(screenWidth / 16.0), Math.ceil(screenHeight / 16.0), 1)
+        .ubo(0, SceneSettingsBuffer)
         .build());
 
     registerBarrier(Stage.POST_RENDER, new MemoryBarrier(IMAGE_BIT));
@@ -1080,6 +1139,7 @@ export function setupShader() {
         .workGroups(1, 1, 1)
         .location("post/exposure.csh")
         .ssbo(0, sceneBuffer)
+        .ubo(0, SceneSettingsBuffer)
         .build());
 
     if (Settings.Effect.Bloom)
@@ -1089,6 +1149,7 @@ export function setupShader() {
         .vertex("shared/bufferless.vsh")
         .fragment("post/tonemap.fsh")
         .ssbo(0, sceneBuffer)
+        .ubo(0, SceneSettingsBuffer)
         .target(0, texFinal)
         .build());
 
@@ -1106,16 +1167,32 @@ export function setupShader() {
     }
 
     setCombinationPass(new CombinationPass("post/final.fsh").build());
+
+    onSettingsChanged(null);
+}
+
+export function onSettingsChanged(state : WorldState) {
+    const Settings = getSettings();
+
+    new StreamBufferBuilder(SceneSettingsBuffer)
+        .appendFloat(Settings.Sky.FogDensity() * 0.01)
+        .appendFloat(Settings.Effect.Bloom.Strength() * 0.01)
+        .appendFloat(Settings.Post.Contrast() * 0.01)
+        .appendFloat(Settings.Post.Exposure.Min())
+        .appendFloat(Settings.Post.Exposure.Max())
+        .appendFloat(Settings.Post.Exposure.Speed());
 }
 
 export function setupFrame(state : WorldState) {
-    worldSettings.sunPathRotation = getIntSetting("SKY_SUN_ANGLE");
+    const Settings = getSettings();
+
+    worldSettings.sunPathRotation = Settings.Sky.SunAngle();
 
     // if (isKeyDown(Keys.G)) testVal += 0.07;
     // if (isKeyDown(Keys.F)) testVal -= 0.07;
     // TEST_UBO.setFloat(0, testVal);
-    //
-    // TEST_UBO.finishFrame();
+
+    SceneSettingsBuffer.uploadData();
 }
 
 function setupSky(sceneBuffer) {
@@ -1205,6 +1282,7 @@ function setupBloom(texFinal) {
             .define("TEX_SCALE", Math.pow(2, i).toString())
             .define("BLOOM_INDEX", i.toString())
             .define("MIP_INDEX", Math.max(i-1, 0).toString())
+            .ubo(0, SceneSettingsBuffer)
             .build());
     }
 

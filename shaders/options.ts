@@ -3,7 +3,7 @@ import type {} from './iris'
 export function setupOptions() {
     const screen_Sky = new Page("Sky")
         .add(asIntRange("SKY_SEA_LEVEL", 60, -40, 140, 2, false))
-        .add(asIntRange("SKY_SUN_ANGLE", -20, -80, +80, 2, false))
+        .add(asIntRange("SKY_SUN_ANGLE", -20, -90, 90, 2, false))
         .add(asIntRange("SKY_FOG_DENSITY", 6, 0, 100, 2, false))
         .add(asBool("SKY_FOG_NOISE", false, true))
         .build();

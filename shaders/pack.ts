@@ -43,18 +43,6 @@ class StreamBufferBuilder {
     }
 }
 
-// const lazyValue = (supplier) => {
-//     let value;
-//     return () => {
-//         if (value === undefined) value = supplier();
-//         return value;
-//     };
-// };
-
-// function settingInt(name: String) {
-//     return lazyValue(() => getIntSetting(name));
-// }
-
 function getFloatSetting(name: String): Number {
     return parseFloat(getStringSetting(name));
 }
@@ -65,19 +53,19 @@ function settingFloat(name: String) {return () => getFloatSetting(name);}
 function getSettings() {
     const Settings = {
         Sky: {
-            SunAngle: settingInt("SKY_SUN_ANGLE"),
-            SeaLevel: settingInt("SKY_SEA_LEVEL"),
-            FogDensity: settingInt("SKY_FOG_DENSITY"),
-            FogNoise: getBoolSetting("SKY_FOG_NOISE"),
+            SunAngle: () => getIntSetting("SKY_SUN_ANGLE"),
+            SeaLevel: () => getIntSetting("SKY_SEA_LEVEL"),
+            FogDensity: () => getIntSetting("SKY_FOG_DENSITY"),
+            FogNoise: () => getBoolSetting("SKY_FOG_NOISE"),
         },
         Water: {
-            Waves: getBoolSetting("WATER_WAVES_ENABLED"),
-            Tessellation: getBoolSetting("WATER_TESSELLATION_ENABLED"),
-            Tessellation_Level: getIntSetting("WATER_TESSELLATION_LEVEL"),
+            Waves: () => getBoolSetting("WATER_WAVES_ENABLED"),
+            Tessellation: () => getBoolSetting("WATER_TESSELLATION_ENABLED"),
+            Tessellation_Level: () => getIntSetting("WATER_TESSELLATION_LEVEL"),
         },
         Shadows: {
-            Enabled: getBoolSetting("SHADOWS_ENABLED"),
-            CloudsEnabled: getBoolSetting("SHADOWS_CLOUD_ENABLED"),
+            Enabled: () => getBoolSetting("SHADOWS_ENABLED"),
+            CloudsEnabled: () => getBoolSetting("SHADOWS_CLOUD_ENABLED"),
             Resolution: getIntSetting("SHADOW_RESOLUTION"),
             Filter: true,
             SS_Fallback: true,
@@ -137,7 +125,7 @@ function getSettings() {
             Contrast: settingInt("POST_CONTRAST"),
         },
         Debug: {
-            Enabled: getBoolSetting("DEBUG_ENABLED"),
+            Enabled: () => getBoolSetting("DEBUG_ENABLED"),
             View: getIntSetting("DEBUG_VIEW"),
             Material: getIntSetting("DEBUG_MATERIAL"),
             WhiteWorld: getBoolSetting("DEBUG_WHITE_WORLD"),
@@ -187,13 +175,14 @@ function getSettings() {
         Settings.Internal.LPV = true;
     }
 
-    // TODO: debug only
-    //Settings.Internal.Accumulation = false;
+    return Settings;
+}
 
+function applySettings(settings) {
     worldSettings.disableShade = true;
     worldSettings.ambientOcclusionLevel = 0.0;
-    worldSettings.sunPathRotation = Settings.Sky.SunAngle();
-    worldSettings.shadowMapResolution = Settings.Shadows.Resolution;
+    worldSettings.sunPathRotation = settings.Sky.SunAngle();
+    worldSettings.shadowMapResolution = settings.Shadows.Resolution;
     worldSettings.renderStars = false;
     worldSettings.renderMoon = false;
     worldSettings.renderSun = false;
@@ -201,104 +190,102 @@ function getSettings() {
     // worldSettings.clouds = false;
 
     defineGlobally1("EFFECT_VL_ENABLED");
-    if (Settings.Internal.Accumulation) defineGlobally1("ACCUM_ENABLED");
+    if (settings.Internal.Accumulation) defineGlobally1("ACCUM_ENABLED");
 
-    defineGlobally("SKY_SEA_LEVEL", Settings.Sky.SeaLevel().toString());
+    defineGlobally("SKY_SEA_LEVEL", settings.Sky.SeaLevel().toString());
     // defineGlobally("SKY_FOG_DENSITY", Settings.Sky.FogDensity);
-    if (Settings.Sky.FogNoise) defineGlobally1("SKY_FOG_NOISE");
+    if (settings.Sky.FogNoise()) defineGlobally1("SKY_FOG_NOISE");
 
-    if (Settings.Water.Waves) {
+    if (settings.Water.Waves()) {
         defineGlobally1("WATER_WAVES_ENABLED");
-        
-        if (Settings.Water.Tessellation) {
+
+        if (settings.Water.Tessellation()) {
             defineGlobally1("WATER_TESSELLATION_ENABLED");
-            defineGlobally("WATER_TESSELLATION_LEVEL", Settings.Water.Tessellation_Level.toString());
+            defineGlobally("WATER_TESSELLATION_LEVEL", settings.Water.Tessellation_Level().toString());
         }
     }
 
-    if (Settings.Shadows.Enabled) defineGlobally1("SHADOWS_ENABLED");
-    if (Settings.Shadows.CloudsEnabled) defineGlobally1("SHADOWS_CLOUD_ENABLED");
-    if (Settings.Shadows.SS_Fallback) defineGlobally1("SHADOW_SCREEN");
-    defineGlobally("SHADOW_RESOLUTION", Settings.Shadows.Resolution.toString());
+    if (settings.Shadows.Enabled()) defineGlobally1("SHADOWS_ENABLED");
+    if (settings.Shadows.CloudsEnabled()) defineGlobally1("SHADOWS_CLOUD_ENABLED");
+    if (settings.Shadows.SS_Fallback) defineGlobally1("SHADOW_SCREEN");
+    defineGlobally("SHADOW_RESOLUTION", settings.Shadows.Resolution.toString());
 
-    defineGlobally("MATERIAL_FORMAT", Settings.Material.Format);
-    if (Settings.Material.Parallax.Enabled) {
+    defineGlobally("MATERIAL_FORMAT", settings.Material.Format);
+    if (settings.Material.Parallax.Enabled) {
         defineGlobally1("MATERIAL_PARALLAX_ENABLED");
-        defineGlobally("MATERIAL_PARALLAX_DEPTH", Settings.Material.Parallax.Depth.toString());
-        defineGlobally("MATERIAL_PARALLAX_SAMPLES", Settings.Material.Parallax.Samples.toString());
-        if (Settings.Material.Parallax.Sharp) defineGlobally1("MATERIAL_PARALLAX_SHARP");
-        if (Settings.Material.Parallax.DepthWrite) defineGlobally1("MATERIAL_PARALLAX_DEPTHWRITE");
+        defineGlobally("MATERIAL_PARALLAX_DEPTH", settings.Material.Parallax.Depth.toString());
+        defineGlobally("MATERIAL_PARALLAX_SAMPLES", settings.Material.Parallax.Samples.toString());
+        if (settings.Material.Parallax.Sharp) defineGlobally1("MATERIAL_PARALLAX_SHARP");
+        if (settings.Material.Parallax.DepthWrite) defineGlobally1("MATERIAL_PARALLAX_DEPTHWRITE");
     }
-    defineGlobally("EMISSION_BRIGHTNESS", Settings.Material.EmissionBrightness.toString());
-    if (Settings.Material.FancyLava) {
+    defineGlobally("EMISSION_BRIGHTNESS", settings.Material.EmissionBrightness.toString());
+    if (settings.Material.FancyLava) {
         defineGlobally1("FANCY_LAVA");
-        defineGlobally("FANCY_LAVA_RES", Settings.Material.FancyLavaRes.toString());
+        defineGlobally("FANCY_LAVA_RES", settings.Material.FancyLavaRes.toString());
     }
 
-    defineGlobally("LIGHTING_MODE", Settings.Lighting.Mode.toString());
+    defineGlobally("LIGHTING_MODE", settings.Lighting.Mode.toString());
     //defineGlobally("LIGHTING_VL_RES", Settings.Lighting.VolumetricResolution.toString());
 
-    defineGlobally("LIGHTING_REFLECT_MODE", Settings.Lighting.Reflections.Mode.toString());
-    defineGlobally("LIGHTING_REFLECT_MAXSTEP", Settings.Lighting.Reflections.MaxStepCount.toString())
-    if (Settings.Lighting.Reflections.Noise) defineGlobally1("MATERIAL_ROUGH_REFLECT_NOISE");
-    if (Settings.Lighting.Reflections.Mode == ReflectMode_WSR) {
-        if (Settings.Lighting.Reflections.ReflectTriangles) defineGlobally1("LIGHTING_REFLECT_TRIANGLE");
+    defineGlobally("LIGHTING_REFLECT_MODE", settings.Lighting.Reflections.Mode.toString());
+    defineGlobally("LIGHTING_REFLECT_MAXSTEP", settings.Lighting.Reflections.MaxStepCount.toString())
+    if (settings.Lighting.Reflections.Noise) defineGlobally1("MATERIAL_ROUGH_REFLECT_NOISE");
+    if (settings.Lighting.Reflections.Mode == ReflectMode_WSR) {
+        if (settings.Lighting.Reflections.ReflectTriangles) defineGlobally1("LIGHTING_REFLECT_TRIANGLE");
     }
 
-    if (Settings.Internal.Voxelization) {
+    if (settings.Internal.Voxelization) {
         defineGlobally1("VOXEL_ENABLED");
-        defineGlobally("VOXEL_SIZE", Settings.Voxel.Size.toString());
-        defineGlobally("VOXEL_FRUSTUM_OFFSET", Settings.Voxel.Offset.toString());
+        defineGlobally("VOXEL_SIZE", settings.Voxel.Size.toString());
+        defineGlobally("VOXEL_FRUSTUM_OFFSET", settings.Voxel.Offset.toString());
 
-        if (Settings.Lighting.Mode == LightMode_RT) {
+        if (settings.Lighting.Mode == LightMode_RT) {
             defineGlobally1("RT_ENABLED");
-            defineGlobally("RT_MAX_SAMPLE_COUNT", `${Settings.Lighting.RT.MaxSampleCount}u`);
-            defineGlobally("LIGHT_BIN_MAX", Settings.Voxel.MaxLightCount.toString());
+            defineGlobally("RT_MAX_SAMPLE_COUNT", `${settings.Lighting.RT.MaxSampleCount}u`);
+            defineGlobally("LIGHT_BIN_MAX", settings.Voxel.MaxLightCount.toString());
             defineGlobally("LIGHT_BIN_SIZE", LIGHT_BIN_SIZE.toString());
 
-            if (Settings.Lighting.RT.TraceTriangles) defineGlobally1("RT_TRI_ENABLED");
+            if (settings.Lighting.RT.TraceTriangles) defineGlobally1("RT_TRI_ENABLED");
         }
 
-        if (Settings.Internal.VoxelizeBlockFaces) {
+        if (settings.Internal.VoxelizeBlockFaces) {
             defineGlobally1("VOXEL_BLOCK_FACE");
         }
 
-        if (Settings.Internal.VoxelizeTriangles) {
+        if (settings.Internal.VoxelizeTriangles) {
             defineGlobally1("VOXEL_TRI_ENABLED");
-            defineGlobally("QUAD_BIN_MAX", Settings.Voxel.MaxTriangleCount.toString());
+            defineGlobally("QUAD_BIN_MAX", settings.Voxel.MaxTriangleCount.toString());
             defineGlobally("QUAD_BIN_SIZE", QUAD_BIN_SIZE.toString());
         }
 
         // if (Settings.Lighting.ReflectionMode == ReflectMode_WSR) defineGlobally("VOXEL_WSR_ENABLED", "1");
 
-        if (Settings.Internal.LPV) {
+        if (settings.Internal.LPV) {
             defineGlobally1("LPV_ENABLED");
 
-            if (Settings.Lighting.LpvRsmEnabled)
+            if (settings.Lighting.LpvRsmEnabled)
                 defineGlobally1("LPV_RSM_ENABLED");
         }
     }
 
-    if (Settings.Effect.SSGIAO.SSAO) defineGlobally1("EFFECT_SSAO_ENABLED");
-    if (Settings.Effect.SSGIAO.SSGI) defineGlobally1("EFFECT_SSGI_ENABLED");
-    defineGlobally("EFFECT_SSGIAO_SAMPLES", Settings.Effect.SSGIAO.Samples)
+    if (settings.Effect.SSGIAO.SSAO) defineGlobally1("EFFECT_SSAO_ENABLED");
+    if (settings.Effect.SSGIAO.SSGI) defineGlobally1("EFFECT_SSGI_ENABLED");
+    defineGlobally("EFFECT_SSGIAO_SAMPLES", settings.Effect.SSGIAO.Samples)
 
     //defineGlobally("POST_CONTRAST", Settings.Post.Contrast().toString());
-    if (Settings.Post.TAA) defineGlobally1("EFFECT_TAA_ENABLED");
+    if (settings.Post.TAA) defineGlobally1("EFFECT_TAA_ENABLED");
 
     // defineGlobally("POST_EXPOSURE_MIN", Settings.Post.Exposure.Min().toString());
     // defineGlobally("POST_EXPOSURE_MAX", Settings.Post.Exposure.Max().toString());
     // defineGlobally("POST_EXPOSURE_SPEED", Settings.Post.Exposure.Speed().toString());
 
-    if (Settings.Debug.Enabled) {
-        defineGlobally("DEBUG_VIEW", Settings.Debug.View);
-        defineGlobally("DEBUG_MATERIAL", Settings.Debug.Material);
-        if (Settings.Debug.WhiteWorld) defineGlobally1("DEBUG_WHITE_WORLD");
-        if (Settings.Debug.HISTOGRAM) defineGlobally1("DEBUG_HISTOGRAM");
-        if (Settings.Debug.RT) defineGlobally1("DEBUG_RT");
+    if (settings.Debug.Enabled()) {
+        defineGlobally("DEBUG_VIEW", settings.Debug.View);
+        defineGlobally("DEBUG_MATERIAL", settings.Debug.Material);
+        if (settings.Debug.WhiteWorld) defineGlobally1("DEBUG_WHITE_WORLD");
+        if (settings.Debug.HISTOGRAM) defineGlobally1("DEBUG_HISTOGRAM");
+        if (settings.Debug.RT) defineGlobally1("DEBUG_RT");
     }
-
-    return Settings;
 }
 
 
@@ -306,6 +293,7 @@ export function setupShader() {
     print("Setting up shader");
 
     const Settings = getSettings();
+    applySettings(Settings);
 
     setLightColor("campfire", 243, 152, 73, 255);
     setLightColor("candle", 245, 127, 68, 255);
@@ -444,7 +432,7 @@ export function setupShader() {
 
     let texShadow: BuiltTexture | null = null;
     let texShadow_final: BuiltTexture | null = null;
-    if (Settings.Shadows.Enabled) {
+    if (Settings.Shadows.Enabled()) {
         texShadow = new Texture("texShadow")
             .format(Format.RGBA16F)
             .clear(false)
@@ -757,9 +745,9 @@ export function setupShader() {
             .ssbo(0, sceneBuffer)
             .ssbo(4, quadListBuffer)
             .target(0, texShadowColor)
-            //.blendFunc(0, Func.ONE, Func.ZERO, Func.ONE, Func.ZERO)
+            //.blendOff(0)
             .target(1, texShadowNormal);
-            //.blendFunc(1, Func.ONE, Func.ZERO, Func.ONE, Func.ZERO);
+            //.blendOff(1);
     }
 
     function shadowTerrainShader(name: string, usage: ProgramUsage) : ObjectShader {
@@ -775,7 +763,7 @@ export function setupShader() {
             .define("RENDER_ENTITY", "1");
     }
 
-    if (Settings.Shadows.Enabled) {
+    if (Settings.Shadows.Enabled()) {
         registerShader(shadowShader("shadow", Usage.SHADOW).build());
 
         registerShader(shadowTerrainShader("shadow-terrain-solid", Usage.SHADOW_TERRAIN_SOLID).build());
@@ -849,7 +837,7 @@ export function setupShader() {
     const waterShader = mainShaderTranslucent("terrain-translucent", Usage.TERRAIN_TRANSLUCENT)
         .define("RENDER_TERRAIN", "1");
 
-    if (Settings.Water.Waves && Settings.Water.Tessellation) {
+    if (Settings.Water.Waves() && Settings.Water.Tessellation()) {
         waterShader
             .control("gbuffer/main.tcs")
             .eval("gbuffer/main.tes");
@@ -910,7 +898,7 @@ export function setupShader() {
             .build());
     }
 
-    if (Settings.Shadows.Enabled) {
+    if (Settings.Shadows.Enabled()) {
         registerShader(Stage.POST_RENDER, new Composite("shadow-opaque")
             .vertex("shared/bufferless.vsh")
             .fragment("composite/shadow-opaque.fsh")
@@ -1153,7 +1141,7 @@ export function setupShader() {
         .target(0, texFinal)
         .build());
 
-    if (Settings.Debug.Enabled) {
+    if (Settings.Debug.Enabled()) {
         registerShader(Stage.POST_RENDER, new Composite("debug")
             .vertex("shared/bufferless.vsh")
             .fragment("post/debug.fsh")

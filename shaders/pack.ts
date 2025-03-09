@@ -14,7 +14,7 @@ const ReflectMode_WSR = 2;
 
 
 let SceneSettingsBuffer: BuiltStreamingBuffer;
-const SceneSettingsBufferSize = 20;
+const SceneSettingsBufferSize = 24;
 
 class StreamBufferBuilder {
     buffer: BuiltStreamingBuffer;

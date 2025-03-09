@@ -113,6 +113,11 @@ void main() {
         sampleAmbient *= Scene_SkyBrightnessSmooth;
     }
     else {
+        scatterF = vec3(0.0);
+        transmitF = vec3(1.0);
+        phase_gF = 0.0;
+        phase_gB = 0.0;
+        phase_gM = 0.0;
 //        scatterF = vec3(mix(VL_Scatter, VL_RainScatter, ap.world.rainStrength));
 //        transmitF = vec3(mix(VL_Transmit, VL_RainTransmit, ap.world.rainStrength));
 //        phase_gF = mix(VL_Phase, VL_RainPhase, ap.world.rainStrength);
@@ -149,12 +154,13 @@ void main() {
 
     float shadowF = smoothstep(-0.05, 0.05, Scene_LocalLightDir.y);
 
-    float miePhaseValue, rayleighPhaseValue;
+    float miePhaseValue = 0.0;
+    //float rayleighPhaseValue;
 
     if (ap.camera.fluid != 1) {
         // TODO: add moon
         miePhaseValue = getMiePhase(VoL_sun, 0.2);
-        rayleighPhaseValue = getRayleighPhase(-VoL_sun);
+        //rayleighPhaseValue = getRayleighPhase(-VoL_sun);
     }
 
     #ifdef CLOUDS_ENABLED
@@ -391,9 +397,9 @@ void main() {
                 psiMS *= SKY_LUMINANCE * Scene_SkyBrightnessSmooth * phaseIso;
 
                 // TODO: add moon
-                vec3 rayleighInScattering = rayleighScattering * (rayleighPhaseValue * sunSkyLight + psiMS);
-                //vec3 mieInScattering = mieScattering * (miePhaseValue * sunSkyLight + psiMS);
-                vec3 inScattering = rayleighInScattering; // + mieInScattering
+                //vec3 rayleighInScattering = rayleighScattering * (rayleighPhaseValue * sunSkyLight + psiMS);
+                vec3 mieInScattering = mieScattering * (miePhaseValue * sunSkyLight + psiMS);
+                vec3 inScattering = mieInScattering;//rayleighInScattering; // + mieInScattering
 
                 vec3 scatteringIntegral = (inScattering - inScattering * sampleTransmittance) / extinction;
 

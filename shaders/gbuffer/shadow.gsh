@@ -95,12 +95,14 @@ void main() {
                     imageStore(imgVoxelBlock, ivec3(voxelPos), uvec4(vIn[0].blockId));
 
                     #ifdef VOXEL_BLOCK_FACE
+                        // TODO: average face properties?
+
                         VoxelBlockFace blockFace;
                         blockFace.tex_id = vIn[0].textureId;
-                        blockFace.tint = packUnorm4x8(vOut.color);
+                        blockFace.tint = packUnorm4x8(vIn[0].color);
                         SetBlockFaceLightMap(vIn[0].lmcoord, blockFace.lmcoord);
 
-                        int blockFaceIndex = GetVoxelBlockFaceIndex(vOut.localNormal);
+                        int blockFaceIndex = GetVoxelBlockFaceIndex(vIn[0].localNormal);
                         int blockFaceMapIndex = GetVoxelBlockFaceMapIndex(ivec3(voxelPos), blockFaceIndex);
                         VoxelBlockFaceMap[blockFaceMapIndex] = blockFace;
                     #endif

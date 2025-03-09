@@ -90,6 +90,11 @@ void main() {
             sampleAmbient *= phaseIso * Scene_SkyBrightnessSmooth;
         }
         else {
+            scatterF = vec3(0.0);
+            transmitF = vec3(1.0);
+            phase_gF = 0.0;
+            phase_gB = 0.0;
+            phase_gM = 0.0;
 //            scatterF = vec3(mix(VL_Scatter, VL_RainScatter, ap.world.rainStrength));
 //            transmitF = vec3(mix(VL_Transmit, VL_RainTransmit, ap.world.rainStrength));
 //            phase_gF = mix(VL_Phase, VL_RainPhase, ap.world.rainStrength);
@@ -136,12 +141,12 @@ void main() {
         vec3 shadowViewEnd = mul3(ap.celestial.view, localPosOpaque);
         vec3 shadowViewStep = (shadowViewEnd - shadowViewStart) * stepScale;
 
-        float miePhaseValue, rayleighPhaseValue;
+        float miePhaseValue = 0.0;// rayleighPhaseValue;
 
         if (!isWater) {
             // TODO: add moon
             miePhaseValue = getMiePhase(VoL_sun);
-            rayleighPhaseValue = getRayleighPhase(-VoL_sun);
+            //rayleighPhaseValue = getRayleighPhase(-VoL_sun);
         }
 
         // int material = int(unpackUnorm4x8(data_r).w * 255.0 + 0.5);

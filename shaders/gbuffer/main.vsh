@@ -86,9 +86,9 @@ void iris_sendParameters(in VertexData data) {
 	vec3 viewNormal = mat3(iris_modelViewMatrix) * data.normal;
 	vOut.localNormal = mat3(ap.camera.viewInv) * viewNormal;
 
-    vec3 viewTangent = mat3(iris_modelViewMatrix) * data.tangent.xyz;
-    vOut.localTangent.xyz = mat3(ap.camera.viewInv) * viewTangent;
-    vOut.localTangent.w = data.tangent.w;
+	vec3 viewTangent = mat3(iris_modelViewMatrix) * data.tangent.xyz;
+	vOut.localTangent.xyz = mat3(ap.camera.viewInv) * viewTangent;
+	vOut.localTangent.w = data.tangent.w;
 
 	#if defined(RENDER_TERRAIN) && defined(RENDER_TRANSLUCENT)
 		#ifdef WATER_TESSELLATION_ENABLED

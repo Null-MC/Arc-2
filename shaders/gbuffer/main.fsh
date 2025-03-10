@@ -65,6 +65,27 @@ in VertexData2 {
 #endif
 
 
+#ifdef RENDER_ENTITY
+    vec3 calculateTangent(const in vec3 position, const in vec3 normal, const in vec2 texcoord) {
+        // compute derivations of the world position
+        vec3 p_dx = dFdx(position);
+        vec3 p_dy = dFdy(position);
+
+        // compute derivations of the texture coordinate
+        vec2 tc_dx = dFdx(texcoord);
+        vec2 tc_dy = dFdy(texcoord);
+
+        // compute initial tangent and bi-tangent
+        vec3 t = normalize(tc_dy.y * p_dx - tc_dx.y * p_dy);
+        vec3 b = normalize(tc_dy.x * p_dx - tc_dx.x * p_dy); // sign inversion
+
+        // get new tangent from a given mesh normal
+        vec3 x = cross(normal, t);
+        return normalize(cross(x, normal));
+    }
+#endif
+
+
 void iris_emitFragment() {
     vec2 mUV = vIn.uv;
     vec2 mLight = vIn.light;

@@ -281,7 +281,7 @@ void main() {
 	        vec3 skyLight = SUN_BRIGHTNESS * sunTransmit + MOON_BRIGHTNESS * moonTransmit;
 
 			vec4 coeffs = dirToSH(sample_normal) / PI;
-			vec3 flux = exp2(7.0) * max(Scene_LocalSunDir.y, 0.0) * skyLight * sample_color;
+			vec3 flux = exp2(9.0) * max(Scene_LocalSunDir.y, 0.0) * skyLight * sample_color;
 
 			voxel_rsm_R += coeffs * flux.r;
 			voxel_rsm_G += coeffs * flux.g;

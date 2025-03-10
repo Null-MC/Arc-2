@@ -4,13 +4,13 @@ export function setupOptions() {
     const screen_Sky = new Page("Sky")
         .add(asIntRange("SKY_SEA_LEVEL", 60, -40, 140, 2, false))
         .add(asIntRange("SKY_SUN_ANGLE", -20, -90, 90, 2, false))
-        .add(asIntRange("SKY_FOG_DENSITY", 6, 0, 100, 2, false))
+        .add(asIntRange("SKY_FOG_DENSITY", 8, 0, 100, 1, false))
         .add(asBool("SKY_FOG_NOISE", false, true))
         .build();
 
     let screen_Water = new Page("Water")
         .add(asBool("WATER_WAVES_ENABLED", true, true))
-        .add(asIntRange("WATER_WAVES_DETAIL", 8, 2, 32, 1, false))
+        .add(asIntRange("WATER_WAVES_DETAIL", 14, 2, 32, 1, false))
         .add(asBool("WATER_TESSELLATION_ENABLED", true, true))
         .add(asIntRange("WATER_TESSELLATION_LEVEL", 4, 2, 12, 1, false))
         .build();
@@ -67,7 +67,7 @@ export function setupOptions() {
             .build())
         .add(new Page("Bloom")
             .add(asBool("EFFECT_BLOOM_ENABLED", true, true))
-            .add(asFloatRange("EFFECT_BLOOM_STRENGTH", 3.0, 0.0, 20.0, 0.1, false))
+            .add(asFloatRange("EFFECT_BLOOM_STRENGTH", 2.5, 0.0, 20.0, 0.1, false))
             .build())
         .build();
 
@@ -75,10 +75,10 @@ export function setupOptions() {
         .add(asBool("EFFECT_TAA_ENABLED", true, true))
         .add(new Page("Exposure")
             .add(asFloatRange("POST_EXPOSURE_MIN", -10.5, -12.0, -3.0, 0.5, false))
-            .add(asFloatRange("POST_EXPOSURE_MAX", 16.0, 6.0, 32.0, 0.5, false))
-            .add(asFloatRange("POST_EXPOSURE_SPEED", 0.4, 0.1, 2.0, 0.1, false))
+            .add(asFloatRange("POST_EXPOSURE_MAX", 15.0, 6.0, 32.0, 0.5, false))
+            .add(asFloatRange("POST_EXPOSURE_SPEED", 1.2, 0.1, 2.0, 0.1, false))
             .build())
-        .add(asIntRange("POST_CONTRAST", 120,0, 300, 5, false))
+        .add(asIntRange("POST_CONTRAST", 160,0, 300, 5, false))
         .build();
 
     const screen_Debug = new Page("Debug")

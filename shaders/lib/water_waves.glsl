@@ -2,8 +2,8 @@
 
 const float DRAG_MULT = 0.002;
 
-const float WaterWaveSurfaceOffset = 1.1;
-const float Scene_WaterWaveHeight = 1.6;
+const float WaterWaveSurfaceOffset = 0.8;
+const float Scene_WaterWaveHeight = 0.8;
 int WaterWaveOctaveMin = int(ceil(Scene_WaterWaveDetail * 0.75));
 int WaterWaveOctaveMax = Scene_WaterWaveDetail;
 

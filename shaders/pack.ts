@@ -1,4 +1,5 @@
 import type {} from './iris'
+import {getFloatSetting, hexToRgb, StreamBufferBuilder} from "./helpers";
 
 const LIGHT_BIN_SIZE = 8;
 const QUAD_BIN_SIZE = 2;
@@ -15,40 +16,6 @@ const ReflectMode_WSR = 2;
 
 let SceneSettingsBuffer: BuiltStreamingBuffer;
 const SceneSettingsBufferSize = 28;
-
-class StreamBufferBuilder {
-    buffer: BuiltStreamingBuffer;
-    offset: number = 0;
-
-    constructor(buffer: BuiltStreamingBuffer) {
-        this.buffer = buffer;
-    }
-
-    appendInt(value: number) {
-        this.buffer.setInt(this.offset, value);
-        this.offset += 4;
-        return this;
-    }
-
-    appendFloat(value: number) {
-        this.buffer.setFloat(this.offset, value);
-        this.offset += 4;
-        return this;
-    }
-
-    appendBool(value: boolean) {
-        this.buffer.setBool(this.offset, value);
-        this.offset += 4;
-        return this;
-    }
-}
-
-function getFloatSetting(name: String): Number {
-    return parseFloat(getStringSetting(name));
-}
-
-function settingInt(name: String) {return () => getIntSetting(name);}
-function settingFloat(name: String) {return () => getFloatSetting(name);}
 
 function getSettings() {
     const Settings = {
@@ -100,36 +67,36 @@ function getSettings() {
             VolumetricResolution: getIntSetting("LIGHTING_VL_RES"),
         },
         Voxel: {
-            Size: getIntSetting("VOXEL_SIZE"),
-            Offset: getIntSetting("VOXEL_FRUSTUM_OFFSET"),
+            Size: () => getIntSetting("VOXEL_SIZE"),
+            Offset: () => getIntSetting("VOXEL_FRUSTUM_OFFSET"),
             MaxLightCount: 64,
             MaxTriangleCount: 64,
         },
         Effect: {
             SSGIAO: {
-                SSAO: getBoolSetting("EFFECT_SSAO_ENABLED"),
-                SSGI: getBoolSetting("EFFECT_SSGI_ENABLED"),
-                Samples: getIntSetting("EFFECT_SSGIAO_SAMPLES"),
+                SSAO: () => getBoolSetting("EFFECT_SSAO_ENABLED"),
+                SSGI: () => getBoolSetting("EFFECT_SSGI_ENABLED"),
+                Samples: () => getIntSetting("EFFECT_SSGIAO_SAMPLES"),
             },
             Bloom: {
-                Enabled: getBoolSetting("EFFECT_BLOOM_ENABLED"),
-                Strength: settingFloat("EFFECT_BLOOM_STRENGTH"),
+                Enabled: () => getBoolSetting("EFFECT_BLOOM_ENABLED"),
+                Strength: () => getFloatSetting("EFFECT_BLOOM_STRENGTH"),
             },
         },
         Post: {
-            TAA: getBoolSetting("EFFECT_TAA_ENABLED"),
+            TAA: () => getBoolSetting("EFFECT_TAA_ENABLED"),
             Exposure: {
-                Min: settingFloat("POST_EXPOSURE_MIN"),
-                Max: settingFloat("POST_EXPOSURE_MAX"),
-                Speed: settingFloat("POST_EXPOSURE_SPEED"),
+                Min: () => getFloatSetting("POST_EXPOSURE_MIN"),
+                Max: () => getFloatSetting("POST_EXPOSURE_MAX"),
+                Speed: () => getFloatSetting("POST_EXPOSURE_SPEED"),
             },
-            Contrast: settingInt("POST_CONTRAST"),
+            Contrast: () => getIntSetting("POST_CONTRAST"),
         },
         Debug: {
             Enabled: () => getBoolSetting("DEBUG_ENABLED"),
-            View: getIntSetting("DEBUG_VIEW"),
-            Material: getIntSetting("DEBUG_MATERIAL"),
-            WhiteWorld: getBoolSetting("DEBUG_WHITE_WORLD"),
+            View: () => getIntSetting("DEBUG_VIEW"),
+            Material: () => getIntSetting("DEBUG_MATERIAL"),
+            WhiteWorld: () => getBoolSetting("DEBUG_WHITE_WORLD"),
             HISTOGRAM: false,
             RT: false,
         },
@@ -143,7 +110,7 @@ function getSettings() {
     };
 
     // if (Settings.Voxel.RT.Enabled) Settings.Internal.Accumulation = true;
-    if (Settings.Effect.SSGIAO.SSGI) Settings.Internal.Accumulation = true;
+    if (Settings.Effect.SSGIAO.SSGI()) Settings.Internal.Accumulation = true;
 
     switch (Settings.Lighting.Mode) {
         case LightMode_LPV:
@@ -238,8 +205,8 @@ function applySettings(settings) {
 
     if (settings.Internal.Voxelization) {
         defineGlobally1("VOXEL_ENABLED");
-        defineGlobally("VOXEL_SIZE", settings.Voxel.Size.toString());
-        defineGlobally("VOXEL_FRUSTUM_OFFSET", settings.Voxel.Offset.toString());
+        defineGlobally("VOXEL_SIZE", settings.Voxel.Size().toString());
+        defineGlobally("VOXEL_FRUSTUM_OFFSET", settings.Voxel.Offset().toString());
 
         if (settings.Lighting.Mode == LightMode_RT) {
             defineGlobally1("RT_ENABLED");
@@ -270,26 +237,30 @@ function applySettings(settings) {
         }
     }
 
-    if (settings.Effect.SSGIAO.SSAO) defineGlobally1("EFFECT_SSAO_ENABLED");
-    if (settings.Effect.SSGIAO.SSGI) defineGlobally1("EFFECT_SSGI_ENABLED");
-    defineGlobally("EFFECT_SSGIAO_SAMPLES", settings.Effect.SSGIAO.Samples)
+    if (settings.Effect.SSGIAO.SSAO()) defineGlobally1("EFFECT_SSAO_ENABLED");
+    if (settings.Effect.SSGIAO.SSGI()) defineGlobally1("EFFECT_SSGI_ENABLED");
+    defineGlobally("EFFECT_SSGIAO_SAMPLES", settings.Effect.SSGIAO.Samples())
 
     //defineGlobally("POST_CONTRAST", Settings.Post.Contrast().toString());
-    if (settings.Post.TAA) defineGlobally1("EFFECT_TAA_ENABLED");
+    if (settings.Post.TAA()) defineGlobally1("EFFECT_TAA_ENABLED");
 
     // defineGlobally("POST_EXPOSURE_MIN", Settings.Post.Exposure.Min().toString());
     // defineGlobally("POST_EXPOSURE_MAX", Settings.Post.Exposure.Max().toString());
     // defineGlobally("POST_EXPOSURE_SPEED", Settings.Post.Exposure.Speed().toString());
 
     if (settings.Debug.Enabled()) {
-        defineGlobally("DEBUG_VIEW", settings.Debug.View);
-        defineGlobally("DEBUG_MATERIAL", settings.Debug.Material);
-        if (settings.Debug.WhiteWorld) defineGlobally1("DEBUG_WHITE_WORLD");
+        defineGlobally("DEBUG_VIEW", settings.Debug.View());
+        defineGlobally("DEBUG_MATERIAL", settings.Debug.Material());
+        if (settings.Debug.WhiteWorld()) defineGlobally1("DEBUG_WHITE_WORLD");
         if (settings.Debug.HISTOGRAM) defineGlobally1("DEBUG_HISTOGRAM");
         if (settings.Debug.RT) defineGlobally1("DEBUG_RT");
     }
 }
 
+export function setLightColorEx(hex: string, ...blocks: string[]) {
+    const color = hexToRgb(hex);
+    blocks.forEach(block => setLightColor(block, color.r, color.g, color.b, 255));
+}
 
 export function setupShader() {
     print("Setting up shader");
@@ -297,57 +268,39 @@ export function setupShader() {
     const Settings = getSettings();
     applySettings(Settings);
 
-    setLightColor("campfire", 243, 152, 73, 255);
-    setLightColor("candle", 245, 127, 68, 255);
-    setLightColor("cave_vines", 243, 133, 59, 255);
-    setLightColor("cave_vines_plant", 243, 133, 59, 255);
-    setLightColor("glow_lichen", 107, 238, 172, 255);
-    setLightColor("lantern", 243, 158, 73, 255);
-    setLightColor("lava", 193, 100, 38, 255);
-    setLightColor("ochre_froglight", 223, 172, 71, 255);
-    setLightColor("pearlescent_froglight", 224, 117, 232, 255);
-    setLightColor("redstone_torch", 249, 50, 28, 255);
-    setLightColor("redstone_wall_torch", 249, 50, 28, 255);
-    setLightColor("soul_campfire", 40, 170, 235, 255);
-    // setLightColor("soul_torch", 40, 170, 235, 255);
-    setLightColor("torch", 243, 181, 73, 255);
-    setLightColor("verdant_froglight", 99, 229, 60, 255);
-    setLightColor("wall_torch", 243, 158, 73, 255);
+    setLightColorEx("#f39849", "campfire");
+    setLightColorEx("#8c4836", "candle");
+    setLightColorEx("#935b2c", "cave_vines", "cave_vines_plant");
+    setLightColorEx("#7f17a8", "crying_obsidian");
+    setLightColorEx("#5f9889", "glow_lichen");
+    setLightColorEx("#f39e49", "lantern");
+    setLightColorEx("#b8491c", "lava");
+    setLightColorEx("#dfac47", "ochre_froglight");
+    setLightColorEx("#e075e8", "pearlescent_froglight");
+    setLightColorEx("#f9321c", "redstone_torch", "redstone_wall_torch");
+    setLightColorEx("#8bdff8", "sea_lantern");
+    setLightColorEx("#28aaeb", "soul_torch", "soul_campfire");
+    setLightColorEx("#f3b549", "torch", "wall_torch");
+    setLightColorEx("#63e53c", "verdant_froglight");
 
-    setLightColor("tinted_glass", 50, 38, 56, 255);
-    setLightColor("white_stained_glass",      255, 255, 255, 255);
-    setLightColor("white_stained_glass_pane", 255, 255, 255, 255);
-    setLightColor("light_gray_stained_glass",      153, 153, 153, 255);
-    setLightColor("light_gray_stained_glass_pane", 153, 153, 153, 255);
-    setLightColor("gray_stained_glass",      76, 76, 76, 255);
-    setLightColor("gray_stained_glass_pane", 76, 76, 76, 255);
-    setLightColor("black_stained_glass",      25, 25, 25, 255);
-    setLightColor("black_stained_glass_pane", 25, 25, 25, 255);
-    setLightColor("brown_stained_glass",      102, 76, 51, 255);
-    setLightColor("brown_stained_glass_pane", 102, 76, 51, 255);
+    setLightColorEx("#322638", "tinted_glass");
+    setLightColorEx("#ffffff", "white_stained_glass", "white_stained_glass_pane");
+    setLightColorEx("#999999", "light_gray_stained_glass", "light_gray_stained_glass_pane");
+    setLightColorEx("#4c4c4c", "gray_stained_glass", "gray_stained_glass_pane");
+    setLightColorEx("#191919", "black_stained_glass", "black_stained_glass_pane");
+    setLightColorEx("#664c33", "brown_stained_glass", "brown_stained_glass_pane");
+    setLightColorEx("#993333", "red_stained_glass", "red_stained_glass_pane");
+    setLightColorEx("#d87f33", "orange_stained_glass", "orange_stained_glass_pane");
+    setLightColorEx("#e5e533", "yellow_stained_glass", "yellow_stained_glass_pane");
 
-    setLightColor("red_stained_glass",      153, 51, 51, 255);
-    setLightColor("red_stained_glass_pane", 153, 51, 51, 255);
-    setLightColor("orange_stained_glass",      216, 127, 51, 255);
-    setLightColor("orange_stained_glass_pane", 216, 127, 51, 255);
-    setLightColor("yellow_stained_glass",      229, 229, 51, 255);
-    setLightColor("yellow_stained_glass_pane", 229, 229, 51, 255);
-    setLightColor("lime_stained_glass",      127, 204, 25, 255);
-    setLightColor("lime_stained_glass_pane", 127, 204, 25, 255);
-    setLightColor("green_stained_glass",      102, 127, 51, 255);
-    setLightColor("green_stained_glass_pane", 102, 127, 51, 255);
-    setLightColor("cyan_stained_glass",      76, 127, 153, 255);
-    setLightColor("cyan_stained_glass_pane", 76, 127, 153, 255);
-    setLightColor("light_blue_stained_glass",      102, 153, 216, 255);
-    setLightColor("light_blue_stained_glass_pane", 102, 153, 216, 255);
-    setLightColor("blue_stained_glass",      51, 76, 178, 255);
-    setLightColor("blue_stained_glass_pane", 51, 76, 178, 255);
-    setLightColor("purple_stained_glass",      127, 63, 178, 255);
-    setLightColor("purple_stained_glass_pane", 127, 63, 178, 255);
-    setLightColor("magenta_stained_glass",      178, 76, 216, 255);
-    setLightColor("magenta_stained_glass_pane", 178, 76, 216, 255);
-    setLightColor("pink_stained_glass",      242, 127, 165, 255);
-    setLightColor("pink_stained_glass_pane", 242, 127, 165, 255);
+    setLightColorEx("#7fcc19", "lime_stained_glass", "lime_stained_glass_pane");
+    setLightColorEx("#667f33", "green_stained_glass", "green_stained_glass_pane");
+    setLightColorEx("#4c7f99", "cyan_stained_glass", "cyan_stained_glass_pane");
+    setLightColorEx("#6699d8", "light_blue_stained_glass", "light_blue_stained_glass_pane");
+    setLightColorEx("#334cb2", "blue_stained_glass", "blue_stained_glass_pane");
+    setLightColorEx("#7f3fb2", "purple_stained_glass", "purple_stained_glass_pane");
+    setLightColorEx("#b24cd8", "magenta_stained_glass", "magenta_stained_glass_pane");
+    setLightColorEx("#f27fa5", "pink_stained_glass", "pink_stained_glass_pane");
 
     const screenWidth_half = Math.ceil(screenWidth / 2.0);
     const screenHeight_half = Math.ceil(screenHeight / 2.0);
@@ -451,9 +404,9 @@ export function setupShader() {
         .imageName("imgVoxelBlock")
         .format(Format.R32UI)
         .clearColor(0.0, 0.0, 0.0, 0.0)
-        .width(Settings.Voxel.Size)
-        .height(Settings.Voxel.Size)
-        .depth(Settings.Voxel.Size)
+        .width(Settings.Voxel.Size())
+        .height(Settings.Voxel.Size())
+        .depth(Settings.Voxel.Size())
         .build();
 
     let texDiffuseRT: BuiltTexture | null = null;
@@ -478,7 +431,7 @@ export function setupShader() {
 
     let texSSGIAO: BuiltTexture | null = null;
     let texSSGIAO_final: BuiltTexture | null = null;
-    if (Settings.Effect.SSGIAO.SSAO || Settings.Effect.SSGIAO.SSGI) {
+    if (Settings.Effect.SSGIAO.SSAO() || Settings.Effect.SSGIAO.SSGI()) {
         texSSGIAO = new Texture("texSSGIAO")
             .format(Format.RGBA16F)
             .width(screenWidth_half)
@@ -617,7 +570,7 @@ export function setupShader() {
     let shLpvRsmBuffer_alt: BuiltBuffer | null = null;
     if (Settings.Internal.LPV) {
         // f16vec4[3] * VoxelBufferSize^3
-        const bufferSize = 8 * 3 * cubed(Settings.Voxel.Size);
+        const bufferSize = 8 * 3 * cubed(Settings.Voxel.Size());
 
         shLpvBuffer = new GPUBuffer(bufferSize)
             .clear(false)
@@ -665,7 +618,7 @@ export function setupShader() {
     let quadListBuffer: BuiltBuffer | null = null;
     if (Settings.Internal.Voxelization) {
         const lightBinSize = 4 * (1 + Settings.Voxel.MaxLightCount);
-        const lightListBinCount = Math.ceil(Settings.Voxel.Size / LIGHT_BIN_SIZE);
+        const lightListBinCount = Math.ceil(Settings.Voxel.Size() / LIGHT_BIN_SIZE);
         const lightListBufferSize = lightBinSize * cubed(lightListBinCount) + 4;
         print(`Light-List Buffer Size: ${lightListBufferSize.toLocaleString()}`);
 
@@ -674,7 +627,7 @@ export function setupShader() {
             .build();
 
         if (Settings.Internal.VoxelizeBlockFaces) {
-            const bufferSize = 6 * 16 * cubed(Settings.Voxel.Size);
+            const bufferSize = 6 * 16 * cubed(Settings.Voxel.Size());
 
             blockFaceBuffer = new GPUBuffer(bufferSize)
                 .clear(true) // TODO: clear with compute
@@ -683,7 +636,7 @@ export function setupShader() {
 
         if (Settings.Internal.VoxelizeTriangles) {
             const quadBinSize = 4 + 40*Settings.Voxel.MaxTriangleCount;
-            const quadListBinCount = Math.ceil(Settings.Voxel.Size / QUAD_BIN_SIZE);
+            const quadListBinCount = Math.ceil(Settings.Voxel.Size() / QUAD_BIN_SIZE);
             const quadListBufferSize = quadBinSize * cubed(quadListBinCount) + 4;
             print(`Quad-List Buffer Size: ${quadListBufferSize.toLocaleString()}`);
 
@@ -868,7 +821,7 @@ export function setupShader() {
         .build());
 
     if (Settings.Internal.LPV) {
-        const groupCount = Math.ceil(Settings.Voxel.Size / 8);
+        const groupCount = Math.ceil(Settings.Voxel.Size() / 8);
 
         const shader = new Compute("lpv-propagate")
             // .barrier(true)
@@ -890,7 +843,7 @@ export function setupShader() {
     }
 
     if (Settings.Lighting.Mode == LightMode_RT) {
-        const groupCount = Math.ceil(Settings.Voxel.Size / 8);
+        const groupCount = Math.ceil(Settings.Voxel.Size() / 8);
 
         registerShader(Stage.POST_RENDER, new Compute("light-list")
             // .barrier(true)
@@ -945,7 +898,7 @@ export function setupShader() {
             .build());
     }
 
-    if (Settings.Effect.SSGIAO.SSAO || Settings.Effect.SSGIAO.SSGI) {
+    if (Settings.Effect.SSGIAO.SSAO() || Settings.Effect.SSGIAO.SSGI()) {
         registerShader(Stage.POST_RENDER, new Composite("ssgiao-opaque")
             .vertex("shared/bufferless.vsh")
             .fragment("composite/ssgiao.fsh")
@@ -1082,7 +1035,7 @@ export function setupShader() {
         // .generateMips(texFinalOpaque)
         .build());
 
-    if (Settings.Post.TAA) {
+    if (Settings.Post.TAA()) {
         registerShader(Stage.POST_RENDER, new Composite("copy-TAA")
             .vertex("shared/bufferless.vsh")
             .fragment("shared/copy.fsh")
@@ -1133,7 +1086,7 @@ export function setupShader() {
         .ubo(0, SceneSettingsBuffer)
         .build());
 
-    if (Settings.Effect.Bloom)
+    if (Settings.Effect.Bloom.Enabled())
         setupBloom(texFinal);
 
     registerShader(Stage.POST_RENDER, new Composite("tonemap")
@@ -1165,8 +1118,10 @@ export function setupShader() {
 export function onSettingsChanged(state : WorldState) {
     const Settings = getSettings();
 
+    const d = Settings.Sky.FogDensity() * 0.01;
+
     new StreamBufferBuilder(SceneSettingsBuffer)
-        .appendFloat(Settings.Sky.FogDensity() * 0.01)
+        .appendFloat(d*d)
         .appendInt(Settings.Water.Detail())
         .appendFloat(Settings.Effect.Bloom.Strength() * 0.01)
         .appendFloat(Settings.Post.Contrast() * 0.01)

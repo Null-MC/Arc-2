@@ -5,6 +5,7 @@ export function setupOptions() {
         .add(asIntRange("SKY_SEA_LEVEL", 60, -40, 140, 2, false))
         .add(asIntRange("SKY_SUN_ANGLE", -20, -90, 90, 2, false))
         .add(asIntRange("SKY_FOG_DENSITY", 8, 0, 100, 1, false))
+        .add(asBool("SKY_CLOUDS_ENABLED", false, true))
         .add(asBool("SKY_FOG_NOISE", false, true))
         .build();
 

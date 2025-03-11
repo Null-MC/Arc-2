@@ -163,7 +163,7 @@ void main() {
         //rayleighPhaseValue = getRayleighPhase(-VoL_sun);
     }
 
-    #ifdef CLOUDS_ENABLED
+    #ifdef SKY_CLOUDS_ENABLED
         float cloudDist = 0.0;
         float cloudDist2 = 0.0;
 
@@ -206,14 +206,18 @@ void main() {
                         vec3 skyPos = getSkyPosition(cloud_localPos + step);
                         float sampleDensity = SampleCloudDensity(cloudWorldPos + step);
 
-                        float mieScattering;
-                        vec3 rayleighScattering, extinction;
-                        getScatteringValues(skyPos, sampleDensity, rayleighScattering, mieScattering, extinction);
+                        //float mieScattering;
+                        //vec3 rayleighScattering, extinction;
+                        //getScatteringValues(skyPos, sampleDensity, rayleighScattering, mieScattering, extinction);
 //                        float altitudeKM = (length(skyPos)-groundRadiusMM) * 1000.0;
 //                        float rayleighDensity = exp(-altitudeKM/8.0);
 //                        vec3 rayleighScattering = rayleighScatteringBase * rayleighDensity;
 //                        float rayleighAbsorption = rayleighAbsorptionBase * rayleighDensity;
 //                        vec3 extinction = rayleighScattering + rayleighAbsorption;// + mieScattering + mieAbsorption + ozoneAbsorption;
+                        float mieDensity = sampleDensity;
+                        float mieScattering = 0.0004 * mieDensity;
+                        float mieAbsorption = 0.0020 * mieDensity;
+                        vec3 extinction = vec3(mieScattering + mieAbsorption);
 
                         cloud_shadowSun *= exp(-extinction);
 
@@ -267,7 +271,7 @@ void main() {
         if (ap.camera.fluid != 1) {
             sampleDensity = GetSkyDensity(sampleLocalPos);
 
-            #ifdef CLOUDS_ENABLED
+            #ifdef SKY_CLOUDS_ENABLED
                 float sampleHeight = sampleLocalPos.y+ap.camera.pos.y;
                 float heightLast = sampleHeight - stepLocal.y;
 
@@ -371,7 +375,7 @@ void main() {
         transmittance *= sampleTransmittance;
     }
 
-    #ifdef CLOUDS_ENABLED
+    #ifdef SKY_CLOUDS_ENABLED
         if (depth == 1.0) {
             float endWorldY = traceEnd.y + ap.camera.pos.y;
             endWorldY -= (1.0-dither) * stepLocal.y;
@@ -382,19 +386,23 @@ void main() {
                 vec3 sunTransmit, moonTransmit;
                 GetSkyLightTransmission(cloud_localPos, sunTransmit, moonTransmit);
 
-                vec3 sunSkyLight = SUN_BRIGHTNESS * sunTransmit * cloud_shadowSun;
-                vec3 moonSkyLight = MOON_BRIGHTNESS * moonTransmit * cloud_shadowMoon;
+                vec3 sunSkyLight = SUN_LUMINANCE * sunTransmit * cloud_shadowSun;
+                vec3 moonSkyLight = MOON_LUMINANCE * moonTransmit * cloud_shadowMoon;
 
                 vec3 skyPos = getSkyPosition(cloud_localPos);
 
-                float mieScattering;
-                vec3 rayleighScattering, extinction;
-                getScatteringValues(skyPos, 1.0, rayleighScattering, mieScattering, extinction);
+                //float mieScattering;
+                //vec3 rayleighScattering, extinction;
+                //getScatteringValues(skyPos, 1.0, rayleighScattering, mieScattering, extinction);
+                float mieDensity = cloudDensity;
+                float mieScattering = 0.0004 * mieDensity;
+                float mieAbsorption = 0.0020 * mieDensity;
+                vec3 extinction = vec3(mieScattering + mieAbsorption);
 
-                vec3 sampleTransmittance = exp(-extinction);
+                vec3 sampleTransmittance = exp(-extinction * stepDist); //?
 
                 vec3 psiMS = getValFromMultiScattLUT(texSkyMultiScatter, skyPos, Scene_LocalSunDir);
-                psiMS *= SKY_LUMINANCE * Scene_SkyBrightnessSmooth * phaseIso;
+                psiMS *= SKY_LUMINANCE * Scene_SkyBrightnessSmooth;// * phaseIso;
 
                 // TODO: add moon
                 //vec3 rayleighInScattering = rayleighScattering * (rayleighPhaseValue * sunSkyLight + psiMS);

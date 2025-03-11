@@ -23,6 +23,7 @@ function getSettings() {
             SunAngle: () => getIntSetting("SKY_SUN_ANGLE"),
             SeaLevel: () => getIntSetting("SKY_SEA_LEVEL"),
             FogDensity: () => getIntSetting("SKY_FOG_DENSITY"),
+            Clouds: () => getBoolSetting("SKY_CLOUDS_ENABLED"),
             FogNoise: () => getBoolSetting("SKY_FOG_NOISE"),
         },
         Water: {
@@ -162,6 +163,7 @@ function applySettings(settings) {
 
     defineGlobally("SKY_SEA_LEVEL", settings.Sky.SeaLevel().toString());
     // defineGlobally("SKY_FOG_DENSITY", Settings.Sky.FogDensity);
+    if (settings.Sky.Clouds()) defineGlobally1("SKY_CLOUDS_ENABLED");
     if (settings.Sky.FogNoise()) defineGlobally1("SKY_FOG_NOISE");
 
     if (settings.Water.Waves()) {
@@ -627,7 +629,7 @@ export function setupShader() {
             .build();
 
         if (Settings.Internal.VoxelizeBlockFaces) {
-            const bufferSize = 6 * 16 * cubed(Settings.Voxel.Size());
+            const bufferSize = 6 * 8 * cubed(Settings.Voxel.Size());
 
             blockFaceBuffer = new GPUBuffer(bufferSize)
                 .clear(true) // TODO: clear with compute
@@ -701,8 +703,9 @@ export function setupShader() {
             .ssbo(4, quadListBuffer)
             .target(0, texShadowColor)
             //.blendOff(0)
-            .target(1, texShadowNormal);
+            .target(1, texShadowNormal)
             //.blendOff(1);
+            .define("RENDER_SHADOW", "1");
     }
 
     function shadowTerrainShader(name: string, usage: ProgramUsage) : ObjectShader {

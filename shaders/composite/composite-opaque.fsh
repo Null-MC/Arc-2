@@ -181,7 +181,7 @@ void main() {
         #endif
 
         float cloudShadowF = 1.0;
-        #if defined CLOUDS_ENABLED && defined SHADOWS_CLOUD_ENABLED
+        #if defined(SKY_CLOUDS_ENABLED) && defined(SHADOWS_CLOUD_ENABLED)
             vec3 worldPos = localPos + ap.camera.pos;
 
             vec3 cloudPos = (cloudHeight-worldPos.y) / Scene_LocalLightDir.y * Scene_LocalLightDir + worldPos;

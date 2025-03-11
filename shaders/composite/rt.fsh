@@ -309,9 +309,8 @@ void main() {
 
                     VoxelBlockFace blockFace;
                     if (TraceReflection(localPos + 0.1*localGeoNormal, reflectLocalDir, reflect_voxelPos, reflect_geoNormal, reflect_uv, blockFace)) {
-                        GetBlockFaceLightMap(blockFace.lmcoord, reflect_lmcoord);
-
-                        reflect_tint = unpackUnorm4x8(blockFace.tint).rgb;
+                        reflect_tint = GetBlockFaceTint(blockFace.data);
+                        reflect_lmcoord = GetBlockFaceLightMap(blockFace.data);
 
                         iris_TextureInfo tex = iris_getTexture(blockFace.tex_id);
                         reflect_uv = fma(reflect_uv, tex.maxCoord - tex.minCoord, tex.minCoord);

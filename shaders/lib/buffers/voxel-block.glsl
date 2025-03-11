@@ -5,13 +5,18 @@
 #endif
 
 #ifdef VOXEL_BLOCK_FACE
-    struct VoxelBlockFace {     // 12
+    struct VoxelBlockFace {     // 8
         uint tex_id;
-        uint tint;
-        uint lmcoord; // todo: any way to make this smaller?
+        uint data;
     };
 
-    layout(binding = 5) buffer voxelBlockTexBuffer {
+    #ifdef RENDER_SHADOW
+        #define VOXEL_BLOCK_FACE_LAYOUT writeonly
+    #else
+        #define VOXEL_BLOCK_FACE_LAYOUT readonly
+    #endif
+
+    layout(std430, binding = 5) VOXEL_BLOCK_FACE_LAYOUT buffer voxelBlockTexBuffer {
         VoxelBlockFace VoxelBlockFaceMap[];
     };
 
@@ -34,14 +39,24 @@
         return 6 * sumOf(flatten * voxelPos) + faceIndex;
     }
 
-    void GetBlockFaceLightMap(const in uint data, out vec2 lmcoord) {
-        lmcoord.x = bitfieldExtract(data,  0, 4) / 15.0;
-        lmcoord.y = bitfieldExtract(data,  4, 4) / 15.0;
+    vec3 GetBlockFaceTint(const in uint data) {
+        return unpackUnorm4x8(data).rgb;
     }
 
-    void SetBlockFaceLightMap(const in vec2 lmcoord, out uint data) {
-        data = 0u;
-        data = bitfieldInsert(data, uint(lmcoord.x * 15.0),  0, 4);
-        data = bitfieldInsert(data, uint(lmcoord.y * 15.0),  4, 4);
+    void SetBlockFaceTint(inout uint data, const in vec3 tint) {
+        uint color = packUnorm4x8(vec4(tint, 1.0));
+        data = bitfieldInsert(data, color, 0, 24);
+    }
+
+    vec2 GetBlockFaceLightMap(const in uint data) {
+        return vec2(
+            bitfieldExtract(data, 24, 4),
+            bitfieldExtract(data, 28, 4)
+        ) / 15.0;
+    }
+
+    void SetBlockFaceLightMap(inout uint data, const in vec2 lmcoord) {
+        data = bitfieldInsert(data, uint(lmcoord.x * 15.0), 24, 4);
+        data = bitfieldInsert(data, uint(lmcoord.y * 15.0), 28, 4);
     }
 #endif

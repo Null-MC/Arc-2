@@ -99,8 +99,10 @@ void main() {
 
                         VoxelBlockFace blockFace;
                         blockFace.tex_id = vIn[0].textureId;
-                        blockFace.tint = packUnorm4x8(vIn[0].color);
-                        SetBlockFaceLightMap(vIn[0].lmcoord, blockFace.lmcoord);
+                        blockFace.data = 0u;
+
+                        SetBlockFaceTint(blockFace.data, vIn[0].color.rgb);
+                        SetBlockFaceLightMap(blockFace.data, vIn[0].lmcoord);
 
                         int blockFaceIndex = GetVoxelBlockFaceIndex(vIn[0].localNormal);
                         int blockFaceMapIndex = GetVoxelBlockFaceMapIndex(ivec3(voxelPos), blockFaceIndex);

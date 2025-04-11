@@ -23,7 +23,7 @@ float mat_roughness(const in float data) {
 }
 
 float mat_emission_lab(const in float data) {
-    return data * (255.0/254.0) * step(data, (254.5/255.0));
+    return fract(data);// * (255.0/254.0);
 }
 
 float mat_emission_old(const in float data) {

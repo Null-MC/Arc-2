@@ -416,9 +416,10 @@ void main() {
             }
 
             const bool isWet = false;
+            float smoothness = 1.0 - roughness;
             vec3 reflectTint = GetMetalTint(albedo.rgb, f0_metal);
             vec3 view_F = material_fresnel(albedo.rgb, f0_metal, roughL, NoVm, isWet);
-            specularFinal += view_F * skyReflectColor * reflectTint * pow(1.0 - roughness, 3.0);
+            specularFinal += view_F * skyReflectColor * reflectTint * _pow2(smoothness);
         #endif
     }
 

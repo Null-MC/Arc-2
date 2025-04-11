@@ -350,7 +350,7 @@ void main() {
 
         float smoothness = 1.0 - roughness;
         vec3 specular = skyLight_NoLm * shadow_sss.rgb * SampleLightSpecular(NoLm, NoHm, LoHm, view_F, roughL);
-        specular += view_F * skyReflectColor * reflectTint * (smoothness*smoothness);
+        specular += view_F * skyReflectColor * reflectTint * _pow2(smoothness);
 
         #ifdef ACCUM_ENABLED
             if (altFrame) specular += textureLod(texAccumSpecular_opaque_alt, uv, 0).rgb;

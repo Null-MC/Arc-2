@@ -261,7 +261,7 @@ function applySettings(settings) {
 
 export function setLightColorEx(hex: string, ...blocks: string[]) {
     const color = hexToRgb(hex);
-    blocks.forEach(block => setLightColor(block, color.r, color.g, color.b, 255));
+    blocks.forEach(block => setLightColor(new NamespacedId(block), color.r, color.g, color.b, 255));
 }
 
 export function setupShader() {

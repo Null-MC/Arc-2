@@ -42,3 +42,7 @@ vec3 unproject(const in mat4 matProj, const in vec3 pos) {
 vec3 mul3(const in mat4 matrix, const in vec3 vector) {
 	return mat3(matrix) * vector + matrix[3].xyz;
 }
+
+
+#define _pow2(x) ((x)*(x))
+#define _pow3(x) ((x)*(x)*(x))

@@ -23,6 +23,7 @@ layout(rgba16f) uniform writeonly image2D IMG_ACCUM_SPECULAR_ALT;
 layout(rgba16f) uniform writeonly image2D IMG_ACCUM_POSITION_ALT;
 
 uniform sampler2D TEX_DEPTH;
+uniform usampler2D TEX_DEFERRED_DATA;
 
 uniform sampler2D TEX_ACCUM_DIFFUSE;
 uniform sampler2D TEX_ACCUM_SPECULAR;
@@ -129,6 +130,7 @@ void main() {
     // uv2 += getJitterOffset(ap.time.frames);
 
     float depth = texelFetch(TEX_DEPTH, iuv, 0).r;
+    uint data_g = texelFetch(TEX_DEFERRED_DATA, iuv, 0).g;
 
     // TODO: add velocity buffer
     vec3 velocity = vec3(0.0); //textureLod(BUFFER_VELOCITY, uv, 0).xyz;
@@ -184,10 +186,13 @@ void main() {
 
     float counter = localPosLast.w * counterF + 1.0;
 
-    float diffuseCounter = clamp(counter, 1.0, AccumulationMax_Diffuse);
+    float roughness = unpackUnorm4x8(data_g).x;
+    float roughL = _pow2(roughness);
+
+    float diffuseCounter = clamp(counter, 1.0, 1.0 + AccumulationMax_Diffuse * roughL);
     vec3 diffuseFinal = mix(previousDiffuse.rgb, diffuse, 1.0 / diffuseCounter);
 
-    float specularCounter = clamp(counter, 1.0, AccumulationMax_Specular);
+    float specularCounter = clamp(counter, 1.0, 1.0 + AccumulationMax_Specular * roughL);
     vec3 specularFinal = mix(previousSpecular.rgb, specular, 1.0 / specularCounter);
 
     if (altFrame) {

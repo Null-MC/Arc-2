@@ -16,7 +16,7 @@ bool TraceReflection(const in vec3 localPos, const in vec3 localDir, out vec3 hi
         uint quadCount = min(SceneQuads.bin[quadBinIndex].count, QUAD_BIN_MAX);
 
         vec3 traceStart = (currPos - quadBinPos)*QUAD_BIN_SIZE;
-        vec3 traceEnd = (nextPos - quadBinPos)*QUAD_BIN_SIZE;
+        //vec3 traceEnd = (nextPos - quadBinPos)*QUAD_BIN_SIZE;
 
         float hit_dist = 99999.9;
         for (int t = 0; t < quadCount; t++) {

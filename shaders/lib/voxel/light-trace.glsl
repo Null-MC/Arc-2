@@ -30,15 +30,16 @@ vec3 TraceDDA(vec3 origin, const in vec3 endPos, const in float range, const in 
     for (int i = 0; i < DDAStepCount; i++) {
         if (hit || currDist2 >= traceRayLen2) break;
 
-        vec3 rayStart = currPos;
+        //vec3 rayStart = currPos;
 
         vec3 step = dda_step(stepAxis, nextDist, stepSizes, direction);
-        currPos += step;
+        vec3 nextPos = currPos + step;
+        //currPos += step;
 
-        float currLen2 = lengthSq(currPos - origin);
-        if (currLen2 > traceRayLen2) currPos = endPos;
+        float currLen2 = lengthSq(nextPos - origin);
+        //if (currLen2 > traceRayLen2) nextPos = endPos;
         
-        ivec3 voxelPos = ivec3(floor(0.5 * (currPos + rayStart)));
+        ivec3 voxelPos = ivec3(floor(currPos + 0.5*step));
 
         if (IsInVoxelBounds(voxelPos)) {
             #ifdef RT_TRI_ENABLED
@@ -46,9 +47,10 @@ vec3 TraceDDA(vec3 origin, const in vec3 endPos, const in float range, const in 
                 int quadBinIndex = GetQuadBinIndex(quadBinPos);
                 uint quadCount = SceneQuads.bin[quadBinIndex].count;
 
-                vec3 rayStart = (rayStart - quadBinPos)*QUAD_BIN_SIZE;
-                vec3 rayEnd = (currPos - quadBinPos)*QUAD_BIN_SIZE;
+                vec3 rayStart = (currPos - quadBinPos)*QUAD_BIN_SIZE;
+                //vec3 rayEnd = (nextPos - quadBinPos)*QUAD_BIN_SIZE;
 
+                float hit_dist2 = traceRayLen2 - currLen2;
                 for (int t = 0; t < quadCount && !hit; t++) {
                     Quad quad = SceneQuads.bin[quadBinIndex].quadList[t];
 
@@ -59,7 +61,7 @@ vec3 TraceDDA(vec3 origin, const in vec3 endPos, const in float range, const in 
                     float quadDist = QuadIntersectDistance(rayStart, direction, quad_pos_0, quad_pos_1, quad_pos_2);
 
                     // TODO: add max-distance check!
-                    if (quadDist > -0.0001 && quadDist*quadDist < traceRayLen2) {
+                    if (quadDist > -0.0001 && quadDist*quadDist < hit_dist2) {
                         vec3 hit_pos = direction * quadDist + rayStart;
 
                         vec2 hit_uv = QuadIntersectUV(hit_pos, quad_pos_0, quad_pos_1, quad_pos_2);
@@ -73,9 +75,12 @@ vec3 TraceDDA(vec3 origin, const in vec3 endPos, const in float range, const in 
                             // sampleColor.rgb = RgbToLinear(sampleColor.rgb);
 
                             //color *= sampleColor.rgb; //mix(sampleColor.rgb, vec3(1.0), (sampleColor.a*sampleColor.a));
-                            color = sqrt(color) * sampleColor.rgb;
 
-                            hit = sampleColor.a > 0.9;
+                            if (sampleColor.a > 0.5) {
+                                //hit_dist2 = quadDist*quadDist;
+                                color = sqrt(color) * sampleColor.rgb * (1.0 - sampleColor.a);
+                                hit = true;
+                            }
                         }
                     }
                 }
@@ -93,6 +98,7 @@ vec3 TraceDDA(vec3 origin, const in vec3 endPos, const in float range, const in 
             #endif
         }
 
+        currPos = nextPos;
         currDist2 = lengthSq(currPos - origin);
     }
 

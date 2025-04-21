@@ -1,7 +1,7 @@
 import type {} from './iris'
 import {getFloatSetting, hexToRgb, StreamBufferBuilder} from "./helpers";
 
-const LIGHT_BIN_SIZE = 8;
+const LIGHT_BIN_SIZE = 4;
 const QUAD_BIN_SIZE = 2;
 
 // CONSTANTS
@@ -137,12 +137,20 @@ function getSettings() {
         else {
             Settings.Internal.VoxelizeBlockFaces = true;
         }
+
+        // if (Settings.Lighting.Mode == LightMode_RT) {
+        //     Settings.Internal.Voxelization = true;
+        //     Settings.Internal.LPV = true;
+        // }
     }
 
     if (Settings.Lighting.LpvRsmEnabled) {
         Settings.Internal.Voxelization = true;
         Settings.Internal.LPV = true;
     }
+
+    // TODO: DEBUG ONLY!
+    //Settings.Internal.Accumulation = false;
 
     return Settings;
 }
@@ -884,7 +892,7 @@ export function setupShader() {
             registerShader(Stage.POST_RENDER, new GenerateMips(texFinalPrevious));
             //rtOpaqueShader.generateMips(texFinalPrevious);
 
-        registerShader(Stage.POST_RENDER, new Composite("rt-opaque")
+        const rtOpaqueShader = new Composite("rt-opaque")
             .vertex("shared/bufferless.vsh")
             .fragment("composite/rt.fsh")
             .target(0, texDiffuseRT)
@@ -897,8 +905,15 @@ export function setupShader() {
             .define("TEX_DEFERRED_DATA", "texDeferredOpaque_Data")
             .define("TEX_DEFERRED_NORMAL", "texDeferredOpaque_TexNormal")
             .define("TEX_DEPTH", "solidDepthTex")
-            .define("TEX_SHADOW", texShadow_src)
-            .build());
+            .define("TEX_SHADOW", texShadow_src);
+
+        if (Settings.Internal.LPV) {
+            rtOpaqueShader
+                .ssbo(1, shLpvBuffer)
+                .ssbo(2, shLpvBuffer_alt);
+        }
+
+        registerShader(Stage.POST_RENDER, rtOpaqueShader.build());
     }
 
     if (Settings.Effect.SSGIAO.SSAO() || Settings.Effect.SSGIAO.SSGI()) {

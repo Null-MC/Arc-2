@@ -3,8 +3,8 @@
 #include "/settings.glsl"
 #include "/lib/constants.glsl"
 
-const float AccumulationMax_Diffuse = 30.0;
-const float AccumulationMax_Specular = 2.0;
+const float AccumulationMax_Diffuse = 60.0;
+const float AccumulationMax_Specular = 8.0;
 
 layout (local_size_x = 16, local_size_y = 16, local_size_z = 1) in;
 
@@ -41,10 +41,11 @@ uniform sampler2D texSSGIAO;
 #include "/lib/common.glsl"
 #include "/lib/depth.glsl"
 #include "/lib/gaussian.glsl"
+#include "/lib/sampling/catmull-rom.glsl"
 
 
 const float g_sigmaXY = 1.0;
-const float g_sigmaV = 0.1;
+const float g_sigmaV = 0.002;
 
 void populateSharedBuffer() {
     if (gl_LocalInvocationIndex < 5)
@@ -149,18 +150,20 @@ void main() {
 
     bool altFrame = (ap.time.frames % 2) == 1;
 
-    vec4 previousDiffuse, previousSpecular;
-    vec3 localPosLast;
+    vec3 previousDiffuse, previousSpecular;
+    vec4 localPosLast;
+
+    vec2 rtBufferSize = 0.5 * ap.game.screenSize;
 
     if (altFrame) {
-        previousDiffuse = textureLod(TEX_ACCUM_DIFFUSE, uvLast, 0);
-        previousSpecular = textureLod(TEX_ACCUM_SPECULAR, uvLast, 0);
-        localPosLast = textureLod(TEX_ACCUM_POSITION, uvLast, 0).rgb;
+        previousDiffuse = sample_CatmullRom(TEX_ACCUM_DIFFUSE, uvLast, rtBufferSize).rgb;
+        previousSpecular = sample_CatmullRom(TEX_ACCUM_SPECULAR, uvLast, rtBufferSize).rgb;
+        localPosLast = textureLod(TEX_ACCUM_POSITION, uvLast, 0);
     }
     else {
-        previousDiffuse = textureLod(TEX_ACCUM_DIFFUSE_ALT, uvLast, 0);
-        previousSpecular = textureLod(TEX_ACCUM_SPECULAR_ALT, uvLast, 0);
-        localPosLast = textureLod(TEX_ACCUM_POSITION_ALT, uvLast, 0).rgb;
+        previousDiffuse = sample_CatmullRom(TEX_ACCUM_DIFFUSE_ALT, uvLast, rtBufferSize).rgb;
+        previousSpecular = sample_CatmullRom(TEX_ACCUM_SPECULAR_ALT, uvLast, rtBufferSize).rgb;
+        localPosLast = textureLod(TEX_ACCUM_POSITION_ALT, uvLast, 0);
     }
 
     float depthL = linearizeDepth(depth, ap.camera.near, ap.camera.far);
@@ -169,7 +172,7 @@ void main() {
 
     float counterF = 1.0;
     if (clamp(uvLast, 0.0, 1.0) != uvLast) counterF = 0.0;
-    if (distance(localPosPrev, localPosLast) > offsetThreshold) counterF = 0.0;
+    if (distance(localPosPrev, localPosLast.xyz) > offsetThreshold) counterF = 0.0;
 
     vec3 diffuse = sampleSharedBuffer(depthL);
     vec3 specular = vec3(0.0);
@@ -179,20 +182,22 @@ void main() {
         specular += textureLod(texSpecularRT, uv, 0).rgb;
     #endif
 
-    float diffuseCounter = clamp(previousDiffuse.a * counterF + 1.0, 1.0, AccumulationMax_Diffuse);
+    float counter = localPosLast.w * counterF + 1.0;
+
+    float diffuseCounter = clamp(counter, 1.0, AccumulationMax_Diffuse);
     vec3 diffuseFinal = mix(previousDiffuse.rgb, diffuse, 1.0 / diffuseCounter);
 
-    float specularCounter = clamp(previousDiffuse.a * counterF + 1.0, 1.0, AccumulationMax_Specular);
+    float specularCounter = clamp(counter, 1.0, AccumulationMax_Specular);
     vec3 specularFinal = mix(previousSpecular.rgb, specular, 1.0 / specularCounter);
 
     if (altFrame) {
-        imageStore(IMG_ACCUM_DIFFUSE_ALT,  iuv, vec4(diffuseFinal, diffuseCounter));
-        imageStore(IMG_ACCUM_SPECULAR_ALT, iuv, vec4(specularFinal, specularCounter));
-        imageStore(IMG_ACCUM_POSITION_ALT, iuv, vec4(localPos, 1.0));
+        imageStore(IMG_ACCUM_DIFFUSE_ALT,  iuv, vec4(diffuseFinal, 1.0));
+        imageStore(IMG_ACCUM_SPECULAR_ALT, iuv, vec4(specularFinal, 1.0));
+        imageStore(IMG_ACCUM_POSITION_ALT, iuv, vec4(localPos, counter));
     }
     else {
-        imageStore(IMG_ACCUM_DIFFUSE,  iuv, vec4(diffuseFinal, diffuseCounter));
-        imageStore(IMG_ACCUM_SPECULAR, iuv, vec4(specularFinal, specularCounter));
-        imageStore(IMG_ACCUM_POSITION, iuv, vec4(localPos, 1.0));
+        imageStore(IMG_ACCUM_DIFFUSE,  iuv, vec4(diffuseFinal, 1.0));
+        imageStore(IMG_ACCUM_SPECULAR, iuv, vec4(specularFinal, 1.0));
+        imageStore(IMG_ACCUM_POSITION, iuv, vec4(localPos, counter));
     }
 }

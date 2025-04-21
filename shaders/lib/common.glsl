@@ -30,6 +30,7 @@ float luminance(const in vec3 color) {
 }
 
 float saturate(const in float x) {return clamp(x, 0.0, 1.0);}
+vec2 saturate(const in vec2 x) {return clamp(x, 0.0, 1.0);}
 
 vec3 unproject(const in vec4 pos) {
     return pos.xyz / pos.w;

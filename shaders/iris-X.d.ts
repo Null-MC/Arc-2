@@ -46,22 +46,6 @@ declare var worldSettings: WorldSettings;
  */
 interface ProgramStage {}
 
-declare class NamespacedId {
-    /**
-     * Creates a new NamespacedId from a combined string. If the string is in the format `namespace:path`, the NamespacedId will be created accordingly, otherwise it will use the `minecraft` namespace.
-     * @param combined The combined `namespace:path`, or `path` if `minecraft` is the desired namespace
-     */
-    constructor(combined : string);
-
-    /**
-     * Creates a new NamespacedId from a separate namespace and path.
-     */
-    constructor(namespace : string, path : string);
-
-    getNamespace() : string;
-    getPath() : string;
-}
-
 /**
  * The possible program stages for post passes.
  */
@@ -144,7 +128,7 @@ declare var EMPTY: BuiltPage;
  * @alpha
  */
 declare function setLightColor(
-  name: NamespacedId,
+  name: string,
   r: number,
   g: number,
   b: number,

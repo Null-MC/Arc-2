@@ -76,6 +76,10 @@ in vec2 uv;
 #if LIGHTING_REFLECT_MODE == REFLECT_MODE_WSR
     #include "/lib/buffers/scene.glsl"
 
+    #ifdef LPV_ENABLED
+        #include "/lib/buffers/sh-lpv.glsl"
+    #endif
+
     #include "/lib/erp.glsl"
     #include "/lib/material/material.glsl"
 
@@ -95,6 +99,11 @@ in vec2 uv;
     #ifdef SHADOWS_ENABLED
         #include "/lib/shadow/csm.glsl"
         #include "/lib/shadow/sample.glsl"
+    #endif
+
+    #ifdef LPV_ENABLED
+        #include "/lib/lpv/lpv_common.glsl"
+        #include "/lib/lpv/lpv_sample.glsl"
     #endif
 
     #include "/lib/depth.glsl"
@@ -221,6 +230,7 @@ void main() {
 
                     vec3 traceStart = light_voxelPos;
                     vec3 traceEnd = voxelPos_out;
+                    float traceRange = lightRange;
                     bool traceSelf = false;
 
                     #ifdef RT_TRI_ENABLED
@@ -233,12 +243,13 @@ void main() {
 //                        float closestDist = minOf(nextDist);
 //                        traceStart += direction * closestDist;
 
+                        traceRange /= QUAD_BIN_SIZE;
                         traceStart /= QUAD_BIN_SIZE;
                         traceEnd /= QUAD_BIN_SIZE;
                         //traceSelf = true;
                     #endif
 
-                    vec3 shadow_color = TraceDDA(traceStart, traceEnd, lightRange, traceSelf);
+                    vec3 shadow_color = TraceDDA(traceStart, traceEnd, traceRange, traceSelf);
 
                     diffuseFinal += sampleDiffuse * shadow_color * bright_scale;
                     specularFinal += sampleSpecular * shadow_color * bright_scale;
@@ -382,7 +393,86 @@ void main() {
                 vec3 reflect_skyIrradiance = textureLod(texSkyIrradiance, skyIrradianceCoord, 0).rgb;
                 reflect_diffuse += (SKY_AMBIENT * reflect_lmcoord.y) * reflect_skyIrradiance;
 
-                reflect_diffuse += blackbody(BLOCKLIGHT_TEMP) * (BLOCKLIGHT_BRIGHTNESS * reflect_lmcoord.x);
+                #if LIGHTING_MODE == LIGHT_MODE_RT
+                    ivec3 lightBinPos = ivec3(floor(reflect_voxelPos / LIGHT_BIN_SIZE));
+                    int lightBinIndex = GetLightBinIndex(lightBinPos);
+                    uint binLightCount = LightBinMap[lightBinIndex].lightCount;
+
+                    vec3 voxelPos_out = reflect_voxelPos + 0.16*reflect_geoNormal;
+
+                    //vec3 jitter = vec3(0.0);//hash33(vec3(gl_FragCoord.xy, ap.time.frames)) - 0.5;
+
+                    #if RT_MAX_SAMPLE_COUNT > 0
+                        uint maxSampleCount = min(binLightCount, RT_MAX_SAMPLE_COUNT);
+                        float bright_scale = ceil(binLightCount / float(RT_MAX_SAMPLE_COUNT));
+                    #else
+                        uint maxSampleCount = binLightCount;
+                        const float bright_scale = 1.0;
+                    #endif
+
+                    int i_offset = int(binLightCount * hash13(vec3(gl_FragCoord.xy, ap.time.frames)));
+
+                    for (int i = 0; i < maxSampleCount; i++) {
+                        int i2 = (i + i_offset) % int(binLightCount);
+
+                        uint light_voxelIndex = LightBinMap[lightBinIndex].lightList[i2];
+
+                        vec3 light_voxelPos = GetVoxelPos(light_voxelIndex) + 0.5;
+                        //light_voxelPos += jitter*0.125;
+
+                        vec3 light_LocalPos = GetVoxelLocalPos(light_voxelPos);
+
+                        uint blockId = imageLoad(imgVoxelBlock, ivec3(light_voxelPos)).r;
+
+
+                        float lightRange = iris_getEmission(blockId);
+                        vec3 lightColor = iris_getLightColor(blockId).rgb;
+                        lightColor = RgbToLinear(lightColor);
+
+                        lightColor *= (lightRange/15.0) * BLOCKLIGHT_BRIGHTNESS;
+
+                        vec3 lightVec = light_LocalPos - reflect_localPos;
+                        vec2 lightAtt = GetLightAttenuation(lightVec, lightRange);
+
+                        vec3 lightDir = normalize(lightVec);
+
+                        vec3 H = normalize(lightDir + reflectLocalDir);
+
+                        float LoHm = max(dot(lightDir, H), 0.0);
+                        float NoLm = max(dot(reflect_localTexNormal, lightDir), 0.0);
+                        //                    float NoVm = max(dot(localTexNormal, localViewDir), 0.0);
+
+                        if (NoLm == 0.0 || dot(reflect_geoNormal, lightDir) <= 0.0) continue;
+                        float D = SampleLightDiffuse(NoVm, NoLm, LoHm, reflect_roughL);
+                        vec3 sampleDiffuse = (NoLm * lightAtt.x * D) * lightColor;
+
+                        float NoHm = max(dot(localTexNormal, H), 0.0);
+
+                        const bool reflect_isUnderWater = false;
+                        vec3 F = material_fresnel(albedo.rgb, f0_metal, reflect_roughL, NoVm, reflect_isUnderWater);
+                        vec3 S = SampleLightSpecular(NoLm, NoHm, LoHm, F, reflect_roughL);
+                        vec3 sampleSpecular = lightAtt.x * S * lightColor;
+
+                        vec3 traceStart = light_voxelPos;
+                        vec3 traceEnd = voxelPos_out;
+                        float traceRange = lightRange;
+                        bool traceSelf = false;
+
+                        vec3 shadow_color = TraceDDA(traceStart, traceEnd, traceRange, traceSelf);
+
+                        reflect_diffuse += sampleDiffuse * shadow_color * bright_scale;
+                        //reflect_specular += sampleSpecular * shadow_color * bright_scale;
+                    }
+                #elif LIGHTING_MODE == LIGHT_MODE_LPV
+                    vec3 voxelSamplePos = fma(reflect_geoNormal, vec3(0.5), reflect_voxelPos);
+                    vec3 voxelLight = sample_lpv_linear(voxelSamplePos, reflect_localTexNormal);
+
+                    // TODO: move cloud shadows to RSM sampling!!!
+                    reflect_diffuse += voxelLight;// * cloudShadowF;// * SampleLightDiffuse(NoVm, 1.0, 1.0, roughL);
+                #else
+                    reflect_diffuse += blackbody(BLOCKLIGHT_TEMP) * (BLOCKLIGHT_BRIGHTNESS * reflect_lmcoord.x);
+                #endif
+
                 reflect_diffuse += 0.0016;
 
                 float reflect_metalness = mat_metalness(reflect_f0_metal);

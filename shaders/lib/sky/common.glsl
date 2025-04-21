@@ -11,7 +11,7 @@ const float rayleighAbsorptionBase = 0.0;
 const float mieScatteringBase = 3.996;
 const float mieAbsorptionBase = 4.4;
 
-const vec3 ozoneAbsorptionBase = vec3(2.290, 1.540, 0.000)*1e-3;
+const vec3 ozoneAbsorptionBase = vec3(2.291, 1.540, 0.000);//*1e-3;
 
 
 float safeacos(const float x) {

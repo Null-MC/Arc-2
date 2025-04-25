@@ -7,11 +7,13 @@ layout(location = 0) out vec4 outColor;
 
 uniform sampler2D TEX_SRC;
 uniform sampler2D mainDepthTex;
+uniform sampler2D texBlueNoise;
 
 in vec2 uv;
 
 #include "/lib/common.glsl"
 //#include "/lib/buffers/scene.glsl"
+#include "/lib/sampling/blue-noise.glsl"
 #include "/lib/noise/ign.glsl"
 
 #ifdef EFFECT_TAA_ENABLED
@@ -39,9 +41,10 @@ void main() {
         //vec3 localPos = mul3(ap.camera.viewInv, viewPos);
 
         #ifdef EFFECT_TAA_ENABLED
-            float dither = InterleavedGradientNoiseTime(ivec2(gl_FragCoord.xy));
+            //float dither = InterleavedGradientNoiseTime(ivec2(gl_FragCoord.xy));
+            vec2 dither = sample_blueNoise(gl_FragCoord.xy).xy;
         #else
-            float dither = InterleavedGradientNoise(ivec2(gl_FragCoord.xy));
+            vec2 dither = vec2(InterleavedGradientNoise(ivec2(gl_FragCoord.xy)));
         #endif
 
         float blurF = min(viewDist * 0.05, 1.0);
@@ -49,10 +52,11 @@ void main() {
         vec2 pixelSize = 1.0 / ap.game.screenSize;
         float max_radius = mix(0.0, BLUR_RADIUS, blurF);
 
-        float rotatePhase = dither * TAU;
+        float rotatePhase = dither.x * TAU;
         float rStep = max_radius / BLUR_SAMPLES;
-        float radius = rStep * dither;
+        float radius = rStep * dither.y;
 
+        float maxWeight = 0.0;
         vec3 colorBlur = vec3(0.0);
         for (int i = 0; i < BLUR_SAMPLES; i++) {
             vec2 offset = radius * vec2(
@@ -65,10 +69,14 @@ void main() {
 
             // TODO: depth reject
 
-            colorBlur += textureLod(TEX_SRC, sampleUV, 0).rgb;
+            vec3 sampleColor = textureLod(TEX_SRC, sampleUV, 0).rgb;
+            float sampleWeight = 1.0 - float(i) / BLUR_SAMPLES;
+
+            colorBlur += sampleColor * sampleWeight;
+            maxWeight += sampleWeight;
         }
 
-        colorBlur /= BLUR_SAMPLES;
+        colorBlur /= maxWeight;
 
         colorFinal = mix(colorFinal, colorBlur, blurF);
     }

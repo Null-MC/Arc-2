@@ -59,6 +59,7 @@ const float shadowPixelSize = 1.0 / shadowMapResolution;
 
 layout (std140, binding = 0) uniform SceneSettings {
 	float Scene_SkyFogDensityF;
+	float Scene_SkyFogSeaLevel;
 	int Scene_WaterWaveDetail;
 	float Scene_EffectBloomStrength;
 	float Scene_PostContrastF;

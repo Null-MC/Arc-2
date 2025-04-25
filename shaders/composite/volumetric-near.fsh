@@ -53,7 +53,7 @@ const int VL_MaxSamples = 32;
 #ifdef SKY_FOG_NOISE
     float SampleFogNoise(const in vec3 localPos) {
         vec3 skyPos = localPos + ap.camera.pos;
-        skyPos.y -= SKY_SEA_LEVEL;
+        skyPos.y -= Scene_SkyFogSeaLevel;
 
         vec3 samplePos = skyPos;
         samplePos /= 60.0;//(ATMOSPHERE_MAX - SKY_SEA_LEVEL);
@@ -326,6 +326,8 @@ void main() {
 
                 if (shadowDensity > 0.0)
                     shadowSample *= exp(-shadowDensity * 0.2);
+            #else
+
             #endif
         }
 
@@ -343,7 +345,7 @@ void main() {
         if (ap.camera.fluid != 1) {
             vec3 skyPos = getSkyPosition(sampleLocalPos);
 
-            float mieDensity = sampleDensity;
+            float mieDensity = sampleDensity + EPSILON;
             float mieScattering = 0.0004 * mieDensity;
             float mieAbsorption = 0.0020 * mieDensity;
             extinction = vec3(mieScattering + mieAbsorption);

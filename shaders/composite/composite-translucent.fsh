@@ -226,7 +226,7 @@ void main() {
         #ifdef LPV_ENABLED
             vec3 voxelSamplePos = voxelPos - 0.25*localGeoNormal + 0.75*localTexNormal;
 
-            skyLightDiffuse += sample_lpv_linear(voxelSamplePos, localTexNormal) * SampleLightDiffuse(NoVm, 1.0, 1.0, roughL);
+            skyLightDiffuse += sample_lpv_linear(voxelSamplePos, localTexNormal) * PI*SampleLightDiffuse(NoVm, 1.0, 1.0, roughL);
         #endif
 
         vec2 skyIrradianceCoord = DirectionToUV(localTexNormal);

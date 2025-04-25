@@ -195,6 +195,9 @@ void main() {
     float specularCounter = clamp(counter, 1.0, 1.0 + AccumulationMax_Specular * roughL);
     vec3 specularFinal = mix(previousSpecular.rgb, specular, 1.0 / specularCounter);
 
+    diffuseFinal = clamp(diffuseFinal, 0.0, 65000.0);
+    specularFinal = clamp(specularFinal, 0.0, 65000.0);
+
     if (altFrame) {
         imageStore(IMG_ACCUM_DIFFUSE_ALT,  iuv, vec4(diffuseFinal, 1.0));
         imageStore(IMG_ACCUM_SPECULAR_ALT, iuv, vec4(specularFinal, 1.0));

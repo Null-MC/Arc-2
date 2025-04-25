@@ -208,7 +208,7 @@ void main() {
             if (!isWater) {
                 vec3 skyPos = getSkyPosition(sampleLocalPos);
 
-                float mieDensity = sampleDensity;
+                float mieDensity = max(sampleDensity, EPSILON);
                 float mieScattering = 0.0004 * mieDensity;
                 float mieAbsorption = 0.0020 * mieDensity;
                 extinction = vec3(mieScattering + mieAbsorption);

@@ -236,7 +236,7 @@ void main() {
             #endif
 
             // TODO: move cloud shadows to RSM sampling!!!
-            skyLightDiffuse += voxelLight * cloudShadowF;// * SampleLightDiffuse(NoVm, 1.0, 1.0, roughL);
+            skyLightDiffuse += voxelLight * cloudShadowF * SampleLightDiffuse(NoVm, 1.0, 1.0, roughL) * PI;
         #endif
 
         vec2 skyIrradianceCoord = DirectionToUV(localTexNormal);

@@ -15,7 +15,7 @@ const ReflectMode_WSR = 2;
 
 
 let SceneSettingsBuffer: BuiltStreamingBuffer;
-const SceneSettingsBufferSize = 28;
+const SceneSettingsBufferSize = 36;
 
 function getSettings() {
     const Settings = {
@@ -180,7 +180,7 @@ function applySettings(settings) {
     defineGlobally1("EFFECT_VL_ENABLED");
     if (settings.Internal.Accumulation) defineGlobally1("ACCUM_ENABLED");
 
-    defineGlobally("SKY_SEA_LEVEL", settings.Sky.SeaLevel().toString());
+    //defineGlobally("SKY_SEA_LEVEL", settings.Sky.SeaLevel().toString());
     // defineGlobally("SKY_FOG_DENSITY", Settings.Sky.FogDensity);
     if (settings.Sky.Clouds()) defineGlobally1("SKY_CLOUDS_ENABLED");
     if (settings.Sky.FogNoise()) defineGlobally1("SKY_FOG_NOISE");
@@ -1162,6 +1162,7 @@ export function onSettingsChanged(state : WorldState) {
 
     new StreamBufferBuilder(SceneSettingsBuffer)
         .appendFloat(d*d)
+        .appendFloat(Settings.Sky.SeaLevel())
         .appendInt(Settings.Water.Detail())
         .appendFloat(Settings.Effect.Bloom.Strength() * 0.01)
         .appendFloat(Settings.Post.Contrast() * 0.01)

@@ -2,7 +2,12 @@
 
 
 float GetSkyDensity(const in vec3 localPos) {
-    return mix(Scene_SkyFogDensityF, 1.0, ap.world.rainStrength);
+    float density = Scene_SkyFogDensityF;
+
+    float sampleWorldY = localPos.y + ap.camera.pos.y;
+    density *= 1.0 - clamp((sampleWorldY - Scene_SkyFogSeaLevel) / (200.0), 0.0, 1.0);
+
+    return mix(density, 1.0, ap.world.rainStrength);
 
 
 //    //    float sampleY = localPos.y + ap.camera.pos.y;

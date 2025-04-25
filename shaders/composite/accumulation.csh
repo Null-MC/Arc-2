@@ -22,6 +22,11 @@ layout(rgba16f) uniform writeonly image2D IMG_ACCUM_DIFFUSE_ALT;
 layout(rgba16f) uniform writeonly image2D IMG_ACCUM_SPECULAR_ALT;
 layout(rgba16f) uniform writeonly image2D IMG_ACCUM_POSITION_ALT;
 
+#ifdef EFFECT_SSAO_ENABLED
+    layout(r16f) uniform writeonly image2D IMG_ACCUM_OCCLUSION;
+    layout(r16f) uniform writeonly image2D IMG_ACCUM_OCCLUSION_ALT;
+#endif
+
 uniform sampler2D TEX_DEPTH;
 uniform usampler2D TEX_DEFERRED_DATA;
 
@@ -32,7 +37,14 @@ uniform sampler2D TEX_ACCUM_DIFFUSE_ALT;
 uniform sampler2D TEX_ACCUM_SPECULAR_ALT;
 uniform sampler2D TEX_ACCUM_POSITION_ALT;
 
-uniform sampler2D texSSGIAO;
+#if defined(EFFECT_SSAO_ENABLED) || defined(EFFECT_SSGI_ENABLED)
+    uniform sampler2D TEX_SSGIAO;
+#endif
+
+#ifdef EFFECT_SSAO_ENABLED
+    uniform sampler2D TEX_ACCUM_OCCLUSION;
+    uniform sampler2D TEX_ACCUM_OCCLUSION_ALT;
+#endif
 
 #if LIGHTING_MODE == LIGHT_MODE_RT || LIGHTING_REFLECT_MODE == REFLECT_MODE_WSR
     uniform sampler2D texDiffuseRT;
@@ -71,9 +83,12 @@ void populateSharedBuffer() {
         float depthL = ap.camera.far;
         vec3 ssgi = vec3(0.0);
         if (all(greaterThanEqual(uv, ivec2(0))) && all(lessThan(uv, ivec2(ap.game.screenSize + 0.5)))) {
-            ssgi = texelFetch(texSSGIAO, uv/2, 0).rgb;
             float depth = texelFetch(TEX_DEPTH, uv/2*2+1, 0).r;
             depthL = linearizeDepth(depth, ap.camera.near, ap.camera.far);
+
+            #ifdef EFFECT_SSGI_ENABLED
+                ssgi = texelFetch(texSSGIAO, uv/2, 0).rgb;
+            #endif
         }
 
         sharedOcclusionBuffer[i_shared] = ssgi;
@@ -168,6 +183,19 @@ void main() {
         localPosLast = textureLod(TEX_ACCUM_POSITION_ALT, uvLast, 0);
     }
 
+    #ifdef EFFECT_SSAO_ENABLED
+        vec2 aoBufferSize = 0.5 * ap.game.screenSize;
+
+        float previousOcclusion;
+        if (altFrame) {
+            // TODO: make 1D variant of catmull-rom filter
+            previousOcclusion = sample_CatmullRom(TEX_ACCUM_OCCLUSION, uvLast, aoBufferSize).r;
+        }
+        else {
+            previousOcclusion = sample_CatmullRom(TEX_ACCUM_OCCLUSION_ALT, uvLast, aoBufferSize).r;
+        }
+    #endif
+
     float depthL = linearizeDepth(depth, ap.camera.near, ap.camera.far);
 
     float offsetThreshold = clamp(depthL * 0.04, 0.0, 1.0);
@@ -181,7 +209,11 @@ void main() {
 
     #if LIGHTING_MODE == LIGHT_MODE_RT || LIGHTING_REFLECT_MODE == REFLECT_MODE_WSR
         diffuse += textureLod(texDiffuseRT, uv, 0).rgb;
-        specular += textureLod(texSpecularRT, uv, 0).rgb;
+        specular = textureLod(texSpecularRT, uv, 0).rgb;
+    #endif
+
+    #ifdef EFFECT_SSAO_ENABLED
+        float occlusion = textureLod(TEX_SSGIAO, uv, 0).a;
     #endif
 
     float counter = localPosLast.w * counterF + 1.0;
@@ -198,6 +230,13 @@ void main() {
     diffuseFinal = clamp(diffuseFinal, 0.0, 65000.0);
     specularFinal = clamp(specularFinal, 0.0, 65000.0);
 
+    #ifdef EFFECT_SSAO_ENABLED
+        //float occlusionCounter = clamp(counter, 1.0, 1.0 + AccumulationMax_Diffuse * roughL);
+        float occlusionFinal = mix(previousOcclusion, occlusion, 1.0 / diffuseCounter);
+
+        occlusionFinal = saturate(occlusionFinal);
+    #endif
+
     if (altFrame) {
         imageStore(IMG_ACCUM_DIFFUSE_ALT,  iuv, vec4(diffuseFinal, 1.0));
         imageStore(IMG_ACCUM_SPECULAR_ALT, iuv, vec4(specularFinal, 1.0));
@@ -208,4 +247,13 @@ void main() {
         imageStore(IMG_ACCUM_SPECULAR, iuv, vec4(specularFinal, 1.0));
         imageStore(IMG_ACCUM_POSITION, iuv, vec4(localPos, counter));
     }
+
+    #ifdef EFFECT_SSAO_ENABLED
+        if (altFrame) {
+            imageStore(IMG_ACCUM_OCCLUSION_ALT,  iuv, vec4(vec3(occlusionFinal), 1.0));
+        }
+        else {
+            imageStore(IMG_ACCUM_OCCLUSION,  iuv, vec4(vec3(occlusionFinal), 1.0));
+        }
+    #endif
 }

@@ -574,6 +574,24 @@ export function setupShader() {
             .height(screenHeight)
             .clear(false)
             .build();
+
+        if (Settings.Effect.SSGIAO.SSAO()) {
+            new Texture("texAccumOcclusion_opaque")
+                .imageName("imgAccumOcclusion_opaque")
+                .format(Format.R16F)
+                .width(screenWidth)
+                .height(screenHeight)
+                .clear(false)
+                .build();
+
+            new Texture("texAccumOcclusion_opaque_alt")
+                .imageName("imgAccumOcclusion_opaque_alt")
+                .format(Format.R16F)
+                .width(screenWidth)
+                .height(screenHeight)
+                .clear(false)
+                .build();
+        }
     }
 
     const vlScale = Math.pow(2, Settings.Lighting.VolumetricResolution);
@@ -956,6 +974,7 @@ export function setupShader() {
             .location("composite/accumulation.csh")
             .workGroups(Math.ceil(screenWidth / 16.0), Math.ceil(screenHeight / 16.0), 1)
             .define("TEX_DEPTH", "solidDepthTex")
+            .define("TEX_SSGIAO", "texSSGIAO")
             .define("TEX_DEFERRED_DATA", "texDeferredOpaque_Data")
             .define("IMG_ACCUM_DIFFUSE", "imgAccumDiffuse_opaque")
             .define("IMG_ACCUM_SPECULAR", "imgAccumSpecular_opaque")
@@ -963,12 +982,16 @@ export function setupShader() {
             .define("IMG_ACCUM_DIFFUSE_ALT", "imgAccumDiffuse_opaque_alt")
             .define("IMG_ACCUM_SPECULAR_ALT", "imgAccumSpecular_opaque_alt")
             .define("IMG_ACCUM_POSITION_ALT", "imgAccumPosition_opaque_alt")
+            .define("IMG_ACCUM_OCCLUSION", "imgAccumOcclusion_opaque")
+            .define("IMG_ACCUM_OCCLUSION_ALT", "imgAccumOcclusion_opaque_alt")
             .define("TEX_ACCUM_DIFFUSE", "texAccumDiffuse_opaque")
             .define("TEX_ACCUM_SPECULAR", "texAccumSpecular_opaque")
             .define("TEX_ACCUM_POSITION", "texAccumPosition_opaque")
             .define("TEX_ACCUM_DIFFUSE_ALT", "texAccumDiffuse_opaque_alt")
             .define("TEX_ACCUM_SPECULAR_ALT", "texAccumSpecular_opaque_alt")
             .define("TEX_ACCUM_POSITION_ALT", "texAccumPosition_opaque_alt")
+            .define("TEX_ACCUM_OCCLUSION", "texAccumOcclusion_opaque")
+            .define("TEX_ACCUM_OCCLUSION_ALT", "texAccumOcclusion_opaque_alt")
             .build());
     }
 
@@ -1037,6 +1060,7 @@ export function setupShader() {
             .workGroups(Math.ceil(screenWidth / 16.0), Math.ceil(screenHeight / 16.0), 1)
             .define("RENDER_TRANSLUCENT", "1")
             .define("TEX_DEPTH", "mainDepthTex")
+            .define("TEX_SSGIAO", "texSSGIAO")
             .define("TEX_DEFERRED_DATA", "texDeferredTrans_Data")
             .define("IMG_ACCUM_DIFFUSE", "imgAccumDiffuse_translucent")
             .define("IMG_ACCUM_SPECULAR", "imgAccumSpecular_translucent")
@@ -1044,12 +1068,16 @@ export function setupShader() {
             .define("IMG_ACCUM_DIFFUSE_ALT", "imgAccumDiffuse_translucent_alt")
             .define("IMG_ACCUM_SPECULAR_ALT", "imgAccumSpecular_translucent_alt")
             .define("IMG_ACCUM_POSITION_ALT", "imgAccumPosition_translucent_alt")
+            .define("IMG_ACCUM_OCCLUSION", "imgAccumOcclusion_translucent")
+            .define("IMG_ACCUM_OCCLUSION_ALT", "imgAccumOcclusion_translucent_alt")
             .define("TEX_ACCUM_DIFFUSE", "texAccumDiffuse_translucent")
             .define("TEX_ACCUM_SPECULAR", "texAccumSpecular_translucent")
             .define("TEX_ACCUM_POSITION", "texAccumPosition_translucent")
             .define("TEX_ACCUM_DIFFUSE_ALT", "texAccumDiffuse_translucent_alt")
             .define("TEX_ACCUM_SPECULAR_ALT", "texAccumSpecular_translucent_alt")
             .define("TEX_ACCUM_POSITION_ALT", "texAccumPosition_translucent_alt")
+            .define("TEX_ACCUM_OCCLUSION", "texAccumOcclusion_translucent")
+            .define("TEX_ACCUM_OCCLUSION_ALT", "texAccumOcclusion_translucent_alt")
             .build());
     }
 
@@ -1147,6 +1175,7 @@ export function setupShader() {
             .ssbo(4, quadListBuffer)
             .define("TEX_SHADOW", texShadow_src)
             .define("TEX_SSGIAO", "texSSGIAO_final")
+            .define("TEX_ACCUM_OCCLUSION", "texAccumOcclusion_opaque")
             .build());
     }
 

@@ -13,6 +13,7 @@ uniform sampler2D texFinal;
     uniform sampler2D TEX_SHADOW;
 #elif DEBUG_VIEW == DEBUG_VIEW_SSAO
     uniform sampler2D TEX_SSGIAO;
+    uniform sampler2D TEX_ACCUM_OCCLUSION;
 #elif DEBUG_VIEW == DEBUG_VIEW_SSGI
     uniform sampler2D TEX_SSGIAO;
 #elif DEBUG_VIEW == DEBUG_VIEW_VL
@@ -156,6 +157,8 @@ void main() {
                 color = textureLod(texTransmitVL, previewCoord2, 0).rgb;
             #elif DEBUG_VIEW == DEBUG_VIEW_RT
                 color = textureLod(texSpecularRT, previewCoord2, 0).rgb;
+            #elif DEBUG_VIEW == DEBUG_VIEW_SSAO
+                color = textureLod(TEX_ACCUM_OCCLUSION, previewCoord2, 0).rrr;
             #elif DEBUG_VIEW == DEBUG_VIEW_ACCUMULATION
                 #ifdef DEBUG_TRANSLUCENT
                     color = textureLod(texAccumSpecular_translucent, previewCoord2, 0).rgb;

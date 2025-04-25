@@ -41,6 +41,11 @@ uniform sampler2D TEX_SHADOW;
     uniform sampler2D texAccumDiffuse_opaque_alt;
     uniform sampler2D texAccumSpecular_opaque;
     uniform sampler2D texAccumSpecular_opaque_alt;
+
+    #ifdef EFFECT_SSAO_ENABLED
+        uniform sampler2D texAccumOcclusion_opaque;
+        uniform sampler2D texAccumOcclusion_opaque_alt;
+    #endif
 #elif LIGHTING_MODE == LIGHT_MODE_RT || LIGHTING_REFLECT_MODE == REFLECT_MODE_WSR
     uniform sampler2D texDiffuseRT;
     uniform sampler2D texSpecularRT;
@@ -126,6 +131,10 @@ void main() {
         uvec4 data = texelFetch(texDeferredOpaque_Data, iuv, 0);
         uint trans_blockId = texelFetch(texDeferredTrans_Data, iuv, 0).a;
 
+        #ifdef ACCUM_ENABLED
+            bool altFrame = (ap.time.frames % 2) == 1;
+        #endif
+
         // #if defined EFFECT_SSAO_ENABLED || defined EFFECT_SSGI_ENABLED
         //     vec4 gi_ao = textureLod(TEX_SSGIAO, uv, 0);
         // #else
@@ -195,10 +204,22 @@ void main() {
             shadow_sss *= cloudShadowF;
         #endif
 
-        float occlusion = texOcclusion;
-        #if defined EFFECT_SSAO_ENABLED //&& !defined ACCUM_ENABLED
+        #if defined(EFFECT_SSAO_ENABLED) || defined(EFFECT_SSGI_ENABLED)
             vec4 gi_ao = textureLod(TEX_SSGIAO, uv, 0);
-            occlusion *= gi_ao.a;
+        #endif
+
+        float occlusion = texOcclusion;
+
+        #ifdef EFFECT_SSAO_ENABLED //&& !defined ACCUM_ENABLED
+            #ifdef ACCUM_ENABLED
+                float ssao_occlusion;
+                if (altFrame) ssao_occlusion = textureLod(texAccumOcclusion_opaque_alt, uv, 0).r;
+                else ssao_occlusion = textureLod(texAccumOcclusion_opaque, uv, 0).r;
+            #else
+                float ssao_occlusion = gi_ao.a;
+            #endif
+
+            occlusion *= ssao_occlusion;
         #endif
 
         vec3 view_F = material_fresnel(albedo.rgb, f0_metal, roughL, NoVm, isWet);
@@ -265,7 +286,6 @@ void main() {
         vec3 diffuse = skyLightDiffuse + blockLighting + 0.0016 * occlusion;
 
         #ifdef ACCUM_ENABLED
-            bool altFrame = (ap.time.frames % 2) == 1;
             if (altFrame) diffuse += textureLod(texAccumDiffuse_opaque_alt, uv, 0).rgb;
             else diffuse += textureLod(texAccumDiffuse_opaque, uv, 0).rgb;
         #elif LIGHTING_MODE == LIGHT_MODE_RT || LIGHTING_REFLECT_MODE == REFLECT_MODE_WSR

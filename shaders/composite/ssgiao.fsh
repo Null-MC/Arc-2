@@ -7,6 +7,7 @@ layout(location = 0) out vec4 out_GI_AO;
 
 uniform sampler2D solidDepthTex;
 uniform sampler2D texDeferredOpaque_TexNormal;
+uniform sampler2D texBlueNoise;
 
 #ifdef EFFECT_SSGI_ENABLED
     uniform sampler2D texFinalPrevious;
@@ -16,6 +17,7 @@ in vec2 uv;
 
 #include "/lib/common.glsl"
 #include "/lib/noise/ign.glsl"
+#include "/lib/sampling/blue-noise.glsl"
 
 #ifdef EFFECT_TAA_ENABLED
     #include "/lib/taa_jitter.glsl"
@@ -40,15 +42,16 @@ void main() {
     float occlusion = 0.0;
 
     if (depth < 1.0) {
-         #if defined EFFECT_TAA_ENABLED || defined ACCUM_ENABLED
-             float dither = InterleavedGradientNoiseTime(ivec2(gl_FragCoord.xy));
+         #if defined(EFFECT_TAA_ENABLED) || defined(ACCUM_ENABLED)
+             //float dither = InterleavedGradientNoiseTime(ivec2(gl_FragCoord.xy));
+            vec2 dither = sample_blueNoise(gl_FragCoord.xy * 2.0).xy;
          #else
-            float dither = InterleavedGradientNoise(ivec2(gl_FragCoord.xy));
+            vec2 dither = vec2(InterleavedGradientNoise(ivec2(gl_FragCoord.xy)));
          #endif
 
         vec2 pixelSize = 1.0 / ap.game.screenSize;
 
-        float rotatePhase = dither * TAU;
+        float rotatePhase = dither.x * TAU;
 
         vec3 clipPos = vec3(uv, depth);
         vec3 ndcPos = clipPos * 2.0 - 1.0;
@@ -62,11 +65,11 @@ void main() {
         float viewDist = length(viewPos);
 
         float distF = min(viewDist * 0.005, 1.0);
-        float max_radius_ao = mix(0.5, 12.0, distF);
+        float max_radius_ao = mix(1.5, 12.0, distF);
         float max_radius_gi = mix(2.0, 9.0, distF);
 
         float rStep = 1.0 / EFFECT_SSGIAO_SAMPLES;
-        float radius = rStep * dither;
+        float radius = rStep * dither.y;
 
         // uint data_r = texelFetch(texDeferredOpaque_Data, iuv, 0).r;
         // vec3 normalData = unpackUnorm4x8(data_r).xyz;
@@ -112,7 +115,6 @@ void main() {
                     float ao_weight = 1.0 - saturate(sampleDist / max_radius_ao);
 
                     occlusion += sampleNoLm * ao_weight;
-
                     maxWeight += ao_weight;
                 }
             #endif
@@ -174,12 +176,13 @@ void main() {
         illumination /= EFFECT_SSGIAO_SAMPLES;
     }
 
-    occlusion *= 2.0;
+    //occlusion *= 2.0;
     illumination *= 3.0;
 
     vec3 gi = illumination;
-    float ao = 1.0 - min(occlusion, 1.0);
+//    float ao = 1.0 - min(occlusion, 1.0);
+    float ao = 1.0 - occlusion / (occlusion*0.2 + 1.0);
     // ao = ao*ao;
 
-    out_GI_AO = vec4(gi, ao);
+    out_GI_AO = vec4(gi, ao*ao*ao);
 }

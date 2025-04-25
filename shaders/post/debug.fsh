@@ -18,6 +18,9 @@ uniform sampler2D texFinal;
 #elif DEBUG_VIEW == DEBUG_VIEW_VL
     uniform sampler2D texScatterVL;
     uniform sampler2D texTransmitVL;
+#elif DEBUG_VIEW == DEBUG_VIEW_RT
+    uniform sampler2D texDiffuseRT;
+    uniform sampler2D texSpecularRT;
 #elif DEBUG_VIEW == DEBUG_VIEW_ACCUMULATION
     #ifdef DEBUG_TRANSLUCENT
         uniform sampler2D texAccumDiffuse_translucent;
@@ -103,6 +106,8 @@ void main() {
                 color = tonemap_ACESFit2(color);
             #elif DEBUG_VIEW == DEBUG_VIEW_VL
                 color = textureLod(texScatterVL, previewCoord, 0).rgb;
+            #elif DEBUG_VIEW == DEBUG_VIEW_RT
+                color = textureLod(texDiffuseRT, previewCoord, 0).rgb;
             #elif DEBUG_VIEW == DEBUG_VIEW_ACCUMULATION
                 #ifdef DEBUG_TRANSLUCENT
                     color = textureLod(texAccumDiffuse_translucent, previewCoord, 0).rgb;
@@ -149,6 +154,8 @@ void main() {
         if (clamp(previewCoord2, 0.0, 1.0) == previewCoord2) {
             #if DEBUG_VIEW == DEBUG_VIEW_VL
                 color = textureLod(texTransmitVL, previewCoord2, 0).rgb;
+            #elif DEBUG_VIEW == DEBUG_VIEW_RT
+                color = textureLod(texSpecularRT, previewCoord2, 0).rgb;
             #elif DEBUG_VIEW == DEBUG_VIEW_ACCUMULATION
                 #ifdef DEBUG_TRANSLUCENT
                     color = textureLod(texAccumSpecular_translucent, previewCoord2, 0).rgb;

@@ -16,7 +16,7 @@ float SampleShadow(const in vec3 shadowPos, const in int shadowCascade) {
     vec3 shadowCoord = vec3(shadowPos.xy, shadowCascade);
     float depthOpaque = textureLod(solidShadowMap, shadowCoord, 0).r;
 
-    return step(shadowPos.z - ShadowBias[shadowCascade], depthOpaque);
+    return step(shadowPos.z, depthOpaque);
 }
 
 float SampleShadow_PCF(const in vec3 shadowPos, const in int shadowCascade, const in float pixelRadius) {
@@ -137,7 +137,7 @@ vec3 SampleShadowColor_PCSS(const in vec3 shadowPos, const in int shadowCascade)
     //     return SampleShadowColor(shadowPos, shadowCascade);
     // }
 
-    const float SHADOW_PENUMBRA_SCALE = 16.0;
+    const float SHADOW_PENUMBRA_SCALE = 32.0;
     const float minShadowPixelRadius = 0.5 * shadowPixelSize;
 
     vec2 pixelRadius = GetPixelRadius(blockerDistance / SHADOW_PENUMBRA_SCALE, shadowCascade);

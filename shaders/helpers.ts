@@ -1,8 +1,5 @@
 import type {} from './iris'
 
-export function getFloatSetting(name: String): Number {
-    return parseFloat(getStringSetting(name));
-}
 
 export function hexToRgb(hex: string) {
     const bigint = parseInt(hex.substring(1), 16);

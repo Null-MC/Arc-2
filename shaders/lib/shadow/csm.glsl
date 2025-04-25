@@ -8,7 +8,7 @@ vec2 GetPixelRadius(const in float blockRadius, const in int cascade) {
 }
 
 float GetShadowBias(const in int shadowCascade) {
-    const float cascade_bias[] = {0.02, 0.04, 0.16, 0.2};
+    const float cascade_bias[] = {0.04, 0.08, 0.16, 0.2};
 
     float zRange = -2.0 / ap.celestial.projection[shadowCascade][2].z; //GetShadowRange();
 

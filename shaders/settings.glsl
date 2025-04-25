@@ -64,5 +64,6 @@ layout (std140, binding = 0) uniform SceneSettings {
 	float Scene_PostContrastF;
 	float Scene_PostExposureMin;
 	float Scene_PostExposureMax;
+	float Scene_PostExposureRange;
 	float Scene_PostExposureSpeed;
 };

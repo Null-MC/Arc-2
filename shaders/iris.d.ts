@@ -22,6 +22,7 @@ declare class WorldSettings {
      * Default: 1024
      */
   shadowMapResolution: number;
+  cascadeCount: number;
   shadowMapDistance: number;
   shadowNearPlane: number;
   shadowFarPlane: number;
@@ -72,6 +73,11 @@ declare namespace Stage {
   let PRE_RENDER: ProgramStage;
 
     /**
+    * Runs after the shadow pass is drawn.
+    */
+  let POST_SHADOW: ProgramStage;
+
+    /**
      * Runs after all main rendering takes place.
      */
   let POST_RENDER: ProgramStage;
@@ -103,6 +109,7 @@ interface BlendModeFunction {}
 declare function getStringSetting(name: string): string;
 declare function getBoolSetting(name: string): boolean;
 declare function getIntSetting(name: string): number;
+declare function getFloatSetting(name: string): number;
 
 declare class IntSetting {
   needsReload(reload: boolean): IntSetting;
@@ -128,6 +135,8 @@ declare class BuiltPage {}
 
 declare function asInt(name: string, ...values: number[]): IntSetting;
 declare function asFloat(name: string, ...values: number[]): FloatSetting;
+declare function putTextLabel(text : string) : BuiltSetting
+declare function putTranslationLabel(text : string) : BuiltSetting
 declare function asString(name: string, ...values: string[]): StringSetting;
 declare function asBool(name: string, defaultValue: boolean, reload: boolean): BuiltSetting;
 
@@ -157,7 +166,7 @@ declare function setLightColor(
  * @param hex The hex color to set
  * @alpha
  */
-declare function setLightColor(name: string, hex: number): void;
+declare function setLightColor(name: NamespacedId, hex: number): void;
 
 // Uniforms
 

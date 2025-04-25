@@ -29,7 +29,7 @@ float reinhard2(const in float color, const in float L_white) {
 void ApplyAutoExposure(inout vec3 rgb, const in float avgLum) {
 	vec3 xyY = xyz_to_xyY(RGB_TO_XYZ * rgb);
 
-	float lp = xyY.z / (9.6 * avgLum + 0.0001);
+	float lp = xyY.z / (Scene_PostExposureRange * avgLum + 0.0001);
 
 	const float whitePoint = 1.4;
     xyY.z = reinhard2(lp, whitePoint);

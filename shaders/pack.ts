@@ -1,5 +1,5 @@
 import type {} from './iris'
-import {getFloatSetting, hexToRgb, StreamBufferBuilder} from "./helpers";
+import {hexToRgb, StreamBufferBuilder} from "./helpers";
 
 const LIGHT_BIN_SIZE = 4;
 const QUAD_BIN_SIZE = 2;
@@ -40,7 +40,7 @@ function getSettings() {
             SS_Fallback: true,
         },
         Material: {
-            Format: getIntSetting("MATERIAL_FORMAT"),
+            Format: 1, //parseInt(getStringSetting("MATERIAL_FORMAT")),
             Parallax: {
                 Enabled: getBoolSetting("MATERIAL_PARALLAX_ENABLED"),
                 Depth: getIntSetting("MATERIAL_PARALLAX_DEPTH"),
@@ -53,7 +53,7 @@ function getSettings() {
             FancyLavaRes: getIntSetting("FANCY_LAVA_RES"),
         },
         Lighting: {
-            Mode: getIntSetting("LIGHTING_MODE"),
+            Mode: 1, //getIntSetting("LIGHTING_MODE"),
             LpvRsmEnabled: getBoolSetting("LPV_RSM_ENABLED"),
             RT: {
                 MaxSampleCount: getIntSetting("RT_MAX_SAMPLE_COUNT"),
@@ -89,6 +89,7 @@ function getSettings() {
             Exposure: {
                 Min: () => getFloatSetting("POST_EXPOSURE_MIN"),
                 Max: () => getFloatSetting("POST_EXPOSURE_MAX"),
+                Range: () => getFloatSetting("POST_EXPOSURE_RANGE"),
                 Speed: () => getFloatSetting("POST_EXPOSURE_SPEED"),
             },
             Contrast: () => getIntSetting("POST_CONTRAST"),
@@ -109,6 +110,16 @@ function getSettings() {
             LPV: false,
         },
     };
+
+    const materialFormatStr = getStringSetting("MATERIAL_FORMAT");
+    if (materialFormatStr == "Old-PBR") Settings.Material.Format = 2;
+    else if (materialFormatStr == "Lab-PBR") Settings.Material.Format = 1;
+    else if (materialFormatStr == "None") Settings.Material.Format = 0;
+
+    const lightModeStr = getStringSetting("LIGHTING_MODE");
+    if (lightModeStr == 'Ray-Traced') Settings.Lighting.Mode = 2;
+    else if (lightModeStr == 'FloodFill') Settings.Lighting.Mode = 1;
+    else if (lightModeStr == 'LightMap') Settings.Lighting.Mode = 0;
 
     // if (Settings.Voxel.RT.Enabled) Settings.Internal.Accumulation = true;
     if (Settings.Effect.SSGIAO.SSGI()) Settings.Internal.Accumulation = true;
@@ -323,6 +334,15 @@ export function setupShader() {
         .width(256)
         .height(32)
         .depth(256)
+        .clamp(false)
+        .blur(true)
+        .build();
+
+    const texBlueNoise = new RawTexture("texBlueNoise", "textures/blue_noise.png")
+        .type(PixelType.UNSIGNED_BYTE)
+        .format(Format.R8_SNORM)
+        .width(512)
+        .height(512)
         .clamp(false)
         .blur(true)
         .build();
@@ -1147,6 +1167,7 @@ export function onSettingsChanged(state : WorldState) {
         .appendFloat(Settings.Post.Contrast() * 0.01)
         .appendFloat(Settings.Post.Exposure.Min())
         .appendFloat(Settings.Post.Exposure.Max())
+        .appendFloat(Settings.Post.Exposure.Range())
         .appendFloat(Settings.Post.Exposure.Speed());
 }
 

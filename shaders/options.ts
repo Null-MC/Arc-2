@@ -22,17 +22,15 @@ export function setupOptions() {
         .add(asInt("SHADOW_RESOLUTION", 256, 512, 1024, 2048, 4096).build(1024))
         .build();
 
-    let screen_Parallax = new Page("Parallax")
-        .add(asBool("MATERIAL_PARALLAX_ENABLED", true, true))
-        .add(asIntRange("MATERIAL_PARALLAX_SAMPLES", 32, 8, 128, 8))
-        .add(asBool("MATERIAL_PARALLAX_SHARP", true, true))
-        .add(asIntRange("MATERIAL_PARALLAX_DEPTH", 25, 5, 100, 5))
-        .add(asBool("MATERIAL_PARALLAX_DEPTHWRITE", false, true))
-        .build();
-
     let screen_Material = new Page("Material")
-        .add(asInt("MATERIAL_FORMAT", 0, 1, 2).build(1))
-        .add(screen_Parallax)
+        .add(asString("MATERIAL_FORMAT", "None", "Lab-PBR", "Old-PBR").build("Lab-PBR"))
+        .add(new Page("Parallax")
+            .add(asBool("MATERIAL_PARALLAX_ENABLED", true, true))
+            .add(asIntRange("MATERIAL_PARALLAX_SAMPLES", 32, 8, 128, 8))
+            .add(asBool("MATERIAL_PARALLAX_SHARP", true, true))
+            .add(asIntRange("MATERIAL_PARALLAX_DEPTH", 25, 5, 100, 5))
+            .add(asBool("MATERIAL_PARALLAX_DEPTHWRITE", false, true))
+            .build())
         .add(asIntRange("EMISSION_BRIGHTNESS", 160, 0, 800, 10))
         .add(asBool("FANCY_LAVA", true, true))
         .add(EMPTY)
@@ -40,7 +38,7 @@ export function setupOptions() {
         .build();
 
     let screen_Lighting = new Page("Lighting")
-        .add(asInt("LIGHTING_MODE", 0, 1, 2).build(1))
+        .add(asString("LIGHTING_MODE", "LightMap", "FloodFill", "Ray-Traced").build("FloodFill"))
         .add(new Page("RT Options")
             .add(asInt("RT_MAX_SAMPLE_COUNT", 2, 4, 8, 12, 16, 20, 24, 28, 32, 48, 64, 0).build(16))
             .add(asBool("LIGHTING_TRACE_TRIANGLE", false, true))
@@ -77,6 +75,7 @@ export function setupOptions() {
         .add(new Page("Exposure")
             .add(asFloatRange("POST_EXPOSURE_MIN", -10.5, -12.0, -3.0, 0.5, false))
             .add(asFloatRange("POST_EXPOSURE_MAX", 15.0, 6.0, 32.0, 0.5, false))
+            .add(asFloatRange("POST_EXPOSURE_RANGE", 9.6, 4.0, 24.0, 0.2, false))
             .add(asFloatRange("POST_EXPOSURE_SPEED", 1.2, 0.1, 2.0, 0.1, false))
             .build())
         .add(asIntRange("POST_CONTRAST", 160,0, 300, 5, false))
@@ -84,7 +83,7 @@ export function setupOptions() {
 
     const screen_Debug = new Page("Debug")
         .add(asBool("DEBUG_ENABLED", false, true))
-        .add(asInt("DEBUG_VIEW", 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10).needsReload(true).build(0))
+        .add(asInt("DEBUG_VIEW", 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11).needsReload(true).build(0))
         .add(asBool("DEBUG_WHITE_WORLD", false, true))
         .add(asInt("DEBUG_MATERIAL", 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10).needsReload(true).build(0))
         .build();
@@ -104,11 +103,9 @@ function asIntRange(keyName: String, defaultValue: Number, valueMin: Number, val
 }
 
 function asFloatRange(keyName: String, defaultValue: Number, valueMin: Number, valueMax: Number, interval: Number, reload: Boolean = true) {
-    const values = getValueRange(valueMin, valueMax, interval)
-        .map(v => v.toFixed(1).toString());
+    const values = getValueRange(valueMin, valueMax, interval);
 
-    return asString(keyName, ...values).needsReload(reload)
-        .build(defaultValue.toFixed(1).toString());
+    return asFloat(keyName, ...values).needsReload(reload).build(defaultValue);
 }
 
 function getValueRange(valueMin, valueMax, interval) {

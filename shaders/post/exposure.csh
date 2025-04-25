@@ -45,15 +45,16 @@ void main() {
 		// Here we take our weighted sum and divide it by the number of pixels
 		// that had luminance greater than zero (since the index == 0, we can
 		// use countForThisBin to find the number of black pixels)
-		float weightedLogAverage = (histogramShared[0] / max(Exposure_numPixels - float(countForThisBin), 1.0)) - 1.0;
+		float nonBlackPixelCount = Exposure_numPixels - countForThisBin;
+		float weightedLogAverage = (histogramShared[0] / max(nonBlackPixelCount, 1.0)) - 1.0;
 
 		// Map from our histogram space to actual luminance
-		float weightedAvgLum = 255.0 * exp(((weightedLogAverage) * Exposure_logLumRange) + Scene_PostExposureMin);
+		float weightedAvgLum = 255.0 * exp((weightedLogAverage * Exposure_logLumRange) + Scene_PostExposureMin);
 
-	    float lumLastFrame = clamp(Scene_AvgExposure, Scene_PostExposureMin, Scene_PostExposureMax);
-		float Exposure_timeCoeff = (1.0 - exp(-ap.time.delta * Scene_PostExposureSpeed));
+	    float lumLastFrame = clamp(Scene_AvgExposure, -100.0, 100.0);//clamp(Scene_AvgExposure, Scene_PostExposureMin, Scene_PostExposureMax);
+		float Exposure_timeCoeff = 0.02;//(1.0 - exp(-ap.time.delta * Scene_PostExposureSpeed));
 
-		float adaptedLum = lumLastFrame + (weightedAvgLum - lumLastFrame) * Exposure_timeCoeff;
+		float adaptedLum = lumLastFrame + (weightedAvgLum - lumLastFrame) * saturate(Exposure_timeCoeff);
 
 		if (ap.time.frames == 0) adaptedLum = weightedAvgLum;
 

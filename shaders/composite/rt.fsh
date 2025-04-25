@@ -12,6 +12,8 @@ uniform sampler2D TEX_DEFERRED_COLOR;
 uniform usampler2D TEX_DEFERRED_DATA;
 uniform sampler2D TEX_DEFERRED_NORMAL;
 
+uniform sampler2D texBlueNoise;
+
 #if LIGHTING_REFLECT_MODE == REFLECT_MODE_WSR || (LIGHTING_MODE == LIGHT_MODE_RT && defined(RT_TRI_ENABLED))
     uniform sampler2D blockAtlas;
 #endif
@@ -50,6 +52,8 @@ in vec2 uv;
 
 #include "/lib/noise/ign.glsl"
 #include "/lib/noise/hash.glsl"
+
+#include "/lib/sampling/blue-noise.glsl"
 
 #include "/lib/light/hcm.glsl"
 #include "/lib/light/fresnel.glsl"
@@ -175,7 +179,8 @@ void main() {
 
                 vec3 voxelPos_out = voxelPos + 0.16*localGeoNormal;
 
-                vec3 jitter = hash33(vec3(gl_FragCoord.xy, ap.time.frames)) - 0.5;
+                //vec3 jitter = hash33(vec3(gl_FragCoord.xy, ap.time.frames)) - 0.5;
+                vec3 jitter = sample_blueNoise(gl_FragCoord.xy);
 
                 #if RT_MAX_SAMPLE_COUNT > 0
                     uint maxSampleCount = min(binLightCount, RT_MAX_SAMPLE_COUNT);

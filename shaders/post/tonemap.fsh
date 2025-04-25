@@ -19,7 +19,7 @@ void main() {
     ivec2 iuv = ivec2(gl_FragCoord.xy);
     vec3 color = texelFetch(texFinal, iuv, 0).rgb;
     
-    ApplyAutoExposure(color, Scene_AvgExposure);
+    ApplyAutoExposure(color, clamp(Scene_AvgExposure, -100.0, 100.0));
 
     //color = PurkinjeShift(color, PurkinjeStrength);
 

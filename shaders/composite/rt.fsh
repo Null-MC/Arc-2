@@ -374,7 +374,9 @@ void main() {
                 #ifdef SHADOWS_ENABLED
                     int reflect_shadowCascade;
                     vec3 reflect_shadowViewPos = mul3(ap.celestial.view, reflect_localPos);
+                    //reflect_shadowViewPos.z += 0.2;
                     vec3 reflect_shadowPos = GetShadowSamplePos(reflect_shadowViewPos, 0.0, reflect_shadowCascade);
+                    reflect_shadowPos.z -= GetShadowBias(reflect_shadowCascade);
                     float reflect_shadow = SampleShadow(reflect_shadowPos, reflect_shadowCascade);
                 #else
                     float reflect_shadow = 1.0;

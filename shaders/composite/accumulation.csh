@@ -221,7 +221,7 @@ void main() {
     float roughness = unpackUnorm4x8(data_g).x;
     float roughL = _pow2(roughness);
 
-    float diffuseCounter = clamp(counter, 1.0, 1.0 + AccumulationMax_Diffuse * roughL);
+    float diffuseCounter = clamp(counter, 1.0, 1.0 + AccumulationMax_Diffuse);
     vec3 diffuseFinal = mix(previousDiffuse.rgb, diffuse, 1.0 / diffuseCounter);
 
     float specularCounter = clamp(counter, 1.0, 1.0 + AccumulationMax_Specular * roughL);

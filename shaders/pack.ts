@@ -122,6 +122,7 @@ function getSettings() {
     else if (lightModeStr == 'LightMap') Settings.Lighting.Mode = 0;
 
     // if (Settings.Voxel.RT.Enabled) Settings.Internal.Accumulation = true;
+    if (Settings.Effect.SSGIAO.SSAO()) Settings.Internal.Accumulation = true;
     if (Settings.Effect.SSGIAO.SSGI()) Settings.Internal.Accumulation = true;
 
     switch (Settings.Lighting.Mode) {

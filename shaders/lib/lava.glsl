@@ -1,3 +1,6 @@
+const float Lava_HeightScale = 0.1;
+
+
 void RandomizeNormal(inout vec3 normal, const in vec2 texPos, const in float maxTheta) {
     vec3 randomNormal = hash32(texPos) * 2.0 - 1.0;
     randomNormal.z *= sign(randomNormal.z);
@@ -21,7 +24,7 @@ float LavaFBM(vec3 texPos) {
     return accum / maxWeight;
 }
 
-const float LAVA_SPEED = 24.0; // [12 24]
+const float LAVA_SPEED = 16.0; // [12 24]
 
 void ApplyLavaMaterial(out vec3 albedo, out vec3 normal, out float roughness, out float emission, const in vec3 geoViewNormal, const in vec3 worldPos, const in vec3 viewPos) {
     //albedo = vec3(1.0);
@@ -37,24 +40,27 @@ void ApplyLavaMaterial(out vec3 albedo, out vec3 normal, out float roughness, ou
     float NoU_inv = 1.0 - NoU;
 
     float pressure = LavaFBM(texPos);
-    pressure = pow(pressure, 0.75);
-    float coolF = 0.16 * NoU;
-    float heatF = 1.0 + 0.2*NoU_inv;
-    float heatP = 1.0;// - 0.5*NoU_inv;// + 1.0 * NoU;
+    //pressure = pow(pressure, 0.75);
+    float coolF = 0.08 * NoU;
+    float heatF = 1.75;// + 0.05*NoU_inv;
+    float heatP = 6.0;// - 0.5*NoU_inv;// + 1.0 * NoU;
+
     float t = min(pow(max(pressure - coolF, 0.0) * heatF, heatP), 1.0);
+
+    //t = t*t;
 
     float ti = 1.0 - t;
 
     float temp = 800.0 + 4000.0 * t;
     albedo = 0.001 + blackbody(temp) * t;// * 2.0;
     roughness = mix(1.0, 0.2, ti*ti*ti);//1.0 - 0.28 * pow(1.0 - t, 2.0);
-    emission = saturate(1.8*t*t);
+    emission = saturate(1.2*t);
     //f0 = 0.06 - 0.02 * t;
     //hcm = -1;
 
     float heightMax = 0.8 - 0.22 * NoU;
     float height = smoothstep(0.34, heightMax, 1.0 - pressure) - pow(pressure, 0.7);
-    vec3 viewPosFinal = viewPos + geoViewNormal * 0.2 * height;
+    vec3 viewPosFinal = viewPos + geoViewNormal * (Lava_HeightScale * height);
     vec3 dX = dFdx(viewPosFinal);
     vec3 dY = dFdy(viewPosFinal);
 

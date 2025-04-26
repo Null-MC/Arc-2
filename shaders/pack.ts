@@ -854,6 +854,14 @@ export function setupShader() {
 
     registerShader(waterShader.build());
 
+    registerShader(mainShaderOpaque("hand-solid", Usage.HAND)
+        .define("RENDER_HAND", "1")
+        .build());
+
+    registerShader(mainShaderTranslucent("hand-translucent", Usage.TRANSLUCENT_HAND)
+        .define("RENDER_HAND", "1")
+        .build());
+
     registerShader(mainShaderOpaque("entity-solid", Usage.ENTITY_SOLID)
         .define("RENDER_ENTITY", "1")
         .build());

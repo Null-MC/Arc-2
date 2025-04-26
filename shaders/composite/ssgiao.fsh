@@ -69,7 +69,7 @@ void main() {
         float max_radius_gi = mix(2.0, 9.0, distF);
 
         float rStep = 1.0 / EFFECT_SSGIAO_SAMPLES;
-        float radius = rStep * dither.y;
+        float radius = rStep;// * dither.y;
 
         // uint data_r = texelFetch(texDeferredOpaque_Data, iuv, 0).r;
         // vec3 normalData = unpackUnorm4x8(data_r).xyz;
@@ -80,7 +80,8 @@ void main() {
 
         //viewPos += localNormal * 0.06;
 
-        float maxWeight = EPSILON;
+        float aoMaxWeight = EPSILON;
+        float giMaxWeight = EPSILON;
 
         for (int i = 0; i < EFFECT_SSGIAO_SAMPLES; i++) {
             vec2 offset = radius * vec2(sin(rotatePhase), cos(rotatePhase));
@@ -115,12 +116,12 @@ void main() {
                     float ao_weight = 1.0 - saturate(sampleDist / max_radius_ao);
 
                     occlusion += sampleNoLm * ao_weight;
-                    maxWeight += ao_weight;
+                    aoMaxWeight += ao_weight;
                 }
             #endif
 
             #ifdef EFFECT_SSGI_ENABLED
-                vec3 sampleViewPos_gi = viewPos + vec3(offset_gi, 0.0);
+                vec3 sampleViewPos_gi = viewPos + vec3(offset_gi, -0.1);
                 vec3 sampleClipPos_gi = unproject(ap.camera.projection, sampleViewPos_gi) * 0.5 + 0.5;
 
                 bool skip_gi = false;
@@ -167,22 +168,27 @@ void main() {
 
 //                    gi_weight *= 1.0 - saturate(sampleDist / max_radius_gi);
                     illumination += sampleColor * sampleNoLm * gi_weight;
+                    giMaxWeight += sampleNoLm * gi_weight;
                 }
             #endif
         }
 
-        occlusion = occlusion / max(maxWeight, 1.0);
-        //illumination = illumination / max(maxWeight, 1.0);
-        illumination /= EFFECT_SSGIAO_SAMPLES;
+        occlusion = occlusion / max(aoMaxWeight, 1.0);
+        illumination = illumination / max(giMaxWeight, 1.0);
+        //illumination /= EFFECT_SSGIAO_SAMPLES;
     }
 
     //occlusion *= 2.0;
-    illumination *= 3.0;
+    //illumination *= 3.0;
 
+    const float ssaoStrength = EFFECT_SSAO_STRENGTH * 0.01;
+
+    float ao = occlusion * ssaoStrength;
     vec3 gi = illumination;
+
 //    float ao = 1.0 - min(occlusion, 1.0);
-    float ao = 1.0 - occlusion / (occlusion*0.2 + 1.0);
+    ao = 1.0 - ao / (ao + 1.0);
     // ao = ao*ao;
 
-    out_GI_AO = vec4(gi, ao*ao*ao);
+    out_GI_AO = vec4(gi, ao);
 }

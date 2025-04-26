@@ -46,7 +46,7 @@ float SampleShadow_PCF(const in vec3 shadowPos, const in int shadowCascade, cons
     return shadowFinal / SHADOW_PCF_SAMPLES;
 }
 
-vec3 SampleShadowColor(const in vec3 shadowPos, const in int shadowCascade) {
+vec3 SampleShadowColor(const in vec3 shadowPos, const in int shadowCascade, out float depthDiff) {
     if (clamp(shadowPos, 0.0, 1.0) != shadowPos) return vec3(1.0);
 
     vec3 shadowCoord = vec3(shadowPos.xy, shadowCascade);
@@ -54,9 +54,16 @@ vec3 SampleShadowColor(const in vec3 shadowPos, const in int shadowCascade) {
 
     vec4 shadowSample = vec4(1.0);
 
+//    float zRange = -2.0 / ap.celestial.projection[shadowCascade][2][2];
+//    depthDiff = (depthOpaque - shadowPos.z) * zRange;
+    depthDiff = 0.0;
+
     if (shadowPos.z > depthOpaque) shadowSample.rgb = vec3(0.0);
     else {
         float depthTrans = textureLod(shadowMap, shadowCoord, 0).r;
+
+        float zRange = -2.0 / ap.celestial.projection[shadowCascade][2][2];
+        depthDiff = (shadowPos.z - depthTrans) * zRange;
 
         if (shadowPos.z + EPSILON <= depthTrans) shadowSample.rgb = vec3(1.0);
         else {
@@ -69,6 +76,11 @@ vec3 SampleShadowColor(const in vec3 shadowPos, const in int shadowCascade) {
     }
 
     return shadowSample.rgb;
+}
+
+vec3 SampleShadowColor(const in vec3 shadowPos, const in int shadowCascade) {
+    float depthDiff;
+    return SampleShadowColor(shadowPos, shadowCascade, depthDiff);
 }
 
 vec3 SampleShadowColor_PCF(const in vec3 shadowPos, const in int shadowCascade, const in vec2 pixelRadius) {

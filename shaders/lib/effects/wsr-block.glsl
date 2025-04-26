@@ -1,10 +1,11 @@
-bool TraceReflection(const in vec3 localPos, const in vec3 localDir, out vec3 hitPos, out vec3 hitNormal, out vec2 hitCoord, out VoxelBlockFace blockFace) {
+bool TraceReflection(const in vec3 localPos, const in vec3 localDir, out vec3 tint, out vec3 hitPos, out vec3 hitNormal, out vec2 hitCoord, out VoxelBlockFace blockFace) {
     vec3 currPos = GetVoxelPosition(localPos);
 
     vec3 stepSizes, nextDist;
     dda_init(stepSizes, nextDist, currPos, localDir);
 
     vec3 stepAxis = vec3(0.0); // todo: set initial?
+    tint = vec3(1.0);
     bool hit = false;
     ivec3 voxelPos;
 
@@ -15,14 +16,20 @@ bool TraceReflection(const in vec3 localPos, const in vec3 localDir, out vec3 hi
         voxelPos = ivec3(floor(fma(step, vec3(0.5), currPos)));
 
         uint blockId = imageLoad(imgVoxelBlock, voxelPos).r;
-        bool isFullBlock = blockId > 0u && iris_isFullBlock(blockId);
+        //if (blockId <= 0u) continue;
 
-        if (isFullBlock) {
+        bool isFullBlock = iris_isFullBlock(blockId);
+        if (blockId > 0u && isFullBlock) {
             hit = true;
+            break;
         }
-        else {
-            currPos += step;
-            stepAxis = stepAxisNext;
+
+        currPos += step;
+        stepAxis = stepAxisNext;
+
+        if (blockId > 0) {
+            vec3 blockColor = iris_getLightColor(blockId).rgb;
+            tint *= RgbToLinear(blockColor);
         }
     }
 

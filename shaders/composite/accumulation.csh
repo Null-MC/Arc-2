@@ -87,7 +87,7 @@ void populateSharedBuffer() {
             depthL = linearizeDepth(depth, ap.camera.near, ap.camera.far);
 
             #ifdef EFFECT_SSGI_ENABLED
-                ssgi = texelFetch(texSSGIAO, uv/2, 0).rgb;
+                ssgi = texelFetch(TEX_SSGIAO, uv/2, 0).rgb;
             #endif
         }
 

@@ -264,7 +264,10 @@ void main() {
 
         #if LIGHTING_REFLECT_MODE == REFLECT_MODE_WSR
             // reflections
-            vec3 reflectLocalDir = reflect(-localViewDir, localTexNormal);
+            vec3 viewDir = normalize(viewPos);
+            vec3 viewNormal = mat3(ap.camera.view) * localTexNormal;
+            vec3 reflectViewDir = reflect(viewDir, viewNormal);
+            vec3 reflectLocalDir = mat3(ap.camera.viewInv) * reflectViewDir;
 
             #ifdef MATERIAL_ROUGH_REFLECT_NOISE
                 randomize_reflection(reflectLocalDir, localTexNormal, roughness);
@@ -323,8 +326,9 @@ void main() {
                 #else
                     // WSR: block-only
 
+                    vec3 reflect_traceTint;
                     VoxelBlockFace blockFace;
-                    if (TraceReflection(localPos + 0.1*localGeoNormal, reflectLocalDir, reflect_voxelPos, reflect_geoNormal, reflect_uv, blockFace)) {
+                    if (TraceReflection(localPos + 0.1*localGeoNormal, reflectLocalDir, reflect_traceTint, reflect_voxelPos, reflect_geoNormal, reflect_uv, blockFace)) {
                         reflect_tint = GetBlockFaceTint(blockFace.data);
                         reflect_lmcoord = GetBlockFaceLightMap(blockFace.data);
 
@@ -332,7 +336,7 @@ void main() {
                         reflect_uv = fma(reflect_uv, tex.maxCoord - tex.minCoord, tex.minCoord);
 
                         vec3 reflectColor = textureLod(blockAtlas, reflect_uv, 0).rgb;
-                        reflection = vec4(reflectColor, 1.0);
+                        reflection = vec4(reflectColor * reflect_traceTint, 1.0);
                     }
                 #endif
             }
@@ -494,7 +498,7 @@ void main() {
             else {
                 // SSR fallback
                 float viewDist = length(localPos);
-                vec3 reflectViewDir = mat3(ap.camera.view) * reflectLocalDir;
+                //vec3 reflectViewDir = mat3(ap.camera.view) * reflectLocalDir;
                 vec3 reflectViewPos = viewPos + 0.5*viewDist*reflectViewDir;
                 vec3 reflectClipPos = unproject(ap.camera.projection, reflectViewPos) * 0.5 + 0.5;
 

@@ -69,7 +69,8 @@ void main() {
 
             // TODO: depth reject
 
-            vec3 sampleColor = textureLod(TEX_SRC, sampleUV, 0).rgb;
+            float lod = 6.0 * (float(i) / BLUR_SAMPLES);
+            vec3 sampleColor = textureLod(TEX_SRC, sampleUV, lod).rgb;
             float sampleWeight = 1.0 - float(i) / BLUR_SAMPLES;
 
             colorBlur += sampleColor * sampleWeight;

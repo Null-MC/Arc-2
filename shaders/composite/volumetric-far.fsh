@@ -87,7 +87,7 @@ void main() {
             phase_gM = VL_WaterPhaseM;
 
             sampleAmbient = VL_WaterAmbient * Scene_SkyIrradianceUp;
-            sampleAmbient *= phaseIso * Scene_SkyBrightnessSmooth;
+            sampleAmbient *= Scene_SkyBrightnessSmooth;
         }
         else {
             scatterF = vec3(0.0);

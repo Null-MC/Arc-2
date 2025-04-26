@@ -76,7 +76,7 @@ export function setupOptions() {
             .add(asFloatRange("POST_EXPOSURE_MIN", -10.5, -12.0, -3.0, 0.5, false))
             .add(asFloatRange("POST_EXPOSURE_MAX", 15.0, 6.0, 32.0, 0.5, false))
             .add(asFloatRange("POST_EXPOSURE_RANGE", 9.6, 4.0, 24.0, 0.2, false))
-            .add(asFloatRange("POST_EXPOSURE_SPEED", 1.2, 0.1, 2.0, 0.1, false))
+            .add(asFloatRange("POST_EXPOSURE_SPEED", 4.0, 0.2, 8.0, 0.2, false))
             .build())
         .add(asIntRange("POST_CONTRAST", 160,0, 300, 5, false))
         .build();

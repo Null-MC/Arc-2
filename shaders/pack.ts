@@ -961,11 +961,11 @@ export function setupShader() {
             .target(0, texSSGIAO)
             .build());
 
-        registerShader(Stage.POST_RENDER, new Compute("ssgiao-filter-opaque")
-            // .barrier(true)
-            .location("composite/ssgiao-filter-opaque.csh")
-            .workGroups(Math.ceil(screenWidth / 16.0), Math.ceil(screenHeight / 16.0), 1)
-            .build());
+        // registerShader(Stage.POST_RENDER, new Compute("ssgiao-filter-opaque")
+        //     // .barrier(true)
+        //     .location("composite/ssgiao-filter-opaque.csh")
+        //     .workGroups(Math.ceil(screenWidth / 16.0), Math.ceil(screenHeight / 16.0), 1)
+        //     .build());
     }
 
     if (Settings.Internal.Accumulation) {

@@ -249,6 +249,7 @@ void main() {
     vec3 transmittance = vec3(1.0);
 
     for (int i = 0; i < VL_MaxSamples; i++) {
+        float waterDepth = EPSILON;
         vec3 shadowSample = vec3(shadowF);
         #ifdef SHADOWS_ENABLED
             const float shadowRadius = 2.0*shadowPixelSize;
@@ -257,7 +258,10 @@ void main() {
 
             int shadowCascade;
             vec3 shadowPos = GetShadowSamplePos(shadowViewPos, shadowRadius, shadowCascade);
-            shadowSample *= SampleShadowColor(shadowPos, shadowCascade);
+
+            // TODO: get light depth for water absorb
+            shadowSample *= SampleShadowColor(shadowPos, shadowCascade, waterDepth);
+            waterDepth = max(waterDepth, EPSILON);
         #endif
 
         vec3 sampleLocalPos = (i+dither) * stepLocal;
@@ -361,12 +365,14 @@ void main() {
             inScattering = mieInScattering;
         }
         else {
-            vec3 sampleColor = (phase_sun * sunSkyLight) + (phase_moon * moonSkyLight);
-            sampleLit += fma(sampleColor, shadowSample, sampleAmbient);
-
             extinction = transmitF + scatterF;
 
+            shadowSample *= exp(-0.2*waterDepth * sampleDensity * extinction);
+
             sampleTransmittance = exp(-stepDist * sampleDensity * extinction);
+
+            vec3 sampleColor = (phase_sun * sunSkyLight) + (phase_moon * moonSkyLight);
+            sampleLit += fma(sampleColor, shadowSample, sampleAmbient);
 
             inScattering = scatterF * sampleLit * sampleDensity;
         }

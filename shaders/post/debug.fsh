@@ -38,13 +38,13 @@ uniform sampler2D texFinal;
     uniform sampler2DArray texShadowNormal;
 #endif
 
-#if DEBUG_MATERIAL != DEBUG_MAT_NONE
+#if DEBUG_VIEW == DEBUG_VIEW_MATERIAL
     #ifdef DEBUG_TRANSLUCENT
-        #define TEX_COLOR texDeferredTrans_Color
+        //#define TEX_COLOR texDeferredTrans_Color
         #define TEX_NORMAL texDeferredTrans_TexNormal
         #define TEX_DATA texDeferredTrans_Data
     #else
-        #define TEX_COLOR texDeferredOpaque_Color
+        //#define TEX_COLOR texDeferredOpaque_Color
         #define TEX_NORMAL texDeferredOpaque_TexNormal
         #define TEX_DATA texDeferredOpaque_Data
     #endif

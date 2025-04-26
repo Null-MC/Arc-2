@@ -1,5 +1,5 @@
-const float ShadowBias[] = float[](
-    0.000012, 0.000024, 0.000064, 0.000256);
+//const float ShadowBias[] = float[](
+//    0.000012, 0.000024, 0.000064, 0.000256);
 
 
 float GetShadowDither() {

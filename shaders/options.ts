@@ -82,10 +82,10 @@ export function setupOptions() {
         .build();
 
     const screen_Debug = new Page("Debug")
-        .add(asBool("DEBUG_ENABLED", false, true))
-        .add(asInt("DEBUG_VIEW", 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11).needsReload(true).build(0))
+        //.add(asBool("DEBUG_ENABLED", false, true))
+        .add(asString("DEBUG_VIEW", 'None', 'Material', 'Shadows', 'SSS', 'SSAO', 'SSGI', 'Volumetric Lighting', 'Ray-Traced Lighting', 'Accumulation', 'Sky Irradiance', 'ShadowMap Color', 'ShadowMap Normal').needsReload(true).build('None'))
         .add(asBool("DEBUG_WHITE_WORLD", false, true))
-        .add(asInt("DEBUG_MATERIAL", 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10).needsReload(true).build(0))
+        .add(asString("DEBUG_MATERIAL", 'Albedo', 'Geo-Normal', 'Tex-Normal', 'Occlusion', 'Roughness', 'F0/Metal', 'Porosity', 'SSS', 'Emission', 'LightMap').needsReload(true).build('Albedo'))
         .build();
 
     return new Page("main")

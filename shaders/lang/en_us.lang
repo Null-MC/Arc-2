@@ -1,4 +1,5 @@
 option.SKY_SEA_LEVEL=Sea Level
+option.SKY_SEA_LEVEL.comment=The Y level of the sea for the currently loaded map. Affects vertical fog falloff.
 
 option.SKY_SUN_ANGLE=Sun Angle
 suffix.SKY_SUN_ANGLE=°
@@ -13,6 +14,7 @@ option.WATER_WAVES_ENABLED=Waves
 option.WATER_TESSELLATION_ENABLED=Tessellation
 
 option.WATER_TESSELLATION_LEVEL=Tessellation Level
+option.WATER_TESSELLATION_LEVEL.comment=The maximum number of times to subdivide a water blocks surface.
 suffix.WATER_TESSELLATION_LEVEL=x
 
 option.SHADOWS_ENABLED=Enabled
@@ -22,6 +24,7 @@ option.SHADOWS_CLOUD_ENABLED=Clouds
 option.SHADOW_RESOLUTION=Resolution
 
 option.MATERIAL_FORMAT=Format
+option.MATERIAL_FORMAT.comment=The format of the PBR resource pack currently loaded.
 value.MATERIAL_FORMAT.0=None
 value.MATERIAL_FORMAT.1=Lab-PBR
 value.MATERIAL_FORMAT.2=Old-PBR
@@ -48,25 +51,33 @@ value.LIGHTING_MODE.0=LightMap
 value.LIGHTING_MODE.1=LPV
 value.LIGHTING_MODE.2=RT
 
-option.LIGHTING_REFLECT_MODE=Reflections
+option.LIGHTING_REFLECT_MODE=Reflection Mode
 value.LIGHTING_REFLECT_MODE.0=Sky Only
 value.LIGHTING_REFLECT_MODE.1=Screen-Space
 value.LIGHTING_REFLECT_MODE.2=World-Space
 
+option.LIGHTING_REFLECT_TRIANGLE=Full Quad Tracing
+option.LIGHTING_REFLECT_TRIANGLE.comment=Allows full-detail, per-quad tracing for world-space reflections. WARNING: Heavy on performance!
+
 option.LIGHTING_REFLECT_NOISE=Rough Reflections
+option.LIGHTING_REFLECT_NOISE.comment=Allows surfaces to scatter reflected lighting based on roughness. This is more realistic but may not be desired by all users.
 
 option.LIGHTING_REFLECT_MAXSTEP=WSR Max Step Count
 
-option.LIGHTING_TRACE_TRIANGLE=Fully Traced Lighting
+option.LIGHTING_TRACE_TRIANGLE=Full Quad Tracing
+option.LIGHTING_REFLECT_TRIANGLE.comment=Allows full-detail, per-quad tracing for ray-traced lighting. WARNING: Heavy on performance!
 
-option.LIGHTING_VL_RES=Volumetric Res
+option.LIGHTING_VL_RES=Volumetric Resolution
 value.LIGHTING_VL_RES.0=Full
-value.LIGHTING_VL_RES.1=1/2
-value.LIGHTING_VL_RES.2=1/4
+value.LIGHTING_VL_RES.1=Half
+value.LIGHTING_VL_RES.2=Quarter
 
+option.RT_MAX_SAMPLE_COUNT=Max Sample Count
+option.RT_MAX_SAMPLE_COUNT.comment=The maximum number of lights that can be sampled per-pixel, per-frame. Increasing this value will improve quality but reduce performance.
 value.RT_MAX_SAMPLE_COUNT.0=Infinite
 
 option.VOXEL_SIZE=Size
+option.VOXEL_SIZE.comment=The size of the voxel volume [in blocks].
 suffix.VOXEL_SIZE=^3
 
 option.VOXEL_FRUSTUM_OFFSET=Offset
@@ -78,8 +89,10 @@ option.LPV_ENABLED=Enabled
 option.LPV_RSM_ENABLED=RSM
 
 option.EFFECT_SSAO_ENABLED=SSAO
+option.EFFECT_SSAO_ENABLED.comment=Screen-Space Ambient Occlusion
 
 option.EFFECT_SSGI_ENABLED=SSGI
+option.EFFECT_SSGI_ENABLED.comment=Screen-Space Global Illumination
 
 option.EFFECT_BLOOM_ENABLED=Enabled
 
@@ -87,6 +100,7 @@ option.EFFECT_BLOOM_STRENGTH=Strength
 suffix.EFFECT_BLOOM_STRENGTH=%
 
 option.EFFECT_TAA_ENABLED=TAA
+option.EFFECT_TAA_ENABLED.comment=Temporal Anti-Aliasing
 
 option.POST_EXPOSURE_MIN=Minimum
 
@@ -97,9 +111,8 @@ option.POST_EXPOSURE_SPEED=Speed
 option.POST_CONTRAST=Contrast
 suffix.POST_CONTRAST=%
 
-option.DEBUG_ENABLED=Enabled
-
 option.DEBUG_WHITE_WORLD=White-World
+option.DEBUG_WHITE_WORLD.comment=Makes all blocks in the world white, so that lighting can be visualized/debugged more easily.
 
 option.DEBUG_VIEW=View
 value.DEBUG_VIEW.0=None
@@ -116,14 +129,13 @@ value.DEBUG_VIEW.10=ShadowMap Color
 value.DEBUG_VIEW.11=ShadowMap Normal
 
 option.DEBUG_MATERIAL=Material
-value.DEBUG_MATERIAL.0=None
-value.DEBUG_MATERIAL.1=Albedo
-value.DEBUG_MATERIAL.2=Geo-Normal
-value.DEBUG_MATERIAL.3=Tex-Normal
-value.DEBUG_MATERIAL.4=Occlusion
-value.DEBUG_MATERIAL.5=Roughness
-value.DEBUG_MATERIAL.6=F0/Metal
-value.DEBUG_MATERIAL.7=Porosity
-value.DEBUG_MATERIAL.8=SSS
-value.DEBUG_MATERIAL.9=Emission
-value.DEBUG_MATERIAL.10=LightMap
+value.DEBUG_MATERIAL.0=Albedo
+value.DEBUG_MATERIAL.1=Geo-Normal
+value.DEBUG_MATERIAL.2=Tex-Normal
+value.DEBUG_MATERIAL.3=Occlusion
+value.DEBUG_MATERIAL.4=Roughness
+value.DEBUG_MATERIAL.5=F0/Metal
+value.DEBUG_MATERIAL.6=Porosity
+value.DEBUG_MATERIAL.7=SSS
+value.DEBUG_MATERIAL.8=Emission
+value.DEBUG_MATERIAL.9=LightMap

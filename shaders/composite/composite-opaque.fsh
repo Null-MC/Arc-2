@@ -276,14 +276,14 @@ void main() {
         vec3 sss_phase_moon = max(HG(-VoL_sun, 0.16), 0.0) * MOON_BRIGHTNESS * moonTransmit * (1.0 - max(NoL_moon, 0.0));
         skyLightDiffuse += PI * (sss_phase_sun + sss_phase_moon) * max(shadow_sss.w, 0.0) * abs(Scene_LocalLightDir.y);
 
-        vec3 blockLighting = blackbody(BLOCKLIGHT_TEMP) * (BLOCKLIGHT_BRIGHTNESS * lmCoord.x);
+        vec3 blockLighting = blackbody(BLOCKLIGHT_TEMP) * (BLOCKLIGHT_BRIGHTNESS * lmCoord.x) * occlusion;
 
         #if LIGHTING_MODE != LIGHT_MODE_VANILLA
             // TODO: make fade and not cutover!
             if (IsInVoxelBounds(voxelPos)) blockLighting = vec3(0.0);
         #endif
 
-        vec3 diffuse = skyLightDiffuse + blockLighting + 0.0016 * occlusion;
+        vec3 diffuse = skyLightDiffuse + blockLighting + 0.0016 * (occlusion * 0.5 + 0.5);
 
         #ifdef ACCUM_ENABLED
             if (altFrame) diffuse += textureLod(texAccumDiffuse_opaque_alt, uv, 0).rgb;

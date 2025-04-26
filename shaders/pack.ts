@@ -40,7 +40,7 @@ function getSettings() {
             SS_Fallback: true,
         },
         Material: {
-            Format: 1, //parseInt(getStringSetting("MATERIAL_FORMAT")),
+            Format: getStringSettingIndex("MATERIAL_FORMAT", 1, 'None', 'Lab-PBR', 'Old-PBR'),
             Parallax: {
                 Enabled: getBoolSetting("MATERIAL_PARALLAX_ENABLED"),
                 Depth: getIntSetting("MATERIAL_PARALLAX_DEPTH"),
@@ -53,7 +53,7 @@ function getSettings() {
             FancyLavaRes: getIntSetting("FANCY_LAVA_RES"),
         },
         Lighting: {
-            Mode: 1, //getIntSetting("LIGHTING_MODE"),
+            Mode: () => getStringSettingIndex("LIGHTING_MODE", 1, 'LightMap', 'FloodFill', 'Ray-Traced'),
             LpvRsmEnabled: getBoolSetting("LPV_RSM_ENABLED"),
             RT: {
                 MaxSampleCount: getIntSetting("RT_MAX_SAMPLE_COUNT"),
@@ -95,10 +95,11 @@ function getSettings() {
             Contrast: () => getIntSetting("POST_CONTRAST"),
         },
         Debug: {
-            Enabled: () => getBoolSetting("DEBUG_ENABLED"),
-            View: () => getIntSetting("DEBUG_VIEW"),
-            Material: () => getIntSetting("DEBUG_MATERIAL"),
+            //Enabled: () => getBoolSetting("DEBUG_ENABLED"),
+            View: () => getStringSettingIndex("DEBUG_VIEW", 0, 'None', 'Material', 'Shadows', 'SSS', 'SSAO', 'SSGI', 'Volumetric Lighting', 'Ray-Traced Lighting', 'Accumulation', 'Sky Irradiance', 'ShadowMap Color', 'ShadowMap Normal'),
+            Material: () => getStringSettingIndex("DEBUG_MATERIAL", 0, 'Albedo', 'Geo-Normal', 'Tex-Normal', 'Occlusion', 'Roughness', 'F0/Metal', 'Porosity', 'SSS', 'Emission', 'LightMap'),
             WhiteWorld: () => getBoolSetting("DEBUG_WHITE_WORLD"),
+            Translucent: false,
             HISTOGRAM: false,
             RT: false,
         },
@@ -107,25 +108,16 @@ function getSettings() {
             Voxelization: false,
             VoxelizeBlockFaces: false,
             VoxelizeTriangles: false,
+            DebugEnabled: false,
             LPV: false,
         },
     };
-
-    const materialFormatStr = getStringSetting("MATERIAL_FORMAT");
-    if (materialFormatStr == "Old-PBR") Settings.Material.Format = 2;
-    else if (materialFormatStr == "Lab-PBR") Settings.Material.Format = 1;
-    else if (materialFormatStr == "None") Settings.Material.Format = 0;
-
-    const lightModeStr = getStringSetting("LIGHTING_MODE");
-    if (lightModeStr == 'Ray-Traced') Settings.Lighting.Mode = 2;
-    else if (lightModeStr == 'FloodFill') Settings.Lighting.Mode = 1;
-    else if (lightModeStr == 'LightMap') Settings.Lighting.Mode = 0;
 
     // if (Settings.Voxel.RT.Enabled) Settings.Internal.Accumulation = true;
     if (Settings.Effect.SSGIAO.SSAO()) Settings.Internal.Accumulation = true;
     if (Settings.Effect.SSGIAO.SSGI()) Settings.Internal.Accumulation = true;
 
-    switch (Settings.Lighting.Mode) {
+    switch (Settings.Lighting.Mode()) {
         case LightMode_LPV:
             Settings.Internal.Voxelization = true;
             Settings.Internal.LPV = true;
@@ -161,10 +153,20 @@ function getSettings() {
         Settings.Internal.LPV = true;
     }
 
+    if (Settings.Debug.View() != 0)
+        Settings.Internal.DebugEnabled = true;
+
     // TODO: DEBUG ONLY!
     //Settings.Internal.Accumulation = false;
 
     return Settings;
+}
+
+function getStringSettingIndex(name: string, defaultValue: number, ...options: string[]) : number {
+    const value = getStringSetting(name);
+    const index = options.indexOf(value);
+    //print(`Setting [${name}] = [${index}] where [${name}] in [${options}]`)
+    return index < 0 ? defaultValue : index;
 }
 
 function applySettings(settings) {
@@ -215,7 +217,7 @@ function applySettings(settings) {
         defineGlobally("FANCY_LAVA_RES", settings.Material.FancyLavaRes.toString());
     }
 
-    defineGlobally("LIGHTING_MODE", settings.Lighting.Mode.toString());
+    defineGlobally("LIGHTING_MODE", settings.Lighting.Mode().toString());
     //defineGlobally("LIGHTING_VL_RES", Settings.Lighting.VolumetricResolution.toString());
 
     defineGlobally("LIGHTING_REFLECT_MODE", settings.Lighting.Reflections.Mode.toString());
@@ -230,7 +232,7 @@ function applySettings(settings) {
         defineGlobally("VOXEL_SIZE", settings.Voxel.Size().toString());
         defineGlobally("VOXEL_FRUSTUM_OFFSET", settings.Voxel.Offset().toString());
 
-        if (settings.Lighting.Mode == LightMode_RT) {
+        if (settings.Lighting.Mode() == LightMode_RT) {
             defineGlobally1("RT_ENABLED");
             defineGlobally("RT_MAX_SAMPLE_COUNT", `${settings.Lighting.RT.MaxSampleCount}u`);
             defineGlobally("LIGHT_BIN_MAX", settings.Voxel.MaxLightCount.toString());
@@ -270,12 +272,13 @@ function applySettings(settings) {
     // defineGlobally("POST_EXPOSURE_MAX", Settings.Post.Exposure.Max().toString());
     // defineGlobally("POST_EXPOSURE_SPEED", Settings.Post.Exposure.Speed().toString());
 
-    if (settings.Debug.Enabled()) {
-        defineGlobally("DEBUG_VIEW", settings.Debug.View());
-        defineGlobally("DEBUG_MATERIAL", settings.Debug.Material());
-        if (settings.Debug.WhiteWorld()) defineGlobally1("DEBUG_WHITE_WORLD");
-        if (settings.Debug.HISTOGRAM) defineGlobally1("DEBUG_HISTOGRAM");
-        if (settings.Debug.RT) defineGlobally1("DEBUG_RT");
+    if (settings.Debug.WhiteWorld()) defineGlobally1("DEBUG_WHITE_WORLD");
+    if (settings.Debug.HISTOGRAM) defineGlobally1("DEBUG_HISTOGRAM");
+    if (settings.Debug.RT) defineGlobally1("DEBUG_RT");
+
+    if (settings.Internal.DebugEnabled) {
+        defineGlobally("DEBUG_VIEW", settings.Debug.View().toString());
+        defineGlobally("DEBUG_MATERIAL", settings.Debug.Material().toString());
     }
 }
 
@@ -442,7 +445,7 @@ export function setupShader() {
 
     let texDiffuseRT: BuiltTexture | null = null;
     let texSpecularRT: BuiltTexture | null = null;
-    if (Settings.Lighting.Mode == LightMode_RT || Settings.Lighting.Reflections.Mode == ReflectMode_WSR) {
+    if (Settings.Lighting.Mode() == LightMode_RT || Settings.Lighting.Reflections.Mode == ReflectMode_WSR) {
         texDiffuseRT = new Texture("texDiffuseRT")
             // .imageName("imgDiffuseRT")
             .format(Format.RGB16F)
@@ -892,7 +895,7 @@ export function setupShader() {
         //registerBarrier(Stage.POST_RENDER, new MemoryBarrier(SSBO_BIT));
     }
 
-    if (Settings.Lighting.Mode == LightMode_RT) {
+    if (Settings.Lighting.Mode() == LightMode_RT) {
         const groupCount = Math.ceil(Settings.Voxel.Size() / 8);
 
         registerShader(Stage.POST_RENDER, new Compute("light-list")
@@ -924,7 +927,7 @@ export function setupShader() {
 
     const texShadow_src = Settings.Shadows.Filter ? "texShadow_final" : "texShadow";
 
-    if (Settings.Lighting.Mode == LightMode_RT || Settings.Lighting.Reflections.Mode == ReflectMode_WSR) {
+    if (Settings.Lighting.Mode() == LightMode_RT || Settings.Lighting.Reflections.Mode == ReflectMode_WSR) {
         registerBarrier(Stage.POST_RENDER, new MemoryBarrier(SSBO_BIT));
 
         if (Settings.Lighting.Reflections.Mode == ReflectMode_WSR)
@@ -1029,7 +1032,7 @@ export function setupShader() {
 
     registerShader(Stage.POST_RENDER, compositeOpaqueShader.build());
 
-    if (Settings.Lighting.Mode == LightMode_RT || Settings.Lighting.Reflections.Mode == ReflectMode_WSR) {
+    if (Settings.Lighting.Mode() == LightMode_RT || Settings.Lighting.Reflections.Mode == ReflectMode_WSR) {
         registerBarrier(Stage.POST_RENDER, new MemoryBarrier(SSBO_BIT));
 
         if (Settings.Lighting.Reflections.Mode == ReflectMode_WSR)
@@ -1166,7 +1169,9 @@ export function setupShader() {
         .target(0, texFinal)
         .build());
 
-    if (Settings.Debug.Enabled()) {
+    if (Settings.Internal.DebugEnabled) {
+        //print("SHADER DEBUG MODE ENABLED");
+
         registerShader(Stage.POST_RENDER, new Composite("debug")
             .vertex("shared/bufferless.vsh")
             .fragment("post/debug.fsh")
@@ -1174,6 +1179,9 @@ export function setupShader() {
             .ssbo(0, sceneBuffer)
             .ssbo(3, lightListBuffer)
             .ssbo(4, quadListBuffer)
+            .define("TEX_COLOR", Settings.Debug.Translucent
+                ? "texDeferredTranslucent_Color"
+                : "texDeferredOpaque_Color")
             .define("TEX_SHADOW", texShadow_src)
             .define("TEX_SSGIAO", "texSSGIAO_final")
             .define("TEX_ACCUM_OCCLUSION", "texAccumOcclusion_opaque")

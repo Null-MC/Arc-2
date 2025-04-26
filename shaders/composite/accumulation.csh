@@ -131,8 +131,10 @@ void main() {
     ivec2 iuv = ivec2(gl_GlobalInvocationID.xy);
     vec2 uv = (iuv + 0.5) / ap.game.screenSize;
 
-    populateSharedBuffer();
-    barrier();
+    #ifdef EFFECT_SSGI_ENABLED
+        populateSharedBuffer();
+        barrier();
+    #endif
 
     if (any(greaterThanEqual(iuv, ivec2(ap.game.screenSize)))) return;
 
@@ -204,12 +206,16 @@ void main() {
     if (clamp(uvLast, 0.0, 1.0) != uvLast) counterF = 0.0;
     if (distance(localPosPrev, localPosLast.xyz) > offsetThreshold) counterF = 0.0;
 
-    vec3 diffuse = sampleSharedBuffer(depthL);
+    vec3 diffuse = vec3(0.0);
     vec3 specular = vec3(0.0);
 
     #if LIGHTING_MODE == LIGHT_MODE_RT || LIGHTING_REFLECT_MODE == REFLECT_MODE_WSR
-        diffuse += textureLod(texDiffuseRT, uv, 0).rgb;
+        diffuse = textureLod(texDiffuseRT, uv, 0).rgb;
         specular = textureLod(texSpecularRT, uv, 0).rgb;
+    #endif
+
+    #ifdef EFFECT_SSGI_ENABLED
+        diffuse += sampleSharedBuffer(depthL);
     #endif
 
     #ifdef EFFECT_SSAO_ENABLED

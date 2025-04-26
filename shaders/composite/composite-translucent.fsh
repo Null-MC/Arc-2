@@ -267,7 +267,12 @@ void main() {
 
         // reflections
         #if LIGHTING_REFLECT_MODE != REFLECT_MODE_WSR
-            vec3 reflectLocalDir = reflect(localViewDir, localTexNormal);
+            //vec3 reflectLocalDir = reflect(localViewDir, localTexNormal);
+
+            vec3 viewDir = normalize(viewPosTrans);
+            vec3 viewNormal = mat3(ap.camera.view) * localTexNormal;
+            vec3 reflectViewDir = reflect(viewDir, viewNormal);
+            vec3 reflectLocalDir = mat3(ap.camera.viewInv) * reflectViewDir;
 
             #ifdef MATERIAL_ROUGH_REFLECT_NOISE
                 randomize_reflection(reflectLocalDir, localTexNormal, roughness);

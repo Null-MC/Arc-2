@@ -1,4 +1,4 @@
-#define MATERIAL_EMISSION_POWER 2.2
+#define MATERIAL_EMISSION_POWER 1
 // #define LPV_PER_FACE_LIGHTING
 #define MATERIAL_ROUGH_REFRACT
 
@@ -15,7 +15,6 @@ const float SUN_SIZE = 2.2;
 const float MOON_SIZE = 3.4;
 
 const float SUN_LUMINANCE = 8000.0;
-//const float EMISSION_BRIGHTNESS = 160.0;
 const float MOON_LUMINANCE = 0.16;
 const float STAR_LUMINANCE = 0.10;
 const float SKY_LUMINANCE = 100.0;
@@ -63,6 +62,7 @@ layout (std140, binding = 0) uniform SceneSettings {
 	float Scene_SkyFogDensityF;
 	float Scene_SkyFogSeaLevel;
 	int Scene_WaterWaveDetail;
+	float Material_EmissionBrightness;
 	float Scene_EffectBloomStrength;
 	float Scene_PostContrastF;
 	float Scene_PostExposureMin;

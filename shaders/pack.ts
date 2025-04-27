@@ -15,7 +15,7 @@ const ReflectMode_WSR = 2;
 
 
 let SceneSettingsBuffer: BuiltStreamingBuffer;
-const SceneSettingsBufferSize = 36;
+const SceneSettingsBufferSize = 48;
 
 function getSettings() {
     const Settings = {
@@ -48,7 +48,7 @@ function getSettings() {
                 Sharp: getBoolSetting("MATERIAL_PARALLAX_SHARP"),
                 DepthWrite: getBoolSetting("MATERIAL_PARALLAX_DEPTHWRITE"),
             },
-            EmissionBrightness: getIntSetting("EMISSION_BRIGHTNESS"),
+            EmissionBrightness: () => getIntSetting("MATERIAL_EMISSION_BRIGHTNESS"),
             FancyLava: getBoolSetting("FANCY_LAVA"),
             FancyLavaRes: getIntSetting("FANCY_LAVA_RES"),
         },
@@ -60,7 +60,7 @@ function getSettings() {
                 TraceTriangles: getBoolSetting("LIGHTING_TRACE_TRIANGLE"),
             },
             Reflections: {
-                Mode: getIntSetting("LIGHTING_REFLECT_MODE"),
+                Mode: getStringSettingIndex("LIGHTING_REFLECT_MODE", 2, 'Sky Only', 'Screen-Space', 'World-Space'),
                 Noise: getBoolSetting("LIGHTING_REFLECT_NOISE"),
                 ReflectTriangles: getBoolSetting("LIGHTING_REFLECT_TRIANGLE"),
                 MaxStepCount: getIntSetting("LIGHTING_REFLECT_MAXSTEP"),
@@ -211,7 +211,6 @@ function applySettings(settings) {
         if (settings.Material.Parallax.Sharp) defineGlobally1("MATERIAL_PARALLAX_SHARP");
         if (settings.Material.Parallax.DepthWrite) defineGlobally1("MATERIAL_PARALLAX_DEPTHWRITE");
     }
-    defineGlobally("EMISSION_BRIGHTNESS", settings.Material.EmissionBrightness.toString());
     if (settings.Material.FancyLava) {
         defineGlobally1("FANCY_LAVA");
         defineGlobally("FANCY_LAVA_RES", settings.Material.FancyLavaRes.toString());
@@ -616,31 +615,51 @@ export function setupShader() {
         .clear(false)
         .build();
 
-    let shLpvBuffer: BuiltBuffer | null = null;
-    let shLpvBuffer_alt: BuiltBuffer | null = null;
-    let shLpvRsmBuffer: BuiltBuffer | null = null;
-    let shLpvRsmBuffer_alt: BuiltBuffer | null = null;
-    if (Settings.Internal.LPV) {
-        // f16vec4[3] * VoxelBufferSize^3
-        const bufferSize = 8 * 3 * cubed(Settings.Voxel.Size());
+    // let shLpvBuffer: BuiltBuffer | null = null;
+    // let shLpvBuffer_alt: BuiltBuffer | null = null;
+    // let shLpvRsmBuffer: BuiltBuffer | null = null;
+    // let shLpvRsmBuffer_alt: BuiltBuffer | null = null;
+    // if (Settings.Internal.LPV) {
+    //     // f16vec4[3] * VoxelBufferSize^3
+    //     const bufferSize = 8 * 3 * cubed(Settings.Voxel.Size());
+    //
+    //     shLpvBuffer = new GPUBuffer(bufferSize)
+    //         .clear(false)
+    //         .build();
+    //
+    //     shLpvBuffer_alt = new GPUBuffer(bufferSize)
+    //         .clear(false)
+    //         .build();
+    //
+    //     if (Settings.Lighting.LpvRsmEnabled) {
+    //         shLpvRsmBuffer = new GPUBuffer(bufferSize)
+    //             .clear(false)
+    //             .build();
+    //
+    //         shLpvRsmBuffer_alt = new GPUBuffer(bufferSize)
+    //             .clear(false)
+    //             .build();
+    //     }
+    // }
 
-        shLpvBuffer = new GPUBuffer(bufferSize)
+    if (Settings.Lighting.Mode() == LightMode_LPV) {
+        const texFloodFill = new Texture("texFloodFill")
+            .imageName("imgFloodFill")
+            .format(Format.RGBA16F)
+            .width(Settings.Voxel.Size())
+            .height(Settings.Voxel.Size())
+            .depth(Settings.Voxel.Size())
             .clear(false)
             .build();
 
-        shLpvBuffer_alt = new GPUBuffer(bufferSize)
+        const texFloodFill_alt = new Texture("texFloodFill_alt")
+            .imageName("imgFloodFill_alt")
+            .format(Format.RGBA16F)
+            .width(Settings.Voxel.Size())
+            .height(Settings.Voxel.Size())
+            .depth(Settings.Voxel.Size())
             .clear(false)
             .build();
-
-        if (Settings.Lighting.LpvRsmEnabled) {
-            shLpvRsmBuffer = new GPUBuffer(bufferSize)
-                .clear(false)
-                .build();
-
-            shLpvRsmBuffer_alt = new GPUBuffer(bufferSize)
-                .clear(false)
-                .build();
-        }
     }
 
     const texHistogram = new Texture("texHistogram")
@@ -711,13 +730,13 @@ export function setupShader() {
         .workGroups(1, 1, 1)
         .build());
 
-    if (Settings.Internal.LPV) {
-        registerShader(Stage.SCREEN_SETUP, new Compute("lpv-clear")
-            // .barrier(true)
-            .location("setup/lpv-clear.csh")
-            .workGroups(8, 8, 8)
-            .build());
-    }
+    // if (Settings.Internal.LPV) {
+    //     registerShader(Stage.SCREEN_SETUP, new Compute("lpv-clear")
+    //         // .barrier(true)
+    //         .location("setup/lpv-clear.csh")
+    //         .workGroups(8, 8, 8)
+    //         .build());
+    // }
 
     registerShader(Stage.PRE_RENDER, new Compute("scene-prepare")
         // .barrier(true)
@@ -854,13 +873,13 @@ export function setupShader() {
 
     registerShader(waterShader.build());
 
-    registerShader(mainShaderOpaque("hand-solid", Usage.HAND)
-        .define("RENDER_HAND", "1")
-        .build());
-
-    registerShader(mainShaderTranslucent("hand-translucent", Usage.TRANSLUCENT_HAND)
-        .define("RENDER_HAND", "1")
-        .build());
+    // registerShader(mainShaderOpaque("hand-solid", Usage.HAND)
+    //     .define("RENDER_HAND", "1")
+    //     .build());
+    //
+    // registerShader(mainShaderTranslucent("hand-translucent", Usage.TRANSLUCENT_HAND)
+    //     .define("RENDER_HAND", "1")
+    //     .build());
 
     registerShader(mainShaderOpaque("entity-solid", Usage.ENTITY_SOLID)
         .define("RENDER_ENTITY", "1")
@@ -888,15 +907,15 @@ export function setupShader() {
             // .barrier(true)
             .location("composite/lpv-propagate.csh")
             .workGroups(groupCount, groupCount, groupCount)
-            .ssbo(0, sceneBuffer)
-            .ssbo(1, shLpvBuffer)
-            .ssbo(2, shLpvBuffer_alt);
+            .ssbo(0, sceneBuffer);
+            // .ssbo(1, shLpvBuffer)
+            // .ssbo(2, shLpvBuffer_alt);
 
-        if (Settings.Lighting.LpvRsmEnabled) {
-            shader
-                .ssbo(3, shLpvRsmBuffer)
-                .ssbo(4, shLpvRsmBuffer_alt);
-        }
+        // if (Settings.Lighting.LpvRsmEnabled) {
+        //     shader
+        //         .ssbo(3, shLpvRsmBuffer)
+        //         .ssbo(4, shLpvRsmBuffer_alt);
+        // }
 
         registerShader(Stage.POST_RENDER, shader.build());
 
@@ -951,17 +970,18 @@ export function setupShader() {
             .ssbo(3, lightListBuffer)
             .ssbo(4, quadListBuffer)
             .ssbo(5, blockFaceBuffer)
+            .ubo(0, SceneSettingsBuffer)
             .define("TEX_DEFERRED_COLOR", "texDeferredOpaque_Color")
             .define("TEX_DEFERRED_DATA", "texDeferredOpaque_Data")
             .define("TEX_DEFERRED_NORMAL", "texDeferredOpaque_TexNormal")
             .define("TEX_DEPTH", "solidDepthTex")
             .define("TEX_SHADOW", texShadow_src);
 
-        if (Settings.Internal.LPV) {
-            rtOpaqueShader
-                .ssbo(1, shLpvBuffer)
-                .ssbo(2, shLpvBuffer_alt);
-        }
+        // if (Settings.Internal.LPV) {
+        //     rtOpaqueShader
+        //         .ssbo(1, shLpvBuffer)
+        //         .ssbo(2, shLpvBuffer_alt);
+        // }
 
         registerShader(Stage.POST_RENDER, rtOpaqueShader.build());
     }
@@ -1013,8 +1033,8 @@ export function setupShader() {
         .target(0, texScatterVL)
         .target(1, texTransmitVL)
         .ssbo(0, sceneBuffer)
-        .ssbo(1, shLpvBuffer)
-        .ssbo(2, shLpvBuffer_alt)
+        // .ssbo(1, shLpvBuffer)
+        // .ssbo(2, shLpvBuffer_alt)
         .ubo(0, SceneSettingsBuffer)
         .build());
 
@@ -1026,17 +1046,18 @@ export function setupShader() {
         .target(0, texFinalOpaque)
         .ssbo(0, sceneBuffer)
         .ssbo(4, quadListBuffer)
+        .ubo(0, SceneSettingsBuffer)
         .define("TEX_SHADOW", texShadow_src)
         .define("TEX_SSGIAO", "texSSGIAO_final");
 
     // if (Settings.Lighting.Reflections.Mode == ReflectMode_SSR)
     //     compositeOpaqueShader.generateMips(texFinalPrevious);
 
-    if (Settings.Internal.LPV) {
-        compositeOpaqueShader
-            .ssbo(1, shLpvBuffer)
-            .ssbo(2, shLpvBuffer_alt);
-    }
+    // if (Settings.Internal.LPV) {
+    //     compositeOpaqueShader
+    //         .ssbo(1, shLpvBuffer)
+    //         .ssbo(2, shLpvBuffer_alt);
+    // }
 
     registerShader(Stage.POST_RENDER, compositeOpaqueShader.build());
 
@@ -1056,6 +1077,7 @@ export function setupShader() {
             .ssbo(3, lightListBuffer)
             .ssbo(4, quadListBuffer)
             .ssbo(5, blockFaceBuffer)
+            .ubo(0, SceneSettingsBuffer)
             .define("RENDER_TRANSLUCENT", "1")
             .define("TEX_DEFERRED_COLOR", "texDeferredTrans_Color")
             .define("TEX_DEFERRED_DATA", "texDeferredTrans_Data")
@@ -1099,8 +1121,8 @@ export function setupShader() {
         .target(0, texScatterVL)
         .target(1, texTransmitVL)
         .ssbo(0, sceneBuffer)
-        .ssbo(1, shLpvBuffer)
-        .ssbo(2, shLpvBuffer_alt)
+        // .ssbo(1, shLpvBuffer)
+        // .ssbo(2, shLpvBuffer_alt)
         .ubo(0, SceneSettingsBuffer)
         .build());
 
@@ -1112,6 +1134,7 @@ export function setupShader() {
         .target(0, texFinal)
         .ssbo(0, sceneBuffer)
         .ssbo(4, quadListBuffer)
+        .ubo(0, SceneSettingsBuffer)
         // .generateMips(texFinalOpaque)
         .build());
 
@@ -1210,6 +1233,7 @@ export function onSettingsChanged(state : WorldState) {
         .appendFloat(d*d)
         .appendFloat(Settings.Sky.SeaLevel())
         .appendInt(Settings.Water.Detail())
+        .appendFloat(Settings.Material.EmissionBrightness() * 0.01)
         .appendFloat(Settings.Effect.Bloom.Strength() * 0.01)
         .appendFloat(Settings.Post.Contrast() * 0.01)
         .appendFloat(Settings.Post.Exposure.Min())

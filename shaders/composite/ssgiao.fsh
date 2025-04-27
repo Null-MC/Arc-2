@@ -96,7 +96,7 @@ void main() {
                 vec3 sampleClipPos_ao = unproject(ap.camera.projection, sampleViewPos_ao) * 0.5 + 0.5;
 
                 bool skip_ao = false;
-                if (clamp(sampleClipPos_ao.xy, 0.0, 1.0) != sampleClipPos_ao.xy) skip_ao = true;
+                if (saturate(sampleClipPos_ao.xy) != sampleClipPos_ao.xy) skip_ao = true;
                 //if (all(lessThan(abs(sampleClipPos_ao.xy - uv), pixelSize))) skip_ao = true;
 
                 float sampleClipDepth_ao = textureLod(solidDepthTex, sampleClipPos_ao.xy, 0.0).r;
@@ -125,7 +125,7 @@ void main() {
                 vec3 sampleClipPos_gi = unproject(ap.camera.projection, sampleViewPos_gi) * 0.5 + 0.5;
 
                 bool skip_gi = false;
-                if (clamp(sampleClipPos_gi.xy, 0.0, 1.0) != sampleClipPos_gi.xy) skip_gi = true;
+                if (saturate(sampleClipPos_gi.xy) != sampleClipPos_gi.xy) skip_gi = true;
                 if (all(lessThan(abs(sampleClipPos_gi.xy - uv), pixelSize))) skip_gi = true;
 
                 float sampleClipDepth_gi = textureLod(solidDepthTex, sampleClipPos_gi.xy, 0.0).r;

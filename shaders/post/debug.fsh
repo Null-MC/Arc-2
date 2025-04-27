@@ -94,7 +94,7 @@ void main() {
         previewCoord2 = (uv - vec2(0.27, 0.01)) / vec2(0.25);
         previewCoordSq = (uv - 0.01) / vec2(0.25 * aspect, 0.25);
 
-        if (clamp(previewCoord, 0.0, 1.0) == previewCoord) {
+        if (saturate(previewCoord) == previewCoord) {
             #if DEBUG_VIEW == DEBUG_VIEW_SHADOWS
                 color = textureLod(TEX_SHADOW, previewCoord, 0).rgb;
             #elif DEBUG_VIEW == DEBUG_VIEW_SSS
@@ -152,7 +152,7 @@ void main() {
             #endif
         }
 
-        if (clamp(previewCoord2, 0.0, 1.0) == previewCoord2) {
+        if (saturate(previewCoord2) == previewCoord2) {
             #if DEBUG_VIEW == DEBUG_VIEW_VL
                 color = textureLod(texTransmitVL, previewCoord2, 0).rgb;
             #elif DEBUG_VIEW == DEBUG_VIEW_RT
@@ -168,7 +168,7 @@ void main() {
             #endif
         }
 
-        if (clamp(previewCoordSq, 0.0, 1.0) == previewCoordSq) {
+        if (saturate(previewCoordSq) == previewCoordSq) {
             #if DEBUG_VIEW == DEBUG_VIEW_SHADOWMAP_COLOR
                 vec4 shadowColor = textureLod(texShadowColor, vec3(previewCoordSq, 0), 0);
                 color = shadowColor.rgb * shadowColor.a;
@@ -179,24 +179,24 @@ void main() {
 
         #ifdef DEBUG_HISTOGRAM
             previewCoord = (uv - 0.01) / vec2(0.25, 0.1);
-            if (clamp(previewCoord, 0.0, 1.0) == previewCoord) {
+            if (saturate(previewCoord) == previewCoord) {
                 uint sampleVal = textureLod(texHistogram_debug, previewCoord, 0).r;
                 color = vec3(step(previewCoord.y*previewCoord.y, sampleVal / (ap.game.screenSize.x*ap.game.screenSize.y)));
             }
 
             previewCoord = (uv - vec2(0.27, 0.01)) / vec2(0.04, 0.1);
-            if (clamp(previewCoord, 0.0, 1.0) == previewCoord) {
+            if (saturate(previewCoord) == previewCoord) {
                 color = vec3(Scene_AvgExposure);
             }
         #endif
 
         #ifdef DEBUG_RT
             previewCoord = (uv - 0.01) / vec2(0.25);
-            if (clamp(previewCoord, 0.0, 1.0) == previewCoord)
+            if (saturate(previewCoord) == previewCoord)
                 color = textureLod(texDiffuseRT, previewCoord, 0).rgb;
 
             previewCoord = (uv - vec2(0.27, 0.01)) / vec2(0.25);
-            if (clamp(previewCoord, 0.0, 1.0) == previewCoord)
+            if (saturate(previewCoord) == previewCoord)
                 color = textureLod(texSpecularRT, previewCoord, 0).rgb;
         #endif
 

@@ -22,7 +22,7 @@ vec3 tonemap_ACESFit2(const in vec3 color) {
     vec3 v = m1 * color;
     vec3 a = v * (v + 0.0245786) - 0.000090537;
     vec3 b = v * (0.983729 * v + 0.4329510) + 0.238081;
-    return clamp(m2 * (a / b), 0.0, 1.0);
+    return saturate(m2 * (a / b));
 }
 
 vec3 tonemap_Lottes(const in vec3 color) {
@@ -102,7 +102,7 @@ vec3 tonemap_bloopHDR(vec3 color) {
     // Log2 space encoding
     color = clamp(log2(color), AgxMinEv, AgxMaxEv);
     color = (color - AgxMinEv) / (AgxMaxEv - AgxMinEv);
-    color = clamp(color, 0.0, 1.0);
+    color = saturate(color);
 
     // Apply sigmoid function approximation
     vec3 x2 = color * color;

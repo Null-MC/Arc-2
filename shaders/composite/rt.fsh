@@ -34,6 +34,11 @@ uniform sampler2D texBlueNoise;
         uniform sampler2DArray solidShadowMap;
         uniform sampler2DArray texShadowColor;
     #endif
+
+    #ifdef LPV_ENABLED
+        uniform sampler3D texFloodFill;
+        uniform sampler3D texFloodFill_alt;
+    #endif
 #endif
 
 in vec2 uv;
@@ -80,9 +85,9 @@ in vec2 uv;
 #if LIGHTING_REFLECT_MODE == REFLECT_MODE_WSR
     #include "/lib/buffers/scene.glsl"
 
-    #ifdef LPV_ENABLED
-        #include "/lib/buffers/sh-lpv.glsl"
-    #endif
+//    #ifdef LPV_ENABLED
+//        #include "/lib/buffers/sh-lpv.glsl"
+//    #endif
 
     #include "/lib/erp.glsl"
     #include "/lib/material/material.glsl"
@@ -107,7 +112,8 @@ in vec2 uv;
 
     #ifdef LPV_ENABLED
         #include "/lib/lpv/lpv_common.glsl"
-        #include "/lib/lpv/lpv_sample.glsl"
+        //#include "/lib/lpv/lpv_sample.glsl"
+        #include "/lib/lpv/floodfill.glsl"
     #endif
 
     #include "/lib/depth.glsl"
@@ -476,7 +482,7 @@ void main() {
                     }
                 #elif LIGHTING_MODE == LIGHT_MODE_LPV
                     vec3 voxelSamplePos = fma(reflect_geoNormal, vec3(0.5), reflect_voxelPos);
-                    vec3 voxelLight = sample_lpv_linear(voxelSamplePos, reflect_localTexNormal);
+                    vec3 voxelLight = sample_floodfill(voxelSamplePos);
 
                     // TODO: move cloud shadows to RSM sampling!!!
                     reflect_diffuse += voxelLight;// * cloudShadowF;// * SampleLightDiffuse(NoVm, 1.0, 1.0, roughL);
@@ -490,9 +496,9 @@ void main() {
                 reflect_diffuse *= 1.0 - reflect_metalness * (1.0 - reflect_roughL);
 
                 #if MATERIAL_EMISSION_POWER != 1
-                    reflect_diffuse += pow(reflect_emission, MATERIAL_EMISSION_POWER) * EMISSION_BRIGHTNESS;
+                    reflect_diffuse += pow(reflect_emission, MATERIAL_EMISSION_POWER) * Material_EmissionBrightness;
                 #else
-                    reflect_diffuse += reflect_emission * EMISSION_BRIGHTNESS;
+                    reflect_diffuse += reflect_emission * Material_EmissionBrightness;
                 #endif
 
                 skyReflectColor = reflection.rgb * reflect_diffuse;// + reflect_specular;

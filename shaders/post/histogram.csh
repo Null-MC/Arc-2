@@ -19,7 +19,7 @@ uint colorToBin(const in vec3 hdrColor, const in float minLogLum, const in float
 	float lum = luminance(hdrColor);
 	if (lum < EPSILON) return 0u;
 
-	float logLum = clamp((log2(lum) - minLogLum) * inverseLogLumRange, 0.0, 1.0);
+	float logLum = saturate((log2(lum) - minLogLum) * inverseLogLumRange);
 	return uint(logLum * 254.0 + 1.0);
 }
 

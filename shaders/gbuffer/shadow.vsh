@@ -73,7 +73,7 @@ void iris_sendParameters(in VertexData data) {
     #endif
 
     #ifdef VOXEL_ENABLED
-        vOut.lmcoord = clamp((data.light - (0.5/16.0)) / (15.0/16.0), 0.0, 1.0);
+        vOut.lmcoord = saturate((data.light - (0.5/16.0)) / (15.0/16.0));
 
         #if defined(VOXEL_BLOCK_FACE) && defined(RENDER_TERRAIN)
             vOut.textureId = data.textureId;

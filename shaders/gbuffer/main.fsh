@@ -112,7 +112,7 @@ void iris_emitFragment() {
         vec4 specularData = iris_sampleSpecularMapGrad(mUV, dFdXY[0], dFdXY[1]);
     #endif
 
-    vec2 lmcoord = clamp((mLight - (0.5/16.0)) / (15.0/16.0), 0.0, 1.0);
+    vec2 lmcoord = saturate((mLight - (0.5/16.0)) / (15.0/16.0));
     vec3 localGeoNormal = normalize(vIn.localNormal);
 
     #if MATERIAL_FORMAT == MAT_LABPBR

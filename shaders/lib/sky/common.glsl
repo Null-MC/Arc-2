@@ -108,7 +108,7 @@ vec3 getValFromTLUT(sampler2D tex, vec3 pos, vec3 sunDir) {
     vec2 uv;
     uv.x = dot(sunDir, up) * 0.5 + 0.5;
     uv.y = (height - groundRadiusMM) / (atmosphereRadiusMM - groundRadiusMM);
-    uv = clamp(uv, 0.0, 1.0);
+    uv = saturate(uv);
 
     return textureLod(tex, uv, 0).rgb;
 }
@@ -120,7 +120,7 @@ vec3 getValFromMultiScattLUT(sampler2D tex, vec3 pos, vec3 sunDir) {
     vec2 uv;
     uv.x = dot(sunDir, up) * 0.5 + 0.5;
     uv.y = (height - groundRadiusMM) / (atmosphereRadiusMM - groundRadiusMM);
-    uv = clamp(uv, 0.0, 1.0);
+    uv = saturate(uv);
 
     return textureLod(tex, uv, 0).rgb;
 }

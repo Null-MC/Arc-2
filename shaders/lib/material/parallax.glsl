@@ -62,7 +62,7 @@ vec2 GetParallaxCoord(const in vec2 texcoord, const in mat2 dFdXY, const in vec3
         float prevTraceDepth = max(1.0 - pI * stepDepth, 0.0);
 
         float t = (prevTraceDepth - prevTexDepth) / max(texDepth - prevTexDepth + prevTraceDepth - currentTraceDepth, EPSILON);
-        t = clamp(t, 0.0, 1.0);
+        t = saturate(t);
 
         traceDepth.xy = mix(prevTraceOffset, currentTraceOffset, t);
         traceDepth.z = mix(prevTraceDepth, currentTraceDepth, t);

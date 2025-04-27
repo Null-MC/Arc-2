@@ -11,7 +11,7 @@ float skyDisc(const in vec3 rayDir, const in vec3 lightDir, const in float solid
 float skySphere(const in vec3 rayDir, const in vec3 lightDir, const in float solidAngle) {
     float minCosTheta = cos(solidAngle);
     float cosTheta = dot(rayDir, lightDir);
-    return clamp((cosTheta - minCosTheta) / (1.0 - minCosTheta), 0.0, 1.0);
+    return saturate((cosTheta - minCosTheta) / (1.0 - minCosTheta));
 }
 
 float sun(vec3 rayDir, vec3 sunDir) {

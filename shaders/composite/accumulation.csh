@@ -200,10 +200,10 @@ void main() {
 
     float depthL = linearizeDepth(depth, ap.camera.near, ap.camera.far);
 
-    float offsetThreshold = clamp(depthL * 0.04, 0.0, 1.0);
+    float offsetThreshold = saturate(depthL * 0.04);
 
     float counterF = 1.0;
-    if (clamp(uvLast, 0.0, 1.0) != uvLast) counterF = 0.0;
+    if (saturate(uvLast) != uvLast) counterF = 0.0;
     if (distance(localPosPrev, localPosLast.xyz) > offsetThreshold) counterF = 0.0;
 
     vec3 diffuse = vec3(0.0);

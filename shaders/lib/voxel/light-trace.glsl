@@ -66,7 +66,7 @@ vec3 TraceDDA(vec3 origin, const in vec3 endPos, const in float range, const in 
 
                         vec2 hit_uv = QuadIntersectUV(hit_pos, quad_pos_0, quad_pos_1, quad_pos_2);
 
-                        if (clamp(hit_uv, 0.0, 1.0) == hit_uv) {
+                        if (saturate(hit_uv) == hit_uv) {
                             vec2 uv_min = GetQuadUV(quad.uv_min);
                             vec2 uv_max = GetQuadUV(quad.uv_max);
                             vec2 uv = fma(hit_uv, uv_max - uv_min, uv_min);

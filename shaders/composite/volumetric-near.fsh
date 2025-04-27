@@ -17,13 +17,18 @@ uniform sampler2D texSkyMultiScatter;
     uniform sampler2DArray texShadowColor;
 #endif
 
+#ifdef LPV_ENABLED
+    uniform sampler3D texFloodFill;
+    uniform sampler3D texFloodFill_alt;
+#endif
+
 #include "/settings.glsl"
 #include "/lib/common.glsl"
 #include "/lib/buffers/scene.glsl"
 
-#ifdef LPV_ENABLED
-    #include "/lib/buffers/sh-lpv.glsl"
-#endif
+//#ifdef LPV_ENABLED
+//    #include "/lib/buffers/sh-lpv.glsl"
+//#endif
 
 #include "/lib/noise/ign.glsl"
 #include "/lib/hg.glsl"
@@ -43,7 +48,8 @@ uniform sampler2D texSkyMultiScatter;
 #ifdef LPV_ENABLED
     #include "/lib/voxel/voxel_common.glsl"
     #include "/lib/lpv/lpv_common.glsl"
-    #include "/lib/lpv/lpv_sample.glsl"
+    //#include "/lib/lpv/lpv_sample.glsl"
+    #include "/lib/lpv/floodfill.glsl"
 #endif
 
 
@@ -154,12 +160,13 @@ void main() {
 
     float shadowF = smoothstep(-0.05, 0.05, Scene_LocalLightDir.y);
 
-    float miePhaseValue = 0.0;
+    float miePhase_sun = 0.0;
+    float miePhase_moon = 0.0;
     //float rayleighPhaseValue;
 
     if (ap.camera.fluid != 1) {
-        // TODO: add moon
-        miePhaseValue = getMiePhase(VoL_sun, 0.2);
+        miePhase_sun = getMiePhase(VoL_sun, 0.2);
+        miePhase_moon = getMiePhase(VoL_moon, 0.2);
         //rayleighPhaseValue = getRayleighPhase(-VoL_sun);
     }
 
@@ -331,7 +338,7 @@ void main() {
                 if (shadowDensity > 0.0)
                     shadowSample *= exp(-shadowDensity * 0.2);
             #else
-
+                // TODO: TF?
             #endif
         }
 
@@ -340,8 +347,8 @@ void main() {
         #ifdef LPV_ENABLED
             vec3 voxelPos = GetVoxelPosition(sampleLocalPos);
             if (IsInVoxelBounds(voxelPos)) {
-                vec3 blockLight = sample_lpv_linear(voxelPos, localViewDir);
-                sampleLit += blockLight * phaseIso;
+                vec3 blockLight = sample_floodfill(voxelPos);
+                sampleLit += blockLight * Material_EmissionBrightness; // * phaseIso;
             }
         #endif
 
@@ -359,9 +366,9 @@ void main() {
             vec3 psiMS = getValFromMultiScattLUT(texSkyMultiScatter, skyPos, Scene_LocalSunDir);
             psiMS *= SKY_LUMINANCE * Scene_SkyBrightnessSmooth;
 
-            // TODO: add moon
             //vec3 rayleighInScattering = rayleighScattering * (rayleighPhaseValue * sunSkyLight * shadowSample + psiMS + sampleLit);
-            vec3 mieInScattering = mieScattering * (miePhaseValue * sunSkyLight * shadowSample + psiMS + sampleLit);
+            vec3 mieSkyLight = miePhase_sun * sunSkyLight + miePhase_moon * moonSkyLight;
+            vec3 mieInScattering = mieScattering * (mieSkyLight * shadowSample + psiMS + sampleLit);
             inScattering = mieInScattering;
         }
         else {

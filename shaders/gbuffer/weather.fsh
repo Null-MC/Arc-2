@@ -90,7 +90,7 @@ void iris_emitFragment() {
     // vec3 blockLighting = BLOCKLIGHT_BRIGHTNESS * blackbody(BLOCKLIGHT_TEMP) * lmcoord.x;
 
     // vec4 finalColor = albedo;
-    // finalColor.rgb *= skyLighting + blockLighting + (EMISSION_BRIGHTNESS * emission) + 0.002;
+    // finalColor.rgb *= skyLighting + blockLighting + (Material_EmissionBrightness * emission) + 0.002;
 
     vec4 finalColor = albedo;
 

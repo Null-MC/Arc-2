@@ -61,7 +61,7 @@ void main() {
 
         float dither = GetShadowDither();
         
-        if (clamp(shadowPos, 0.0, 1.0) == shadowPos) {
+        if (saturate(shadowPos) == shadowPos) {
             shadowFinal *= SampleShadowColor_PCSS(shadowPos, shadowCascade);
 
             // SSS
@@ -117,7 +117,7 @@ void main() {
             vec3 traceScreenPos = traceScreenStep * dither + clipPos;
 
             int stepCount = 4;
-            if (clamp(shadowPos, 0.0, 1.0) != shadowPos) {
+            if (saturate(shadowPos) != shadowPos) {
                 stepCount = 16;
                 traceScreenStep *= 2.0;
             }
@@ -130,7 +130,7 @@ void main() {
 
                 traceScreenPos += traceScreenStep;
 
-                if (clamp(traceScreenPos, 0.0, 1.0) != traceScreenPos) break;
+                if (saturate(traceScreenPos) != traceScreenPos) break;
 
                 ivec2 sampleUV = ivec2(traceScreenPos.xy * ap.game.screenSize);
                 float sampleDepth = texelFetch(solidDepthTex, sampleUV, 0).r;

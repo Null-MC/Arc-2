@@ -19,13 +19,18 @@ uniform sampler2D texSkyMultiScatter;
     uniform sampler2DArray texShadowColor;
 #endif
 
+#ifdef LPV_ENABLED
+    uniform sampler3D texFloodFill;
+    uniform sampler3D texFloodFill_alt;
+#endif
+
 #include "/settings.glsl"
 #include "/lib/common.glsl"
 #include "/lib/buffers/scene.glsl"
 
-#ifdef LPV_ENABLED
-    #include "/lib/buffers/sh-lpv.glsl"
-#endif
+//#ifdef LPV_ENABLED
+//    #include "/lib/buffers/sh-lpv.glsl"
+//#endif
 
 #include "/lib/noise/ign.glsl"
 #include "/lib/hg.glsl"
@@ -44,7 +49,8 @@ uniform sampler2D texSkyMultiScatter;
 #ifdef LPV_ENABLED
     #include "/lib/voxel/voxel_common.glsl"
     #include "/lib/lpv/lpv_common.glsl"
-    #include "/lib/lpv/lpv_sample.glsl"
+    //#include "/lib/lpv/lpv_sample.glsl"
+    #include "/lib/lpv/floodfill.glsl"
 #endif
 
 const int VL_MaxSamples = 16;
@@ -194,7 +200,7 @@ void main() {
             #ifdef LPV_ENABLED
                 vec3 voxelPos = GetVoxelPosition(sampleLocalPos);
                 if (IsInVoxelBounds(voxelPos)) {
-                    vec3 blockLight = sample_lpv_linear(voxelPos, localViewDir);
+                    vec3 blockLight = sample_floodfill(voxelPos);
                     sampleLit += blockLight; // * phaseIso
                 }
             #endif

@@ -51,12 +51,17 @@ uniform sampler2D TEX_SHADOW;
     uniform sampler2D texSpecularRT;
 #endif
 
+#ifdef LPV_ENABLED
+    uniform sampler3D texFloodFill;
+    uniform sampler3D texFloodFill_alt;
+#endif
+
 #include "/lib/common.glsl"
 #include "/lib/buffers/scene.glsl"
 
-#ifdef LPV_ENABLED
-    #include "/lib/buffers/sh-lpv.glsl"
-#endif
+//#ifdef LPV_ENABLED
+//    #include "/lib/buffers/sh-lpv.glsl"
+//#endif
 
 #include "/lib/erp.glsl"
 #include "/lib/depth.glsl"
@@ -94,7 +99,8 @@ uniform sampler2D TEX_SHADOW;
 
 #ifdef LPV_ENABLED
     #include "/lib/lpv/lpv_common.glsl"
-    #include "/lib/lpv/lpv_sample.glsl"
+    //#include "/lib/lpv/lpv_sample.glsl"
+    #include "/lib/lpv/floodfill.glsl"
 #endif
 
 #ifdef EFFECT_TAA_ENABLED
@@ -250,7 +256,7 @@ void main() {
         #ifdef LPV_ENABLED
             // vec3 voxelSamplePos = voxelPos - 0.25*localGeoNormal + 0.75*localTexNormal;
             vec3 voxelSamplePos = fma(localGeoNormal, vec3(0.5), voxelPos);
-            vec3 voxelLight = sample_lpv_linear(voxelSamplePos, localTexNormal);
+            vec3 voxelLight = sample_floodfill(voxelSamplePos);
 
             #if LIGHTING_MODE == LIGHT_MODE_RT
                 voxelLight *= 0.1;
@@ -298,9 +304,9 @@ void main() {
         //diffuse *= fma(occlusion, 0.5, 0.5);
 
         #if MATERIAL_EMISSION_POWER != 1
-            diffuse += pow(emission, MATERIAL_EMISSION_POWER) * EMISSION_BRIGHTNESS;
+            diffuse += pow(emission, MATERIAL_EMISSION_POWER) * Material_EmissionBrightness;
         #else
-            diffuse += emission * EMISSION_BRIGHTNESS;
+            diffuse += emission * Material_EmissionBrightness;
         #endif
 
         // reflections

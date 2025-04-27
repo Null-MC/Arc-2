@@ -50,12 +50,17 @@ uniform sampler2DArray texShadowColor;
     uniform sampler2D texSpecularRT;
 #endif
 
+#ifdef LPV_ENABLED
+    uniform sampler3D texFloodFill;
+    uniform sampler3D texFloodFill_alt;
+#endif
+
 #include "/lib/common.glsl"
 #include "/lib/buffers/scene.glsl"
 
-#ifdef LPV_ENABLED
-    #include "/lib/buffers/sh-lpv.glsl"
-#endif
+//#ifdef LPV_ENABLED
+//    #include "/lib/buffers/sh-lpv.glsl"
+//#endif
 
 #if defined VOXEL_WSR_ENABLED && defined RT_TRI_ENABLED
     #include "/lib/buffers/triangle-list.glsl"
@@ -100,7 +105,8 @@ uniform sampler2DArray texShadowColor;
 
 #ifdef LPV_ENABLED
     #include "/lib/lpv/lpv_common.glsl"
-    #include "/lib/lpv/lpv_sample.glsl"
+    //#include "/lib/lpv/lpv_sample.glsl"
+    #include "/lib/lpv/floodfill.glsl"
 #endif
 
 //#if defined VOXEL_WSR_ENABLED && defined RT_TRI_ENABLED
@@ -226,7 +232,7 @@ void main() {
         #ifdef LPV_ENABLED
             vec3 voxelSamplePos = voxelPos - 0.25*localGeoNormal + 0.75*localTexNormal;
 
-            skyLightDiffuse += sample_lpv_linear(voxelSamplePos, localTexNormal) * PI*SampleLightDiffuse(NoVm, 1.0, 1.0, roughL);
+            skyLightDiffuse += sample_floodfill(voxelSamplePos) * PI*SampleLightDiffuse(NoVm, 1.0, 1.0, roughL);
         #endif
 
         vec2 skyIrradianceCoord = DirectionToUV(localTexNormal);
@@ -260,9 +266,9 @@ void main() {
         diffuse *= 1.0 - metalness * (1.0 - roughL);
 
         #if MATERIAL_EMISSION_POWER != 1
-            diffuse += pow(emission, MATERIAL_EMISSION_POWER) * EMISSION_BRIGHTNESS;
+            diffuse += pow(emission, MATERIAL_EMISSION_POWER) * Material_EmissionBrightness;
         #else
-            diffuse += emission * EMISSION_BRIGHTNESS;
+            diffuse += emission * Material_EmissionBrightness;
         #endif
 
         // reflections

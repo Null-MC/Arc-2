@@ -34,7 +34,7 @@ bool TraceReflection(const in vec3 localPos, const in vec3 localDir, out vec3 hi
 
                 vec2 hit_uv = QuadIntersectUV(hit_pos, quad_pos_0, quad_pos_1, quad_pos_2);
 
-                if (clamp(hit_uv, 0.0, 1.0) == hit_uv) {
+                if (saturate(hit_uv) == hit_uv) {
                     vec2 uv;
                     vec4 sampleColor;
                     if (quad.uv_max != 0u) {

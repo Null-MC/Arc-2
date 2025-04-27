@@ -11,7 +11,7 @@ float GetShadowDither() {
 }
 
 float SampleShadow(const in vec3 shadowPos, const in int shadowCascade) {
-    if (clamp(shadowPos, 0.0, 1.0) != shadowPos) return 1.0;
+    if (saturate(shadowPos) != shadowPos) return 1.0;
 
     vec3 shadowCoord = vec3(shadowPos.xy, shadowCascade);
     float depthOpaque = textureLod(solidShadowMap, shadowCoord, 0).r;
@@ -20,7 +20,7 @@ float SampleShadow(const in vec3 shadowPos, const in int shadowCascade) {
 }
 
 float SampleShadow_PCF(const in vec3 shadowPos, const in int shadowCascade, const in float pixelRadius) {
-    if (clamp(shadowPos, 0.0, 1.0) != shadowPos) return 1.0;
+    if (saturate(shadowPos) != shadowPos) return 1.0;
 
     float dither = GetShadowDither();
 
@@ -47,7 +47,7 @@ float SampleShadow_PCF(const in vec3 shadowPos, const in int shadowCascade, cons
 }
 
 vec3 SampleShadowColor(const in vec3 shadowPos, const in int shadowCascade, out float depthDiff) {
-    if (clamp(shadowPos, 0.0, 1.0) != shadowPos) return vec3(1.0);
+    if (saturate(shadowPos) != shadowPos) return vec3(1.0);
 
     vec3 shadowCoord = vec3(shadowPos.xy, shadowCascade);
     float depthOpaque = textureLod(solidShadowMap, shadowCoord, 0).r;
@@ -84,7 +84,7 @@ vec3 SampleShadowColor(const in vec3 shadowPos, const in int shadowCascade) {
 }
 
 vec3 SampleShadowColor_PCF(const in vec3 shadowPos, const in int shadowCascade, const in vec2 pixelRadius) {
-    if (clamp(shadowPos, 0.0, 1.0) != shadowPos) return vec3(1.0);
+    if (saturate(shadowPos) != shadowPos) return vec3(1.0);
 
     float dither = GetShadowDither();
     float bias = GetShadowBias(shadowCascade);

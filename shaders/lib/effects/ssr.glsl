@@ -113,7 +113,7 @@ vec3 GetRelectColor(const in sampler2D tex, const in vec2 uv, inout float alpha,
     vec3 color = vec3(0.0);
 
     if (alpha > EPSILON) {
-        vec2 alphaXY = clamp(12.0 * abs(vec2(0.5) - uv) - 5.0, 0.0, 1.0);
+        vec2 alphaXY = saturate(12.0 * abs(vec2(0.5) - uv) - 5.0);
         alpha = maxOf(alphaXY);
         alpha = 1.0 - pow(alpha, 4);
 

@@ -317,7 +317,7 @@ void main() {
             vec3 clipPos = fma(reflectNdcStart, vec3(0.5), vec3(0.5));
             reflection = GetReflectionPosition(mainDepthTex, clipPos, reflectRay);
 
-            #ifdef LIGHTING_REFLECT_NOISE
+            #ifdef MATERIAL_ROUGH_REFLECT_NOISE
                 float maxLod = max(log2(minOf(ap.game.screenSize)) - 2.0, 0.0);
                 float screenDist = length((reflection.xy - uv) * ap.game.screenSize);
                 float roughMip = min(roughness * min(log2(screenDist + 1.0), 6.0), maxLod);
@@ -351,7 +351,12 @@ void main() {
         //finalColor.a = min(finalColor.a + maxOf(specular), 1.0);
 
         // Refraction
-        vec3 refractViewNormal = mat3(ap.camera.view) * (localTexNormal - localGeoNormal);
+        vec3 refractSurfaceNormal = localTexNormal;
+        #ifdef MATERIAL_ROUGH_REFRACT
+            randomize_reflection(refractSurfaceNormal, localGeoNormal, roughness);
+        #endif
+
+        vec3 refractViewNormal = mat3(ap.camera.view) * (refractSurfaceNormal - localGeoNormal);
 
         const float refractEta = (IOR_AIR/IOR_WATER);
         const vec3 refractViewDir = vec3(0.0, 0.0, 1.0);
@@ -382,7 +387,7 @@ void main() {
 
             float viewDistOpaque = length(localPosOpaque);
             float viewDistFar = viewDistOpaque - viewDist;
-            refractMip = 6.0 * pow(roughness, 0.25) * min(viewDistFar * 0.2, 1.0);
+            refractMip = 6.0 * pow(roughness, 0.5) * min(viewDistFar * 0.2, 1.0);
         #endif
 
         colorOpaque = textureLod(texFinalOpaque, refract_uv, refractMip).rgb;

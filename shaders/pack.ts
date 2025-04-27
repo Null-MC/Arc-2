@@ -297,11 +297,14 @@ export function setupShader() {
     setLightColorEx("#935b2c", "cave_vines", "cave_vines_plant");
     setLightColorEx("#7f17a8", "crying_obsidian");
     setLightColorEx("#5f9889", "glow_lichen");
+    setLightColorEx("#d3b178", "glowstone");
     setLightColorEx("#f39e49", "lantern");
     setLightColorEx("#b8491c", "lava");
     setLightColorEx("#dfac47", "ochre_froglight");
     setLightColorEx("#e075e8", "pearlescent_froglight");
     setLightColorEx("#f9321c", "redstone_torch", "redstone_wall_torch");
+    setLightColorEx("#e0ba42", "redstone_lamp");
+    setLightColorEx("#f9321c", "redstone_ore");
     setLightColorEx("#8bdff8", "sea_lantern");
     setLightColorEx("#28aaeb", "soul_torch", "soul_campfire");
     setLightColorEx("#f3b549", "torch", "wall_torch");
@@ -1300,6 +1303,7 @@ function setupSky(sceneBuffer) {
         .fragment("setup/sky_view.fsh")
         .target(0, texSkyView)
         .ssbo(0, sceneBuffer)
+        .ubo(0, SceneSettingsBuffer)
         .build())
 
     registerShader(Stage.PRE_RENDER, new Composite("sky-irradiance")
@@ -1308,6 +1312,7 @@ function setupSky(sceneBuffer) {
         .target(0, texSkyIrradiance)
         .blendFunc(0, Func.SRC_ALPHA, Func.ONE_MINUS_SRC_ALPHA, Func.ONE, Func.ZERO)
         .ssbo(0, sceneBuffer)
+        .ubo(0, SceneSettingsBuffer)
         .build())
 }
 

@@ -2,6 +2,13 @@ const ivec3 VoxelBufferSize = ivec3(VOXEL_SIZE);
 const ivec3 VoxelBufferCenter = VoxelBufferSize / 2;
 const float VoxelFrustumOffsetF = VOXEL_FRUSTUM_OFFSET * 0.01;
 
+#define BLOCK_FACE_DOWN 0u
+#define BLOCK_FACE_UP 1u
+#define BLOCK_FACE_NORTH 2u
+#define BLOCK_FACE_SOUTH 3u
+#define BLOCK_FACE_WEST 4u
+#define BLOCK_FACE_EAST 5u
+
 
 vec3 GetVoxelCenter(const in vec3 viewPos, const in vec3 viewDir) {
     ivec3 offset = ivec3(floor(viewDir * VoxelBufferCenter * VoxelFrustumOffsetF));

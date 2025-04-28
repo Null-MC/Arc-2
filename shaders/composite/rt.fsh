@@ -111,7 +111,7 @@ in vec2 uv;
     #endif
 
     #ifdef LPV_ENABLED
-        #include "/lib/lpv/lpv_common.glsl"
+        //#include "/lib/lpv/lpv_common.glsl"
         //#include "/lib/lpv/lpv_sample.glsl"
         #include "/lib/lpv/floodfill.glsl"
     #endif

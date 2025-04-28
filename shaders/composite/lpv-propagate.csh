@@ -54,7 +54,7 @@ shared uint sharedBlockMap[10*10*10];
 #endif
 
 #include "/lib/voxel/voxel_common.glsl"
-#include "/lib/lpv/lpv_common.glsl"
+//#include "/lib/lpv/lpv_common.glsl"
 
 #include "/lib/utility/hsv.glsl"
 
@@ -195,7 +195,7 @@ void populateShared(const in ivec3 voxelFrameOffset) {
 
 		tracePos += dda_step(stepAxis, nextDist, stepSizes, traceDir);
 
-		for (int i = 0; i < LIGHTING_REFLECT_MAXSTEP && !hit; i++) {
+		for (int i = 0; i < LIGHTING_GI_MAXSTEP && !hit; i++) {
 			vec3 stepAxisNext;
 			vec3 step = dda_step(stepAxisNext, nextDist, stepSizes, traceDir);
 
@@ -412,7 +412,7 @@ void main() {
 		if (!isFullBlock) {
 			ivec3 cellIndex_prev = cellIndex + voxelFrameOffset;
 			if (IsInVoxelBounds(cellIndex_prev)) {
-				int i_prev = GetLpvIndex(cellIndex_prev);
+				int i_prev = GetVoxelIndex(cellIndex_prev);
 
 				if (altFrame) voxel_gi = SH_LPV[i_prev];
 				else voxel_gi = SH_LPV_alt[i_prev];
@@ -445,7 +445,7 @@ void main() {
 			}
 		}
 
-		int i = GetLpvIndex(cellIndex);
+		int i = GetVoxelIndex(cellIndex);
 
 		if (altFrame) SH_LPV_alt[i] = voxel_gi;
 		else SH_LPV[i] = voxel_gi;

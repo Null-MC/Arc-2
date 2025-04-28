@@ -98,7 +98,7 @@ uniform sampler2D TEX_SHADOW;
 #endif
 
 #ifdef LPV_ENABLED
-    #include "/lib/lpv/lpv_common.glsl"
+    //#include "/lib/lpv/lpv_common.glsl"
     //#include "/lib/lpv/lpv_sample.glsl"
     #include "/lib/lpv/floodfill.glsl"
 
@@ -277,7 +277,7 @@ void main() {
         #ifdef VOXEL_GI_ENABLED
             //vec4 coeff = dirToSH(localTexNormal);
             if (IsInVoxelBounds(voxelPos))
-                skyIrradiance = sample_sh_gi(ivec3(voxelPos + 0.5*localGeoNormal), localTexNormal);
+                skyIrradiance = sample_sh_gi_linear(voxelPos + 0.5*localGeoNormal, localTexNormal);
         #endif
 
         skyLightDiffuse += skyIrradiance;

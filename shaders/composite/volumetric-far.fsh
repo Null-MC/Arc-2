@@ -48,7 +48,7 @@ uniform sampler2D texSkyMultiScatter;
 
 #ifdef LPV_ENABLED
     #include "/lib/voxel/voxel_common.glsl"
-    #include "/lib/lpv/lpv_common.glsl"
+    //#include "/lib/lpv/lpv_common.glsl"
     //#include "/lib/lpv/lpv_sample.glsl"
     #include "/lib/lpv/floodfill.glsl"
 #endif

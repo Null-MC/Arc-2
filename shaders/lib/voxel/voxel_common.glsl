@@ -32,3 +32,8 @@ bool IsInVoxelBounds(const in ivec3 voxelPos) {
 bool IsInVoxelBounds(const in vec3 voxelPos) {
     return clamp(voxelPos, 0.5, VOXEL_SIZE-0.5) == voxelPos;
 }
+
+int GetVoxelIndex(ivec3 voxelPos) {
+	const ivec3 flatten = ivec3(1, VOXEL_SIZE, VOXEL_SIZE*VOXEL_SIZE);
+	return sumOf(flatten * voxelPos);
+}

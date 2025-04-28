@@ -203,7 +203,7 @@ void main() {
 
                     uint light_voxelIndex = LightBinMap[lightBinIndex].lightList[i2];
 
-                    vec3 light_voxelPos = GetVoxelPos(light_voxelIndex) + 0.5;
+                    vec3 light_voxelPos = GetLightVoxelPos(light_voxelIndex) + 0.5;
                     light_voxelPos += jitter*0.125;
 
                     vec3 light_LocalPos = GetVoxelLocalPos(light_voxelPos);
@@ -434,7 +434,7 @@ void main() {
 
                         uint light_voxelIndex = LightBinMap[lightBinIndex].lightList[i2];
 
-                        vec3 light_voxelPos = GetVoxelPos(light_voxelIndex) + 0.5;
+                        vec3 light_voxelPos = GetLightVoxelPos(light_voxelIndex) + 0.5;
                         //light_voxelPos += jitter*0.125;
 
                         vec3 light_LocalPos = GetVoxelLocalPos(light_voxelPos);

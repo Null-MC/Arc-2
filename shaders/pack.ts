@@ -181,6 +181,7 @@ function applySettings(settings) {
     worldSettings.ambientOcclusionLevel = 0.0;
     worldSettings.sunPathRotation = settings.Sky.SunAngle();
     worldSettings.shadowMapResolution = settings.Shadows.Resolution();
+    worldSettings.cascadeSafeZones[0] = 128;
     worldSettings.renderStars = false;
     worldSettings.renderMoon = false;
     worldSettings.renderSun = false;
@@ -316,7 +317,7 @@ export function setupShader() {
     setLightColorEx("#e0ba42", "redstone_lamp");
     setLightColorEx("#f9321c", "redstone_ore");
     setLightColorEx("#8bdff8", "sea_lantern");
-    setLightColorEx("#28aaeb", "soul_torch", "soul_campfire");
+    setLightColorEx("#28aaeb", "soul_torch", "soul_wall_torch", "soul_campfire");
     setLightColorEx("#f3b549", "torch", "wall_torch");
     setLightColorEx("#63e53c", "verdant_froglight");
 

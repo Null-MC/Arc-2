@@ -237,15 +237,8 @@ void main() {
         vec3 sunTransmit, moonTransmit;
         GetSkyLightTransmission(localPos, sunTransmit, moonTransmit);
 
-        // float worldY = localPos.y + ap.camera.pos.y;
-        // float transmitF = mix(VL_Transmit, VL_RainTransmit, ap.world.rainStrength);
-        // float lightAtmosDist = max(SKY_SEA_LEVEL + 200.0 - worldY, 0.0) / Scene_LocalLightDir.y;
-        // skyLight *= exp2(-lightAtmosDist * transmitF);
-
         float NoL_sun = dot(localTexNormal, Scene_LocalSunDir);
-        float NoL_moon = -NoL_sun;//dot(localTexNormal, -Scene_LocalSunDir);
-//        vec3 skyLight = SUN_BRIGHTNESS * sunTransmit
-//            + MOON_BRIGHTNESS * moonTransmit;
+        float NoL_moon = -NoL_sun;
 
         vec3 skyLight_NoLm = SUN_BRIGHTNESS * sunTransmit * max(NoL_sun, 0.0)
             + MOON_BRIGHTNESS * moonTransmit * max(NoL_moon, 0.0);
@@ -275,9 +268,10 @@ void main() {
         skyIrradiance = 2.0 * (SKY_AMBIENT * lmCoord.y) * skyIrradiance;
 
         #ifdef VOXEL_GI_ENABLED
-            //vec4 coeff = dirToSH(localTexNormal);
-            if (IsInVoxelBounds(voxelPos))
-                skyIrradiance = sample_sh_gi_linear(voxelPos + 0.5*localGeoNormal, localTexNormal);
+            if (IsInVoxelBounds(voxelPos)) {
+                vec3 voxelSamplePos = 0.5*localTexNormal - 0.25*localGeoNormal + voxelPos;
+                skyIrradiance = sample_sh_gi_linear(voxelSamplePos, localTexNormal);
+            }
         #endif
 
         skyLightDiffuse += skyIrradiance;
@@ -294,23 +288,28 @@ void main() {
         vec3 sss_phase_moon = max(HG(-VoL_sun, 0.16), 0.0) * MOON_BRIGHTNESS * moonTransmit * (1.0 - max(NoL_moon, 0.0));
         skyLightDiffuse += PI * (sss_phase_sun + sss_phase_moon) * max(shadow_sss.w, 0.0) * abs(Scene_LocalLightDir.y);
 
-        vec3 blockLighting = blackbody(BLOCKLIGHT_TEMP) * (BLOCKLIGHT_BRIGHTNESS * lmCoord.x) * occlusion;
+        vec3 blockLighting = blackbody(BLOCKLIGHT_TEMP) * (BLOCKLIGHT_BRIGHTNESS * lmCoord.x) * (occlusion*0.5 + 0.5);
 
 //        #ifdef VOXEL_ENABLED
 //            // TODO: make fade and not cutover!
 //            if (IsInVoxelBounds(voxelPos)) blockLighting = vec3(0.0);
 //        #endif
 
-        #if LIGHTING_MODE == LIGHT_MODE_LPV
+        #if LIGHTING_MODE == LIGHT_MODE_RT
             if (IsInVoxelBounds(voxelPos)) {
-                vec3 voxelSamplePos = fma(localGeoNormal, vec3(0.5), voxelPos);
+                blockLighting = vec3(0.0);
+            }
+        #elif LIGHTING_MODE == LIGHT_MODE_LPV
+            if (IsInVoxelBounds(voxelPos)) {
+                //vec3 voxelSamplePos = fma(localTexNormal, vec3(0.5), voxelPos);
+                vec3 voxelSamplePos = 0.5*localTexNormal - 0.25*localGeoNormal + voxelPos;
                 vec3 voxelLight = sample_floodfill(voxelSamplePos);
 
                 blockLighting = voxelLight * cloudShadowF * SampleLightDiffuse(NoVm, 1.0, 1.0, roughL) * PI;
             }
         #endif
 
-        vec3 diffuse = skyLightDiffuse + blockLighting + 0.0016 * (occlusion * 0.5 + 0.5);
+        vec3 diffuse = skyLightDiffuse + blockLighting + 0.0016 * occlusion;
 
         #ifdef ACCUM_ENABLED
             if (altFrame) diffuse += textureLod(texAccumDiffuse_opaque_alt, uv, 0).rgb;

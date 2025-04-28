@@ -23,6 +23,7 @@ declare class WorldSettings {
      */
   shadowMapResolution: number;
   cascadeCount: number;
+  cascadeSafeZones: number[];
   shadowMapDistance: number;
   shadowNearPlane: number;
   shadowFarPlane: number;

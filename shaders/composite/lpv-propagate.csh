@@ -265,13 +265,15 @@ void populateShared(const in ivec3 voxelFrameOffset) {
 
 			float hit_roughL = _pow2(hit_roughness);
 			vec3 hit_localPos = GetVoxelLocalPos(tracePos);
+			float hit_NoL = dot(-traceDir, hitNormal);
 
 			#ifdef SHADOWS_ENABLED
 				int hit_shadowCascade;
 				vec3 hit_shadowViewPos = mul3(ap.celestial.view, hit_localPos);
 				vec3 hit_shadowPos = GetShadowSamplePos(hit_shadowViewPos, 0.0, hit_shadowCascade);
 				hit_shadowPos.z -= GetShadowBias(hit_shadowCascade);
-				float hit_shadow = SampleShadow(hit_shadowPos, hit_shadowCascade);
+
+				vec3 hit_shadow = SampleShadowColor(hit_shadowPos, hit_shadowCascade);
 			#else
 				float hit_shadow = 1.0;
 			#endif
@@ -288,9 +290,9 @@ void populateShared(const in ivec3 voxelFrameOffset) {
 			vec3 hit_diffuse = skyLight * hit_shadow;
 			//hit_diffuse *= SampleLightDiffuse(hit_NoVm, hit_NoLm, hit_LoHm, hit_roughL);
 
-			vec2 skyIrradianceCoord = DirectionToUV(hitNormal);
-			vec3 hit_skyIrradiance = textureLod(texSkyIrradiance, skyIrradianceCoord, 0).rgb;
-			hit_diffuse += (SKY_AMBIENT * hit_lmcoord.y) * hit_skyIrradiance;
+//			vec2 skyIrradianceCoord = DirectionToUV(hitNormal);
+//			vec3 hit_skyIrradiance = textureLod(texSkyIrradiance, skyIrradianceCoord, 0).rgb;
+//			hit_diffuse += (SKY_AMBIENT * hit_lmcoord.y) * hit_skyIrradiance;
 
 			//hit_diffuse += 0.0016;
 
@@ -321,7 +323,7 @@ void populateShared(const in ivec3 voxelFrameOffset) {
 				hit_diffuse += hit_emission * Material_EmissionBrightness;
 			#endif
 
-			color = albedo * hit_diffuse;
+			color = albedo * hit_diffuse * max(hit_NoL, 0.0);
 		}
 		else {
 			vec2 skyIrradianceCoord = DirectionToUV(traceDir);
@@ -434,7 +436,9 @@ void main() {
 					f = -f;
 				}
 
-				vec3 tracePos = cellIndex + 0.5;
+				vec3 noise_offset = sample_blueNoise(hash23(cellIndex));
+
+				vec3 tracePos = cellIndex + 0.5 + 0.5*noise_offset;
 				vec3 traceSample = trace_GI(tracePos, noise_dir);
 				face_counter = clamp(face_counter + f, 0.0, 60.0);
 

@@ -59,9 +59,9 @@ uniform sampler2D TEX_SHADOW;
 #include "/lib/common.glsl"
 #include "/lib/buffers/scene.glsl"
 
-//#ifdef LPV_ENABLED
-//    #include "/lib/buffers/sh-lpv.glsl"
-//#endif
+#ifdef VOXEL_GI_ENABLED
+    #include "/lib/buffers/sh-gi.glsl"
+#endif
 
 #include "/lib/erp.glsl"
 #include "/lib/depth.glsl"
@@ -101,6 +101,10 @@ uniform sampler2D TEX_SHADOW;
     #include "/lib/lpv/lpv_common.glsl"
     //#include "/lib/lpv/lpv_sample.glsl"
     #include "/lib/lpv/floodfill.glsl"
+
+    #ifdef VOXEL_GI_ENABLED
+        #include "/lib/lpv/sh-gi-sample.glsl"
+    #endif
 #endif
 
 #ifdef EFFECT_TAA_ENABLED
@@ -253,22 +257,30 @@ void main() {
             vec3 voxelPos = GetVoxelPosition(localPos);
         #endif
 
-        #ifdef LPV_ENABLED
-            // vec3 voxelSamplePos = voxelPos - 0.25*localGeoNormal + 0.75*localTexNormal;
-            vec3 voxelSamplePos = fma(localGeoNormal, vec3(0.5), voxelPos);
-            vec3 voxelLight = sample_floodfill(voxelSamplePos);
-
-            #if LIGHTING_MODE == LIGHT_MODE_RT
-                voxelLight *= 0.1;
-            #endif
-
-            // TODO: move cloud shadows to RSM sampling!!!
-            skyLightDiffuse += voxelLight * cloudShadowF * SampleLightDiffuse(NoVm, 1.0, 1.0, roughL) * PI;
-        #endif
+//        #ifdef LPV_ENABLED
+//            // vec3 voxelSamplePos = voxelPos - 0.25*localGeoNormal + 0.75*localTexNormal;
+//            vec3 voxelSamplePos = fma(localGeoNormal, vec3(0.5), voxelPos);
+//            vec3 voxelLight = sample_floodfill(voxelSamplePos);
+//
+//            #if LIGHTING_MODE == LIGHT_MODE_RT
+//                voxelLight *= 0.1;
+//            #endif
+//
+//            // TODO: move cloud shadows to RSM sampling!!!
+//            skyLightDiffuse += voxelLight * cloudShadowF * SampleLightDiffuse(NoVm, 1.0, 1.0, roughL) * PI;
+//        #endif
 
         vec2 skyIrradianceCoord = DirectionToUV(localTexNormal);
         vec3 skyIrradiance = textureLod(texSkyIrradiance, skyIrradianceCoord, 0).rgb;
-        skyLightDiffuse += 2.0 * (SKY_AMBIENT * lmCoord.y) * skyIrradiance;
+        skyIrradiance = 2.0 * (SKY_AMBIENT * lmCoord.y) * skyIrradiance;
+
+        #ifdef VOXEL_GI_ENABLED
+            //vec4 coeff = dirToSH(localTexNormal);
+            if (IsInVoxelBounds(voxelPos))
+                skyIrradiance = sample_sh_gi(ivec3(voxelPos + 0.5*localGeoNormal), localTexNormal);
+        #endif
+
+        skyLightDiffuse += skyIrradiance;
 
         skyLightDiffuse *= occlusion;
 
@@ -284,9 +296,18 @@ void main() {
 
         vec3 blockLighting = blackbody(BLOCKLIGHT_TEMP) * (BLOCKLIGHT_BRIGHTNESS * lmCoord.x) * occlusion;
 
-        #if LIGHTING_MODE != LIGHT_MODE_VANILLA
-            // TODO: make fade and not cutover!
-            if (IsInVoxelBounds(voxelPos)) blockLighting = vec3(0.0);
+//        #ifdef VOXEL_ENABLED
+//            // TODO: make fade and not cutover!
+//            if (IsInVoxelBounds(voxelPos)) blockLighting = vec3(0.0);
+//        #endif
+
+        #if LIGHTING_MODE == LIGHT_MODE_LPV
+            if (IsInVoxelBounds(voxelPos)) {
+                vec3 voxelSamplePos = fma(localGeoNormal, vec3(0.5), voxelPos);
+                vec3 voxelLight = sample_floodfill(voxelSamplePos);
+
+                blockLighting = voxelLight * cloudShadowF * SampleLightDiffuse(NoVm, 1.0, 1.0, roughL) * PI;
+            }
         #endif
 
         vec3 diffuse = skyLightDiffuse + blockLighting + 0.0016 * (occlusion * 0.5 + 0.5);

@@ -13,7 +13,7 @@ in vec2 uv;
 
 #include "/lib/common.glsl"
 //#include "/lib/buffers/scene.glsl"
-#include "/lib/sampling/blue-noise.glsl"
+#include "/lib/noise/blue.glsl"
 #include "/lib/noise/ign.glsl"
 
 #ifdef EFFECT_TAA_ENABLED

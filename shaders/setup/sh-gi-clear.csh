@@ -3,7 +3,7 @@
 layout (local_size_x = 8, local_size_y = 8, local_size_z = 8) in;
 
 #include "/lib/common.glsl"
-#include "/lib/buffers/sh-lpv.glsl"
+#include "/lib/buffers/sh-gi.glsl"
 #include "/lib/lpv/lpv_common.glsl"
 
 

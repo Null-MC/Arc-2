@@ -3,10 +3,14 @@
 
 
 float GetShadowDither() {
-    #ifdef EFFECT_TAA_ENABLED
-        return InterleavedGradientNoiseTime(gl_FragCoord.xy);
+    #ifndef RENDER_COMPUTE
+        #ifdef EFFECT_TAA_ENABLED
+            return InterleavedGradientNoiseTime(gl_FragCoord.xy);
+        #else
+            return InterleavedGradientNoise(gl_FragCoord.xy);
+        #endif
     #else
-        return InterleavedGradientNoise(gl_FragCoord.xy);
+        return 0.0;
     #endif
 }
 

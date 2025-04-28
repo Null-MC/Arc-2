@@ -54,7 +54,7 @@ function getSettings() {
         },
         Lighting: {
             Mode: () => getStringSettingIndex("LIGHTING_MODE", 1, 'LightMap', 'FloodFill', 'Ray-Traced'),
-            LpvRsmEnabled: getBoolSetting("LPV_RSM_ENABLED"),
+            LpvRsmEnabled: false, //getBoolSetting("LPV_RSM_ENABLED"),
             RT: {
                 MaxSampleCount: getIntSetting("RT_MAX_SAMPLE_COUNT"),
                 TraceTriangles: getBoolSetting("LIGHTING_TRACE_TRIANGLE"),
@@ -70,6 +70,7 @@ function getSettings() {
         Voxel: {
             Size: () => getIntSetting("VOXEL_SIZE"),
             Offset: () => getIntSetting("VOXEL_FRUSTUM_OFFSET"),
+            GIEnabled: () => getBoolSetting("VOXEL_GI_ENABLED"),
             MaxLightCount: 64,
             MaxTriangleCount: 64,
         },
@@ -150,6 +151,12 @@ function getSettings() {
 
     if (Settings.Lighting.LpvRsmEnabled) {
         Settings.Internal.Voxelization = true;
+        Settings.Internal.LPV = true;
+    }
+
+    if (Settings.Voxel.GIEnabled()) {
+        Settings.Internal.Voxelization = true;
+        Settings.Internal.VoxelizeBlockFaces = true;
         Settings.Internal.LPV = true;
     }
 
@@ -257,6 +264,9 @@ function applySettings(settings) {
 
             if (settings.Lighting.LpvRsmEnabled)
                 defineGlobally1("LPV_RSM_ENABLED");
+
+            if (settings.Voxel.GIEnabled())
+                defineGlobally1("VOXEL_GI_ENABLED");
         }
     }
 
@@ -618,32 +628,20 @@ export function setupShader() {
         .clear(false)
         .build();
 
-    // let shLpvBuffer: BuiltBuffer | null = null;
-    // let shLpvBuffer_alt: BuiltBuffer | null = null;
-    // let shLpvRsmBuffer: BuiltBuffer | null = null;
-    // let shLpvRsmBuffer_alt: BuiltBuffer | null = null;
-    // if (Settings.Internal.LPV) {
-    //     // f16vec4[3] * VoxelBufferSize^3
-    //     const bufferSize = 8 * 3 * cubed(Settings.Voxel.Size());
-    //
-    //     shLpvBuffer = new GPUBuffer(bufferSize)
-    //         .clear(false)
-    //         .build();
-    //
-    //     shLpvBuffer_alt = new GPUBuffer(bufferSize)
-    //         .clear(false)
-    //         .build();
-    //
-    //     if (Settings.Lighting.LpvRsmEnabled) {
-    //         shLpvRsmBuffer = new GPUBuffer(bufferSize)
-    //             .clear(false)
-    //             .build();
-    //
-    //         shLpvRsmBuffer_alt = new GPUBuffer(bufferSize)
-    //             .clear(false)
-    //             .build();
-    //     }
-    // }
+    let shLpvBuffer: BuiltBuffer | null = null;
+    let shLpvBuffer_alt: BuiltBuffer | null = null;
+    if (Settings.Voxel.GIEnabled()) {
+        // f16vec4[3] * VoxelBufferSize^3
+        const bufferSize = 48 * cubed(Settings.Voxel.Size());
+
+        shLpvBuffer = new GPUBuffer(bufferSize)
+            .clear(false)
+            .build();
+
+        shLpvBuffer_alt = new GPUBuffer(bufferSize)
+            .clear(false)
+            .build();
+    }
 
     if (Settings.Lighting.Mode() == LightMode_LPV) {
         const texFloodFill = new Texture("texFloodFill")
@@ -733,13 +731,14 @@ export function setupShader() {
         .workGroups(1, 1, 1)
         .build());
 
-    // if (Settings.Internal.LPV) {
-    //     registerShader(Stage.SCREEN_SETUP, new Compute("lpv-clear")
-    //         // .barrier(true)
-    //         .location("setup/lpv-clear.csh")
-    //         .workGroups(8, 8, 8)
-    //         .build());
-    // }
+    if (Settings.Voxel.GIEnabled()) {
+        registerShader(Stage.SCREEN_SETUP, new Compute("sh-gi-clear")
+            .location("setup/sh-gi-clear.csh")
+            .workGroups(8, 8, 8)
+            .ssbo(1, shLpvBuffer)
+            .ssbo(2, shLpvBuffer_alt)
+            .build());
+    }
 
     registerShader(Stage.PRE_RENDER, new Compute("scene-prepare")
         // .barrier(true)
@@ -907,22 +906,19 @@ export function setupShader() {
         const groupCount = Math.ceil(Settings.Voxel.Size() / 8);
 
         const shader = new Compute("lpv-propagate")
-            // .barrier(true)
             .location("composite/lpv-propagate.csh")
             .workGroups(groupCount, groupCount, groupCount)
+            .define("RENDER_COMPUTE", "1")
             .ssbo(0, sceneBuffer);
-            // .ssbo(1, shLpvBuffer)
-            // .ssbo(2, shLpvBuffer_alt);
 
-        // if (Settings.Lighting.LpvRsmEnabled) {
-        //     shader
-        //         .ssbo(3, shLpvRsmBuffer)
-        //         .ssbo(4, shLpvRsmBuffer_alt);
-        // }
+        if (Settings.Voxel.GIEnabled()) {
+            shader
+                .ssbo(1, shLpvBuffer)
+                .ssbo(2, shLpvBuffer_alt)
+                .ssbo(5, blockFaceBuffer);
+        }
 
         registerShader(Stage.POST_RENDER, shader.build());
-
-        //registerBarrier(Stage.POST_RENDER, new MemoryBarrier(SSBO_BIT));
     }
 
     if (Settings.Lighting.Mode() == LightMode_RT) {
@@ -1056,11 +1052,11 @@ export function setupShader() {
     // if (Settings.Lighting.Reflections.Mode == ReflectMode_SSR)
     //     compositeOpaqueShader.generateMips(texFinalPrevious);
 
-    // if (Settings.Internal.LPV) {
-    //     compositeOpaqueShader
-    //         .ssbo(1, shLpvBuffer)
-    //         .ssbo(2, shLpvBuffer_alt);
-    // }
+    if (Settings.Voxel.GIEnabled()) {
+        compositeOpaqueShader
+            .ssbo(1, shLpvBuffer)
+            .ssbo(2, shLpvBuffer_alt);
+    }
 
     registerShader(Stage.POST_RENDER, compositeOpaqueShader.build());
 

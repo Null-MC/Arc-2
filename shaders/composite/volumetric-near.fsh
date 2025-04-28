@@ -348,7 +348,7 @@ void main() {
             vec3 voxelPos = GetVoxelPosition(sampleLocalPos);
             if (IsInVoxelBounds(voxelPos)) {
                 vec3 blockLight = sample_floodfill(voxelPos);
-                sampleLit += blockLight * Material_EmissionBrightness; // * phaseIso;
+                sampleLit += blockLight * BLOCKLIGHT_LUMINANCE; // * phaseIso;
             }
         #endif
 

@@ -88,7 +88,10 @@ suffix.VOXEL_FRUSTUM_OFFSET=%
 
 option.LPV_ENABLED=Enabled
 
-option.LPV_RSM_ENABLED=RSM
+#option.LPV_RSM_ENABLED=RSM
+
+option.VOXEL_GI_ENABLED=Global Illumination
+option.VOXEL_GI_ENABLED.comment=Allows light to bounce, for more realistic ambient lighting. Heavy on performance!
 
 option.EFFECT_SSAO_ENABLED=SSAO
 option.EFFECT_SSAO_ENABLED.comment=Screen-Space Ambient Occlusion

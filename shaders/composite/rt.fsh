@@ -58,7 +58,7 @@ in vec2 uv;
 #include "/lib/noise/ign.glsl"
 #include "/lib/noise/hash.glsl"
 
-#include "/lib/sampling/blue-noise.glsl"
+#include "/lib/noise/blue.glsl"
 
 #include "/lib/light/hcm.glsl"
 #include "/lib/light/fresnel.glsl"

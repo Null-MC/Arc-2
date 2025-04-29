@@ -32,13 +32,14 @@ const float ShadowScreenSlope = 0.85;
 
 void main() {
     ivec2 iuv = ivec2(gl_FragCoord.xy);
-    float depthOpaque = texelFetch(solidDepthTex, iuv, 0).r;
+    //float depthOpaque = texelFetch(solidDepthTex, iuv, 0).r;
     float depthTrans = texelFetch(mainDepthTex, iuv, 0).r;
 
     vec3 shadowFinal = vec3(1.0);
     float sssFinal = 0.0;
 
-    if (depthTrans > depthOpaque && depthTrans < 1.0) {
+//    if (depthTrans < depthOpaque) {
+    if (depthTrans < 1.0) {
         uvec2 data = texelFetch(texDeferredTrans_Data, iuv, 0).rg;
 
         vec3 clipPos = vec3(uv, depthTrans);

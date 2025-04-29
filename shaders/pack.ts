@@ -1052,7 +1052,9 @@ export function setupShader() {
             .define("TEX_DATA", snapshot.Debug_Translucent
                 ? "texDeferredTrans_Data"
                 : "texDeferredOpaque_Data")
-            .define("TEX_SHADOW", texShadow_src)
+            .define("TEX_SHADOW", snapshot.Debug_Translucent
+                ? "texShadow"
+                : texShadow_src)
             .define("TEX_SSGIAO", "texSSGIAO_final")
             .define("TEX_ACCUM_OCCLUSION", "texAccumOcclusion_opaque")
             .build());

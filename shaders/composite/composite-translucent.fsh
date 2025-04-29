@@ -26,7 +26,10 @@ uniform sampler2D texSkyIrradiance;
 //uniform sampler2DArray shadowMap;
 //uniform sampler2DArray solidShadowMap;
 //uniform sampler2DArray texShadowColor;
-uniform sampler2D TEX_SHADOW;
+
+#ifdef SHADOWS_ENABLED
+    uniform sampler2D TEX_SHADOW;
+#endif
 
 #if defined VOXEL_WSR_ENABLED && defined RT_TRI_ENABLED
     uniform sampler2D blockAtlas;
@@ -106,7 +109,7 @@ uniform sampler2D TEX_SHADOW;
 //    #include "/lib/shadow/sample.glsl"
 //#endif
 
-#ifdef LIGHTING_MODE == LIGHT_MODE_LPV
+#if LIGHTING_MODE == LIGHT_MODE_LPV
     //#include "/lib/lpv/lpv_common.glsl"
     //#include "/lib/lpv/lpv_sample.glsl"
     #include "/lib/lpv/floodfill.glsl"

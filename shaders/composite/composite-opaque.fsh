@@ -21,7 +21,9 @@ uniform sampler2D texSkyIrradiance;
 
 uniform sampler3D texFogNoise;
 
-uniform sampler2D TEX_SHADOW;
+#ifdef SHADOWS_ENABLED
+    uniform sampler2D TEX_SHADOW;
+#endif
 
 #if LIGHTING_REFLECT_MODE == REFLECT_MODE_SSR
     uniform sampler2D texFinalPrevious;

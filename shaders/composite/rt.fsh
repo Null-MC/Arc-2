@@ -242,7 +242,7 @@ void main() {
                     vec3 traceStart = light_voxelPos;
                     vec3 traceEnd = voxelPos_out;
                     float traceRange = lightRange;
-                    bool traceSelf = false;
+                    bool traceSelf = true;
 
                     #ifdef RT_TRI_ENABLED
 //                        vec3 traceRay = traceEnd - traceStart;

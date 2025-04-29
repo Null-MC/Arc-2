@@ -193,7 +193,7 @@ void populateShared(const in ivec3 voxelFrameOffset) {
 		bool hit = false;
 		ivec3 voxelPos = ivec3(traceOrigin);
 
-		tracePos += dda_step(stepAxis, nextDist, stepSizes, traceDir);
+		//tracePos += dda_step(stepAxis, nextDist, stepSizes, traceDir);
 
 		for (int i = 0; i < LIGHTING_GI_MAXSTEP && !hit; i++) {
 			vec3 stepAxisNext;
@@ -273,7 +273,9 @@ void populateShared(const in ivec3 voxelFrameOffset) {
 				vec3 hit_shadowPos = GetShadowSamplePos(hit_shadowViewPos, 0.0, hit_shadowCascade);
 				hit_shadowPos.z -= GetShadowBias(hit_shadowCascade);
 
-				vec3 hit_shadow = SampleShadowColor(hit_shadowPos, hit_shadowCascade);
+				vec3 hit_shadow = vec3(Scene_SkyBrightnessSmooth);
+				if (hit_shadowCascade >= 0)
+					hit_shadow = SampleShadowColor(hit_shadowPos, hit_shadowCascade);
 			#else
 				float hit_shadow = 1.0;
 			#endif
@@ -420,6 +422,8 @@ void main() {
 				else voxel_gi = SH_LPV_alt[i_prev];
 			}
 
+			float seed_pos = hash13(cellIndex);
+
 			for (int dir = 0; dir < 6; dir++) {
 				vec3 face_color;
 				float face_counter;
@@ -428,7 +432,9 @@ void main() {
 				vec2 noise_seed = cellIndex.xz * vec2(71.0, 83.0) + cellIndex.y * 67.0;
 				noise_seed += (ap.time.frames + dir) * vec2(71.0, 83.0);
 				//vec3 noise_dir = sample_blueNoise(hash23(cellIndex));
-				vec3 noise_dir = normalize(hash32(noise_seed) * 2.0 - 1.0);
+
+				vec3 noise_dir = hash33(vec3(seed_pos, dir, ap.time.frames));
+				noise_dir = normalize(noise_dir * 2.0 - 1.0);
 
 				float f = dot(shVoxel_dir[dir], noise_dir);
 				if (f < 0.0) {
@@ -444,10 +450,10 @@ void main() {
 
 				vec3 tracePos = cellIndex + noise_offset;
 				vec3 traceSample = trace_GI(tracePos, noise_dir);
-				face_counter = clamp(face_counter + f, 0.0, 60.0);
+				face_counter = clamp(face_counter + f, 0.0, VOXEL_GI_MAXFRAMES);
 
 				float mixF = 1.0 / (1.0 + face_counter);
-				face_color = mix(face_color, traceSample, mixF * max(f, 0.0));
+				face_color = mix(face_color, traceSample, mixF);// * max(f, 0.0);
 
 				voxel_gi.data[dir] = encode_shVoxel_dir(face_color, face_counter);
 			}

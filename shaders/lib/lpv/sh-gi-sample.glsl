@@ -48,5 +48,5 @@ vec3 sample_sh_gi_linear(vec3 voxelPos, vec3 sampleDir) {
 
 	vec3 sample_final = mix(sample_z0, sample_z1, f.z);
 
-	return sample_final; // * PI;
+	return sample_final * PI;
 }

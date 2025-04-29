@@ -8,8 +8,10 @@ layout(location = 0) out vec4 outColor;
 in vec2 uv;
 
 uniform sampler2D texFinalOpaque;
+
 uniform sampler2D mainDepthTex;
 uniform sampler2D solidDepthTex;
+
 uniform sampler2D texDeferredTrans_Color;
 uniform sampler2D texDeferredTrans_TexNormal;
 uniform usampler2D texDeferredTrans_Data;
@@ -21,9 +23,10 @@ uniform sampler2D texSkyView;
 uniform sampler2D texSkyTransmit;
 uniform sampler2D texSkyIrradiance;
 
-uniform sampler2DArray shadowMap;
-uniform sampler2DArray solidShadowMap;
-uniform sampler2DArray texShadowColor;
+//uniform sampler2DArray shadowMap;
+//uniform sampler2DArray solidShadowMap;
+//uniform sampler2DArray texShadowColor;
+uniform sampler2D TEX_SHADOW;
 
 #if defined VOXEL_WSR_ENABLED && defined RT_TRI_ENABLED
     uniform sampler2D blockAtlas;
@@ -98,12 +101,12 @@ uniform sampler2DArray texShadowColor;
     #include "/lib/voxel/voxel_common.glsl"
 #endif
 
-#ifdef SHADOWS_ENABLED
-    #include "/lib/shadow/csm.glsl"
-    #include "/lib/shadow/sample.glsl"
-#endif
+//#ifdef SHADOWS_ENABLED
+//    #include "/lib/shadow/csm.glsl"
+//    #include "/lib/shadow/sample.glsl"
+//#endif
 
-#ifdef LPV_ENABLED
+#ifdef LIGHTING_MODE == LIGHT_MODE_LPV
     //#include "/lib/lpv/lpv_common.glsl"
     //#include "/lib/lpv/lpv_sample.glsl"
     #include "/lib/lpv/floodfill.glsl"
@@ -179,17 +182,17 @@ void main() {
         // bool isWater = bitfieldExtract(material, 6, 1) != 0;
         is_fluid = iris_hasFluid(blockId);
 
-        vec3 shadowSample = vec3(1.0);
-        #ifdef SHADOWS_ENABLED
-            const float shadowPixelSize = 1.0 / shadowMapResolution;
-
-            vec3 shadowViewPos = mul3(ap.celestial.view, localPosTrans);
-            const float shadowRadius = 2.0*shadowPixelSize;
-
-            int shadowCascade;
-            vec3 shadowPos = GetShadowSamplePos(shadowViewPos, shadowRadius, shadowCascade);
-            shadowSample = SampleShadowColor_PCF(shadowPos, shadowCascade, vec2(shadowRadius));
-        #endif
+//        vec3 shadowSample = vec3(1.0);
+//        #ifdef SHADOWS_ENABLED
+//            const float shadowPixelSize = 1.0 / shadowMapResolution;
+//
+//            vec3 shadowViewPos = mul3(ap.celestial.view, localPosTrans);
+//            const float shadowRadius = 2.0*shadowPixelSize;
+//
+//            int shadowCascade;
+//            vec3 shadowPos = GetShadowSamplePos(shadowViewPos, shadowRadius, shadowCascade);
+//            shadowSample = SampleShadowColor_PCF(shadowPos, shadowCascade, vec2(shadowRadius));
+//        #endif
 
         vec3 localViewDir = normalize(localPosTrans);
 
@@ -204,7 +207,12 @@ void main() {
         //     shadow_sss = textureLod(TEX_SHADOW, uv, 0);
         // #endif
         // TODO: temp hack!
-        vec4 shadow_sss = vec4(shadowSample, sss);
+        //vec4 shadow_sss = vec4(shadowSample, sss);
+
+        vec4 shadow_sss = vec4(vec3(1.0), 0.0);
+        #ifdef SHADOWS_ENABLED
+            shadow_sss = textureLod(TEX_SHADOW, uv, 0);
+        #endif
 
         float occlusion = texOcclusion;
         // #if defined EFFECT_SSAO_ENABLED //&& !defined ACCUM_ENABLED
@@ -218,7 +226,7 @@ void main() {
         GetSkyLightTransmission(localPosTrans, sunTransmit, moonTransmit);
 
         vec3 skyLight = SUN_BRIGHTNESS * sunTransmit + MOON_BRIGHTNESS * moonTransmit;
-        vec3 skyLightDiffuse = NoLm * skyLight * shadowSample;
+        vec3 skyLightDiffuse = NoLm * skyLight * shadow_sss.rgb;
         skyLightDiffuse *= SampleLightDiffuse(NoVm, NoLm, LoHm, roughL);
 
         // #if defined EFFECT_SSGI_ENABLED && !defined ACCUM_ENABLED
@@ -334,7 +342,7 @@ void main() {
 
         vec3 reflectTint = GetMetalTint(albedo.rgb, f0_metal);
 
-        vec3 specular = skyLight * shadowSample * SampleLightSpecular(NoLm, NoHm, LoHm, view_F, roughL);
+        vec3 specular = skyLight * shadow_sss.rgb * SampleLightSpecular(NoLm, NoHm, LoHm, view_F, roughL);
         specular += view_F * skyReflectColor * reflectTint * (1.0 - roughness);
 
         #ifdef ACCUM_ENABLED
@@ -410,9 +418,9 @@ void main() {
 //        colorOpaque += finalColor.rgb;
     }
 
-    if (!is_fluid && ap.camera.fluid == 1) {
-        colorOpaque *= exp(-WaterTintMinDist * VL_WaterTransmit);
-    }
+//    if (!is_fluid && ap.camera.fluid == 1) {
+//        colorOpaque *= exp(-WaterTintMinDist * VL_WaterTransmit);
+//    }
 
     vec3 colorFinal = colorOpaque;
 
@@ -430,6 +438,9 @@ void main() {
 
     vec4 weather = textureLod(texParticles, uv, 0);
     colorFinal = mix(colorFinal, weather.rgb, weather.a);
+
+    if (ap.camera.fluid == 2)
+        colorFinal = RgbToLinear(vec3(0.0));
 
     outColor = vec4(colorFinal, 1.0);
 }

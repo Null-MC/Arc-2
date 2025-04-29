@@ -118,6 +118,7 @@ function applySettings(settings) {
     if (settings.Internal.DebugEnabled) {
         defineGlobally("DEBUG_VIEW", snapshot.Debug_View.toString());
         defineGlobally("DEBUG_MATERIAL", snapshot.Debug_Material.toString());
+        if (snapshot.Debug_Translucent) defineGlobally1("DEBUG_TRANSLUCENT");
     }
 }
 
@@ -947,6 +948,23 @@ export function setupShader() {
 
     registerShader(Stage.POST_RENDER, new GenerateMips(texFinalOpaque));
 
+    if (snapshot.Shadow_Enabled) {
+        registerShader(Stage.POST_RENDER, new Composite("shadow-translucent")
+            .vertex("shared/bufferless.vsh")
+            .fragment("composite/shadow-translucent.fsh")
+            .target(0, texShadow)
+            .build());
+
+        // if (snapshot.Shadow_Filter) {
+        //     registerShader(Stage.POST_RENDER, new Compute("shadow-translucent-filter")
+        //         .location("composite/shadow-opaque-filter.csh")
+        //         .workGroups(Math.ceil(screenWidth / 16.0), Math.ceil(screenHeight / 16.0), 1)
+        //         .build());
+        //
+        //     //registerBarrier(Stage.POST_RENDER, new MemoryBarrier(IMAGE_BIT));
+        // }
+    }
+
     registerShader(Stage.POST_RENDER, new Composite("composite-translucent")
         .vertex("shared/bufferless.vsh")
         .fragment("composite/composite-translucent.fsh")
@@ -954,6 +972,7 @@ export function setupShader() {
         .ssbo(0, sceneBuffer)
         .ssbo(4, quadListBuffer)
         .ubo(0, SceneSettingsBuffer)
+        .define("TEX_SHADOW", "texShadow")
         .build());
 
     if (snapshot.Effect_TAA_Enabled) {
@@ -1025,8 +1044,14 @@ export function setupShader() {
             .ssbo(3, lightListBuffer)
             .ssbo(4, quadListBuffer)
             .define("TEX_COLOR", snapshot.Debug_Translucent
-                ? "texDeferredTranslucent_Color"
+                ? "texDeferredTrans_Color"
                 : "texDeferredOpaque_Color")
+            .define("TEX_NORMAL", snapshot.Debug_Translucent
+                ? "texDeferredTrans_TexNormal"
+                : "texDeferredOpaque_TexNormal")
+            .define("TEX_DATA", snapshot.Debug_Translucent
+                ? "texDeferredTrans_Data"
+                : "texDeferredOpaque_Data")
             .define("TEX_SHADOW", texShadow_src)
             .define("TEX_SSGIAO", "texSSGIAO_final")
             .define("TEX_ACCUM_OCCLUSION", "texAccumOcclusion_opaque")

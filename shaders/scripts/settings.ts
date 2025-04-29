@@ -65,7 +65,7 @@ export class ShaderSettings {
     Debug_View = () => getStringSettingIndex("DEBUG_VIEW", 0, 'None', 'Material', 'Shadows', 'SSS', 'SSAO', 'SSGI', 'Volumetric Lighting', 'Ray-Traced Lighting', 'Accumulation', 'Sky Irradiance', 'ShadowMap Color', 'ShadowMap Normal');
     Debug_Material = () => getStringSettingIndex("DEBUG_MATERIAL", 0, 'Albedo', 'Geo-Normal', 'Tex-Normal', 'Occlusion', 'Roughness', 'F0/Metal', 'Porosity', 'SSS', 'Emission', 'LightMap');
     Debug_WhiteWorld = () => getBoolSetting("DEBUG_WHITE_WORLD");
-    Debug_Translucent = () => false;
+    Debug_Translucent = () => getBoolSetting("DEBUG_TRANSLUCENT");
     Debug_Histogram = () => false;
     Debug_RT = () => false;
 
@@ -235,7 +235,7 @@ export class SettingsSnapshot {
     Shadow_Resolution: number;
     Shadow_Filter: boolean;
     Shadow_SS_Fallback: boolean;
-    Material_Format: string;
+    Material_Format: number;
     Material_ParallaxEnabled: boolean;
     Material_ParallaxDepth: number;
     Material_ParallaxStepCount: number;

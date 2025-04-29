@@ -118,8 +118,8 @@ void populateShared(const in ivec3 voxelFrameOffset) {
 	uint blockId1 = 0u;
 	uint blockId2 = 0u;
 	#if LIGHTING_MODE == LIGHT_MODE_LPV
-		uint blockMeta1 = uint(-1);
-		uint blockMeta2 = uint(-1);
+		uint blockMeta1 = 0u;
+		uint blockMeta2 = 0u;
 	#endif
 
 	if (IsInVoxelBounds(pos1)) {
@@ -157,9 +157,9 @@ void populateShared(const in ivec3 voxelFrameOffset) {
 		return floodfillBuffer[shared_index];// * wMask;
 	}
 
-	vec3 mixNeighboursDirect(const in ivec3 fragCoord, const in uint mask) {
-		uvec3 m1 = (uvec3(mask) >> uvec3(BLOCK_FACE_EAST, BLOCK_FACE_DOWN, BLOCK_FACE_SOUTH)) & uvec3(1u);
-		uvec3 m2 = (uvec3(mask) >> uvec3(BLOCK_FACE_WEST, BLOCK_FACE_UP, BLOCK_FACE_NORTH)) & uvec3(1u);
+	vec3 mixNeighbours(const in ivec3 fragCoord, const in uint mask) {
+		uvec3 m1 = 1u - (uvec3(mask) >> uvec3(BLOCK_FACE_WEST, BLOCK_FACE_UP, BLOCK_FACE_NORTH)) & uvec3(1u);
+		uvec3 m2 = 1u - (uvec3(mask) >> uvec3(BLOCK_FACE_EAST, BLOCK_FACE_DOWN, BLOCK_FACE_SOUTH)) & uvec3(1u);
 
 		vec3 nX1 = sampleFloodfillShared(fragCoord + ivec3(-1,  0,  0), BLOCK_FACE_EAST) * m1.x;
 		vec3 nX2 = sampleFloodfillShared(fragCoord + ivec3( 1,  0,  0), BLOCK_FACE_WEST) * m2.x;
@@ -218,9 +218,9 @@ void populateShared(const in ivec3 voxelFrameOffset) {
 				vec3 blockColor = iris_getLightColor(blockId).rgb;
 				traceTint *= RgbToLinear(blockColor);
 
-				uint meta = iris_getMetadata(blockId);
-				uint blocking = bitfieldExtract(meta, 10, 4);
-				traceTint *= 1.0 - blocking/16.0;
+//				uint meta = iris_getMetadata(blockId);
+//				uint blocking = bitfieldExtract(meta, 10, 4);
+//				traceTint *= 1.0 - blocking/16.0;
 			}
 		}
 
@@ -323,7 +323,7 @@ void populateShared(const in ivec3 voxelFrameOffset) {
 				hit_diffuse += hit_emission * Material_EmissionBrightness;
 			#endif
 
-			color = albedo * hit_diffuse * max(hit_NoL, 0.0);
+			color = albedo * hit_diffuse;// * max(hit_NoL, 0.0);
 		}
 		else {
 			vec2 skyIrradianceCoord = DirectionToUV(traceDir);
@@ -376,9 +376,9 @@ void main() {
 				// TODO: is this reliable?
 				blockTint = lightColor;
 
-				uint meta = sharedBlockMetaMap[sharedCoord];
-				uint blocking = bitfieldExtract(meta, 10, 4);
-				blockTint *= 1.0 - blocking/16.0;
+//				uint meta = sharedBlockMetaMap[sharedCoord];
+//				uint blocking = bitfieldExtract(meta, 10, 4);
+//				blockTint *= 1.0 - blocking/16.0;
 			}
 		#endif
 	}
@@ -387,11 +387,11 @@ void main() {
 		vec3 accumLight = vec3(0.0);
 
 		if (!isFullBlock) {
-			uint faceMask = uint(-1);
+			uint faceMask = 0u;
 			if (blockId > 0u)
 				faceMask = sharedBlockMetaMap[sharedCoord];
 
-			accumLight = mixNeighboursDirect(localCellIndex + 1, faceMask) * blockTint;
+			accumLight = mixNeighbours(localCellIndex + 1, faceMask) * blockTint;
 		}
 
 		if (lightRange > 0) {
@@ -436,9 +436,13 @@ void main() {
 					f = -f;
 				}
 
-				vec3 noise_offset = sample_blueNoise(hash23(cellIndex));
+				//noise_dir = mix(noise_dir, shVoxel_dir[dir], 0.5);
+				//noise_dir = normalize(noise_dir);
 
-				vec3 tracePos = cellIndex + 0.5 + 0.5*noise_offset;
+				//vec3 noise_offset = sample_blueNoise(hash23(cellIndex));
+				vec3 noise_offset = hash32(noise_seed);
+
+				vec3 tracePos = cellIndex + noise_offset;
 				vec3 traceSample = trace_GI(tracePos, noise_dir);
 				face_counter = clamp(face_counter + f, 0.0, 60.0);
 

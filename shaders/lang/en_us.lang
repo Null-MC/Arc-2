@@ -49,9 +49,9 @@ value.FANCY_LAVA_RES.0=Infinite
 suffix.FANCY_LAVA_RES=x
 
 option.LIGHTING_MODE=Mode
-value.LIGHTING_MODE.0=LightMap
-value.LIGHTING_MODE.1=LPV
-value.LIGHTING_MODE.2=RT
+value.LIGHTING_MODE.0=Light Map
+value.LIGHTING_MODE.1=Flood Fill
+value.LIGHTING_MODE.2=Ray Traced
 
 option.LIGHTING_REFLECT_MODE=Reflection Mode
 value.LIGHTING_REFLECT_MODE.0=Sky Only

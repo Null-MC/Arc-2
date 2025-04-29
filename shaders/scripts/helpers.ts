@@ -1,4 +1,4 @@
-import type {} from './iris'
+import type {} from '../iris'
 
 
 export function hexToRgb(hex: string) {
@@ -7,6 +7,11 @@ export function hexToRgb(hex: string) {
     const g = (bigint >> 8) & 255;
     const b = bigint & 255;
     return {r, g, b};
+}
+
+export function setLightColorEx(hex: string, ...blocks: string[]) {
+    const color = hexToRgb(hex);
+    blocks.forEach(block => setLightColor(new NamespacedId(block), color.r, color.g, color.b, 255));
 }
 
 export class StreamBufferBuilder {

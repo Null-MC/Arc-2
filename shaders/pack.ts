@@ -1,187 +1,25 @@
 import type {} from './iris'
-import {hexToRgb, StreamBufferBuilder} from "./helpers";
+import {setLightColorEx, StreamBufferBuilder} from "./scripts/helpers";
+import {buildSettings, LightingModes, ReflectionModes, ShaderSettings} from "./scripts/settings";
+
 
 const LIGHT_BIN_SIZE = 4;
 const QUAD_BIN_SIZE = 2;
 
-// CONSTANTS
-const LightMode_LightMap = 0;
-const LightMode_LPV = 1;
-const LightMode_RT = 2;
-
-const ReflectMode_None = 0;
-const ReflectMode_SSR = 1;
-const ReflectMode_WSR = 2;
-
+const Settings = new ShaderSettings();
 
 let SceneSettingsBuffer: BuiltStreamingBuffer;
 const SceneSettingsBufferSize = 48;
 
-function getSettings() {
-    const Settings = {
-        Sky: {
-            SunAngle: () => getIntSetting("SKY_SUN_ANGLE"),
-            SeaLevel: () => getIntSetting("SKY_SEA_LEVEL"),
-            FogDensity: () => getIntSetting("SKY_FOG_DENSITY"),
-            Clouds: () => getBoolSetting("SKY_CLOUDS_ENABLED"),
-            FogNoise: () => getBoolSetting("SKY_FOG_NOISE"),
-        },
-        Water: {
-            Waves: () => getBoolSetting("WATER_WAVES_ENABLED"),
-            Detail: () => getIntSetting("WATER_WAVES_DETAIL"),
-            Tessellation: () => getBoolSetting("WATER_TESSELLATION_ENABLED"),
-            Tessellation_Level: () => getIntSetting("WATER_TESSELLATION_LEVEL"),
-        },
-        Shadows: {
-            Enabled: () => getBoolSetting("SHADOWS_ENABLED"),
-            CloudsEnabled: () => getBoolSetting("SHADOWS_CLOUD_ENABLED"),
-            Resolution: () => getIntSetting("SHADOW_RESOLUTION"),
-            Filter: true,
-            SS_Fallback: true,
-        },
-        Material: {
-            Format: getStringSettingIndex("MATERIAL_FORMAT", 1, 'None', 'Lab-PBR', 'Old-PBR'),
-            Parallax: {
-                Enabled: getBoolSetting("MATERIAL_PARALLAX_ENABLED"),
-                Depth: getIntSetting("MATERIAL_PARALLAX_DEPTH"),
-                Samples: getIntSetting("MATERIAL_PARALLAX_SAMPLES"),
-                Sharp: getBoolSetting("MATERIAL_PARALLAX_SHARP"),
-                DepthWrite: getBoolSetting("MATERIAL_PARALLAX_DEPTHWRITE"),
-            },
-            EmissionBrightness: () => getIntSetting("MATERIAL_EMISSION_BRIGHTNESS"),
-            FancyLava: getBoolSetting("FANCY_LAVA"),
-            FancyLavaRes: getIntSetting("FANCY_LAVA_RES"),
-        },
-        Lighting: {
-            Mode: () => getStringSettingIndex("LIGHTING_MODE", 1, 'LightMap', 'FloodFill', 'Ray-Traced'),
-            LpvRsmEnabled: false, //getBoolSetting("LPV_RSM_ENABLED"),
-            RT: {
-                MaxSampleCount: getIntSetting("RT_MAX_SAMPLE_COUNT"),
-                TraceTriangles: getBoolSetting("LIGHTING_TRACE_TRIANGLE"),
-            },
-            Reflections: {
-                Mode: getStringSettingIndex("LIGHTING_REFLECT_MODE", 2, 'Sky Only', 'Screen-Space', 'World-Space'),
-                Noise: getBoolSetting("LIGHTING_REFLECT_NOISE"),
-                ReflectTriangles: getBoolSetting("LIGHTING_REFLECT_TRIANGLE"),
-                MaxStepCount: getIntSetting("LIGHTING_REFLECT_MAXSTEP"),
-            },
-            VolumetricResolution: getIntSetting("LIGHTING_VL_RES"),
-        },
-        Voxel: {
-            Size: () => getIntSetting("VOXEL_SIZE"),
-            Offset: () => getIntSetting("VOXEL_FRUSTUM_OFFSET"),
-            GIEnabled: () => getBoolSetting("VOXEL_GI_ENABLED"),
-            MaxLightCount: 64,
-            MaxTriangleCount: 64,
-        },
-        Effect: {
-            SSGIAO: {
-                SSAO: () => getBoolSetting("EFFECT_SSAO_ENABLED"),
-                SSGI: () => getBoolSetting("EFFECT_SSGI_ENABLED"),
-                Samples: () => getIntSetting("EFFECT_SSGIAO_SAMPLES"),
-            },
-            Bloom: {
-                Enabled: () => getBoolSetting("EFFECT_BLOOM_ENABLED"),
-                Strength: () => getFloatSetting("EFFECT_BLOOM_STRENGTH"),
-            },
-        },
-        Post: {
-            TAA: () => getBoolSetting("EFFECT_TAA_ENABLED"),
-            Exposure: {
-                Min: () => getFloatSetting("POST_EXPOSURE_MIN"),
-                Max: () => getFloatSetting("POST_EXPOSURE_MAX"),
-                Range: () => getFloatSetting("POST_EXPOSURE_RANGE"),
-                Speed: () => getFloatSetting("POST_EXPOSURE_SPEED"),
-            },
-            Contrast: () => getIntSetting("POST_CONTRAST"),
-        },
-        Debug: {
-            //Enabled: () => getBoolSetting("DEBUG_ENABLED"),
-            View: () => getStringSettingIndex("DEBUG_VIEW", 0, 'None', 'Material', 'Shadows', 'SSS', 'SSAO', 'SSGI', 'Volumetric Lighting', 'Ray-Traced Lighting', 'Accumulation', 'Sky Irradiance', 'ShadowMap Color', 'ShadowMap Normal'),
-            Material: () => getStringSettingIndex("DEBUG_MATERIAL", 0, 'Albedo', 'Geo-Normal', 'Tex-Normal', 'Occlusion', 'Roughness', 'F0/Metal', 'Porosity', 'SSS', 'Emission', 'LightMap'),
-            WhiteWorld: () => getBoolSetting("DEBUG_WHITE_WORLD"),
-            Translucent: false,
-            HISTOGRAM: false,
-            RT: false,
-        },
-        Internal: {
-            Accumulation: false,
-            Voxelization: false,
-            VoxelizeBlockFaces: false,
-            VoxelizeTriangles: false,
-            DebugEnabled: false,
-            LPV: false,
-        },
-    };
-
-    // if (Settings.Voxel.RT.Enabled) Settings.Internal.Accumulation = true;
-    if (Settings.Effect.SSGIAO.SSAO()) Settings.Internal.Accumulation = true;
-    if (Settings.Effect.SSGIAO.SSGI()) Settings.Internal.Accumulation = true;
-
-    switch (Settings.Lighting.Mode()) {
-        case LightMode_LPV:
-            Settings.Internal.Voxelization = true;
-            Settings.Internal.LPV = true;
-            break;
-        case LightMode_RT:
-            Settings.Internal.Voxelization = true;
-            Settings.Internal.Accumulation = true;
-
-            if (Settings.Lighting.RT.TraceTriangles)
-                Settings.Internal.VoxelizeTriangles = true;
-            break;
-    }
-
-    if (Settings.Lighting.Reflections.Mode == ReflectMode_WSR) {
-        Settings.Internal.Voxelization = true;
-        Settings.Internal.Accumulation = true;
-
-        if (Settings.Lighting.Reflections.ReflectTriangles) {
-            Settings.Internal.VoxelizeTriangles = true;
-        }
-        else {
-            Settings.Internal.VoxelizeBlockFaces = true;
-        }
-
-        // if (Settings.Lighting.Mode == LightMode_RT) {
-        //     Settings.Internal.Voxelization = true;
-        //     Settings.Internal.LPV = true;
-        // }
-    }
-
-    if (Settings.Lighting.LpvRsmEnabled) {
-        Settings.Internal.Voxelization = true;
-        Settings.Internal.LPV = true;
-    }
-
-    if (Settings.Voxel.GIEnabled()) {
-        Settings.Internal.Voxelization = true;
-        Settings.Internal.VoxelizeBlockFaces = true;
-        Settings.Internal.LPV = true;
-    }
-
-    if (Settings.Debug.View() != 0)
-        Settings.Internal.DebugEnabled = true;
-
-    // TODO: DEBUG ONLY!
-    //Settings.Internal.Accumulation = false;
-
-    return Settings;
-}
-
-function getStringSettingIndex(name: string, defaultValue: number, ...options: string[]) : number {
-    const value = getStringSetting(name);
-    const index = options.indexOf(value);
-    //print(`Setting [${name}] = [${index}] where [${name}] in [${options}]`)
-    return index < 0 ? defaultValue : index;
-}
 
 function applySettings(settings) {
+    const snapshot = settings.snapshot;
+
     worldSettings.disableShade = true;
     worldSettings.ambientOcclusionLevel = 0.0;
-    worldSettings.sunPathRotation = settings.Sky.SunAngle();
-    worldSettings.shadowMapResolution = settings.Shadows.Resolution();
-    worldSettings.cascadeSafeZones[0] = 128;
+    worldSettings.sunPathRotation = snapshot.Sky_SunAngle;
+    worldSettings.shadowMapResolution = snapshot.Shadow_Resolution;
+    worldSettings.cascadeSafeZones[0] = snapshot.Voxel_Size;
     worldSettings.renderStars = false;
     worldSettings.renderMoon = false;
     worldSettings.renderSun = false;
@@ -191,61 +29,59 @@ function applySettings(settings) {
     defineGlobally1("EFFECT_VL_ENABLED");
     if (settings.Internal.Accumulation) defineGlobally1("ACCUM_ENABLED");
 
-    //defineGlobally("SKY_SEA_LEVEL", settings.Sky.SeaLevel().toString());
-    // defineGlobally("SKY_FOG_DENSITY", Settings.Sky.FogDensity);
-    if (settings.Sky.Clouds()) defineGlobally1("SKY_CLOUDS_ENABLED");
-    if (settings.Sky.FogNoise()) defineGlobally1("SKY_FOG_NOISE");
+    if (snapshot.Sky_Clouds) defineGlobally1("SKY_CLOUDS_ENABLED");
+    if (snapshot.Sky_FogNoise) defineGlobally1("SKY_FOG_NOISE");
 
-    if (settings.Water.Waves()) {
+    if (snapshot.Water_WaveEnabled) {
         defineGlobally1("WATER_WAVES_ENABLED");
-        defineGlobally("WATER_WAVES_DETAIL", settings.Water.Detail().toString());
+        defineGlobally("WATER_WAVES_DETAIL", snapshot.Water_WaveDetail.toString());
 
-        if (settings.Water.Tessellation()) {
+        if (snapshot.Water_Tessellation) {
             defineGlobally1("WATER_TESSELLATION_ENABLED");
-            defineGlobally("WATER_TESSELLATION_LEVEL", settings.Water.Tessellation_Level().toString());
+            defineGlobally("WATER_TESSELLATION_LEVEL", snapshot.Water_TessellationLevel.toString());
         }
     }
 
-    if (settings.Shadows.Enabled()) defineGlobally1("SHADOWS_ENABLED");
-    if (settings.Shadows.CloudsEnabled()) defineGlobally1("SHADOWS_CLOUD_ENABLED");
-    if (settings.Shadows.SS_Fallback) defineGlobally1("SHADOW_SCREEN");
-    defineGlobally("SHADOW_RESOLUTION", settings.Shadows.Resolution().toString());
+    if (snapshot.Shadow_Enabled) defineGlobally1("SHADOWS_ENABLED");
+    if (snapshot.Shadow_CloudEnabled) defineGlobally1("SHADOWS_CLOUD_ENABLED");
+    if (snapshot.Shadow_SS_Fallback) defineGlobally1("SHADOW_SCREEN");
+    defineGlobally("SHADOW_RESOLUTION", snapshot.Shadow_Resolution.toString());
 
-    defineGlobally("MATERIAL_FORMAT", settings.Material.Format);
-    if (settings.Material.Parallax.Enabled) {
+    defineGlobally("MATERIAL_FORMAT", snapshot.Material_Format);
+    if (snapshot.Material_ParallaxEnabled) {
         defineGlobally1("MATERIAL_PARALLAX_ENABLED");
-        defineGlobally("MATERIAL_PARALLAX_DEPTH", settings.Material.Parallax.Depth.toString());
-        defineGlobally("MATERIAL_PARALLAX_SAMPLES", settings.Material.Parallax.Samples.toString());
-        if (settings.Material.Parallax.Sharp) defineGlobally1("MATERIAL_PARALLAX_SHARP");
-        if (settings.Material.Parallax.DepthWrite) defineGlobally1("MATERIAL_PARALLAX_DEPTHWRITE");
+        defineGlobally("MATERIAL_PARALLAX_DEPTH", snapshot.Material_ParallaxDepth.toString());
+        defineGlobally("MATERIAL_PARALLAX_SAMPLES", snapshot.Material_ParallaxStepCount.toString());
+        if (snapshot.Material_ParallaxSharp) defineGlobally1("MATERIAL_PARALLAX_SHARP");
+        if (snapshot.Material_ParallaxDepthWrite) defineGlobally1("MATERIAL_PARALLAX_DEPTHWRITE");
     }
-    if (settings.Material.FancyLava) {
+    if (snapshot.Material_FancyLava) {
         defineGlobally1("FANCY_LAVA");
-        defineGlobally("FANCY_LAVA_RES", settings.Material.FancyLavaRes.toString());
+        defineGlobally("FANCY_LAVA_RES", snapshot.Material_FancyLavaResolution.toString());
     }
 
-    defineGlobally("LIGHTING_MODE", settings.Lighting.Mode().toString());
-    //defineGlobally("LIGHTING_VL_RES", Settings.Lighting.VolumetricResolution.toString());
+    defineGlobally("LIGHTING_MODE", snapshot.Lighting_Mode.toString());
+    //defineGlobally("LIGHTING_VL_RES", snapshot.Lighting_VolumetricResolution.toString());
 
-    defineGlobally("LIGHTING_REFLECT_MODE", settings.Lighting.Reflections.Mode.toString());
-    defineGlobally("LIGHTING_REFLECT_MAXSTEP", settings.Lighting.Reflections.MaxStepCount.toString())
-    if (settings.Lighting.Reflections.Noise) defineGlobally1("MATERIAL_ROUGH_REFLECT_NOISE");
-    if (settings.Lighting.Reflections.Mode == ReflectMode_WSR) {
-        if (settings.Lighting.Reflections.ReflectTriangles) defineGlobally1("LIGHTING_REFLECT_TRIANGLE");
+    defineGlobally("LIGHTING_REFLECT_MODE", snapshot.Lighting_ReflectionMode.toString());
+    defineGlobally("LIGHTING_REFLECT_MAXSTEP", snapshot.Lighting_ReflectionStepCount.toString())
+    if (snapshot.Lighting_ReflectionNoise) defineGlobally1("MATERIAL_ROUGH_REFLECT_NOISE");
+    if (snapshot.Lighting_ReflectionMode == ReflectionModes.WorldSpace) {
+        if (snapshot.Lighting_ReflectionQuads) defineGlobally1("LIGHTING_REFLECT_TRIANGLE");
     }
 
     if (settings.Internal.Voxelization) {
         defineGlobally1("VOXEL_ENABLED");
-        defineGlobally("VOXEL_SIZE", settings.Voxel.Size().toString());
-        defineGlobally("VOXEL_FRUSTUM_OFFSET", settings.Voxel.Offset().toString());
+        defineGlobally("VOXEL_SIZE", snapshot.Voxel_Size.toString());
+        defineGlobally("VOXEL_FRUSTUM_OFFSET", snapshot.Voxel_Offset.toString());
 
-        if (settings.Lighting.Mode() == LightMode_RT) {
+        if (snapshot.Lighting_Mode == LightingModes.RayTraced) {
             defineGlobally1("RT_ENABLED");
-            defineGlobally("RT_MAX_SAMPLE_COUNT", `${settings.Lighting.RT.MaxSampleCount}u`);
-            defineGlobally("LIGHT_BIN_MAX", settings.Voxel.MaxLightCount.toString());
+            defineGlobally("RT_MAX_SAMPLE_COUNT", `${snapshot.Lighting_TraceSampleCount}u`);
+            defineGlobally("LIGHT_BIN_MAX", snapshot.Voxel_MaxLightCount.toString());
             defineGlobally("LIGHT_BIN_SIZE", LIGHT_BIN_SIZE.toString());
 
-            if (settings.Lighting.RT.TraceTriangles) defineGlobally1("RT_TRI_ENABLED");
+            if (snapshot.Lighting_TraceQuads) defineGlobally1("RT_TRI_ENABLED");
         }
 
         if (settings.Internal.VoxelizeBlockFaces) {
@@ -254,54 +90,43 @@ function applySettings(settings) {
 
         if (settings.Internal.VoxelizeTriangles) {
             defineGlobally1("VOXEL_TRI_ENABLED");
-            defineGlobally("QUAD_BIN_MAX", settings.Voxel.MaxTriangleCount.toString());
+            defineGlobally("QUAD_BIN_MAX", snapshot.Voxel_MaxQuadCount.toString());
             defineGlobally("QUAD_BIN_SIZE", QUAD_BIN_SIZE.toString());
         }
-
-        // if (Settings.Lighting.ReflectionMode == ReflectMode_WSR) defineGlobally("VOXEL_WSR_ENABLED", "1");
 
         if (settings.Internal.LPV) {
             defineGlobally1("LPV_ENABLED");
 
-            if (settings.Lighting.LpvRsmEnabled)
+            if (snapshot.Lighting_LpvRsmEnabled)
                 defineGlobally1("LPV_RSM_ENABLED");
 
-            if (settings.Voxel.GIEnabled())
+            if (snapshot.Voxel_GI_Enabled)
                 defineGlobally1("VOXEL_GI_ENABLED");
         }
     }
 
-    if (settings.Effect.SSGIAO.SSAO()) defineGlobally1("EFFECT_SSAO_ENABLED");
-    if (settings.Effect.SSGIAO.SSGI()) defineGlobally1("EFFECT_SSGI_ENABLED");
-    defineGlobally("EFFECT_SSGIAO_SAMPLES", settings.Effect.SSGIAO.Samples())
+    if (snapshot.Effect_SSAO_Enabled) defineGlobally1("EFFECT_SSAO_ENABLED");
+    if (snapshot.Effect_SSGI_Enabled) defineGlobally1("EFFECT_SSGI_ENABLED");
+    defineGlobally("EFFECT_SSGIAO_SAMPLES", snapshot.Effect_SSGIAO_StepCount);
 
-    //defineGlobally("POST_CONTRAST", Settings.Post.Contrast().toString());
-    if (settings.Post.TAA()) defineGlobally1("EFFECT_TAA_ENABLED");
+    if (snapshot.Effect_TAA_Enabled) defineGlobally1("EFFECT_TAA_ENABLED");
 
-    // defineGlobally("POST_EXPOSURE_MIN", Settings.Post.Exposure.Min().toString());
-    // defineGlobally("POST_EXPOSURE_MAX", Settings.Post.Exposure.Max().toString());
-    // defineGlobally("POST_EXPOSURE_SPEED", Settings.Post.Exposure.Speed().toString());
-
-    if (settings.Debug.WhiteWorld()) defineGlobally1("DEBUG_WHITE_WORLD");
-    if (settings.Debug.HISTOGRAM) defineGlobally1("DEBUG_HISTOGRAM");
-    if (settings.Debug.RT) defineGlobally1("DEBUG_RT");
+    if (snapshot.Debug_WhiteWorld) defineGlobally1("DEBUG_WHITE_WORLD");
+    if (snapshot.Debug_Histogram) defineGlobally1("DEBUG_HISTOGRAM");
+    if (snapshot.Debug_RT) defineGlobally1("DEBUG_RT");
 
     if (settings.Internal.DebugEnabled) {
-        defineGlobally("DEBUG_VIEW", settings.Debug.View().toString());
-        defineGlobally("DEBUG_MATERIAL", settings.Debug.Material().toString());
+        defineGlobally("DEBUG_VIEW", snapshot.Debug_View.toString());
+        defineGlobally("DEBUG_MATERIAL", snapshot.Debug_Material.toString());
     }
-}
-
-export function setLightColorEx(hex: string, ...blocks: string[]) {
-    const color = hexToRgb(hex);
-    blocks.forEach(block => setLightColor(new NamespacedId(block), color.r, color.g, color.b, 255));
 }
 
 export function setupShader() {
     print("Setting up shader");
 
-    const Settings = getSettings();
-    applySettings(Settings);
+    const snapshot = Settings.getSnapshot();
+    const settings = buildSettings(snapshot);
+    applySettings(settings);
 
     setLightColorEx("#f39849", "campfire");
     setLightColorEx("#8c4836", "candle");
@@ -434,7 +259,7 @@ export function setupShader() {
 
     let texShadow: BuiltTexture | null = null;
     let texShadow_final: BuiltTexture | null = null;
-    if (Settings.Shadows.Enabled()) {
+    if (snapshot.Shadow_Enabled) {
         texShadow = new Texture("texShadow")
             .format(Format.RGBA16F)
             .clear(false)
@@ -451,14 +276,14 @@ export function setupShader() {
         .imageName("imgVoxelBlock")
         .format(Format.R32UI)
         .clearColor(0.0, 0.0, 0.0, 0.0)
-        .width(Settings.Voxel.Size())
-        .height(Settings.Voxel.Size())
-        .depth(Settings.Voxel.Size())
+        .width(snapshot.Voxel_Size)
+        .height(snapshot.Voxel_Size)
+        .depth(snapshot.Voxel_Size)
         .build();
 
     let texDiffuseRT: BuiltTexture | null = null;
     let texSpecularRT: BuiltTexture | null = null;
-    if (Settings.Lighting.Mode() == LightMode_RT || Settings.Lighting.Reflections.Mode == ReflectMode_WSR) {
+    if (snapshot.Lighting_Mode == LightingModes.RayTraced || snapshot.Lighting_ReflectionMode == ReflectionModes.WorldSpace) {
         texDiffuseRT = new Texture("texDiffuseRT")
             // .imageName("imgDiffuseRT")
             .format(Format.RGB16F)
@@ -478,7 +303,7 @@ export function setupShader() {
 
     let texSSGIAO: BuiltTexture | null = null;
     let texSSGIAO_final: BuiltTexture | null = null;
-    if (Settings.Effect.SSGIAO.SSAO() || Settings.Effect.SSGIAO.SSGI()) {
+    if (snapshot.Effect_SSAO_Enabled || snapshot.Effect_SSGI_Enabled) {
         texSSGIAO = new Texture("texSSGIAO")
             .format(Format.RGBA16F)
             .width(screenWidth_half)
@@ -495,7 +320,7 @@ export function setupShader() {
             .build();
     }
 
-    if (Settings.Internal.Accumulation) {
+    if (settings.Internal.Accumulation) {
         new Texture("texAccumDiffuse_opaque")
             .imageName("imgAccumDiffuse_opaque")
             .format(Format.RGBA16F)
@@ -592,7 +417,7 @@ export function setupShader() {
             .clear(false)
             .build();
 
-        if (Settings.Effect.SSGIAO.SSAO()) {
+        if (snapshot.Effect_SSAO_Enabled) {
             new Texture("texAccumOcclusion_opaque")
                 .imageName("imgAccumOcclusion_opaque")
                 .format(Format.R16F)
@@ -611,7 +436,7 @@ export function setupShader() {
         }
     }
 
-    const vlScale = Math.pow(2, Settings.Lighting.VolumetricResolution);
+    const vlScale = Math.pow(2, snapshot.Lighting_VolumetricResolution);
     const vlWidth = Math.ceil(screenWidth / vlScale);
     const vlHeight = Math.ceil(screenHeight / vlScale);
 
@@ -631,9 +456,9 @@ export function setupShader() {
 
     let shLpvBuffer: BuiltBuffer | null = null;
     let shLpvBuffer_alt: BuiltBuffer | null = null;
-    if (Settings.Voxel.GIEnabled()) {
+    if (snapshot.Voxel_GI_Enabled) {
         // f16vec4[3] * VoxelBufferSize^3
-        const bufferSize = 48 * cubed(Settings.Voxel.Size());
+        const bufferSize = 48 * cubed(snapshot.Voxel_Size);
 
         shLpvBuffer = new GPUBuffer(bufferSize)
             .clear(false)
@@ -644,22 +469,22 @@ export function setupShader() {
             .build();
     }
 
-    if (Settings.Lighting.Mode() == LightMode_LPV) {
+    if (snapshot.Lighting_Mode == LightingModes.FloodFill) {
         const texFloodFill = new Texture("texFloodFill")
             .imageName("imgFloodFill")
             .format(Format.RGBA16F)
-            .width(Settings.Voxel.Size())
-            .height(Settings.Voxel.Size())
-            .depth(Settings.Voxel.Size())
+            .width(snapshot.Voxel_Size)
+            .height(snapshot.Voxel_Size)
+            .depth(snapshot.Voxel_Size)
             .clear(false)
             .build();
 
         const texFloodFill_alt = new Texture("texFloodFill_alt")
             .imageName("imgFloodFill_alt")
             .format(Format.RGBA16F)
-            .width(Settings.Voxel.Size())
-            .height(Settings.Voxel.Size())
-            .depth(Settings.Voxel.Size())
+            .width(snapshot.Voxel_Size)
+            .height(snapshot.Voxel_Size)
+            .depth(snapshot.Voxel_Size)
             .clear(false)
             .build();
     }
@@ -672,7 +497,7 @@ export function setupShader() {
         .clear(false)
         .build();
 
-    if (Settings.Debug.HISTOGRAM) {
+    if (snapshot.Debug_Histogram) {
         const texHistogram_debug = new Texture("texHistogram_debug")
             .imageName("imgHistogram_debug")
             .format(Format.R32UI)
@@ -689,9 +514,9 @@ export function setupShader() {
     let lightListBuffer: BuiltBuffer | null = null;
     let blockFaceBuffer: BuiltBuffer | null = null;
     let quadListBuffer: BuiltBuffer | null = null;
-    if (Settings.Internal.Voxelization) {
-        const lightBinSize = 4 * (1 + Settings.Voxel.MaxLightCount);
-        const lightListBinCount = Math.ceil(Settings.Voxel.Size() / LIGHT_BIN_SIZE);
+    if (settings.Internal.Voxelization) {
+        const lightBinSize = 4 * (1 + snapshot.Voxel_MaxLightCount);
+        const lightListBinCount = Math.ceil(snapshot.Voxel_Size / LIGHT_BIN_SIZE);
         const lightListBufferSize = lightBinSize * cubed(lightListBinCount) + 4;
         print(`Light-List Buffer Size: ${lightListBufferSize.toLocaleString()}`);
 
@@ -699,17 +524,17 @@ export function setupShader() {
             .clear(true) // TODO: clear with compute
             .build();
 
-        if (Settings.Internal.VoxelizeBlockFaces) {
-            const bufferSize = 6 * 8 * cubed(Settings.Voxel.Size());
+        if (settings.Internal.VoxelizeBlockFaces) {
+            const bufferSize = 6 * 8 * cubed(snapshot.Voxel_Size);
 
             blockFaceBuffer = new GPUBuffer(bufferSize)
                 .clear(true) // TODO: clear with compute
                 .build();
         }
 
-        if (Settings.Internal.VoxelizeTriangles) {
-            const quadBinSize = 4 + 40*Settings.Voxel.MaxTriangleCount;
-            const quadListBinCount = Math.ceil(Settings.Voxel.Size() / QUAD_BIN_SIZE);
+        if (settings.Internal.VoxelizeTriangles) {
+            const quadBinSize = 4 + 40*snapshot.Voxel_MaxQuadCount;
+            const quadListBinCount = Math.ceil(snapshot.Voxel_Size / QUAD_BIN_SIZE);
             const quadListBufferSize = quadBinSize * cubed(quadListBinCount) + 4;
             print(`Quad-List Buffer Size: ${quadListBufferSize.toLocaleString()}`);
 
@@ -720,19 +545,17 @@ export function setupShader() {
     }
 
     registerShader(Stage.SCREEN_SETUP, new Compute("scene-setup")
-        // .barrier(true)
         .workGroups(1, 1, 1)
         .location("setup/scene-setup.csh")
         .ssbo(0, sceneBuffer)
         .build());
 
     registerShader(Stage.SCREEN_SETUP, new Compute("histogram-clear")
-        // .barrier(true)
         .location("setup/histogram-clear.csh")
         .workGroups(1, 1, 1)
         .build());
 
-    if (Settings.Voxel.GIEnabled()) {
+    if (snapshot.Voxel_GI_Enabled) {
         registerShader(Stage.SCREEN_SETUP, new Compute("sh-gi-clear")
             .location("setup/sh-gi-clear.csh")
             .workGroups(8, 8, 8)
@@ -742,7 +565,6 @@ export function setupShader() {
     }
 
     registerShader(Stage.PRE_RENDER, new Compute("scene-prepare")
-        // .barrier(true)
         .workGroups(1, 1, 1)
         .location("setup/scene-prepare.csh")
         .ssbo(0, sceneBuffer)
@@ -758,7 +580,6 @@ export function setupShader() {
     registerBarrier(Stage.PRE_RENDER, new TextureBarrier());
 
     registerShader(Stage.PRE_RENDER, new Compute("scene-begin")
-        // .barrier(true)
         .workGroups(1, 1, 1)
         .location("setup/scene-begin.csh")
         .ssbo(0, sceneBuffer)
@@ -793,7 +614,7 @@ export function setupShader() {
             .define("RENDER_ENTITY", "1");
     }
 
-    if (Settings.Shadows.Enabled()) {
+    if (snapshot.Shadow_Enabled) {
         registerShader(shadowShader("shadow", Usage.SHADOW).build());
 
         registerShader(shadowTerrainShader("shadow-terrain-solid", Usage.SHADOW_TERRAIN_SOLID).build());
@@ -868,7 +689,7 @@ export function setupShader() {
         .ubo(0, SceneSettingsBuffer)
         .define("RENDER_TERRAIN", "1");
 
-    if (Settings.Water.Waves() && Settings.Water.Tessellation()) {
+    if (snapshot.Water_WaveEnabled && snapshot.Water_Tessellation) {
         waterShader
             .control("gbuffer/main.tcs")
             .eval("gbuffer/main.tes");
@@ -903,8 +724,8 @@ export function setupShader() {
         .ssbo(0, sceneBuffer)
         .build());
 
-    if (Settings.Internal.LPV) {
-        const groupCount = Math.ceil(Settings.Voxel.Size() / 8);
+    if (settings.Internal.LPV) {
+        const groupCount = Math.ceil(snapshot.Voxel_Size / 8);
 
         const shader = new Compute("lpv-propagate")
             .location("composite/lpv-propagate.csh")
@@ -912,7 +733,7 @@ export function setupShader() {
             .define("RENDER_COMPUTE", "1")
             .ssbo(0, sceneBuffer);
 
-        if (Settings.Voxel.GIEnabled()) {
+        if (snapshot.Voxel_GI_Enabled) {
             shader
                 .ssbo(1, shLpvBuffer)
                 .ssbo(2, shLpvBuffer_alt)
@@ -922,11 +743,10 @@ export function setupShader() {
         registerShader(Stage.POST_RENDER, shader.build());
     }
 
-    if (Settings.Lighting.Mode() == LightMode_RT) {
-        const groupCount = Math.ceil(Settings.Voxel.Size() / 8);
+    if (snapshot.Lighting_Mode == LightingModes.RayTraced) {
+        const groupCount = Math.ceil(snapshot.Voxel_Size / 8);
 
         registerShader(Stage.POST_RENDER, new Compute("light-list")
-            // .barrier(true)
             .location("composite/light-list.csh")
             .workGroups(groupCount, groupCount, groupCount)
             .ssbo(0, sceneBuffer)
@@ -934,16 +754,15 @@ export function setupShader() {
             .build());
     }
 
-    if (Settings.Shadows.Enabled()) {
+    if (snapshot.Shadow_Enabled) {
         registerShader(Stage.POST_RENDER, new Composite("shadow-opaque")
             .vertex("shared/bufferless.vsh")
             .fragment("composite/shadow-opaque.fsh")
             .target(0, texShadow)
             .build());
 
-        if (Settings.Shadows.Filter) {
+        if (snapshot.Shadow_Filter) {
             registerShader(Stage.POST_RENDER, new Compute("shadow-opaque-filter")
-                // .barrier(true)
                 .location("composite/shadow-opaque-filter.csh")
                 .workGroups(Math.ceil(screenWidth / 16.0), Math.ceil(screenHeight / 16.0), 1)
                 .build());
@@ -952,14 +771,15 @@ export function setupShader() {
         }
     }
 
-    const texShadow_src = Settings.Shadows.Filter ? "texShadow_final" : "texShadow";
+    const texShadow_src = snapshot.Shadow_Filter ? "texShadow_final" : "texShadow";
 
-    if (Settings.Lighting.Mode() == LightMode_RT || Settings.Lighting.Reflections.Mode == ReflectMode_WSR) {
+    if (snapshot.Lighting_Mode == LightingModes.RayTraced || snapshot.Lighting_ReflectionMode == ReflectionModes.WorldSpace) {
         registerBarrier(Stage.POST_RENDER, new MemoryBarrier(SSBO_BIT));
 
-        if (Settings.Lighting.Reflections.Mode == ReflectMode_WSR)
+        if (snapshot.Lighting_ReflectionMode == ReflectionModes.WorldSpace) {
             registerShader(Stage.POST_RENDER, new GenerateMips(texFinalPrevious));
             //rtOpaqueShader.generateMips(texFinalPrevious);
+        }
 
         const rtOpaqueShader = new Composite("rt-opaque")
             .vertex("shared/bufferless.vsh")
@@ -977,7 +797,7 @@ export function setupShader() {
             .define("TEX_DEPTH", "solidDepthTex")
             .define("TEX_SHADOW", texShadow_src);
 
-        // if (Settings.Internal.LPV) {
+        // if (settings.Internal.LPV) {
         //     rtOpaqueShader
         //         .ssbo(1, shLpvBuffer)
         //         .ssbo(2, shLpvBuffer_alt);
@@ -986,7 +806,7 @@ export function setupShader() {
         registerShader(Stage.POST_RENDER, rtOpaqueShader.build());
     }
 
-    if (Settings.Effect.SSGIAO.SSAO() || Settings.Effect.SSGIAO.SSGI()) {
+    if (snapshot.Effect_SSAO_Enabled || snapshot.Effect_SSGI_Enabled) {
         registerShader(Stage.POST_RENDER, new Composite("ssgiao-opaque")
             .vertex("shared/bufferless.vsh")
             .fragment("composite/ssgiao.fsh")
@@ -1000,9 +820,8 @@ export function setupShader() {
         //     .build());
     }
 
-    if (Settings.Internal.Accumulation) {
+    if (settings.Internal.Accumulation) {
         registerShader(Stage.POST_RENDER, new Compute("accumulation-opaque")
-            // .barrier(true)
             .location("composite/accumulation.csh")
             .workGroups(Math.ceil(screenWidth / 16.0), Math.ceil(screenHeight / 16.0), 1)
             .define("TEX_DEPTH", "solidDepthTex")
@@ -1050,10 +869,10 @@ export function setupShader() {
         .define("TEX_SHADOW", texShadow_src)
         .define("TEX_SSGIAO", "texSSGIAO_final");
 
-    // if (Settings.Lighting.Reflections.Mode == ReflectMode_SSR)
+    // if (snapshot.Lighting_ReflectionMode == ReflectMode_SSR)
     //     compositeOpaqueShader.generateMips(texFinalPrevious);
 
-    if (Settings.Voxel.GIEnabled()) {
+    if (snapshot.Voxel_GI_Enabled) {
         compositeOpaqueShader
             .ssbo(1, shLpvBuffer)
             .ssbo(2, shLpvBuffer_alt);
@@ -1061,12 +880,13 @@ export function setupShader() {
 
     registerShader(Stage.POST_RENDER, compositeOpaqueShader.build());
 
-    if (Settings.Lighting.Mode() == LightMode_RT || Settings.Lighting.Reflections.Mode == ReflectMode_WSR) {
+    if (snapshot.Lighting_Mode == LightingModes.RayTraced || snapshot.Lighting_ReflectionMode == ReflectionModes.WorldSpace) {
         registerBarrier(Stage.POST_RENDER, new MemoryBarrier(SSBO_BIT));
 
-        if (Settings.Lighting.Reflections.Mode == ReflectMode_WSR)
+        if (snapshot.Lighting_ReflectionMode == ReflectionModes.WorldSpace) {
             registerShader(Stage.POST_RENDER, new GenerateMips(texFinalPrevious));
             //rtTranslucentShader.generateMips(texFinalPrevious);
+        }
 
         registerShader(Stage.POST_RENDER, new Composite("rt-translucent")
             .vertex("shared/bufferless.vsh")
@@ -1087,9 +907,8 @@ export function setupShader() {
             .build());
     }
 
-    if (Settings.Internal.Accumulation) {
+    if (settings.Internal.Accumulation) {
         registerShader(Stage.POST_RENDER, new Compute("accumulation-translucent")
-            // .barrier(true)
             .location("composite/accumulation.csh")
             .workGroups(Math.ceil(screenWidth / 16.0), Math.ceil(screenHeight / 16.0), 1)
             .define("RENDER_TRANSLUCENT", "1")
@@ -1135,10 +954,9 @@ export function setupShader() {
         .ssbo(0, sceneBuffer)
         .ssbo(4, quadListBuffer)
         .ubo(0, SceneSettingsBuffer)
-        // .generateMips(texFinalOpaque)
         .build());
 
-    if (Settings.Post.TAA()) {
+    if (snapshot.Effect_TAA_Enabled) {
         registerShader(Stage.POST_RENDER, new Composite("copy-TAA")
             .vertex("shared/bufferless.vsh")
             .fragment("shared/copy.fsh")
@@ -1170,11 +988,9 @@ export function setupShader() {
         .fragment("post/blur-near.fsh")
         .target(0, texFinal)
         .define("TEX_SRC", "texFinalPrevious")
-        //.generateMips(texFinalPrevious)
         .build());
 
     registerShader(Stage.POST_RENDER, new Compute("histogram")
-        // .barrier(true)
         .location("post/histogram.csh")
         .workGroups(Math.ceil(screenWidth / 16.0), Math.ceil(screenHeight / 16.0), 1)
         .ubo(0, SceneSettingsBuffer)
@@ -1189,7 +1005,7 @@ export function setupShader() {
         .ubo(0, SceneSettingsBuffer)
         .build());
 
-    if (Settings.Effect.Bloom.Enabled())
+    if (snapshot.Effect_BloomEnabled)
         setupBloom(texFinal);
 
     registerShader(Stage.POST_RENDER, new Composite("tonemap")
@@ -1200,9 +1016,7 @@ export function setupShader() {
         .target(0, texFinal)
         .build());
 
-    if (Settings.Internal.DebugEnabled) {
-        //print("SHADER DEBUG MODE ENABLED");
-
+    if (settings.Internal.DebugEnabled) {
         registerShader(Stage.POST_RENDER, new Composite("debug")
             .vertex("shared/bufferless.vsh")
             .fragment("post/debug.fsh")
@@ -1210,7 +1024,7 @@ export function setupShader() {
             .ssbo(0, sceneBuffer)
             .ssbo(3, lightListBuffer)
             .ssbo(4, quadListBuffer)
-            .define("TEX_COLOR", Settings.Debug.Translucent
+            .define("TEX_COLOR", snapshot.Debug_Translucent
                 ? "texDeferredTranslucent_Color"
                 : "texDeferredOpaque_Color")
             .define("TEX_SHADOW", texShadow_src)
@@ -1225,27 +1039,27 @@ export function setupShader() {
 }
 
 export function onSettingsChanged(state : WorldState) {
-    const Settings = getSettings();
+    const snapshot = Settings.getRealTimeSnapshot();
 
-    const d = Settings.Sky.FogDensity() * 0.01;
+    const d = snapshot.Sky_FogDensity * 0.01;
 
     new StreamBufferBuilder(SceneSettingsBuffer)
         .appendFloat(d*d)
-        .appendFloat(Settings.Sky.SeaLevel())
-        .appendInt(Settings.Water.Detail())
-        .appendFloat(Settings.Material.EmissionBrightness() * 0.01)
-        .appendFloat(Settings.Effect.Bloom.Strength() * 0.01)
-        .appendFloat(Settings.Post.Contrast() * 0.01)
-        .appendFloat(Settings.Post.Exposure.Min())
-        .appendFloat(Settings.Post.Exposure.Max())
-        .appendFloat(Settings.Post.Exposure.Range())
-        .appendFloat(Settings.Post.Exposure.Speed());
+        .appendFloat(snapshot.Sky_SeaLevel)
+        .appendInt(snapshot.Water_WaveDetail)
+        .appendFloat(snapshot.Material_EmissionBrightness * 0.01)
+        .appendFloat(snapshot.Effect_BloomStrength * 0.01)
+        .appendFloat(snapshot.Post_Contrast * 0.01)
+        .appendFloat(snapshot.Post_ExposureMin)
+        .appendFloat(snapshot.Post_ExposureMax)
+        .appendFloat(snapshot.Post_ExposureRange)
+        .appendFloat(snapshot.Post_ExposureSpeed);
 }
 
 export function setupFrame(state : WorldState) {
-    const Settings = getSettings();
+    const snapshot = Settings.getRealTimeSnapshot();
 
-    worldSettings.sunPathRotation = Settings.Sky.SunAngle();
+    worldSettings.sunPathRotation = snapshot.Sky_SunAngle;
 
     // if (isKeyDown(Keys.G)) testVal += 0.07;
     // if (isKeyDown(Keys.F)) testVal -= 0.07;

@@ -23,7 +23,7 @@ export function setupOptions() {
         .build();
 
     let screen_Material = new Page("Material")
-        .add(asString("MATERIAL_FORMAT", "None", "Lab-PBR", "Old-PBR").build("Lab-PBR"))
+        .add(asString("MATERIAL_FORMAT", "0", "1", "2").build("1"))
         .add(new Page("Parallax")
             .add(asBool("MATERIAL_PARALLAX_ENABLED", true, true))
             .add(asIntRange("MATERIAL_PARALLAX_SAMPLES", 32, 8, 128, 8))
@@ -38,7 +38,7 @@ export function setupOptions() {
         .build();
 
     let screen_Lighting = new Page("Lighting")
-        .add(asString("LIGHTING_MODE", "LightMap", "FloodFill", "Ray-Traced").build("FloodFill"))
+        .add(asString("LIGHTING_MODE", "0", "1", "2").build("1"))
         .add(new Page("RT Options")
             .add(asInt("RT_MAX_SAMPLE_COUNT", 2, 4, 8, 12, 16, 20, 24, 28, 32, 48, 64, 0).build(16))
             .add(asBool("LIGHTING_TRACE_TRIANGLE", false, true))

@@ -18,8 +18,10 @@ shared uint sharedBlockMap[10*10*10];
 #ifdef VOXEL_GI_ENABLED
 	uniform sampler2D blockAtlas;
 	uniform sampler2D blockAtlasS;
-	uniform sampler2D texSkyIrradiance;
+
+	//uniform sampler2D texSkyIrradiance;
 	uniform sampler2D texSkyTransmit;
+	uniform sampler2D texSkyView;
 	uniform sampler2D texBlueNoise;
 
 	uniform sampler3D texFloodFill;
@@ -40,9 +42,10 @@ shared uint sharedBlockMap[10*10*10];
 	#include "/lib/noise/hash.glsl"
 	#include "/lib/noise/blue.glsl"
 
-	#include "/lib/erp.glsl"
+	//#include "/lib/erp.glsl"
 	#include "/lib/sky/common.glsl"
 	#include "/lib/sky/transmittance.glsl"
+	#include "/lib/sky/view.glsl"
 	#include "/lib/utility/blackbody.glsl"
 	#include "/lib/material/material.glsl"
 	#include "/lib/voxel/dda.glsl"
@@ -174,7 +177,7 @@ void populateShared(const in ivec3 voxelFrameOffset) {
 #endif
 
 #ifdef VOXEL_GI_ENABLED
-	vec3 trace_GI(const in vec3 traceOrigin, const in vec3 traceDir) {
+	vec3 trace_GI(const in vec3 traceOrigin, const in vec3 traceDir, const in int face_dir) {
 //		vec3 color = vec3(1.0, 0.0, 1.0);
 //		if      (traceDir.x >  0.5) color = vec3(0.0, 0.0, 1.0);
 //		else if (traceDir.x < -0.5) color = vec3(0.0, 1.0, 1.0);
@@ -195,7 +198,7 @@ void populateShared(const in ivec3 voxelFrameOffset) {
 
 		//tracePos += dda_step(stepAxis, nextDist, stepSizes, traceDir);
 
-		for (int i = 0; i < LIGHTING_GI_MAXSTEP && !hit; i++) {
+		for (int i = 0; i < VOXEL_GI_MAXSTEP && !hit; i++) {
 			vec3 stepAxisNext;
 			vec3 step = dda_step(stepAxisNext, nextDist, stepSizes, traceDir);
 
@@ -328,9 +331,23 @@ void populateShared(const in ivec3 voxelFrameOffset) {
 			color = albedo * hit_diffuse;// * max(hit_NoL, 0.0);
 		}
 		else {
-			vec2 skyIrradianceCoord = DirectionToUV(traceDir);
-			vec3 hit_skyIrradiance = textureLod(texSkyIrradiance, skyIrradianceCoord, 0).rgb;
-			color = SKY_AMBIENT * hit_skyIrradiance; // * eyeBrightness
+			ivec3 endCell = ivec3(tracePos);
+			if (IsInVoxelBounds(endCell)) {
+				bool altFrame = ap.time.frames % 2 == 1;
+				int i_prev = GetVoxelIndex(endCell);
+
+				uvec2 endVoxel_face;
+				if (altFrame) endVoxel_face = SH_LPV[i_prev].data[face_dir];
+				else endVoxel_face = SH_LPV_alt[i_prev].data[face_dir];
+
+				//vec3 face_color;
+				float face_counter;
+				decode_shVoxel_dir(endVoxel_face, color, face_counter);
+			}
+			else {
+				vec3 skyPos = getSkyPosition(vec3(0.0));
+				color = SKY_LUMINANCE * getValFromSkyLUT(texSkyView, skyPos, traceDir, Scene_LocalSunDir);
+			}
 		}
 
 		return color * traceTint;
@@ -449,7 +466,7 @@ void main() {
 				vec3 noise_offset = hash32(noise_seed);
 
 				vec3 tracePos = cellIndex + noise_offset;
-				vec3 traceSample = trace_GI(tracePos, noise_dir);
+				vec3 traceSample = trace_GI(tracePos, noise_dir, dir);
 				face_counter = clamp(face_counter + f, 0.0, VOXEL_GI_MAXFRAMES);
 
 				float mixF = 1.0 / (1.0 + face_counter);

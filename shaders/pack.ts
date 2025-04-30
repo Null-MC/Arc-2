@@ -19,12 +19,14 @@ function applySettings(settings) {
     worldSettings.ambientOcclusionLevel = 0.0;
     worldSettings.sunPathRotation = snapshot.Sky_SunAngle;
     worldSettings.shadowMapResolution = snapshot.Shadow_Resolution;
-    worldSettings.cascadeSafeZones[0] = snapshot.Voxel_Size;
     worldSettings.renderStars = false;
     worldSettings.renderMoon = false;
     worldSettings.renderSun = false;
     // worldSettings.vignette = false;
     // worldSettings.clouds = false;
+
+    if (settings.Internal.Voxelization)
+        worldSettings.cascadeSafeZones[0] = snapshot.Voxel_Size;
 
     defineGlobally1("EFFECT_VL_ENABLED");
     if (settings.Internal.Accumulation) defineGlobally1("ACCUM_ENABLED");
@@ -114,6 +116,7 @@ function applySettings(settings) {
     if (snapshot.Debug_WhiteWorld) defineGlobally1("DEBUG_WHITE_WORLD");
     if (snapshot.Debug_Histogram) defineGlobally1("DEBUG_HISTOGRAM");
     if (snapshot.Debug_RT) defineGlobally1("DEBUG_RT");
+    //if (snapshot.Debug_QuadLists) defineGlobally1("DEBUG_QUADS");
 
     if (settings.Internal.DebugEnabled) {
         defineGlobally("DEBUG_VIEW", snapshot.Debug_View.toString());

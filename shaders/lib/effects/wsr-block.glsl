@@ -14,9 +14,13 @@ bool TraceReflection(const in vec3 localPos, const in vec3 localDir, out vec3 ti
         vec3 step = dda_step(stepAxisNext, nextDist, stepSizes, localDir);
 
         voxelPos = ivec3(floor(fma(step, vec3(0.5), currPos)));
-
-        uint blockId = imageLoad(imgVoxelBlock, voxelPos).r;
-        //if (blockId <= 0u) continue;
+        
+        #ifdef VOXEL_APERTURE
+            ivec3 blockWorldPos = ivec3(GetVoxelLocalPos(voxelPos) + ap.camera.pos + 0.5);
+            uint blockId = uint(iris_getBlockAt(blockWorldPos).x);
+        #else
+            uint blockId = imageLoad(imgVoxelBlock, voxelPos).r;
+        #endif
 
         bool isFullBlock = iris_isFullBlock(blockId);
         if (blockId > 0u && isFullBlock) {

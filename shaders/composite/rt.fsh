@@ -202,8 +202,14 @@ void main() {
 
                     vec3 light_LocalPos = GetVoxelLocalPos(light_voxelPos);
 
-                    uint blockId = imageLoad(imgVoxelBlock, ivec3(light_voxelPos)).r;
+//                    uint blockId = imageLoad(imgVoxelBlock, ivec3(light_voxelPos)).r;
 
+                    #ifdef VOXEL_APERTURE
+                        ivec3 blockWorldPos = ivec3(light_LocalPos + ap.camera.pos);
+                        uint blockId = uint(iris_getBlockAt(blockWorldPos).x);
+                    #else
+                        uint blockId = imageLoad(imgVoxelBlock, ivec3(light_voxelPos)).r;
+                    #endif
 
                     float lightRange = iris_getEmission(blockId);
                     vec3 lightColor = iris_getLightColor(blockId).rgb;
@@ -435,8 +441,14 @@ void main() {
 
                         vec3 light_LocalPos = GetVoxelLocalPos(light_voxelPos);
 
-                        uint blockId = imageLoad(imgVoxelBlock, ivec3(light_voxelPos)).r;
+                        //uint blockId = imageLoad(imgVoxelBlock, ivec3(light_voxelPos)).r;
 
+                        #ifdef VOXEL_APERTURE
+                            ivec3 blockWorldPos = ivec3(light_LocalPos + ap.camera.pos);
+                            uint blockId = uint(iris_getBlockAt(blockWorldPos).x);
+                        #else
+                            uint blockId = imageLoad(imgVoxelBlock, ivec3(light_voxelPos)).r;
+                        #endif
 
                         float lightRange = iris_getEmission(blockId);
                         vec3 lightColor = iris_getLightColor(blockId).rgb;

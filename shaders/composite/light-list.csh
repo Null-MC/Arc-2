@@ -4,7 +4,11 @@ layout (local_size_x = 8, local_size_y = 8, local_size_z = 8) in;
 
 #include "/settings.glsl"
 #include "/lib/common.glsl"
-#include "/lib/buffers/voxel-block.glsl"
+
+#ifndef VOXEL_APERTURE
+	#include "/lib/buffers/voxel-block.glsl"
+#endif
+
 #include "/lib/buffers/light-list.glsl"
 
 #include "/lib/voxel/voxel_common.glsl"
@@ -13,7 +17,13 @@ layout (local_size_x = 8, local_size_y = 8, local_size_z = 8) in;
 
 void main() {
 	ivec3 voxelPos = ivec3(gl_GlobalInvocationID);
-	uint blockId = imageLoad(imgVoxelBlock, voxelPos).r;
+
+	#ifdef VOXEL_APERTURE
+		ivec3 blockWorldPos = ivec3(GetVoxelLocalPos(voxelPos) + ap.camera.pos + 0.5);
+		uint blockId = uint(iris_getBlockAt(blockWorldPos).x);
+	#else
+		uint blockId = imageLoad(imgVoxelBlock, voxelPos).r;
+	#endif
 
 	if (blockId > 0u) {
 		int lightRange = iris_getEmission(blockId);

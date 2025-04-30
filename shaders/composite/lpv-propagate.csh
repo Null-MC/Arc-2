@@ -35,7 +35,10 @@ shared uint sharedBlockMap[10*10*10];
 #include "/lib/common.glsl"
 
 #include "/lib/buffers/scene.glsl"
-#include "/lib/buffers/voxel-block.glsl"
+
+#ifndef VOXEL_APERTURE
+	#include "/lib/buffers/voxel-block.glsl"
+#endif
 
 #ifdef VOXEL_GI_ENABLED
 	#include "/lib/buffers/sh-gi.glsl"
@@ -132,7 +135,12 @@ void populateShared(const in ivec3 voxelFrameOffset) {
 	#endif
 
 	if (IsInVoxelBounds(pos1)) {
-		blockId1 = imageLoad(imgVoxelBlock, pos1).r;
+		#ifdef VOXEL_APERTURE
+			ivec3 blockWorldPos1 = ivec3(GetVoxelLocalPos(pos1) + ap.camera.pos + 0.5);
+			blockId1 = uint(iris_getBlockAt(blockWorldPos1).x);
+		#else
+			blockId1 = imageLoad(imgVoxelBlock, pos1).r;
+		#endif
 
 		#if LIGHTING_MODE == LIGHT_MODE_LPV
 			if (blockId1 > 0u)
@@ -141,7 +149,12 @@ void populateShared(const in ivec3 voxelFrameOffset) {
 	}
 
 	if (IsInVoxelBounds(pos2)) {
-		blockId2 = imageLoad(imgVoxelBlock, pos2).r;
+		#ifdef VOXEL_APERTURE
+			ivec3 blockWorldPos2 = ivec3(GetVoxelLocalPos(pos2) + ap.camera.pos + 0.5);
+			blockId2 = uint(iris_getBlockAt(blockWorldPos2).x);
+		#else
+			blockId2 = imageLoad(imgVoxelBlock, pos2).r;
+		#endif
 
 		#if LIGHTING_MODE == LIGHT_MODE_LPV
 			if (blockId2 > 0u)
@@ -215,8 +228,12 @@ void populateShared(const in ivec3 voxelFrameOffset) {
 				break;
 			}
 
-			uint blockId = imageLoad(imgVoxelBlock, voxelPos).r;
-			//if (blockId <= 0u) continue;
+			#ifdef VOXEL_APERTURE
+				ivec3 blockWorldPos = ivec3(GetVoxelLocalPos(voxelPos) + ap.camera.pos + 0.5);
+				uint blockId = uint(iris_getBlockAt(blockWorldPos).x);
+			#else
+				uint blockId = imageLoad(imgVoxelBlock, voxelPos).r;
+			#endif
 
 			//bool isFullBlock = iris_isFullBlock(blockId);
 			if (blockId > 0u && iris_isFullBlock(blockId)) {

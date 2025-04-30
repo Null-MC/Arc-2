@@ -92,7 +92,9 @@ void main() {
 
             if (IsInVoxelBounds(voxelPos)) {
                 #ifdef RENDER_TERRAIN
-                    imageStore(imgVoxelBlock, ivec3(voxelPos), uvec4(vIn[0].blockId));
+                    #ifndef VOXEL_APERTURE
+                        imageStore(imgVoxelBlock, ivec3(voxelPos), uvec4(vIn[0].blockId));
+                    #endif
 
                     #ifdef VOXEL_BLOCK_FACE
                         // TODO: average face properties?
@@ -161,8 +163,9 @@ void main() {
 
                             SceneQuads.bin[quadBinIndex].quadList[quadIndex] = quad;
 
-                            // TODO: for debug only!
-                            atomicAdd(SceneQuads.total, 1u);
+                            #ifdef DEBUG_QUADS
+                                atomicAdd(SceneQuads.total, 1u);
+                            #endif
                         }
                     }
                 #endif

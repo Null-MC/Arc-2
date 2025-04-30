@@ -2,9 +2,11 @@
 #define MATERIAL_ROUGH_REFRACT
 #define MATERIAL_PARALLAX_MAXDIST 48
 
+//#define VOXEL_APERTURE
+
 #define VOXEL_GI_MAXSTEP 8 // [4 8 12 16 20 24]
 
-#define VOXEL_GI_MAXFRAMES 120 // [60 120 240]
+#define VOXEL_GI_MAXFRAMES 60 // [60 120 240]
 
 #define EFFECT_SSAO_STRENGTH 1200
 
@@ -18,7 +20,7 @@ const float MOON_SIZE = 3.4;
 const float SUN_LUMINANCE = 8000.0;
 const float MOON_LUMINANCE = 0.16;
 const float STAR_LUMINANCE = 0.10;
-const float SKY_LUMINANCE = 100.0;
+const float SKY_LUMINANCE = 80.0;
 const float BLOCKLIGHT_LUMINANCE = 16.0;
 
 const float SUN_BRIGHTNESS = 32.0;

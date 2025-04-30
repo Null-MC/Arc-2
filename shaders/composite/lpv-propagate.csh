@@ -33,33 +33,39 @@ shared uint sharedBlockMap[10*10*10];
 #endif
 
 #include "/lib/common.glsl"
+
 #include "/lib/buffers/scene.glsl"
 #include "/lib/buffers/voxel-block.glsl"
 
 #ifdef VOXEL_GI_ENABLED
 	#include "/lib/buffers/sh-gi.glsl"
+#endif
 
+#include "/lib/voxel/voxel_common.glsl"
+
+#if LIGHTING_MODE == LIGHT_MODE_LPV
+	#include "/lib/utility/hsv.glsl"
+#endif
+
+#ifdef VOXEL_GI_ENABLED
 	#include "/lib/noise/hash.glsl"
 	#include "/lib/noise/blue.glsl"
 
-	//#include "/lib/erp.glsl"
 	#include "/lib/sky/common.glsl"
 	#include "/lib/sky/transmittance.glsl"
 	#include "/lib/sky/view.glsl"
+
 	#include "/lib/utility/blackbody.glsl"
 	#include "/lib/material/material.glsl"
 	#include "/lib/voxel/dda.glsl"
+
+	#include "/lib/lpv/sh-gi-sample.glsl"
 
 	#ifdef SHADOWS_ENABLED
 		#include "/lib/shadow/csm.glsl"
 		#include "/lib/shadow/sample.glsl"
 	#endif
 #endif
-
-#include "/lib/voxel/voxel_common.glsl"
-//#include "/lib/lpv/lpv_common.glsl"
-
-#include "/lib/utility/hsv.glsl"
 
 
 const float LpvFalloff = 0.998;
@@ -204,11 +210,16 @@ void populateShared(const in ivec3 voxelFrameOffset) {
 
 			voxelPos = ivec3(floor(fma(step, vec3(0.5), tracePos)));
 
+			if (!IsInVoxelBounds(voxelPos)) {
+				//tracePos += step;
+				break;
+			}
+
 			uint blockId = imageLoad(imgVoxelBlock, voxelPos).r;
 			//if (blockId <= 0u) continue;
 
-			bool isFullBlock = iris_isFullBlock(blockId);
-			if (blockId > 0u && isFullBlock) {
+			//bool isFullBlock = iris_isFullBlock(blockId);
+			if (blockId > 0u && iris_isFullBlock(blockId)) {
 				hit = true;
 				break;
 			}
@@ -331,18 +342,23 @@ void populateShared(const in ivec3 voxelFrameOffset) {
 			color = albedo * hit_diffuse;// * max(hit_NoL, 0.0);
 		}
 		else {
-			ivec3 endCell = ivec3(tracePos);
-			if (IsInVoxelBounds(endCell)) {
+			//ivec3 endCell = ivec3(tracePos);
+			if (IsInVoxelBounds(voxelPos)) {
 				bool altFrame = ap.time.frames % 2 == 1;
-				int i_prev = GetVoxelIndex(endCell);
+				int i_end = GetVoxelIndex(voxelPos);
 
 				uvec2 endVoxel_face;
-				if (altFrame) endVoxel_face = SH_LPV[i_prev].data[face_dir];
-				else endVoxel_face = SH_LPV_alt[i_prev].data[face_dir];
+				if (altFrame) endVoxel_face = SH_LPV[i_end].data[face_dir];
+				else endVoxel_face = SH_LPV_alt[i_end].data[face_dir];
 
-				//vec3 face_color;
 				float face_counter;
 				decode_shVoxel_dir(endVoxel_face, color, face_counter);
+
+//				lpvShVoxel endVoxel;
+//				if (altFrame) endVoxel = SH_LPV[i_end];
+//				else endVoxel = SH_LPV_alt[i_end];
+//
+//				color = sample_sh_gi(endVoxel, traceDir);
 			}
 			else {
 				vec3 skyPos = getSkyPosition(vec3(0.0));
@@ -463,7 +479,7 @@ void main() {
 				//noise_dir = normalize(noise_dir);
 
 				//vec3 noise_offset = sample_blueNoise(hash23(cellIndex));
-				vec3 noise_offset = hash32(noise_seed);
+				vec3 noise_offset = vec3(0.5);//hash32(noise_seed);
 
 				vec3 tracePos = cellIndex + noise_offset;
 				vec3 traceSample = trace_GI(tracePos, noise_dir, dir);

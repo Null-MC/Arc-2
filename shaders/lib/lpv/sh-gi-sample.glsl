@@ -1,6 +1,20 @@
 #define SH_GI_SAMPLE_FANCY
 
 
+vec3 sample_sh_gi(lpvShVoxel voxel, vec3 sampleDir) {
+	vec3 color = vec3(0.0);
+
+	for (int dir = 0; dir < 6; dir++) {
+		vec3 face_color;
+		float face_counter;
+		decode_shVoxel_dir(voxel.data[dir], face_color, face_counter);
+		float f = max(dot(shVoxel_dir[dir], sampleDir), 0.0);
+		color += f * face_color;
+	}
+
+	return color * 0.5;// / PI;
+}
+
 vec3 sample_sh_gi(ivec3 voxelPos, vec3 sampleDir) {
 	if (!IsInVoxelBounds(voxelPos)) return vec3(0.0);
 
@@ -11,17 +25,7 @@ vec3 sample_sh_gi(ivec3 voxelPos, vec3 sampleDir) {
 	if (altFrame) sh_voxel = SH_LPV_alt[i];
 	else sh_voxel = SH_LPV[i];
 
-	vec3 color = vec3(0.0);
-
-	for (int dir = 0; dir < 6; dir++) {
-		vec3 face_color;
-		float face_counter;
-		decode_shVoxel_dir(sh_voxel.data[dir], face_color, face_counter);
-		float f = max(dot(shVoxel_dir[dir], sampleDir), 0.0);
-		color += f * face_color;
-	}
-
-	return color;
+	return sample_sh_gi(sh_voxel, sampleDir);
 }
 
 vec3 sample_sh_gi_linear(vec3 voxelPos, vec3 sampleDir) {
@@ -48,5 +52,5 @@ vec3 sample_sh_gi_linear(vec3 voxelPos, vec3 sampleDir) {
 
 	vec3 sample_final = mix(sample_z0, sample_z1, f.z);
 
-	return sample_final * PI;
+	return sample_final;
 }

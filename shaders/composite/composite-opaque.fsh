@@ -99,14 +99,12 @@ uniform sampler3D texFogNoise;
     #include "/lib/voxel/voxel_common.glsl"
 #endif
 
-#ifdef LPV_ENABLED
-    //#include "/lib/lpv/lpv_common.glsl"
-    //#include "/lib/lpv/lpv_sample.glsl"
+#if LIGHTING_MODE == LIGHT_MODE_LPV
     #include "/lib/lpv/floodfill.glsl"
+#endif
 
-    #ifdef VOXEL_GI_ENABLED
-        #include "/lib/lpv/sh-gi-sample.glsl"
-    #endif
+#ifdef VOXEL_GI_ENABLED
+    #include "/lib/lpv/sh-gi-sample.glsl"
 #endif
 
 #ifdef EFFECT_TAA_ENABLED
@@ -247,19 +245,6 @@ void main() {
             vec3 voxelPos = GetVoxelPosition(localPos);
         #endif
 
-//        #ifdef LPV_ENABLED
-//            // vec3 voxelSamplePos = voxelPos - 0.25*localGeoNormal + 0.75*localTexNormal;
-//            vec3 voxelSamplePos = fma(localGeoNormal, vec3(0.5), voxelPos);
-//            vec3 voxelLight = sample_floodfill(voxelSamplePos);
-//
-//            #if LIGHTING_MODE == LIGHT_MODE_RT
-//                voxelLight *= 0.1;
-//            #endif
-//
-//            // TODO: move cloud shadows to RSM sampling!!!
-//            skyLightDiffuse += voxelLight * cloudShadowF * SampleLightDiffuse(NoVm, 1.0, 1.0, roughL) * PI;
-//        #endif
-
         vec2 skyIrradianceCoord = DirectionToUV(localTexNormal);
         vec3 skyIrradiance = textureLod(texSkyIrradiance, skyIrradianceCoord, 0).rgb;
         skyIrradiance = 2.0 * (SKY_AMBIENT * lmCoord.y) * skyIrradiance;
@@ -267,7 +252,7 @@ void main() {
         #ifdef VOXEL_GI_ENABLED
             if (IsInVoxelBounds(voxelPos)) {
                 vec3 voxelSamplePos = 0.5*localTexNormal - 0.25*localGeoNormal + voxelPos;
-                skyIrradiance = sample_sh_gi_linear(voxelSamplePos, localTexNormal);
+                skyIrradiance = 3.0 * sample_sh_gi_linear(voxelSamplePos, localTexNormal);
             }
         #endif
 
@@ -287,22 +272,16 @@ void main() {
 
         vec3 blockLighting = blackbody(BLOCKLIGHT_TEMP) * (BLOCKLIGHT_BRIGHTNESS * lmCoord.x) * (occlusion*0.5 + 0.5);
 
-//        #ifdef VOXEL_ENABLED
-//            // TODO: make fade and not cutover!
-//            if (IsInVoxelBounds(voxelPos)) blockLighting = vec3(0.0);
-//        #endif
-
         #if LIGHTING_MODE == LIGHT_MODE_RT
             if (IsInVoxelBounds(voxelPos)) {
                 blockLighting = vec3(0.0);
             }
         #elif LIGHTING_MODE == LIGHT_MODE_LPV
             if (IsInVoxelBounds(voxelPos)) {
-                //vec3 voxelSamplePos = fma(localTexNormal, vec3(0.5), voxelPos);
                 vec3 voxelSamplePos = 0.5*localTexNormal - 0.25*localGeoNormal + voxelPos;
-                vec3 voxelLight = sample_floodfill(voxelSamplePos);
+                blockLighting = sample_floodfill(voxelSamplePos);
 
-                blockLighting = voxelLight * cloudShadowF * SampleLightDiffuse(NoVm, 1.0, 1.0, roughL) * PI;
+                //blockLighting = voxelLight * cloudShadowF * SampleLightDiffuse(NoVm, 1.0, 1.0, roughL) * PI;
             }
         #endif
 
@@ -318,8 +297,6 @@ void main() {
         float metalness = mat_metalness(f0_metal);
         diffuse *= 1.0 - metalness * (1.0 - roughL);
 
-        //diffuse *= fma(occlusion, 0.5, 0.5);
-
         #if MATERIAL_EMISSION_POWER != 1
             diffuse += pow(emission, MATERIAL_EMISSION_POWER) * Material_EmissionBrightness;
         #else
@@ -332,8 +309,6 @@ void main() {
             vec3 viewNormal = mat3(ap.camera.view) * localTexNormal;
             vec3 reflectViewDir = reflect(viewDir, viewNormal);
             vec3 reflectLocalDir = mat3(ap.camera.viewInv) * reflectViewDir;
-
-            //vec3 reflectLocalDir = reflect(localViewDir, localTexNormal);
 
             #ifdef MATERIAL_ROUGH_REFLECT_NOISE
                 randomize_reflection(reflectLocalDir, localTexNormal, roughness);
@@ -352,16 +327,6 @@ void main() {
         #else
             vec3 skyReflectColor = vec3(0.0);
         #endif
-
-        // TODO: vol-fog
-        // for (int i = 0; i < 8; i++) {
-        //     //
-        // }
-
-        // #ifdef LPV_ENABLED
-        //     // vec3 voxelPos = GetVoxelPosition(localPos + 0.5*localTexNormal);
-        //     skyReflectColor += sample_lpv_linear(voxelPos, reflectLocalDir);
-        // #endif
 
         vec4 reflection = vec4(0.0);
 

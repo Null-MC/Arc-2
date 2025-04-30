@@ -85,10 +85,6 @@ in vec2 uv;
 #if LIGHTING_REFLECT_MODE == REFLECT_MODE_WSR
     #include "/lib/buffers/scene.glsl"
 
-//    #ifdef LPV_ENABLED
-//        #include "/lib/buffers/sh-lpv.glsl"
-//    #endif
-
     #include "/lib/erp.glsl"
     #include "/lib/material/material.glsl"
 
@@ -111,8 +107,6 @@ in vec2 uv;
     #endif
 
     #ifdef LPV_ENABLED
-        //#include "/lib/lpv/lpv_common.glsl"
-        //#include "/lib/lpv/lpv_sample.glsl"
         #include "/lib/lpv/floodfill.glsl"
     #endif
 
@@ -242,7 +236,7 @@ void main() {
                     vec3 traceStart = light_voxelPos;
                     vec3 traceEnd = voxelPos_out;
                     float traceRange = lightRange;
-                    bool traceSelf = true;
+                    bool traceSelf = false;
 
                     #ifdef RT_TRI_ENABLED
 //                        vec3 traceRay = traceEnd - traceStart;
@@ -267,6 +261,8 @@ void main() {
                 }
             #endif
         }
+
+        //diffuseFinal = vec3(10.0,0.0,0.0);
 
         #if LIGHTING_REFLECT_MODE == REFLECT_MODE_WSR
             // reflections

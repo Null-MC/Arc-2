@@ -64,13 +64,13 @@ uniform sampler2D texSkyIrradiance;
 #include "/lib/common.glsl"
 #include "/lib/buffers/scene.glsl"
 
-//#ifdef LPV_ENABLED
-//    #include "/lib/buffers/sh-lpv.glsl"
-//#endif
-
-#if defined VOXEL_WSR_ENABLED && defined RT_TRI_ENABLED
-    #include "/lib/buffers/triangle-list.glsl"
+#ifdef VOXEL_GI_ENABLED
+    #include "/lib/buffers/sh-gi.glsl"
 #endif
+
+//#if defined VOXEL_WSR_ENABLED && defined RT_TRI_ENABLED
+//    #include "/lib/buffers/triangle-list.glsl"
+//#endif
 
 #include "/lib/erp.glsl"
 #include "/lib/depth.glsl"
@@ -100,26 +100,17 @@ uniform sampler2D texSkyIrradiance;
     #include "/lib/effects/ssr.glsl"
 #endif
 
-#if defined LPV_ENABLED || defined RT_ENABLED
+#ifdef VOXEL_ENABLED
     #include "/lib/voxel/voxel_common.glsl"
 #endif
 
-//#ifdef SHADOWS_ENABLED
-//    #include "/lib/shadow/csm.glsl"
-//    #include "/lib/shadow/sample.glsl"
-//#endif
-
 #if LIGHTING_MODE == LIGHT_MODE_LPV
-    //#include "/lib/lpv/lpv_common.glsl"
-    //#include "/lib/lpv/lpv_sample.glsl"
     #include "/lib/lpv/floodfill.glsl"
 #endif
 
-//#if defined VOXEL_WSR_ENABLED && defined RT_TRI_ENABLED
-//    #include "/lib/voxel/triangle-test.glsl"
-//    #include "/lib/voxel/triangle-list.glsl"
-//    #include "/lib/effects/wsr.glsl"
-//#endif
+#ifdef VOXEL_GI_ENABLED
+    #include "/lib/lpv/sh-gi-sample.glsl"
+#endif
 
 #ifdef EFFECT_TAA_ENABLED
     #include "/lib/taa_jitter.glsl"
@@ -158,10 +149,6 @@ void main() {
 
         albedo.rgb = RgbToLinear(albedo.rgb);
 
-        #ifdef DEBUG_WHITE_WORLD
-            albedo.rgb = WhiteWorld_Value;
-        #endif
-
         vec3 localTexNormal = normalize(texNormalData * 2.0 - 1.0);
 
         vec3 data_r = unpackUnorm4x8(data.r).rgb;
@@ -179,23 +166,10 @@ void main() {
 
         uint blockId = data.a;
 
-        lmCoord = lmCoord*lmCoord*lmCoord;
-        float roughL = roughness*roughness;
+        lmCoord = _pow3(lmCoord);
+        float roughL = _pow2(roughness);
 
-        // bool isWater = bitfieldExtract(material, 6, 1) != 0;
         is_fluid = iris_hasFluid(blockId);
-
-//        vec3 shadowSample = vec3(1.0);
-//        #ifdef SHADOWS_ENABLED
-//            const float shadowPixelSize = 1.0 / shadowMapResolution;
-//
-//            vec3 shadowViewPos = mul3(ap.celestial.view, localPosTrans);
-//            const float shadowRadius = 2.0*shadowPixelSize;
-//
-//            int shadowCascade;
-//            vec3 shadowPos = GetShadowSamplePos(shadowViewPos, shadowRadius, shadowCascade);
-//            shadowSample = SampleShadowColor_PCF(shadowPos, shadowCascade, vec2(shadowRadius));
-//        #endif
 
         vec3 localViewDir = normalize(localPosTrans);
 
@@ -204,13 +178,6 @@ void main() {
         float NoLm = max(dot(localTexNormal, Scene_LocalLightDir), 0.0);
         float LoHm = max(dot(Scene_LocalLightDir, H), 0.0);
         float NoVm = max(dot(localTexNormal, -localViewDir), 0.0);
-
-        // vec4 shadow_sss = vec4(vec3(1.0), 0.0);
-        // #ifdef SHADOWS_ENABLED
-        //     shadow_sss = textureLod(TEX_SHADOW, uv, 0);
-        // #endif
-        // TODO: temp hack!
-        //vec4 shadow_sss = vec4(shadowSample, sss);
 
         vec4 shadow_sss = vec4(vec3(1.0), 0.0);
         #ifdef SHADOWS_ENABLED
@@ -228,39 +195,53 @@ void main() {
         vec3 sunTransmit, moonTransmit;
         GetSkyLightTransmission(localPosTrans, sunTransmit, moonTransmit);
 
-        vec3 skyLight = SUN_BRIGHTNESS * sunTransmit + MOON_BRIGHTNESS * moonTransmit;
-        vec3 skyLightDiffuse = NoLm * skyLight * shadow_sss.rgb;
+        float NoL_sun = dot(localTexNormal, Scene_LocalSunDir);
+        float NoL_moon = -NoL_sun;
+
+        vec3 skyLight_NoLm = SUN_BRIGHTNESS * sunTransmit * max(NoL_sun, 0.0)
+            + MOON_BRIGHTNESS * moonTransmit * max(NoL_moon, 0.0);
+
+        vec3 skyLightDiffuse = skyLight_NoLm * shadow_sss.rgb;
         skyLightDiffuse *= SampleLightDiffuse(NoVm, NoLm, LoHm, roughL);
 
-        // #if defined EFFECT_SSGI_ENABLED && !defined ACCUM_ENABLED
-        //     skyLightDiffuse += gi_ao.rgb;
-        // #endif
-
-        #if defined LPV_ENABLED || defined RT_ENABLED
+        #ifdef VOXEL_ENABLED
             vec3 voxelPos = GetVoxelPosition(localPosTrans);
-        #endif
-
-        #ifdef LPV_ENABLED
-            vec3 voxelSamplePos = voxelPos - 0.25*localGeoNormal + 0.75*localTexNormal;
-
-            skyLightDiffuse += sample_floodfill(voxelSamplePos) * PI*SampleLightDiffuse(NoVm, 1.0, 1.0, roughL);
         #endif
 
         vec2 skyIrradianceCoord = DirectionToUV(localTexNormal);
         vec3 skyIrradiance = textureLod(texSkyIrradiance, skyIrradianceCoord, 0).rgb;
-        skyLightDiffuse += (SKY_AMBIENT * lmCoord.y) * skyIrradiance;
+        skyIrradiance = 2.0 * (SKY_AMBIENT * lmCoord.y) * skyIrradiance;
+
+        #ifdef VOXEL_GI_ENABLED
+            if (IsInVoxelBounds(voxelPos)) {
+                vec3 voxelSamplePos = 0.5*localTexNormal - 0.25*localGeoNormal + voxelPos;
+                skyIrradiance = 3.0 * sample_sh_gi_linear(voxelSamplePos, localTexNormal);
+            }
+        #endif
+
+        skyLightDiffuse += skyIrradiance;
 
         skyLightDiffuse *= occlusion;
 
-        // float VoL = dot(localViewDir, Scene_LocalLightDir);
-        // float sss_phase = 4.0 * max(HG(VoL, 0.16), 0.0);
-        // skyLightDiffuse += skyLight * sss_phase * max(shadow_sss.w, 0.0);// * (1.0 - NoLm);
+        #if defined EFFECT_SSGI_ENABLED && !defined ACCUM_ENABLED
+            skyLightDiffuse += gi_ao.rgb;
+        #endif
 
-        vec3 blockLighting = blackbody(BLOCKLIGHT_TEMP) * (BLOCKLIGHT_BRIGHTNESS * lmCoord.x);
+        // TODO: SSS?
 
-        #if defined LPV_ENABLED || defined RT_ENABLED
-            // TODO: make fade and not cutover!
-            if (IsInVoxelBounds(voxelPos)) blockLighting = vec3(0.0);
+        vec3 blockLighting = blackbody(BLOCKLIGHT_TEMP) * (BLOCKLIGHT_BRIGHTNESS * lmCoord.x) * (occlusion*0.5 + 0.5);
+
+        #if LIGHTING_MODE == LIGHT_MODE_RT
+            if (IsInVoxelBounds(voxelPos)) {
+                blockLighting = vec3(0.0);
+            }
+        #elif LIGHTING_MODE == LIGHT_MODE_LPV
+            if (IsInVoxelBounds(voxelPos)) {
+                vec3 voxelSamplePos = 0.5*localTexNormal - 0.25*localGeoNormal + voxelPos;
+                blockLighting = sample_floodfill(voxelSamplePos);
+
+                //blockLighting = voxelLight * cloudShadowF * SampleLightDiffuse(NoVm, 1.0, 1.0, roughL) * PI;
+            }
         #endif
 
         vec3 diffuse = skyLightDiffuse + blockLighting + 0.0016 * occlusion;
@@ -284,8 +265,6 @@ void main() {
 
         // reflections
         #if LIGHTING_REFLECT_MODE != REFLECT_MODE_WSR
-            //vec3 reflectLocalDir = reflect(localViewDir, localTexNormal);
-
             vec3 viewDir = normalize(viewPosTrans);
             vec3 viewNormal = mat3(ap.camera.view) * localTexNormal;
             vec3 reflectViewDir = reflect(viewDir, viewNormal);
@@ -314,7 +293,6 @@ void main() {
         vec4 reflection = vec4(0.0);
 
         #if LIGHTING_REFLECT_MODE == REFLECT_MODE_SSR
-            //float viewDist = length(viewPosTrans);
             vec3 reflectLocalPos = fma(reflectLocalDir, vec3(0.5*viewDist), localPosTrans);
 
             vec3 reflectViewStart = mul3(ap.temporal.view, localPosTrans);
@@ -345,14 +323,21 @@ void main() {
 
         vec3 reflectTint = GetMetalTint(albedo.rgb, f0_metal);
 
-        vec3 specular = skyLight * shadow_sss.rgb * SampleLightSpecular(NoLm, NoHm, LoHm, view_F, roughL);
-        specular += view_F * skyReflectColor * reflectTint * (1.0 - roughness);
+        float smoothness = 1.0 - roughness;
+        vec3 specular = skyLight_NoLm * shadow_sss.rgb * SampleLightSpecular(NoLm, NoHm, LoHm, view_F, roughL);
+        specular += view_F * skyReflectColor * reflectTint * _pow2(smoothness);
 
         #ifdef ACCUM_ENABLED
             if (altFrame) specular += textureLod(texAccumSpecular_translucent_alt, uv, 0).rgb;
             else specular += textureLod(texAccumSpecular_translucent, uv, 0).rgb;
         #elif LIGHTING_MODE == LIGHT_MODE_RT || LIGHTING_REFLECT_MODE == REFLECT_MODE_WSR
             specular += textureLod(texSpecularRT, uv, 0).rgb;
+        #endif
+
+        diffuse *= 1.0 - view_F;
+
+        #ifdef DEBUG_WHITE_WORLD
+            albedo.rgb = WhiteWorld_Value;
         #endif
 
         finalColor.a = albedo.a;

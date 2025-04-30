@@ -1056,7 +1056,9 @@ export function setupShader() {
                 ? "texShadow"
                 : texShadow_src)
             .define("TEX_SSGIAO", "texSSGIAO_final")
-            .define("TEX_ACCUM_OCCLUSION", "texAccumOcclusion_opaque")
+            .define("TEX_ACCUM_OCCLUSION", snapshot.Debug_Translucent
+                ? "texAccumOcclusion_translucent"
+                : "texAccumOcclusion_opaque")
             .build());
     }
 

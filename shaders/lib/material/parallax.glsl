@@ -2,7 +2,7 @@ const float ParallaxSharpThreshold = (1.5/255.0);
 const float ParallaxDepthF = MATERIAL_PARALLAX_DEPTH * 0.01;
 
 
-vec2 GetParallaxCoord(const in vec2 texcoord, const in mat2 dFdXY, const in vec3 tanViewDir, const in float viewDist, out float texDepth, out vec3 traceDepth) {
+vec2 GetParallaxCoord(const in vec2 texcoord, const in float LOD, const in vec3 tanViewDir, const in float viewDist, out float texDepth, out vec3 traceDepth) {
     // WARN: temp workaround
     vec2 atlasSize = textureSize(irisInt_NormalMap, 0);
 
@@ -17,7 +17,7 @@ vec2 GetParallaxCoord(const in vec2 texcoord, const in mat2 dFdXY, const in vec3
     float viewDistF = 1.0 - saturate(viewDist / MATERIAL_PARALLAX_MAXDIST);
     float maxSampleCount = fma(viewDistF, MATERIAL_PARALLAX_SAMPLES, 0.5);
 
-    vec2 localSize = atlasSize * (vIn.atlasMaxCoord - vIn.atlasMinCoord);
+    vec2 localSize = atlasSize * vIn.atlasCoordSize;
     if (all(greaterThan(localSize, vec2(EPSILON))))
         stepCoord.y *= localSize.x / localSize.y;
 
@@ -38,15 +38,15 @@ vec2 GetParallaxCoord(const in vec2 texcoord, const in mat2 dFdXY, const in vec3
             vec2 atlasTileSize = vIn.atlasBounds[1] * atlasSize;
             vec2 f = GetLinearCoords(localTraceCoord, atlasTileSize, uv);
 
-            uv[0] = GetAtlasCoord(uv[0], vIn.atlasBounds);
-            uv[1] = GetAtlasCoord(uv[1], vIn.atlasBounds);
-            uv[2] = GetAtlasCoord(uv[2], vIn.atlasBounds);
-            uv[3] = GetAtlasCoord(uv[3], vIn.atlasBounds);
+            uv[0] = GetAtlasCoord(uv[0], vIn.atlasCoordMin, vIn.atlasCoordSize);
+            uv[1] = GetAtlasCoord(uv[1], vIn.atlasCoordMin, vIn.atlasCoordSize);
+            uv[2] = GetAtlasCoord(uv[2], vIn.atlasCoordMin, vIn.atlasCoordSize);
+            uv[3] = GetAtlasCoord(uv[3], vIn.atlasCoordMin, vIn.atlasCoordSize);
 
-            texDepth = TextureGradLinear(irisInt_NormalMap, uv, dFdXY, f, 3);
+            texDepth = TextureLodLinear(irisInt_NormalMap, uv, LOD, f, 3);
         #else
-            vec2 traceAtlasCoord = GetAtlasCoord(localTraceCoord, vIn.atlasMinCoord, vIn.atlasMaxCoord);
-            texDepth = iris_sampleNormalMapGrad(traceAtlasCoord, dFdXY[0], dFdXY[1]).a;
+            vec2 traceAtlasCoord = GetAtlasCoord(localTraceCoord, vIn.atlasCoordMin, vIn.atlasCoordSize);
+            texDepth = iris_sampleNormalMapLod(traceAtlasCoord, int(LOD)).a;
         #endif
 
         depthDist = 1.0 - fma(i, stepDepth, texDepth);
@@ -72,14 +72,14 @@ vec2 GetParallaxCoord(const in vec2 texcoord, const in mat2 dFdXY, const in vec3
     #endif
 
     #ifdef MATERIAL_PARALLAX_SMOOTH
-        return GetAtlasCoord(traceDepth.xy, vIn.atlasMinCoord, vIn.atlasMaxCoord);
+        return GetAtlasCoord(traceDepth.xy, vIn.atlasCoordMin, vIn.atlasCoordSize);
     #else
-        return GetAtlasCoord(texcoord - i * stepCoord, vIn.atlasMinCoord, vIn.atlasMaxCoord);
+        return GetAtlasCoord(texcoord - i * stepCoord, vIn.atlasCoordMin, vIn.atlasCoordSize);
     #endif
 }
 
 #ifdef MATERIAL_PARALLAX_SHARP
-    vec3 GetParallaxSlopeNormal(const in vec2 atlasCoord, const in mat2 dFdXY, const in float traceDepth, const in vec3 tanViewDir) {
+    vec3 GetParallaxSlopeNormal(const in vec2 atlasCoord, const in float LOD, const in float traceDepth, const in vec3 tanViewDir) {
         // WARN: temp workaround
         vec2 atlasSize = textureSize(irisInt_NormalMap, 0);
 
@@ -104,14 +104,14 @@ vec2 GetParallaxCoord(const in vec2 texcoord, const in mat2 dFdXY, const in vec3
             tex_y = vec2(0.0, viewSign.y);
         }
 
-        vec2 tX = GetLocalCoord(fma(tex_x, atlasPixelSize, atlasCoord), vIn.atlasMinCoord, vIn.atlasMaxCoord);
-        tX = GetAtlasCoord(tX, vIn.atlasMinCoord, vIn.atlasMaxCoord);
+        vec2 tX = GetLocalCoord(fma(tex_x, atlasPixelSize, atlasCoord), vIn.atlasCoordMin, vIn.atlasCoordSize);
+        tX = GetAtlasCoord(tX, vIn.atlasCoordMin, vIn.atlasCoordSize);
 
-        vec2 tY = GetLocalCoord(fma(tex_y, atlasPixelSize, atlasCoord), vIn.atlasMinCoord, vIn.atlasMaxCoord);
-        tY = GetAtlasCoord(tY, vIn.atlasMinCoord, vIn.atlasMaxCoord);
+        vec2 tY = GetLocalCoord(fma(tex_y, atlasPixelSize, atlasCoord), vIn.atlasCoordMin, vIn.atlasCoordSize);
+        tY = GetAtlasCoord(tY, vIn.atlasCoordMin, vIn.atlasCoordSize);
 
-        float height_x = iris_sampleNormalMapGrad(tX, dFdXY[0], dFdXY[1]).a;
-        float height_y = iris_sampleNormalMapGrad(tY, dFdXY[0], dFdXY[1]).a;
+        float height_x = iris_sampleNormalMapLod(tX, int(LOD)).a;
+        float height_y = iris_sampleNormalMapLod(tY, int(LOD)).a;
         vec3 signMask = vec3(0.0);
 
         if (dir) {

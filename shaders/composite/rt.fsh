@@ -85,6 +85,10 @@ in vec2 uv;
 #if LIGHTING_REFLECT_MODE == REFLECT_MODE_WSR
     #include "/lib/buffers/scene.glsl"
 
+    #ifdef VOXEL_GI_ENABLED
+        #include "/lib/buffers/sh-gi.glsl"
+    #endif
+
     #include "/lib/erp.glsl"
     #include "/lib/material/material.glsl"
 
@@ -108,6 +112,10 @@ in vec2 uv;
 
     #ifdef LPV_ENABLED
         #include "/lib/lpv/floodfill.glsl"
+    #endif
+
+    #ifdef VOXEL_GI_ENABLED
+        #include "/lib/lpv/sh-gi-sample.glsl"
     #endif
 
     #include "/lib/depth.glsl"
@@ -358,7 +366,7 @@ void main() {
                 reflection.rgb *= reflect_tint;
                 reflection.rgb = RgbToLinear(reflection.rgb);
 
-                reflect_lmcoord = reflect_lmcoord*reflect_lmcoord*reflect_lmcoord;
+                reflect_lmcoord = _pow3(reflect_lmcoord);
 
                 #if MATERIAL_FORMAT != MAT_NONE
                     vec3 reflect_localTexNormal = mat_normal(reflect_normalData);
@@ -375,7 +383,7 @@ void main() {
                 // TODO: get from TBN
                 reflect_localTexNormal = reflect_geoNormal;
 
-                float reflect_roughL = reflect_roughness*reflect_roughness;
+                float reflect_roughL = _pow2(reflect_roughness);
 
                 vec3 reflect_localPos = GetVoxelLocalPos(reflect_voxelPos);
 
@@ -390,11 +398,11 @@ void main() {
                     float reflect_shadow = 1.0;
                 #endif
 
-                vec3 H = normalize(Scene_LocalLightDir + reflectLocalDir);
+                vec3 H = normalize(Scene_LocalLightDir + -reflectLocalDir);
 
                 float reflect_NoLm = max(dot(reflect_localTexNormal, Scene_LocalLightDir), 0.0);
                 float reflect_LoHm = max(dot(Scene_LocalLightDir, H), 0.0);
-                float reflect_NoVm = max(dot(reflect_localTexNormal, reflectLocalDir), 0.0);
+                float reflect_NoVm = max(dot(reflect_localTexNormal, -reflectLocalDir), 0.0);
 
                 vec3 reflect_sunTransmit, reflect_moonTransmit;
                 GetSkyLightTransmission(reflect_localPos, reflect_sunTransmit, reflect_moonTransmit);
@@ -402,15 +410,25 @@ void main() {
                 float NoL_sun = dot(reflect_localTexNormal, Scene_LocalSunDir);
                 float NoL_moon = -NoL_sun;//dot(localTexNormal, -Scene_LocalSunDir);
 
-                vec3 skyLight = SUN_BRIGHTNESS * reflect_sunTransmit * max(NoL_sun, 0.0)
+                vec3 reflect_skyLight = SUN_BRIGHTNESS * reflect_sunTransmit * max(NoL_sun, 0.0)
                     + MOON_BRIGHTNESS * reflect_moonTransmit * max(NoL_moon, 0.0);
 
-                vec3 reflect_diffuse = skyLight * reflect_shadow;
+                vec3 reflect_diffuse = reflect_skyLight * reflect_shadow;
                 reflect_diffuse *= SampleLightDiffuse(reflect_NoVm, reflect_NoLm, reflect_LoHm, reflect_roughL);
 
-                vec2 skyIrradianceCoord = DirectionToUV(reflect_localTexNormal);
-                vec3 reflect_skyIrradiance = textureLod(texSkyIrradiance, skyIrradianceCoord, 0).rgb;
-                reflect_diffuse += (SKY_AMBIENT * reflect_lmcoord.y) * reflect_skyIrradiance;
+                vec3 reflect_specular = vec3(0.0);
+
+                #ifdef VOXEL_GI_ENABLED
+                    vec3 giVoxelPos = GetVoxelPosition(reflect_localPos);
+                    vec3 giVoxelSamplePos = 0.5*reflect_localTexNormal - 0.25*reflect_geoNormal + giVoxelPos; // TODO: FIX THIS< WRONG!
+                    vec3 reflect_skyIrradiance = 3.0 * sample_sh_gi_linear(giVoxelSamplePos, reflect_localTexNormal);
+                #else
+                    vec2 skyIrradianceCoord = DirectionToUV(reflect_localTexNormal);
+                    vec3 reflect_skyIrradiance = textureLod(texSkyIrradiance, skyIrradianceCoord, 0).rgb;
+                    reflect_skyIrradiance = (SKY_AMBIENT * reflect_lmcoord.y) * reflect_skyIrradiance;
+                #endif
+
+                reflect_diffuse += reflect_skyIrradiance;
 
                 #if LIGHTING_MODE == LIGHT_MODE_RT
                     ivec3 lightBinPos = ivec3(floor(reflect_voxelPos / LIGHT_BIN_SIZE));
@@ -461,7 +479,7 @@ void main() {
 
                         vec3 lightDir = normalize(lightVec);
 
-                        vec3 H = normalize(lightDir + reflectLocalDir);
+                        vec3 H = normalize(lightDir + -reflectLocalDir);
 
                         float LoHm = max(dot(lightDir, H), 0.0);
                         float NoLm = max(dot(reflect_localTexNormal, lightDir), 0.0);
@@ -509,7 +527,30 @@ void main() {
                     reflect_diffuse += reflect_emission * Material_EmissionBrightness;
                 #endif
 
-                skyReflectColor = reflection.rgb * reflect_diffuse;// + reflect_specular;
+                #ifdef VOXEL_GI_ENABLED
+                    // TODO: get inner reflection vector and use for SH lookup
+
+                    vec3 reflect_reflectDir = reflect(reflectLocalDir, reflect_localTexNormal);
+
+                    //vec3 voxelSamplePos = 0.5*localTexNormal - 0.25*localGeoNormal + voxelPos;
+                    vec3 reflect_irradiance = 3.0 * sample_sh_gi_linear(reflect_voxelPos, reflect_reflectDir);
+
+                    reflect_specular += reflect_irradiance; // * S * reflect_tint;
+                #endif
+
+                const bool reflect_isWet = false;
+                vec3 reflect_view_F = material_fresnel(reflection.rgb, reflect_f0_metal, reflect_roughL, reflect_NoVm, reflect_isWet);
+
+                float reflect_NoHm = max(dot(reflect_localTexNormal, H), 0.0);
+                vec3 reflect_sunS = SampleLightSpecular(reflect_NoLm, reflect_NoHm, reflect_LoHm, reflect_view_F, reflect_roughL);
+                reflect_specular += reflect_skyLight * reflect_shadow * reflect_sunS;// * vec3(1,0,0);
+
+                float smoothness = 1.0 - reflect_roughness;
+                reflect_specular *= GetMetalTint(reflection.rgb, reflect_f0_metal) * _pow2(smoothness);
+
+                reflect_diffuse *= 1.0 - reflect_view_F;
+
+                skyReflectColor = fma(reflection.rgb, reflect_diffuse, reflect_specular);
             }
             else {
                 // SSR fallback
@@ -532,9 +573,9 @@ void main() {
 
             const bool isWet = false;
             float smoothness = 1.0 - roughness;
-            vec3 reflectTint = GetMetalTint(albedo.rgb, f0_metal);
+            //vec3 reflectTint = GetMetalTint(albedo.rgb, f0_metal);
             vec3 view_F = material_fresnel(albedo.rgb, f0_metal, roughL, NoVm, isWet);
-            specularFinal += view_F * skyReflectColor * reflectTint * _pow2(smoothness);
+            specularFinal += view_F * skyReflectColor;// * reflectTint * _pow2(smoothness);
         #endif
     }
 

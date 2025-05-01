@@ -210,7 +210,7 @@ void main() {
 
         vec2 skyIrradianceCoord = DirectionToUV(localTexNormal);
         vec3 skyIrradiance = textureLod(texSkyIrradiance, skyIrradianceCoord, 0).rgb;
-        skyIrradiance = 2.0 * (SKY_AMBIENT * lmCoord.y) * skyIrradiance;
+        skyIrradiance = (SKY_AMBIENT * lmCoord.y) * skyIrradiance;
 
         #ifdef VOXEL_GI_ENABLED
             if (IsInVoxelBounds(voxelPos)) {

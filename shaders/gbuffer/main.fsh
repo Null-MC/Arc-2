@@ -31,10 +31,10 @@ in VertexData2 {
         float waveStrength;
     #endif
 
-    #ifdef RENDER_PARALLAX
+    #if defined(RENDER_PARALLAX) || defined(MATERIAL_NORMAL_SMOOTH)
         vec3 tangentViewPos;
-        flat vec2 atlasMinCoord;
-        flat vec2 atlasMaxCoord;
+        flat vec2 atlasCoordMin;
+        flat vec2 atlasCoordSize;
     #endif
 } vIn;
 
@@ -44,9 +44,13 @@ in VertexData2 {
 
 #include "/lib/material/material.glsl"
 
-#ifdef RENDER_PARALLAX
-    #include "/lib/utility/atlas.glsl"
+#include "/lib/sampling/atlas.glsl"
 
+#ifdef MATERIAL_NORMAL_SMOOTH
+    #include "/lib/sampling/linear.glsl"
+#endif
+
+#ifdef RENDER_PARALLAX
     #include "/lib/material/parallax.glsl"
 #endif
 
@@ -71,7 +75,7 @@ void iris_emitFragment() {
     vec4 mColor = vIn.color;
     iris_modifyBase(mUV, mColor, mLight);
 
-    mat2 dFdXY = mat2(dFdx(mUV), dFdy(mUV));
+    float mLOD = textureQueryLod(irisInt_BaseTex, mUV).y;
 
     #ifdef RENDER_PARALLAX
         float texDepth = 1.0;
@@ -82,8 +86,8 @@ void iris_emitFragment() {
         bool skipParallax = false;
 
         if (!skipParallax && viewDist < MATERIAL_PARALLAX_MAXDIST) {
-            vec2 localCoord = GetLocalCoord(mUV, vIn.atlasMinCoord, vIn.atlasMaxCoord);
-            mUV = GetParallaxCoord(localCoord, dFdXY, tanViewDir, viewDist, texDepth, traceCoordDepth);
+            vec2 localCoord = GetLocalCoord(mUV, vIn.atlasCoordMin, vIn.atlasCoordSize);
+            mUV = GetParallaxCoord(localCoord, mLOD, tanViewDir, viewDist, texDepth, traceCoordDepth);
 
             #ifdef MATERIAL_PARALLAX_DEPTHWRITE
                 float pomDist = (1.0 - traceCoordDepth.z) / max(-tanViewDir.z, 0.00001);
@@ -105,11 +109,42 @@ void iris_emitFragment() {
         #endif
     #endif
 
-    vec4 albedo = iris_sampleBaseTexGrad(mUV, dFdXY[0], dFdXY[1]);
+    vec4 albedo = iris_sampleBaseTexLod(mUV, int(mLOD));
 
     #if MATERIAL_FORMAT != MAT_NONE
-        vec4 normalData = iris_sampleNormalMapGrad(mUV, dFdXY[0], dFdXY[1]);
-        vec4 specularData = iris_sampleSpecularMapGrad(mUV, dFdXY[0], dFdXY[1]);
+        #ifdef MATERIAL_NORMAL_SMOOTH
+            vec2 atlasSize = textureSize(irisInt_NormalMap, 0);
+
+            //vec2 uv_min = floor(mUV * atlasSize) / atlasSize;
+            vec2 uv[4];
+            //vec2 atlasTileSize = vIn.atlasCoordSize * atlasSize;
+            vec2 f = GetLinearCoords(mUV - 0.5/atlasSize, atlasSize, uv);
+
+//            uv[0] = GetLocalCoord(uv[0], vIn.atlasCoordMin, vIn.atlasCoordSize);
+//            uv[1] = GetLocalCoord(uv[1], vIn.atlasCoordMin, vIn.atlasCoordSize);
+//            uv[2] = GetLocalCoord(uv[2], vIn.atlasCoordMin, vIn.atlasCoordSize);
+//            uv[3] = GetLocalCoord(uv[3], vIn.atlasCoordMin, vIn.atlasCoordSize);
+//
+//            uv[0] = GetAtlasCoord(uv[0], vIn.atlasCoordMin, vIn.atlasCoordSize);
+//            uv[1] = GetAtlasCoord(uv[1], vIn.atlasCoordMin, vIn.atlasCoordSize);
+//            uv[2] = GetAtlasCoord(uv[2], vIn.atlasCoordMin, vIn.atlasCoordSize);
+//            uv[3] = GetAtlasCoord(uv[3], vIn.atlasCoordMin, vIn.atlasCoordSize);
+
+            vec2 uv_min = vIn.atlasCoordMin + 0.5/atlasSize;
+            vec2 uv_max = vIn.atlasCoordMin + vIn.atlasCoordSize - 1.0/atlasSize;
+            uv[0] = clamp(uv[0], uv_min, uv_max);
+            uv[1] = clamp(uv[1], uv_min, uv_max);
+            uv[2] = clamp(uv[2], uv_min, uv_max);
+            uv[3] = clamp(uv[3], uv_min, uv_max);
+
+            vec4 normalData;
+            normalData.rgb = TextureLodLinearRGB(irisInt_NormalMap, uv, mLOD, f);
+            normalData.a = iris_sampleNormalMapLod(mUV, int(mLOD)).a;
+        #else
+            vec4 normalData = iris_sampleNormalMapLod(mUV, int(mLOD));
+        #endif
+
+        vec4 specularData = iris_sampleSpecularMapLod(mUV, int(mLOD));
     #endif
 
     vec2 lmcoord = saturate((mLight - (0.5/16.0)) / (15.0/16.0));
@@ -152,7 +187,7 @@ void iris_emitFragment() {
                 float depthDiff = max(texDepth - traceCoordDepth.z, 0.0);
 
                 if (depthDiff >= ParallaxSharpThreshold) {
-                    localTexNormal = GetParallaxSlopeNormal(mUV, dFdXY, traceCoordDepth.z, tanViewDir);
+                    localTexNormal = GetParallaxSlopeNormal(mUV, mLOD, traceCoordDepth.z, tanViewDir);
                 }
             }
         #endif

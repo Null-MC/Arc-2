@@ -36,9 +36,7 @@ shared uint sharedBlockMap[10*10*10];
 
 #include "/lib/buffers/scene.glsl"
 
-#ifndef VOXEL_APERTURE
-	#include "/lib/buffers/voxel-block.glsl"
-#endif
+#include "/lib/buffers/voxel-block.glsl"
 
 #ifdef VOXEL_GI_ENABLED
 	#include "/lib/buffers/sh-gi.glsl"

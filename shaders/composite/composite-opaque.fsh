@@ -227,7 +227,7 @@ void main() {
             occlusion *= ssao_occlusion;
         #endif
 
-        vec3 view_F = material_fresnel(albedo.rgb, f0_metal, roughL, NoVm, isWet);
+        //vec3 view_F = material_fresnel(albedo.rgb, f0_metal, roughL, NoVm, isWet);
 
         vec3 sunTransmit, moonTransmit;
         GetSkyLightTransmission(localPos, sunTransmit, moonTransmit);
@@ -247,7 +247,7 @@ void main() {
 
         vec2 skyIrradianceCoord = DirectionToUV(localTexNormal);
         vec3 skyIrradiance = textureLod(texSkyIrradiance, skyIrradianceCoord, 0).rgb;
-        skyIrradiance = 2.0 * (SKY_AMBIENT * lmCoord.y) * skyIrradiance;
+        skyIrradiance = (SKY_AMBIENT * lmCoord.y) * skyIrradiance;
 
         #ifdef VOXEL_GI_ENABLED
             if (IsInVoxelBounds(voxelPos)) {
@@ -358,13 +358,12 @@ void main() {
             skyReflectColor = mix(skyReflectColor, reflectColor, reflection.a);
         #endif
 
+        vec3 view_F = material_fresnel(albedo.rgb, f0_metal, roughL, NoVm, isWet);
+
         float NoHm = max(dot(localTexNormal, H), 0.0);
-
-        vec3 reflectTint = GetMetalTint(albedo.rgb, f0_metal);
-
-        float smoothness = 1.0 - roughness;
         vec3 specular = skyLight_NoLm * shadow_sss.rgb * SampleLightSpecular(NoLm, NoHm, LoHm, view_F, roughL);
-        specular += view_F * skyReflectColor * reflectTint * _pow2(smoothness);
+
+        specular += view_F * skyReflectColor;
 
         #ifdef ACCUM_ENABLED
             if (altFrame) specular += textureLod(texAccumSpecular_opaque_alt, uv, 0).rgb;
@@ -372,6 +371,9 @@ void main() {
         #elif LIGHTING_MODE == LIGHT_MODE_RT || LIGHTING_REFLECT_MODE == REFLECT_MODE_WSR
             specular += textureLod(texSpecularRT, uv, 0).rgb;
         #endif
+
+        float smoothness = 1.0 - roughness;
+        specular *= GetMetalTint(albedo.rgb, f0_metal) * _pow2(smoothness);
 
         diffuse *= 1.0 - view_F;
 

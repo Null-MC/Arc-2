@@ -27,10 +27,10 @@ out VertexData2 {
 		float waveStrength;
 	#endif
 
-	#ifdef RENDER_PARALLAX
+	#if defined(RENDER_PARALLAX) || defined(MATERIAL_NORMAL_SMOOTH)
 		vec3 tangentViewPos;
-		flat vec2 atlasMinCoord;
-		flat vec2 atlasMaxCoord;
+		flat vec2 atlasCoordMin;
+		flat vec2 atlasCoordSize;
 	#endif
 } vOut;
 
@@ -105,17 +105,20 @@ void iris_sendParameters(in VertexData data) {
 	vOut.localTangent.xyz = mat3(ap.camera.viewInv) * viewTangent;
 	vOut.localTangent.w = data.tangent.w;
 
-	#ifdef RENDER_PARALLAX
-		vOut.atlasMinCoord = iris_getTexture(data.textureId).minCoord;
-		vOut.atlasMaxCoord = iris_getTexture(data.textureId).maxCoord;
+	#if defined(RENDER_PARALLAX) || defined(MATERIAL_NORMAL_SMOOTH)
+		// TODO: These are wrong! replace with old midcoord derived version
+		vOut.atlasCoordMin = iris_getTexture(data.textureId).minCoord;
+		vOut.atlasCoordSize = iris_getTexture(data.textureId).maxCoord - vOut.atlasCoordMin;
 
-		mat3 matViewTBN = GetTBN(viewNormal, viewTangent, data.tangent.w);
+		#ifdef RENDER_PARALLAX
+			mat3 matViewTBN = GetTBN(viewNormal, viewTangent, data.tangent.w);
 
-		vec3 viewPos = mul3(ap.camera.view, vOut.localPos);
-		vOut.tangentViewPos = viewPos.xyz * matViewTBN;
+			vec3 viewPos = mul3(ap.camera.view, vOut.localPos);
+			vOut.tangentViewPos = viewPos.xyz * matViewTBN;
 
-//		#ifdef WORLD_SHADOW_ENABLED
-//			vOut.lightPos_T = shadowLightPosition * matViewTBN;
-//		#endif
+	//		#ifdef WORLD_SHADOW_ENABLED
+	//			vOut.lightPos_T = shadowLightPosition * matViewTBN;
+	//		#endif
+		#endif
 	#endif
 }

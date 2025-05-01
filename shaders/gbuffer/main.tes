@@ -20,10 +20,10 @@ in VertexData2 {
     vec3 surfacePos;
     float waveStrength;
 
-	#ifdef RENDER_PARALLAX
+    #if defined(RENDER_PARALLAX) || defined(MATERIAL_NORMAL_SMOOTH)
 		vec3 tangentViewPos;
-		flat vec2 atlasMinCoord;
-		flat vec2 atlasMaxCoord;
+		flat vec2 atlasCoordMin;
+		flat vec2 atlasCoordSize;
 	#endif
 } vIn[];
 
@@ -40,10 +40,10 @@ out VertexData2 {
     vec3 surfacePos;
     float waveStrength;
 
-	#ifdef RENDER_PARALLAX
+    #if defined(RENDER_PARALLAX) || defined(MATERIAL_NORMAL_SMOOTH)
 		vec3 tangentViewPos;
-        flat vec2 atlasMinCoord;
-        flat vec2 atlasMaxCoord;
+        flat vec2 atlasCoordMin;
+        flat vec2 atlasCoordSize;
 	#endif
 } vOut;
 
@@ -72,11 +72,11 @@ void main() {
     vOut.surfacePos = _interpolate(vIn, surfacePos);
     vOut.waveStrength = _interpolate(vIn, waveStrength);
 
-    #ifdef RENDER_PARALLAX
+    #if defined(RENDER_PARALLAX) || defined(MATERIAL_NORMAL_SMOOTH)
         vOut.tangentViewPos = _interpolate(vIn, tangentViewPos);
 
-        vOut.atlasMinCoord = vIn[0].atlasMinCoord;
-        vOut.atlasMaxCoord = vIn[0].atlasMaxCoord;
+        vOut.atlasCoordMin = vIn[0].atlasCoordMin;
+        vOut.atlasCoordSize = vIn[0].atlasCoordSize;
     #endif
 
     // bool isWater = bitfieldExtract(vIn[0].blockId, 6, 1) != 0;

@@ -26,7 +26,7 @@ function applySettings(settings) {
     // worldSettings.clouds = false;
 
     if (settings.Internal.Voxelization)
-        worldSettings.cascadeSafeZones[0] = snapshot.Voxel_Size;
+        worldSettings.cascadeSafeZones[0] = snapshot.Voxel_Size / 2;
 
     defineGlobally1("EFFECT_VL_ENABLED");
     if (settings.Internal.Accumulation) defineGlobally1("ACCUM_ENABLED");
@@ -791,6 +791,8 @@ export function setupShader() {
             .target(0, texDiffuseRT)
             .target(1, texSpecularRT)
             .ssbo(0, sceneBuffer)
+            .ssbo(1, shLpvBuffer)
+            .ssbo(2, shLpvBuffer_alt)
             .ssbo(3, lightListBuffer)
             .ssbo(4, quadListBuffer)
             .ssbo(5, blockFaceBuffer)
@@ -898,6 +900,8 @@ export function setupShader() {
             .target(0, texDiffuseRT)
             .target(1, texSpecularRT)
             .ssbo(0, sceneBuffer)
+            .ssbo(1, shLpvBuffer)
+            .ssbo(2, shLpvBuffer_alt)
             .ssbo(3, lightListBuffer)
             .ssbo(4, quadListBuffer)
             .ssbo(5, blockFaceBuffer)

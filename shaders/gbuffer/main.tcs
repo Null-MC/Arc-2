@@ -17,10 +17,10 @@ in VertexData2 {
 
     float waveStrength;
 
-	#ifdef RENDER_PARALLAX
+    #if defined(RENDER_PARALLAX) || defined(MATERIAL_NORMAL_SMOOTH)
 		vec3 tangentViewPos;
-		flat vec2 atlasMinCoord;
-		flat vec2 atlasMaxCoord;
+		flat vec2 atlasCoordMin;
+		flat vec2 atlasCoordSize;
 	#endif
 } vIn[];
 
@@ -37,10 +37,10 @@ out VertexData2 {
     vec3 surfacePos;
     float waveStrength;
 
-	#ifdef RENDER_PARALLAX
+    #if defined(RENDER_PARALLAX) || defined(MATERIAL_NORMAL_SMOOTH)
 		vec3 tangentViewPos;
-		flat vec2 atlasMinCoord;
-		flat vec2 atlasMaxCoord;
+		flat vec2 atlasCoordMin;
+		flat vec2 atlasCoordSize;
 	#endif
 } vOut[];
 
@@ -69,10 +69,10 @@ void main() {
     vOut[gl_InvocationID].surfacePos = vIn[gl_InvocationID].localPos;
     vOut[gl_InvocationID].waveStrength = vIn[gl_InvocationID].waveStrength;
 
-    #ifdef RENDER_PARALLAX
+    #if defined(RENDER_PARALLAX) || defined(MATERIAL_NORMAL_SMOOTH)
         vOut[gl_InvocationID].tangentViewPos = vIn[gl_InvocationID].tangentViewPos;
-        vOut[gl_InvocationID].atlasMinCoord = vIn[gl_InvocationID].atlasMinCoord;
-        vOut[gl_InvocationID].atlasMaxCoord = vIn[gl_InvocationID].atlasMaxCoord;
+        vOut[gl_InvocationID].atlasCoordMin = vIn[gl_InvocationID].atlasCoordMin;
+        vOut[gl_InvocationID].atlasCoordSize = vIn[gl_InvocationID].atlasCoordSize;
     #endif
 
     if (gl_InvocationID == 0) {

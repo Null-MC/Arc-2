@@ -1,6 +1,3 @@
-//const float Post_Contrast = Scene_PostContrastF;//POST_CONTRAST * 0.01;
-
-
 vec3 tonemap_jodieReinhard(vec3 c) {
     // From: https://www.shadertoy.com/view/tdSXzD
     float l = dot(c, vec3(0.2126, 0.7152, 0.0722));
@@ -76,23 +73,25 @@ vec3 tonemap_Uchimura(vec3 x) {
 
 vec3 tonemap_bloopHDR(vec3 color) {
     // Constants for AgX inset and outset matrices
-    const mat3 AgXInsetMatrix =
-        mat3(0.856627153315983, 0.137318972929847, 0.11189821299995, 0.0951212405381588, 0.761241990602591,
-             0.0767994186031903, 0.0482516061458583, 0.101439036467562, 0.811302368396859);
+    const mat3 AgXInsetMatrix = mat3(
+        0.856627153315983,  0.137318972929847, 0.11189821299995,
+        0.0951212405381588, 0.761241990602591, 0.0767994186031903,
+        0.0482516061458583, 0.101439036467562, 0.811302368396859);
 
-    const mat3 AgXOutsetMatrix =
-        mat3(1.1271005818144368, -0.1413297634984383, -0.14132976349843826, -0.11060664309660323, 1.157823702216272,
-             -0.11060664309660294, -0.016493938717834573, -0.016493938717834257, 1.2519364065950405);
+    const mat3 AgXOutsetMatrix = mat3(
+         1.1271005818144368,   -0.1413297634984383,  -0.14132976349843826,
+        -0.11060664309660323,   1.157823702216272,   -0.11060664309660294,
+        -0.016493938717834573, -0.016493938717834257, 1.2519364065950405);
 
     // Constants for AgX exposure range
-    const float AgxMinEv = -12.47393;
-    const float AgxMaxEv = 4.026069;
+    const float AgxMinEv = -11.5;
+    const float AgxMaxEv = 3.6;
 
     // Constants for agxAscCdl operation
-    const vec3 SLOPE = vec3(0.9);
+    const vec3 SLOPE = vec3(0.94);
     const vec3 OFFSET = vec3(0.0);
-    const vec3 POWER = vec3(1.4);
-    const float SATURATION = 1.1;
+    const vec3 POWER = vec3(Scene_PostContrastF);
+    const float SATURATION = 1.16;
 
     // 1. agx()
     // Input transform (inset)

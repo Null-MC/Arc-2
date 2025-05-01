@@ -1,4 +1,4 @@
-//#define MATERIAL_NORMAL_SMOOTH
+#define MATERIAL_NORMAL_SMOOTH
 #define MATERIAL_EMISSION_POWER 1
 #define MATERIAL_ROUGH_REFRACT
 #define MATERIAL_PARALLAX_MAXDIST 48
@@ -18,7 +18,7 @@ const float ATMOSPHERE_MAX = 4200.0;
 const float SUN_SIZE = 2.2;
 const float MOON_SIZE = 3.4;
 
-const float SUN_LUMINANCE = 8000.0;
+const float SUN_LUMINANCE = 2000.0;
 const float MOON_LUMINANCE = 0.16;
 const float STAR_LUMINANCE = 0.10;
 const float SKY_LUMINANCE = 80.0;
@@ -39,7 +39,8 @@ const float SKY_AMBIENT = 1.0;
 
 const int SHADOW_PCF_SAMPLES = 8;
 const int SHADOW_PCSS_SAMPLES = 6;
-const float Shadow_MaxPcfSize = 2.0;
+const float SHADOW_PENUMBRA_SCALE = 64.0;
+const float Shadow_MaxPcfSize = 0.8;
 
 //const float Bloom_Power = 1.0;
 //const float Bloom_Strength = 0.03;

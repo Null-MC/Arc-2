@@ -19,7 +19,7 @@ shared uint sharedBlockMap[10*10*10];
 	uniform sampler2D blockAtlas;
 	uniform sampler2D blockAtlasS;
 
-	//uniform sampler2D texSkyIrradiance;
+	uniform sampler2D texSkyIrradiance;
 	uniform sampler2D texSkyTransmit;
 	uniform sampler2D texSkyView;
 	uniform sampler2D texBlueNoise;
@@ -49,6 +49,8 @@ shared uint sharedBlockMap[10*10*10];
 #endif
 
 #ifdef VOXEL_GI_ENABLED
+	#include "/lib/erp.glsl"
+
 	#include "/lib/noise/hash.glsl"
 	#include "/lib/noise/blue.glsl"
 
@@ -321,11 +323,11 @@ void populateShared(const in ivec3 voxelFrameOffset) {
 			vec3 hit_diffuse = skyLight * hit_shadow;
 			//hit_diffuse *= SampleLightDiffuse(hit_NoVm, hit_NoLm, hit_LoHm, hit_roughL);
 
-//			vec2 skyIrradianceCoord = DirectionToUV(hitNormal);
-//			vec3 hit_skyIrradiance = textureLod(texSkyIrradiance, skyIrradianceCoord, 0).rgb;
-//			hit_diffuse += (SKY_AMBIENT * hit_lmcoord.y) * hit_skyIrradiance;
+			vec2 skyIrradianceCoord = DirectionToUV(hitNormal);
+			vec3 hit_skyIrradiance = textureLod(texSkyIrradiance, skyIrradianceCoord, 0).rgb;
+			hit_diffuse += (SKY_AMBIENT * hit_lmcoord.y) * hit_skyIrradiance;
 
-			//hit_diffuse += 0.0016;
+			hit_diffuse += 0.0016;
 
 			#if LIGHTING_MODE == LIGHT_MODE_LPV
 				ivec3 voxelFrameOffset = GetVoxelFrameOffset();
@@ -481,7 +483,7 @@ void main() {
 				noise_seed += (ap.time.frames + dir) * vec2(71.0, 83.0);
 				//vec3 noise_dir = sample_blueNoise(hash23(cellIndex));
 
-				vec3 noise_dir = hash33(vec3(seed_pos, dir, ap.time.frames));
+				vec3 noise_dir = hash33(vec3(seed_pos * 123.45, dir * 12.34, ap.time.frames));
 				noise_dir = normalize(noise_dir * 2.0 - 1.0);
 
 				float f = dot(shVoxel_dir[dir], noise_dir);

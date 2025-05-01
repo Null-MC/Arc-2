@@ -12,7 +12,7 @@ uniform sampler2D texFinal;
 #include "/lib/exposure.glsl"
 #include "/lib/tonemap.glsl"
 
-#include "/lib/effects/purkinje.glsl"
+//#include "/lib/effects/purkinje.glsl"
 
 
 void main() {
@@ -23,8 +23,12 @@ void main() {
 
     //color = PurkinjeShift(color, PurkinjeStrength);
 
+    color = tonemap_jodieReinhard(color);
     //color = tonemap_Lottes(color);
-    color = tonemap_ACESFit2(color*0.7);
+    //color = tonemap_ACESFit2(color);
+    //color = tonemap_bloopHDR(color);
+
+    //color = color / (color + 0.155) * 1.019;
 
     outColor = vec4(color, 1.0);
 }

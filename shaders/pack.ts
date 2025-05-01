@@ -1079,11 +1079,13 @@ export function onSettingsChanged(state : WorldState) {
 
     const d = snapshot.Sky_FogDensity * 0.01;
 
+    let emission = snapshot.Material_EmissionBrightness * 0.01;
+
     new StreamBufferBuilder(SceneSettingsBuffer)
         .appendFloat(d*d)
         .appendFloat(snapshot.Sky_SeaLevel)
         .appendInt(snapshot.Water_WaveDetail)
-        .appendFloat(snapshot.Material_EmissionBrightness * 0.01)
+        .appendFloat(Math.pow(2.0, emission))
         .appendFloat(snapshot.Effect_BloomStrength * 0.01)
         .appendFloat(snapshot.Post_Contrast * 0.01)
         .appendFloat(snapshot.Post_ExposureMin)
@@ -1168,7 +1170,7 @@ function setupBloom(texFinal) {
     const screenHeight_half = Math.ceil(screenHeight / 2.0);
 
     let maxLod = Math.log2(Math.min(screenWidth, screenHeight));
-    maxLod = Math.max(Math.min(maxLod, 8), 0);
+    maxLod = Math.max(Math.min(maxLod, 4), 0);
 
     print(`Bloom enabled with ${maxLod} LODs`);
 

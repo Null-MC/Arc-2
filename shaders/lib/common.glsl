@@ -19,9 +19,28 @@ float minOf(const in vec3 vec) {return min(min(vec[0], vec[1]), vec[2]);}
 
 int sumOf(ivec3 vec) {return vec.x + vec.y + vec.z;}
 
-vec3 LinearToRgb(const in vec3 color) {return pow(color, vec3(1.0 / 2.2));}
+//vec3 LinearToRgb(const in vec3 color) {return pow(color, vec3(1.0 / 2.2));}
 
-vec3 RgbToLinear(const in vec3 color) {return pow(color, vec3(2.2));}
+//vec3 RgbToLinear(const in vec3 color) {return pow(color, vec3(2.2));}
+
+vec3 LinearToRgb(const in vec3 color) {
+    bvec3 cutoff = lessThan(color, vec3(0.0031308));
+    vec3 higher = 1.055 * pow(color, vec3(1.0/2.4)) - 0.055;
+    vec3 lower = color * 12.92;
+
+    return mix(higher, lower, cutoff);
+}
+
+vec3 RgbToLinear(const in vec3 color) {
+    vec3 _min = color * 12.92;
+    vec3 _max = pow((color + 0.055) / 1.055, vec3(2.4));
+
+    return vec3(
+        color.r <= 0.0031308 ? _min.r : _max.r,
+        color.g <= 0.0031308 ? _min.g : _max.g,
+        color.b <= 0.0031308 ? _min.b : _max.b
+    );
+}
 
 float lengthSq(const in vec3 vec) {return dot(vec, vec);}
 

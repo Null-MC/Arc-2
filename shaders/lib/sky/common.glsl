@@ -22,6 +22,7 @@ vec3 getSkyPosition(const in vec3 localPos) {
     vec3 skyPos = localPos;
     skyPos.y = max(ap.camera.pos.y + localPos.y - Scene_SkyFogSeaLevel, 0.0);
     //skyPos /= (ATMOSPHERE_MAX - SKY_SEA_LEVEL);
+    skyPos.y *= 10.0;
 
     //skyPos *= (atmosphereRadiusMM - groundRadiusMM);
     skyPos *= 0.000001;

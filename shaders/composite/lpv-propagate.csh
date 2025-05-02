@@ -35,11 +35,14 @@ shared uint sharedBlockMap[10*10*10];
 #include "/lib/common.glsl"
 
 #include "/lib/buffers/scene.glsl"
-
 #include "/lib/buffers/voxel-block.glsl"
 
 #ifdef VOXEL_GI_ENABLED
 	#include "/lib/buffers/sh-gi.glsl"
+
+	#if LIGHTING_MODE == LIGHT_MODE_RT
+		#include "/lib/buffers/light-list.glsl"
+	#endif
 #endif
 
 #include "/lib/voxel/voxel_common.glsl"
@@ -68,6 +71,17 @@ shared uint sharedBlockMap[10*10*10];
 	#ifdef SHADOWS_ENABLED
 		#include "/lib/shadow/csm.glsl"
 		#include "/lib/shadow/sample.glsl"
+	#endif
+
+	#if LIGHTING_MODE == LIGHT_MODE_RT
+		#include "/lib/light/hcm.glsl"
+		#include "/lib/light/fresnel.glsl"
+		#include "/lib/light/sampling.glsl"
+
+		#include "/lib/material/material_fresnel.glsl"
+
+		#include "/lib/voxel/light-list.glsl"
+		#include "/lib/voxel/light-trace.glsl"
 	#endif
 #endif
 
@@ -317,7 +331,84 @@ void populateShared(const in ivec3 voxelFrameOffset) {
 
 			//hit_diffuse += 0.0016;
 
-			#if LIGHTING_MODE == LIGHT_MODE_LPV
+			#if LIGHTING_MODE == LIGHT_MODE_RT //&& defined(FALSE)
+				// TODO: pick a random light and sample it?
+				ivec3 lightBinPos = ivec3(floor(voxelPos / LIGHT_BIN_SIZE));
+				int lightBinIndex = GetLightBinIndex(lightBinPos);
+				uint binLightCount = LightBinMap[lightBinIndex].lightCount;
+
+				vec3 voxelPos_out = tracePos + 0.16*hitNormal;
+
+				//vec3 jitter = vec3(0.0);//hash33(vec3(gl_FragCoord.xy, ap.time.frames)) - 0.5;
+
+//				#if RT_MAX_SAMPLE_COUNT > 0
+//					uint maxSampleCount = min(binLightCount, RT_MAX_SAMPLE_COUNT);
+//					float bright_scale = ceil(binLightCount / float(RT_MAX_SAMPLE_COUNT));
+//				#else
+					//uint maxSampleCount = binLightCount;
+					const float bright_scale = 3.0;
+//				#endif
+
+				int i_offset = int(binLightCount * hash13(vec3(gl_GlobalInvocationID.xy, ap.time.frames)));
+
+				//for (int i = 0; i < maxSampleCount; i++) {
+				if (binLightCount > 0) {
+					int i = 0;
+					int i2 = (i + i_offset) % int(binLightCount);
+
+					uint light_voxelIndex = LightBinMap[lightBinIndex].lightList[i2];
+
+					vec3 light_voxelPos = GetLightVoxelPos(light_voxelIndex) + 0.5;
+					//light_voxelPos += jitter*0.125;
+
+					vec3 light_LocalPos = GetVoxelLocalPos(light_voxelPos);
+
+					//uint blockId = imageLoad(imgVoxelBlock, ivec3(light_voxelPos)).r;
+
+					uint blockId = SampleVoxelBlock(light_voxelPos);
+
+					float lightRange = iris_getEmission(blockId);
+					vec3 lightColor = iris_getLightColor(blockId).rgb;
+					lightColor = RgbToLinear(lightColor);
+
+					lightColor *= (lightRange/15.0) * BLOCKLIGHT_BRIGHTNESS;
+
+					vec3 lightVec = light_LocalPos - hit_localPos;
+					vec2 lightAtt = GetLightAttenuation(lightVec, lightRange);
+
+					vec3 lightDir = normalize(lightVec);
+
+					vec3 H = normalize(lightDir + -traceDir);
+
+					float LoHm = max(dot(lightDir, H), 0.0);
+					float NoLm = max(dot(hitNormal, lightDir), 0.0);
+					//                    float NoVm = max(dot(localTexNormal, localViewDir), 0.0);
+
+					//if (NoLm > 0.0 && dot(hitNormal, lightDir) > 0.0) {
+						float NoVm = max(dot(hitNormal, -traceDir), 0.0);
+
+						float D = SampleLightDiffuse(NoVm, NoLm, LoHm, hit_roughL);
+						vec3 sampleDiffuse = lightColor * lightAtt.x * D;//(NoLm * lightAtt.x * D) * lightColor;
+
+						float NoHm = max(dot(hitNormal, H), 0.0);
+
+						const bool hit_isUnderWater = false;
+						vec3 F = material_fresnel(albedo.rgb, hit_f0_metal, hit_roughL, NoVm, hit_isUnderWater);
+						vec3 S = SampleLightSpecular(NoLm, NoHm, LoHm, F, hit_roughL);
+						vec3 sampleSpecular = lightAtt.x * S * lightColor;
+
+						vec3 traceStart = light_voxelPos;
+						vec3 traceEnd = voxelPos_out;
+						float traceRange = lightRange;
+						bool traceSelf = !iris_isFullBlock(blockId);
+
+						vec3 shadow_color = TraceDDA(traceStart, traceEnd, traceRange, traceSelf);
+
+						hit_diffuse += sampleDiffuse * shadow_color * bright_scale;
+						//hit_specular += sampleSpecular * shadow_color * bright_scale;
+					//}
+				}
+			#elif LIGHTING_MODE == LIGHT_MODE_LPV
 				ivec3 voxelFrameOffset = GetVoxelFrameOffset();
 				vec3 lpv_sample_pos = tracePos + voxelFrameOffset + 0.5*hitNormal;
 

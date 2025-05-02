@@ -728,6 +728,17 @@ export function setupShader() {
         .ssbo(0, sceneBuffer)
         .build());
 
+    if (snapshot.Lighting_Mode == LightingModes.RayTraced) {
+        const groupCount = Math.ceil(snapshot.Voxel_Size / 8);
+
+        registerShader(Stage.POST_RENDER, new Compute("light-list")
+            .location("composite/light-list.csh")
+            .workGroups(groupCount, groupCount, groupCount)
+            .ssbo(0, sceneBuffer)
+            .ssbo(3, lightListBuffer)
+            .build());
+    }
+
     if (settings.Internal.LPV) {
         const groupCount = Math.ceil(snapshot.Voxel_Size / 8);
 
@@ -742,20 +753,15 @@ export function setupShader() {
                 .ssbo(1, shLpvBuffer)
                 .ssbo(2, shLpvBuffer_alt)
                 .ssbo(5, blockFaceBuffer);
+
+            if (snapshot.Lighting_Mode == LightingModes.RayTraced) {
+                registerBarrier(Stage.POST_RENDER, new MemoryBarrier(SSBO_BIT));
+
+                shader.ssbo(3, lightListBuffer);
+            }
         }
 
         registerShader(Stage.POST_RENDER, shader.build());
-    }
-
-    if (snapshot.Lighting_Mode == LightingModes.RayTraced) {
-        const groupCount = Math.ceil(snapshot.Voxel_Size / 8);
-
-        registerShader(Stage.POST_RENDER, new Compute("light-list")
-            .location("composite/light-list.csh")
-            .workGroups(groupCount, groupCount, groupCount)
-            .ssbo(0, sceneBuffer)
-            .ssbo(3, lightListBuffer)
-            .build());
     }
 
     if (snapshot.Shadow_Enabled) {

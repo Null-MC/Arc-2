@@ -57,6 +57,7 @@ export function setupOptions() {
     let screen_Voxel = new Page("Voxels")
         .add(asInt("VOXEL_SIZE", 64, 128, 256).build(128))
         .add(asInt("VOXEL_FRUSTUM_OFFSET", 0, 25, 50, 75).build(0))
+        .add(asBool("VOXEL_PROVIDED", false, true))
         .build();
 
     const screen_Effects = new Page("Effects")

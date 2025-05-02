@@ -490,7 +490,7 @@ void main() {
                         vec3 traceStart = light_voxelPos;
                         vec3 traceEnd = voxelPos_out;
                         float traceRange = lightRange;
-                        bool traceSelf = false;
+                        bool traceSelf = !iris_isFullBlock(blockId);
 
                         vec3 shadow_color = TraceDDA(traceStart, traceEnd, traceRange, traceSelf);
 

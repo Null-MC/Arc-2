@@ -1,4 +1,4 @@
-#ifndef VOXEL_APERTURE
+#ifndef VOXEL_PROVIDED
     #ifdef VOXEL_WRITE
         layout(r32ui) uniform writeonly uimage3D imgVoxelBlock;
     #else

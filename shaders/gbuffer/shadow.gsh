@@ -92,7 +92,7 @@ void main() {
 
             if (IsInVoxelBounds(voxelPos)) {
                 #ifdef RENDER_TERRAIN
-                    #ifndef VOXEL_APERTURE
+                    #ifndef VOXEL_PROVIDED
                         imageStore(imgVoxelBlock, ivec3(voxelPos), uvec4(vIn[0].blockId));
                     #endif
 

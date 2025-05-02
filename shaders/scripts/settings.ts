@@ -51,6 +51,7 @@ export class ShaderSettings {
     Voxel_GI_Enabled = () => getBoolSetting("VOXEL_GI_ENABLED");
     Voxel_MaxLightCount = () => 64;
     Voxel_MaxQuadCount = () => 64;
+    Voxel_UseProvided = () => getBoolSetting("VOXEL_PROVIDED");
     Effect_SSAO_Enabled = () => getBoolSetting("EFFECT_SSAO_ENABLED");
     Effect_SSGI_Enabled = () => getBoolSetting("EFFECT_SSGI_ENABLED");
     Effect_SSGIAO_StepCount = () => getIntSetting("EFFECT_SSGIAO_SAMPLES");
@@ -109,6 +110,7 @@ export class ShaderSettings {
         snapshot.Voxel_GI_Enabled = this.Voxel_GI_Enabled();
         snapshot.Voxel_MaxLightCount = this.Voxel_MaxLightCount();
         snapshot.Voxel_MaxQuadCount = this.Voxel_MaxQuadCount();
+        snapshot.Voxel_UseProvided = this.Voxel_UseProvided();
         snapshot.Effect_SSAO_Enabled = this.Effect_SSAO_Enabled();
         snapshot.Effect_SSGI_Enabled = this.Effect_SSGI_Enabled();
         snapshot.Effect_SSGIAO_StepCount = this.Effect_SSGIAO_StepCount();
@@ -258,6 +260,7 @@ export class SettingsSnapshot {
     Voxel_GI_Enabled: boolean;
     Voxel_MaxLightCount: number;
     Voxel_MaxQuadCount: number;
+    Voxel_UseProvided: boolean;
     Effect_SSAO_Enabled: boolean;
     Effect_SSGI_Enabled: boolean;
     Effect_SSGIAO_StepCount: number;

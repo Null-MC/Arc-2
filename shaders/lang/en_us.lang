@@ -93,6 +93,9 @@ option.LPV_ENABLED=Enabled
 option.VOXEL_GI_ENABLED=Global Illumination
 option.VOXEL_GI_ENABLED.comment=Allows light to bounce, for more realistic ambient lighting. Heavy on performance!
 
+option.VOXEL_PROVIDED=Use Provided
+option.VOXEL_PROVIDED.comment=Allows the shader to use built-in voxel data provided by Aperture.
+
 option.EFFECT_SSAO_ENABLED=SSAO
 option.EFFECT_SSAO_ENABLED.comment=Screen-Space Ambient Occlusion
 

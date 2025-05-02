@@ -67,6 +67,7 @@ in vec2 uv;
 #include "/lib/material/material_fresnel.glsl"
 
 #include "/lib/voxel/voxel_common.glsl"
+#include "/lib/voxel/voxel-sample.glsl"
 
 #if LIGHTING_MODE == LIGHT_MODE_RT || LIGHTING_REFLECT_MODE == REFLECT_MODE_WSR
     #include "/lib/voxel/dda.glsl"
@@ -212,12 +213,7 @@ void main() {
 
 //                    uint blockId = imageLoad(imgVoxelBlock, ivec3(light_voxelPos)).r;
 
-                    #ifdef VOXEL_APERTURE
-                        ivec3 blockWorldPos = ivec3(light_LocalPos + ap.camera.pos);
-                        uint blockId = uint(iris_getBlockAt(blockWorldPos).x);
-                    #else
-                        uint blockId = imageLoad(imgVoxelBlock, ivec3(light_voxelPos)).r;
-                    #endif
+                    uint blockId = SampleVoxelBlock(light_voxelPos);
 
                     float lightRange = iris_getEmission(blockId);
                     vec3 lightColor = iris_getLightColor(blockId).rgb;
@@ -461,12 +457,7 @@ void main() {
 
                         //uint blockId = imageLoad(imgVoxelBlock, ivec3(light_voxelPos)).r;
 
-                        #ifdef VOXEL_APERTURE
-                            ivec3 blockWorldPos = ivec3(light_LocalPos + ap.camera.pos);
-                            uint blockId = uint(iris_getBlockAt(blockWorldPos).x);
-                        #else
-                            uint blockId = imageLoad(imgVoxelBlock, ivec3(light_voxelPos)).r;
-                        #endif
+                        uint blockId = SampleVoxelBlock(light_voxelPos);
 
                         float lightRange = iris_getEmission(blockId);
                         vec3 lightColor = iris_getLightColor(blockId).rgb;

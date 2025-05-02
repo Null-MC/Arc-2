@@ -85,12 +85,7 @@ vec3 TraceDDA(vec3 origin, const in vec3 endPos, const in float range, const in 
                     }
                 }
             #else
-                #ifdef VOXEL_APERTURE
-                    ivec3 blockWorldPos = ivec3(GetVoxelLocalPos(voxelPos) + ap.camera.pos + 0.5);
-                    uint blockId = uint(iris_getBlockAt(blockWorldPos).x);
-                #else
-                    uint blockId = imageLoad(imgVoxelBlock, voxelPos).r;
-                #endif
+                uint blockId = SampleVoxelBlock(voxelPos);
 
                 if (blockId != 0u) {
                     bool isFullBlock = iris_isFullBlock(blockId);

@@ -74,10 +74,10 @@ export function setupOptions() {
     const screen_Post = new Page("Post")
         .add(asBool("EFFECT_TAA_ENABLED", true, true))
         .add(new Page("Exposure")
-            .add(asFloatRange("POST_EXPOSURE_MIN", -10.5, -12.0, -3.0, 0.5, false))
+            .add(asFloatRange("POST_EXPOSURE_MIN", -9.2, -12.0, -6.0, 0.2, false))
             .add(asFloatRange("POST_EXPOSURE_MAX", 15.0, 6.0, 32.0, 0.5, false))
             .add(asFloatRange("POST_EXPOSURE_RANGE", 9.6, 4.0, 24.0, 0.2, false))
-            .add(asFloatRange("POST_EXPOSURE_SPEED", 4.0, 0.2, 8.0, 0.2, false))
+            .add(asFloatRange("POST_EXPOSURE_SPEED", 1.6, 0.2, 8.0, 0.2, false))
             .build())
         .add(asIntRange("POST_CONTRAST", 160,0, 300, 5, false))
         .build();

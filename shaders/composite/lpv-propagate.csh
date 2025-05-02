@@ -43,6 +43,7 @@ shared uint sharedBlockMap[10*10*10];
 #endif
 
 #include "/lib/voxel/voxel_common.glsl"
+#include "/lib/voxel/voxel-sample.glsl"
 
 #if LIGHTING_MODE == LIGHT_MODE_LPV
 	#include "/lib/utility/hsv.glsl"
@@ -135,12 +136,7 @@ void populateShared(const in ivec3 voxelFrameOffset) {
 	#endif
 
 	if (IsInVoxelBounds(pos1)) {
-		#ifdef VOXEL_APERTURE
-			ivec3 blockWorldPos1 = ivec3(GetVoxelLocalPos(pos1) + ap.camera.pos + 0.5);
-			blockId1 = uint(iris_getBlockAt(blockWorldPos1).x);
-		#else
-			blockId1 = imageLoad(imgVoxelBlock, pos1).r;
-		#endif
+		blockId1 = SampleVoxelBlock(pos1);
 
 		#if LIGHTING_MODE == LIGHT_MODE_LPV
 			if (blockId1 > 0u)
@@ -149,12 +145,7 @@ void populateShared(const in ivec3 voxelFrameOffset) {
 	}
 
 	if (IsInVoxelBounds(pos2)) {
-		#ifdef VOXEL_APERTURE
-			ivec3 blockWorldPos2 = ivec3(GetVoxelLocalPos(pos2) + ap.camera.pos + 0.5);
-			blockId2 = uint(iris_getBlockAt(blockWorldPos2).x);
-		#else
-			blockId2 = imageLoad(imgVoxelBlock, pos2).r;
-		#endif
+		blockId2 = SampleVoxelBlock(pos2);
 
 		#if LIGHTING_MODE == LIGHT_MODE_LPV
 			if (blockId2 > 0u)
@@ -196,7 +187,7 @@ void populateShared(const in ivec3 voxelFrameOffset) {
 #endif
 
 #ifdef VOXEL_GI_ENABLED
-	vec3 trace_GI(const in vec3 traceOrigin, const in vec3 traceDir, const in int face_dir) {
+	vec3 trace_GI(const in vec3 traceOrigin, const in vec3 traceDir, const in int face_dir, out float traceDist) {
 //		vec3 color = vec3(1.0, 0.0, 1.0);
 //		if      (traceDir.x >  0.5) color = vec3(0.0, 0.0, 1.0);
 //		else if (traceDir.x < -0.5) color = vec3(0.0, 1.0, 1.0);
@@ -228,12 +219,7 @@ void populateShared(const in ivec3 voxelFrameOffset) {
 				break;
 			}
 
-			#ifdef VOXEL_APERTURE
-				ivec3 blockWorldPos = ivec3(GetVoxelLocalPos(voxelPos) + ap.camera.pos + 0.5);
-				uint blockId = uint(iris_getBlockAt(blockWorldPos).x);
-			#else
-				uint blockId = imageLoad(imgVoxelBlock, voxelPos).r;
-			#endif
+			uint blockId = SampleVoxelBlock(voxelPos);
 
 			//bool isFullBlock = iris_isFullBlock(blockId);
 			if (blockId > 0u && iris_isFullBlock(blockId)) {
@@ -254,6 +240,8 @@ void populateShared(const in ivec3 voxelFrameOffset) {
 //				traceTint *= 1.0 - blocking/16.0;
 			}
 		}
+
+		traceDist = distance(traceOrigin, tracePos);
 
 		if (hit) {
 //			hitPos = currPos;
@@ -327,7 +315,7 @@ void populateShared(const in ivec3 voxelFrameOffset) {
 			vec3 hit_skyIrradiance = textureLod(texSkyIrradiance, skyIrradianceCoord, 0).rgb;
 			hit_diffuse += (SKY_AMBIENT * hit_lmcoord.y) * hit_skyIrradiance;
 
-			hit_diffuse += 0.0016;
+			//hit_diffuse += 0.0016;
 
 			#if LIGHTING_MODE == LIGHT_MODE_LPV
 				ivec3 voxelFrameOffset = GetVoxelFrameOffset();
@@ -498,9 +486,16 @@ void main() {
 				//vec3 noise_offset = sample_blueNoise(hash23(cellIndex));
 				vec3 noise_offset = vec3(0.5);//hash32(noise_seed);
 
+				float traceDist;
 				vec3 tracePos = cellIndex + noise_offset;
-				vec3 traceSample = trace_GI(tracePos, noise_dir, dir);
-				face_counter = clamp(face_counter + f, 0.0, VOXEL_GI_MAXFRAMES);
+				vec3 traceSample = trace_GI(tracePos, noise_dir, dir, traceDist);
+
+				float sampleWeight = 1.0 / (1.0 + traceDist);
+				//sampleWeight *= f;
+
+				face_counter = clamp(face_counter + sampleWeight, 0.0, VOXEL_GI_MAXFRAMES);
+
+				//float coneDiameter = 2.0 * tan(coneHalfAngle) * traceDist;
 
 				float mixF = 1.0 / (1.0 + face_counter);
 				face_color = mix(face_color, traceSample, mixF);// * max(f, 0.0);

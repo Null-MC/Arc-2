@@ -121,3 +121,22 @@ vec3 tonemap_bloopHDR(vec3 color) {
 
     return color;
 }
+
+vec3 tonemap_Commerce(vec3 color) {
+    const float startCompression = 0.8 - 0.04;
+    const float desaturation = 0.15;
+
+    float x = minOf(color);
+    float offset = x < 0.08 ? x - 6.25 * x * x : 0.04;
+    color -= offset;
+
+    float peak = maxOf(color);
+    if (peak < startCompression) return color;
+
+    float d = 1.0 - startCompression;
+    float newPeak = 1.0 - d * d / (peak + d - startCompression);
+    color *= newPeak / peak;
+
+    float g = 1.0 / (desaturation * (peak - newPeak) + 1.0);
+    return mix(vec3(newPeak), color, g);
+}

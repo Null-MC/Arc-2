@@ -26,7 +26,8 @@ void main() {
     color = tonemap_jodieReinhard(color);
     //color = tonemap_Lottes(color);
     //color = tonemap_ACESFit2(color);
-    //color = tonemap_bloopHDR(color);
+    //color = tonemap_AgX(color);
+    //color = tonemap_Commerce(color);
 
     //color = color / (color + 0.155) * 1.019;
 

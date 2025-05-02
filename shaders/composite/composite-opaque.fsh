@@ -251,7 +251,8 @@ void main() {
 
         #ifdef VOXEL_GI_ENABLED
             if (IsInVoxelBounds(voxelPos)) {
-                vec3 voxelSamplePos = 0.5*localTexNormal - 0.25*localGeoNormal + voxelPos;
+                //vec3 voxelSamplePos = 0.5*localTexNormal - 0.25*localGeoNormal + voxelPos;
+                vec3 voxelSamplePos = 0.5*localGeoNormal + voxelPos;
                 skyIrradiance = sample_sh_gi_linear(voxelSamplePos, localTexNormal);
             }
         #endif

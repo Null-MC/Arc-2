@@ -186,7 +186,7 @@ void main() {
                 int lightBinIndex = GetLightBinIndex(lightBinPos);
                 uint binLightCount = LightBinMap[lightBinIndex].lightCount;
 
-                vec3 voxelPos_out = voxelPos + 0.16*localGeoNormal;
+                vec3 voxelPos_out = voxelPos + 0.08*localGeoNormal;
 
                 //vec3 jitter = hash33(vec3(gl_FragCoord.xy, ap.time.frames)) - 0.5;
                 vec3 jitter = sample_blueNoise(gl_FragCoord.xy);
@@ -246,7 +246,7 @@ void main() {
                     vec3 traceStart = light_voxelPos;
                     vec3 traceEnd = voxelPos_out;
                     float traceRange = lightRange;
-                    bool traceSelf = false;
+                    bool traceSelf = true;
 
                     #ifdef RT_TRI_ENABLED
 //                        vec3 traceRay = traceEnd - traceStart;

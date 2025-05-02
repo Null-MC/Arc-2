@@ -246,7 +246,7 @@ void main() {
                     vec3 traceStart = light_voxelPos;
                     vec3 traceEnd = voxelPos_out;
                     float traceRange = lightRange;
-                    bool traceSelf = true;
+                    bool traceSelf = !iris_isFullBlock(blockId);
 
                     #ifdef RT_TRI_ENABLED
 //                        vec3 traceRay = traceEnd - traceStart;

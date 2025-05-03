@@ -77,6 +77,9 @@ function applySettings(settings) {
         defineGlobally("VOXEL_SIZE", snapshot.Voxel_Size.toString());
         defineGlobally("VOXEL_FRUSTUM_OFFSET", snapshot.Voxel_Offset.toString());
 
+        if (snapshot.Voxel_UseProvided)
+            defineGlobally1("VOXEL_PROVIDED");
+
         if (snapshot.Lighting_Mode == LightingModes.RayTraced) {
             defineGlobally1("RT_ENABLED");
             defineGlobally("RT_MAX_SAMPLE_COUNT", `${snapshot.Lighting_TraceSampleCount}u`);

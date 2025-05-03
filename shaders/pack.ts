@@ -1179,7 +1179,7 @@ function setupBloom(texFinal) {
     const screenHeight_half = Math.ceil(screenHeight / 2.0);
 
     let maxLod = Math.log2(Math.min(screenWidth, screenHeight));
-    maxLod = Math.max(Math.min(maxLod, 4), 0);
+    maxLod = Math.max(Math.min(maxLod - 1, 8), 0);
 
     print(`Bloom enabled with ${maxLod} LODs`);
 
@@ -1204,7 +1204,6 @@ function setupBloom(texFinal) {
             .define("TEX_SCALE", Math.pow(2, i).toString())
             .define("BLOOM_INDEX", i.toString())
             .define("MIP_INDEX", Math.max(i-1, 0).toString())
-            .ubo(0, SceneSettingsBuffer)
             .build());
     }
 
@@ -1212,6 +1211,7 @@ function setupBloom(texFinal) {
         const shader = new Composite(`bloom-up-${i}`)
             .vertex("shared/bufferless.vsh")
             .fragment("post/bloom/up.fsh")
+            .ubo(0, SceneSettingsBuffer)
             .define("TEX_SCALE", Math.pow(2, i+1).toString())
             .define("BLOOM_INDEX", i.toString())
             .define("MIP_INDEX", i.toString());

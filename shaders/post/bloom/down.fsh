@@ -3,7 +3,7 @@
 #include "/lib/constants.glsl"
 #include "/settings.glsl"
 
-layout(location = 0) out vec4 outColor;
+layout(location = 0) out vec3 outColor;
 
 uniform sampler2D TEX_SRC;
 
@@ -12,41 +12,33 @@ in vec2 uv;
 #include "/lib/common.glsl"
 
 
-void ScaleInput(inout vec3 color) {
-    color *= Scene_EffectBloomStrength;
-
-//    float lum = luminance(color);
-//    float lumScaled = lum * Bloom_Strength;
-//    float lumCurved = pow(lumScaled, Bloom_Power);
-//
-//    float lumFinal = min(lumScaled, lumCurved);
-//
-//    color *= (lumFinal / max(lum, 0.0001));
-
-    // color = clamp(color, 0.0, 64000.0);
+vec3 sample_src(const in vec2 uv) {
+    return textureLod(TEX_SRC, uv, MIP_INDEX).rgb;
 }
 
 void main() {
-    vec2 hp = (1.0 / ap.game.screenSize) * TEX_SCALE;
+    ivec2 texSrc_size = textureSize(TEX_SRC, MIP_INDEX);
+    vec2 srcPixelSize = 1.0 / texSrc_size;
 
-    vec2 uv1 = uv + vec2(-hp.x, -hp.y);
-    vec2 uv2 = uv + vec2( hp.x, -hp.y);
-    vec2 uv3 = uv + vec2(-hp.x,  hp.y);
-    vec2 uv4 = uv + vec2( hp.x,  hp.y);
+    vec3 a = sample_src(fma(srcPixelSize, vec2(-2.0, +2.0), uv));
+    vec3 b = sample_src(fma(srcPixelSize, vec2( 0.0, +2.0), uv));
+    vec3 c = sample_src(fma(srcPixelSize, vec2(+2.0, +2.0), uv));
 
-    vec3 color1 = textureLod(TEX_SRC, uv1, MIP_INDEX).rgb;
-    vec3 color2 = textureLod(TEX_SRC, uv2, MIP_INDEX).rgb;
-    vec3 color3 = textureLod(TEX_SRC, uv3, MIP_INDEX).rgb;
-    vec3 color4 = textureLod(TEX_SRC, uv4, MIP_INDEX).rgb;
+    vec3 d = sample_src(fma(srcPixelSize, vec2(-2.0, 0.0), uv));
+    vec3 e = sample_src(fma(srcPixelSize, vec2( 0.0, 0.0), uv));
+    vec3 f = sample_src(fma(srcPixelSize, vec2(+2.0, 0.0), uv));
 
-    #if BLOOM_INDEX == 0
-        ScaleInput(color1);
-        ScaleInput(color2);
-        ScaleInput(color3);
-        ScaleInput(color4);
-    #endif
+    vec3 g = sample_src(fma(srcPixelSize, vec2(-2.0, -2.0), uv));
+    vec3 h = sample_src(fma(srcPixelSize, vec2( 0.0, -2.0), uv));
+    vec3 i = sample_src(fma(srcPixelSize, vec2(+2.0, -2.0), uv));
 
-    vec3 colorFinal = (color1 + color2 + color3 + color4) * 0.25;
+    vec3 j = sample_src(fma(srcPixelSize, vec2(-1.0, +1.0), uv));
+    vec3 k = sample_src(fma(srcPixelSize, vec2(+1.0, +1.0), uv));
+    vec3 l = sample_src(fma(srcPixelSize, vec2(-1.0, -1.0), uv));
+    vec3 m = sample_src(fma(srcPixelSize, vec2(+1.0, -1.0), uv));
 
-    outColor = vec4(colorFinal, 1.0);
+    outColor  = e * 0.125;
+    outColor += (a+c+g+i) * 0.03125;
+    outColor += (b+d+f+h) * 0.0625;
+    outColor += (j+k+l+m) * 0.125;
 }

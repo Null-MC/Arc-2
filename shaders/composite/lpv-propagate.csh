@@ -325,9 +325,9 @@ void populateShared(const in ivec3 voxelFrameOffset) {
 			vec3 hit_diffuse = skyLight * hit_shadow;
 			//hit_diffuse *= SampleLightDiffuse(hit_NoVm, hit_NoLm, hit_LoHm, hit_roughL);
 
-			vec2 skyIrradianceCoord = DirectionToUV(hitNormal);
-			vec3 hit_skyIrradiance = textureLod(texSkyIrradiance, skyIrradianceCoord, 0).rgb;
-			hit_diffuse += (SKY_AMBIENT * hit_lmcoord.y) * hit_skyIrradiance;
+//			vec2 skyIrradianceCoord = DirectionToUV(hitNormal);
+//			vec3 hit_skyIrradiance = textureLod(texSkyIrradiance, skyIrradianceCoord, 0).rgb;
+//			hit_diffuse += (SKY_AMBIENT * hit_lmcoord.y) * hit_skyIrradiance;
 
 			//hit_diffuse += 0.0016;
 

@@ -57,6 +57,7 @@ function applySettings(settings) {
         if (snapshot.Material_ParallaxSharp) defineGlobally1("MATERIAL_PARALLAX_SHARP");
         if (snapshot.Material_ParallaxDepthWrite) defineGlobally1("MATERIAL_PARALLAX_DEPTHWRITE");
     }
+    if (snapshot.Material_NormalSmooth) defineGlobally1("MATERIAL_NORMAL_SMOOTH");
     if (snapshot.Material_FancyLava) {
         defineGlobally1("FANCY_LAVA");
         defineGlobally("FANCY_LAVA_RES", snapshot.Material_FancyLavaResolution.toString());
@@ -1179,7 +1180,8 @@ function setupBloom(texFinal) {
     const screenHeight_half = Math.ceil(screenHeight / 2.0);
 
     let maxLod = Math.log2(Math.min(screenWidth, screenHeight));
-    maxLod = Math.max(Math.min(maxLod - 1, 8), 0);
+    maxLod = Math.floor(maxLod - 1);
+    maxLod = Math.max(Math.min(maxLod, 8), 0);
 
     print(`Bloom enabled with ${maxLod} LODs`);
 

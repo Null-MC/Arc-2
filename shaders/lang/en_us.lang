@@ -40,6 +40,8 @@ suffix.MATERIAL_PARALLAX_DEPTH=%
 
 option.MATERIAL_PARALLAX_DEPTHWRITE=Depth-Write
 
+option.MATERIAL_NORMAL_SMOOTH=Smooth Normals
+
 option.MATERIAL_EMISSION_BRIGHTNESS=Emission Brightness
 
 option.FANCY_LAVA=Custom Lava

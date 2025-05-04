@@ -31,6 +31,7 @@ export function setupOptions() {
             .add(asIntRange("MATERIAL_PARALLAX_DEPTH", 25, 5, 100, 5))
             .add(asBool("MATERIAL_PARALLAX_DEPTHWRITE", false, true))
             .build())
+        .add(asBool("MATERIAL_NORMAL_SMOOTH", false, true))
         .add(asIntRange("MATERIAL_EMISSION_BRIGHTNESS", 160, 0, 800, 5, false))
         .add(asBool("FANCY_LAVA", true, true))
         .add(EMPTY)

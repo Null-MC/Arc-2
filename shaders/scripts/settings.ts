@@ -34,6 +34,7 @@ export class ShaderSettings {
     Material_ParallaxStepCount = () => getIntSetting("MATERIAL_PARALLAX_SAMPLES");
     Material_ParallaxSharp = () => getBoolSetting("MATERIAL_PARALLAX_SHARP");
     Material_ParallaxDepthWrite = () => getBoolSetting("MATERIAL_PARALLAX_DEPTHWRITE");
+    Material_NormalSmooth = () => getBoolSetting("MATERIAL_NORMAL_SMOOTH");
     Material_EmissionBrightness = () => getIntSetting("MATERIAL_EMISSION_BRIGHTNESS");
     Material_FancyLava = () => getBoolSetting("FANCY_LAVA");
     Material_FancyLavaResolution = () => getIntSetting("FANCY_LAVA_RES");
@@ -93,6 +94,7 @@ export class ShaderSettings {
         snapshot.Material_ParallaxStepCount = this.Material_ParallaxStepCount();
         snapshot.Material_ParallaxSharp = this.Material_ParallaxSharp();
         snapshot.Material_ParallaxDepthWrite = this.Material_ParallaxDepthWrite();
+        snapshot.Material_NormalSmooth = this.Material_NormalSmooth();
         snapshot.Material_EmissionBrightness = this.Material_EmissionBrightness();
         snapshot.Material_FancyLava = this.Material_FancyLava();
         snapshot.Material_FancyLavaResolution = this.Material_FancyLavaResolution();
@@ -243,6 +245,7 @@ export class SettingsSnapshot {
     Material_ParallaxStepCount: number;
     Material_ParallaxSharp: boolean;
     Material_ParallaxDepthWrite: boolean;
+    Material_NormalSmooth: boolean;
     Material_EmissionBrightness: number;
     Material_FancyLava: boolean;
     Material_FancyLavaResolution: number;

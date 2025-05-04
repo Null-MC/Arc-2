@@ -362,9 +362,9 @@ void main() {
         vec3 view_F = material_fresnel(albedo.rgb, f0_metal, roughL, NoVm, isWet);
 
         float NoHm = max(dot(localTexNormal, H), 0.0);
-        vec3 specular = skyLight_NoLm * shadow_sss.rgb * SampleLightSpecular(NoLm, NoHm, LoHm, view_F, roughL);
+        vec3 specular = skyLight_NoLm * shadow_sss.rgb * SampleLightSpecular(NoLm, NoHm, LoHm, roughL) * view_F;
 
-        specular += view_F * skyReflectColor;
+        specular += skyReflectColor;
 
         #ifdef ACCUM_ENABLED
             if (altFrame) specular += textureLod(texAccumSpecular_opaque_alt, uv, 0).rgb;
@@ -376,7 +376,7 @@ void main() {
         float smoothness = 1.0 - roughness;
         specular *= GetMetalTint(albedo.rgb, f0_metal) * _pow2(smoothness);
 
-        diffuse *= 1.0 - view_F;
+        //diffuse *= 1.0 - view_F;
 
         #ifdef DEBUG_WHITE_WORLD
             albedo.rgb = WhiteWorld_Value;
@@ -386,7 +386,8 @@ void main() {
             albedo.rgb = pow(albedo.rgb, vec3(1.8));
         }
 
-        colorFinal = fma(albedo.rgb, diffuse, specular);
+        //colorFinal = fma(albedo.rgb, diffuse, specular);
+        colorFinal = mix(albedo.rgb * diffuse, specular, view_F);
 
         // float viewDist = length(localPos);
         // float fogF = smoothstep(fogStart, fogEnd, viewDist);

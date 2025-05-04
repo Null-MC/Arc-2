@@ -244,8 +244,9 @@ void main() {
 
         #ifdef LIGHTING_GI_ENABLED
             if (IsInVoxelBounds(voxelPos)) {
-                vec3 voxelSamplePos = 0.5*localTexNormal - 0.25*localGeoNormal + voxelPos;
-                skyIrradiance = 3.0 * sample_sh_gi_linear(voxelSamplePos, localTexNormal);
+                //vec3 voxelSamplePos = 0.5*localTexNormal - 0.25*localGeoNormal + voxelPos;
+                vec3 voxelSamplePos = 0.5*localGeoNormal + voxelPos;
+                skyIrradiance = sample_sh_gi_linear(voxelSamplePos, localTexNormal);
             }
         #endif
 
@@ -351,11 +352,8 @@ void main() {
 
         float NoHm = max(dot(localTexNormal, H), 0.0);
 
-        vec3 reflectTint = GetMetalTint(albedo.rgb, f0_metal);
-
-        float smoothness = 1.0 - roughness;
-        vec3 specular = skyLight_NoLm * shadow_sss.rgb * SampleLightSpecular(NoLm, NoHm, LoHm, view_F, roughL);
-        specular += view_F * skyReflectColor * reflectTint * _pow2(smoothness);
+        vec3 specular = skyLight_NoLm * shadow_sss.rgb * SampleLightSpecular(NoLm, NoHm, LoHm, roughL);
+        specular += skyReflectColor;
 
         #ifdef ACCUM_ENABLED
             if (altFrame) specular += textureLod(texAccumSpecular_translucent_alt, uv, 0).rgb;
@@ -364,7 +362,10 @@ void main() {
             specular += textureLod(texSpecularRT, uv, 0).rgb;
         #endif
 
-        diffuse *= 1.0 - view_F;
+        float smoothness = 1.0 - roughness;
+        specular *= GetMetalTint(albedo.rgb, f0_metal) * _pow2(smoothness);
+
+        //diffuse *= 1.0 - view_F;
 
         #ifdef DEBUG_WHITE_WORLD
             albedo.rgb = WhiteWorld_Value;
@@ -375,7 +376,7 @@ void main() {
         // TODO: is this killing foam?
         if (is_fluid) finalColor.a = 0.0;
 
-        finalColor.rgb = albedo.rgb * diffuse * albedo.a + specular;
+        finalColor.rgb = mix(albedo.rgb * diffuse * albedo.a, specular, view_F);
         //finalColor.a = min(finalColor.a + maxOf(specular), 1.0);
 
         // Refraction

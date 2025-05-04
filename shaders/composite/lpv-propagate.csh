@@ -394,8 +394,8 @@ void populateShared(const in ivec3 voxelFrameOffset) {
 
 						const bool hit_isUnderWater = false;
 						vec3 F = material_fresnel(albedo.rgb, hit_f0_metal, hit_roughL, NoVm, hit_isUnderWater);
-						vec3 S = SampleLightSpecular(NoLm, NoHm, LoHm, F, hit_roughL);
-						vec3 sampleSpecular = lightAtt.x * S * lightColor;
+						float S = SampleLightSpecular(NoLm, NoHm, LoHm, hit_roughL);
+						vec3 sampleSpecular = lightAtt.x * S * F * lightColor;
 
 						vec3 traceStart = light_voxelPos;
 						vec3 traceEnd = voxelPos_out;

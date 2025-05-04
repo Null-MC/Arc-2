@@ -61,7 +61,7 @@ uniform sampler3D texFogNoise;
 #include "/lib/common.glsl"
 #include "/lib/buffers/scene.glsl"
 
-#ifdef VOXEL_GI_ENABLED
+#ifdef LIGHTING_GI_ENABLED
     #include "/lib/buffers/sh-gi.glsl"
 #endif
 
@@ -103,7 +103,7 @@ uniform sampler3D texFogNoise;
     #include "/lib/lpv/floodfill.glsl"
 #endif
 
-#ifdef VOXEL_GI_ENABLED
+#ifdef LIGHTING_GI_ENABLED
     #include "/lib/lpv/sh-gi-sample.glsl"
 #endif
 
@@ -249,7 +249,7 @@ void main() {
         vec3 skyIrradiance = textureLod(texSkyIrradiance, skyIrradianceCoord, 0).rgb;
         skyIrradiance = (SKY_AMBIENT * lmCoord.y) * skyIrradiance;
 
-        #ifdef VOXEL_GI_ENABLED
+        #ifdef LIGHTING_GI_ENABLED
             if (IsInVoxelBounds(voxelPos)) {
                 //vec3 voxelSamplePos = 0.5*localTexNormal - 0.25*localGeoNormal + voxelPos;
                 vec3 voxelSamplePos = 0.5*localGeoNormal + voxelPos;

@@ -31,7 +31,7 @@ uniform sampler2D texSkyMultiScatter;
 //    #include "/lib/buffers/sh-lpv.glsl"
 //#endif
 
-#ifdef VOXEL_GI_ENABLED
+#ifdef LIGHTING_GI_ENABLED
     #include "/lib/buffers/sh-gi.glsl"
 #endif
 
@@ -55,7 +55,7 @@ uniform sampler2D texSkyMultiScatter;
     #include "/lib/lpv/floodfill.glsl"
 #endif
 
-//#ifdef VOXEL_GI_ENABLED
+//#ifdef LIGHTING_GI_ENABLED
 //    #include "/lib/lpv/sh-gi-sample.glsl"
 //#endif
 
@@ -364,7 +364,7 @@ void main() {
             }
         #endif
 
-//        #ifdef VOXEL_GI_ENABLED
+//        #ifdef LIGHTING_GI_ENABLED
 //            sampleLit += 2000.0;//100000.0 * sample_sh_gi(ivec3(floor(voxelPos)), localViewDir);
 //        #endif
 

@@ -55,6 +55,9 @@ value.LIGHTING_MODE.0=Light Map
 value.LIGHTING_MODE.1=Flood Fill
 value.LIGHTING_MODE.2=Ray Traced
 
+option.LIGHTING_GI_ENABLED=Global Illumination
+option.LIGHTING_GI_ENABLED.comment=Allows light to bounce, for more realistic ambient lighting. Heavy on performance!
+
 option.LIGHTING_REFLECT_MODE=Reflection Mode
 value.LIGHTING_REFLECT_MODE.0=Sky Only
 value.LIGHTING_REFLECT_MODE.1=Screen-Space
@@ -91,9 +94,6 @@ suffix.VOXEL_FRUSTUM_OFFSET=%
 option.LPV_ENABLED=Enabled
 
 #option.LPV_RSM_ENABLED=RSM
-
-option.VOXEL_GI_ENABLED=Global Illumination
-option.VOXEL_GI_ENABLED.comment=Allows light to bounce, for more realistic ambient lighting. Heavy on performance!
 
 option.VOXEL_PROVIDED=Use Provided
 option.VOXEL_PROVIDED.comment=Allows the shader to use built-in voxel data provided by Aperture.

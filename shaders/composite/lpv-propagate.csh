@@ -15,7 +15,7 @@ shared uint sharedBlockMap[10*10*10];
 	layout(rgba16f) uniform image3D imgFloodFill_alt;
 #endif
 
-#ifdef VOXEL_GI_ENABLED
+#ifdef LIGHTING_GI_ENABLED
 	uniform sampler2D blockAtlas;
 	uniform sampler2D blockAtlasS;
 
@@ -37,7 +37,7 @@ shared uint sharedBlockMap[10*10*10];
 #include "/lib/buffers/scene.glsl"
 #include "/lib/buffers/voxel-block.glsl"
 
-#ifdef VOXEL_GI_ENABLED
+#ifdef LIGHTING_GI_ENABLED
 	#include "/lib/buffers/sh-gi.glsl"
 
 	#if LIGHTING_MODE == LIGHT_MODE_RT
@@ -52,7 +52,7 @@ shared uint sharedBlockMap[10*10*10];
 	#include "/lib/utility/hsv.glsl"
 #endif
 
-#ifdef VOXEL_GI_ENABLED
+#ifdef LIGHTING_GI_ENABLED
 	#include "/lib/erp.glsl"
 
 	#include "/lib/noise/hash.glsl"
@@ -200,7 +200,7 @@ void populateShared(const in ivec3 voxelFrameOffset) {
 	}
 #endif
 
-#ifdef VOXEL_GI_ENABLED
+#ifdef LIGHTING_GI_ENABLED
 	vec3 trace_GI(const in vec3 traceOrigin, const in vec3 traceDir, const in int face_dir, out float traceDist) {
 //		vec3 color = vec3(1.0, 0.0, 1.0);
 //		if      (traceDir.x >  0.5) color = vec3(0.0, 0.0, 1.0);
@@ -539,7 +539,7 @@ void main() {
 		else imageStore(imgFloodFill, cellIndex, vec4(accumLight, 1.0));
 	#endif
 
-	#ifdef VOXEL_GI_ENABLED
+	#ifdef LIGHTING_GI_ENABLED
 		lpvShVoxel voxel_gi = voxel_empty;
 
 		if (!isFullBlock) {

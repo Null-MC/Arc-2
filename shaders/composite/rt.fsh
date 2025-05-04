@@ -86,7 +86,7 @@ in vec2 uv;
 #if LIGHTING_REFLECT_MODE == REFLECT_MODE_WSR
     #include "/lib/buffers/scene.glsl"
 
-    #ifdef VOXEL_GI_ENABLED
+    #ifdef LIGHTING_GI_ENABLED
         #include "/lib/buffers/sh-gi.glsl"
     #endif
 
@@ -115,7 +115,7 @@ in vec2 uv;
         #include "/lib/lpv/floodfill.glsl"
     #endif
 
-    #ifdef VOXEL_GI_ENABLED
+    #ifdef LIGHTING_GI_ENABLED
         #include "/lib/lpv/sh-gi-sample.glsl"
     #endif
 
@@ -414,7 +414,7 @@ void main() {
 
                 vec3 reflect_specular = vec3(0.0);
 
-                #ifdef VOXEL_GI_ENABLED
+                #ifdef LIGHTING_GI_ENABLED
                     vec3 giVoxelPos = GetVoxelPosition(reflect_localPos);
                     vec3 giVoxelSamplePos = 0.5*reflect_localTexNormal - 0.25*reflect_geoNormal + giVoxelPos; // TODO: FIX THIS< WRONG!
                     vec3 reflect_skyIrradiance = 3.0 * sample_sh_gi_linear(giVoxelSamplePos, reflect_localTexNormal);
@@ -518,7 +518,7 @@ void main() {
                     reflect_diffuse += reflect_emission * Material_EmissionBrightness;
                 #endif
 
-                #ifdef VOXEL_GI_ENABLED
+                #ifdef LIGHTING_GI_ENABLED
                     // TODO: get inner reflection vector and use for SH lookup
 
                     vec3 reflect_reflectDir = reflect(reflectLocalDir, reflect_localTexNormal);

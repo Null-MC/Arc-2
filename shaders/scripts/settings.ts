@@ -39,6 +39,7 @@ export class ShaderSettings {
     Material_FancyLava = () => getBoolSetting("FANCY_LAVA");
     Material_FancyLavaResolution = () => getIntSetting("FANCY_LAVA_RES");
     Lighting_Mode = () => parseInt(getStringSetting("LIGHTING_MODE"));
+    Lighting_GI_Enabled = () => getBoolSetting("LIGHTING_GI_ENABLED");
     Lighting_LpvRsmEnabled = () => false;
     Lighting_TraceSampleCount = () => getIntSetting("RT_MAX_SAMPLE_COUNT");
     Lighting_TraceQuads = () => getBoolSetting("LIGHTING_TRACE_TRIANGLE");
@@ -49,7 +50,6 @@ export class ShaderSettings {
     Lighting_VolumetricResolution = () => getIntSetting("LIGHTING_VL_RES");
     Voxel_Size = () => getIntSetting("VOXEL_SIZE");
     Voxel_Offset = () => getIntSetting("VOXEL_FRUSTUM_OFFSET");
-    Voxel_GI_Enabled = () => getBoolSetting("VOXEL_GI_ENABLED");
     Voxel_MaxLightCount = () => 64;
     Voxel_MaxQuadCount = () => 64;
     Voxel_UseProvided = () => getBoolSetting("VOXEL_PROVIDED");
@@ -109,7 +109,7 @@ export class ShaderSettings {
         snapshot.Lighting_VolumetricResolution = this.Lighting_VolumetricResolution();
         snapshot.Voxel_Size = this.Voxel_Size();
         snapshot.Voxel_Offset = this.Voxel_Offset();
-        snapshot.Voxel_GI_Enabled = this.Voxel_GI_Enabled();
+        snapshot.Lighting_GI_Enabled = this.Lighting_GI_Enabled();
         snapshot.Voxel_MaxLightCount = this.Voxel_MaxLightCount();
         snapshot.Voxel_MaxQuadCount = this.Voxel_MaxQuadCount();
         snapshot.Voxel_UseProvided = this.Voxel_UseProvided();
@@ -209,7 +209,7 @@ export function buildSettings(snapshot: SettingsSnapshot) {
         settings.Internal.LPV = true;
     }
 
-    if (snapshot.Voxel_GI_Enabled) {
+    if (snapshot.Lighting_GI_Enabled) {
         settings.Internal.Voxelization = true;
         settings.Internal.VoxelizeBlockFaces = true;
         settings.Internal.LPV = true;
@@ -260,7 +260,7 @@ export class SettingsSnapshot {
     Lighting_VolumetricResolution: number;
     Voxel_Size: number;
     Voxel_Offset: number;
-    Voxel_GI_Enabled: boolean;
+    Lighting_GI_Enabled: boolean;
     Voxel_MaxLightCount: number;
     Voxel_MaxQuadCount: number;
     Voxel_UseProvided: boolean;

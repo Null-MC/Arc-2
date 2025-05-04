@@ -106,8 +106,8 @@ function applySettings(settings) {
             if (snapshot.Lighting_LpvRsmEnabled)
                 defineGlobally1("LPV_RSM_ENABLED");
 
-            if (snapshot.Voxel_GI_Enabled)
-                defineGlobally1("VOXEL_GI_ENABLED");
+            if (snapshot.Lighting_GI_Enabled)
+                defineGlobally1("LIGHTING_GI_ENABLED");
         }
     }
 
@@ -464,7 +464,7 @@ export function setupShader() {
 
     let shLpvBuffer: BuiltBuffer | null = null;
     let shLpvBuffer_alt: BuiltBuffer | null = null;
-    if (snapshot.Voxel_GI_Enabled) {
+    if (snapshot.Lighting_GI_Enabled) {
         // f16vec4[3] * VoxelBufferSize^3
         const bufferSize = 48 * cubed(snapshot.Voxel_Size);
 
@@ -563,7 +563,7 @@ export function setupShader() {
         .workGroups(1, 1, 1)
         .build());
 
-    if (snapshot.Voxel_GI_Enabled) {
+    if (snapshot.Lighting_GI_Enabled) {
         registerShader(Stage.SCREEN_SETUP, new Compute("sh-gi-clear")
             .location("setup/sh-gi-clear.csh")
             .workGroups(8, 8, 8)
@@ -752,7 +752,7 @@ export function setupShader() {
             .define("RENDER_COMPUTE", "1")
             .ssbo(0, sceneBuffer);
 
-        if (snapshot.Voxel_GI_Enabled) {
+        if (snapshot.Lighting_GI_Enabled) {
             shader
                 .ssbo(1, shLpvBuffer)
                 .ssbo(2, shLpvBuffer_alt)
@@ -888,7 +888,7 @@ export function setupShader() {
     // if (snapshot.Lighting_ReflectionMode == ReflectMode_SSR)
     //     compositeOpaqueShader.generateMips(texFinalPrevious);
 
-    if (snapshot.Voxel_GI_Enabled) {
+    if (snapshot.Lighting_GI_Enabled) {
         compositeOpaqueShader
             .ssbo(1, shLpvBuffer)
             .ssbo(2, shLpvBuffer_alt);

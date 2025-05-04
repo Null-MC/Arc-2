@@ -48,6 +48,7 @@ export class ShaderSettings {
     Lighting_ReflectionQuads = () => getBoolSetting("LIGHTING_REFLECT_TRIANGLE");
     Lighting_ReflectionStepCount = () => getIntSetting("LIGHTING_REFLECT_MAXSTEP");
     Lighting_VolumetricResolution = () => getIntSetting("LIGHTING_VL_RES");
+    Lighting_BlockTemp = () => getIntSetting("BLOCKLIGHT_TEMP");
     Voxel_Size = () => getIntSetting("VOXEL_SIZE");
     Voxel_Offset = () => getIntSetting("VOXEL_FRUSTUM_OFFSET");
     Voxel_MaxLightCount = () => 64;
@@ -107,6 +108,7 @@ export class ShaderSettings {
         snapshot.Lighting_ReflectionQuads = this.Lighting_ReflectionQuads();
         snapshot.Lighting_ReflectionStepCount = this.Lighting_ReflectionStepCount();
         snapshot.Lighting_VolumetricResolution = this.Lighting_VolumetricResolution();
+        snapshot.Lighting_BlockTemp = this.Lighting_BlockTemp();
         snapshot.Voxel_Size = this.Voxel_Size();
         snapshot.Voxel_Offset = this.Voxel_Offset();
         snapshot.Lighting_GI_Enabled = this.Lighting_GI_Enabled();
@@ -140,6 +142,7 @@ export class ShaderSettings {
         snapshot.Sky_FogDensity = this.Sky_FogDensity();
         snapshot.Water_WaveDetail = this.Water_WaveDetail();
         snapshot.Material_EmissionBrightness = this.Material_EmissionBrightness();
+        snapshot.Lighting_BlockTemp = this.Lighting_BlockTemp();
         snapshot.Effect_BloomStrength = this.Effect_BloomStrength();
         snapshot.Post_ExposureMin = this.Post_ExposureMin();
         snapshot.Post_ExposureMax = this.Post_ExposureMax();
@@ -258,9 +261,10 @@ export class SettingsSnapshot {
     Lighting_ReflectionQuads: boolean;
     Lighting_ReflectionStepCount: number;
     Lighting_VolumetricResolution: number;
+    Lighting_BlockTemp: number;
+    Lighting_GI_Enabled: boolean;
     Voxel_Size: number;
     Voxel_Offset: number;
-    Lighting_GI_Enabled: boolean;
     Voxel_MaxLightCount: number;
     Voxel_MaxQuadCount: number;
     Voxel_UseProvided: boolean;
@@ -289,6 +293,7 @@ export class RealTimeSettingsSnapshot {
     Sky_FogDensity: number;
     Water_WaveDetail: number;
     Material_EmissionBrightness: number;
+    Lighting_BlockTemp: number;
     Effect_BloomStrength: number;
     Post_Contrast: number;
     Post_ExposureMin: number;

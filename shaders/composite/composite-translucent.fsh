@@ -260,7 +260,7 @@ void main() {
 
         // TODO: SSS?
 
-        vec3 blockLighting = blackbody(BLOCKLIGHT_TEMP) * (BLOCKLIGHT_BRIGHTNESS * lmCoord.x) * (occlusion*0.5 + 0.5);
+        vec3 blockLighting = blackbody(Lighting_BlockTemp) * (BLOCKLIGHT_BRIGHTNESS * lmCoord.x) * (occlusion*0.5 + 0.5);
 
         #if LIGHTING_MODE == LIGHT_MODE_RT
             if (IsInVoxelBounds(voxelPos)) {

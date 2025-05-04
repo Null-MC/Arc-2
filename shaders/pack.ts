@@ -1096,6 +1096,7 @@ export function onSettingsChanged(state : WorldState) {
         .appendFloat(snapshot.Sky_SeaLevel)
         .appendInt(snapshot.Water_WaveDetail)
         .appendFloat(Math.pow(2.0, emission))
+        .appendInt(snapshot.Lighting_BlockTemp)
         .appendFloat(snapshot.Effect_BloomStrength * 0.01)
         .appendFloat(snapshot.Post_Contrast * 0.01)
         .appendFloat(snapshot.Post_ExposureMin)

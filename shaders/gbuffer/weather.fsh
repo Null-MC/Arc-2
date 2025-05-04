@@ -87,7 +87,7 @@ void iris_emitFragment() {
     // vec2 skyIrradianceCoord = DirectionToUV(vec3(0.0, 1.0, 0.0));
     // skyLighting += lmcoord.y * SKY_AMBIENT * SKY_BRIGHTNESS * textureLod(texSkyIrradiance, skyIrradianceCoord, 0).rgb;
 
-    // vec3 blockLighting = BLOCKLIGHT_BRIGHTNESS * blackbody(BLOCKLIGHT_TEMP) * lmcoord.x;
+    // vec3 blockLighting = BLOCKLIGHT_BRIGHTNESS * blackbody(Lighting_BlockTemp) * lmcoord.x;
 
     // vec4 finalColor = albedo;
     // finalColor.rgb *= skyLighting + blockLighting + (Material_EmissionBrightness * emission) + 0.002;
@@ -101,7 +101,7 @@ void iris_emitFragment() {
     finalColor.rgb = textureLod(texFinalPrevious, uv, lod).rgb;
     finalColor.a = 1.0;
 
-    finalColor.rgb += textureLod(texBloom, uv, 0).rgb;
+    finalColor.rgb += textureLod(texBloom, uv, 0).rgb * 0.04;
 
     vec3 localViewDir = normalize(vIn.localPos);
     float VoLm_sun = max(dot(localViewDir, Scene_LocalSunDir), 0.0);

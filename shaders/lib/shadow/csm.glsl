@@ -16,8 +16,8 @@ float GetShadowBias(const in int shadowCascade) {
 }
 
 void GetShadowProjection(const in vec3 shadowViewPos, const in float blockPadding, out int cascadeIndex, out vec3 shadowPos) {
-    float shadowPixel = 1.0 / shadowMapResolution;
-    // float padding2 = 2.0 * padding;
+    //float shadowPixel = 1.0 / shadowMapResolution;
+    float blockPadding2 = 2.0 * blockPadding;
 
     for (int i = 0; i < 4; i++) {
         shadowPos = mul3(ap.celestial.projection[i], shadowViewPos).xyz;
@@ -25,7 +25,7 @@ void GetShadowProjection(const in vec3 shadowViewPos, const in float blockPaddin
 
         //vec3 _padding = vec3(2.0 * GetPixelRadius(blockPadding, i), 0.0);
         vec2 cascadeSize = vec2(ap.celestial.projection[i][0].x, ap.celestial.projection[i][1].y);
-        vec3 cascadePadding = vec3(blockPadding * cascadeSize, 0.0);
+        vec3 cascadePadding = vec3(blockPadding2 * cascadeSize, 0.0);
 
         if (clamp(shadowPos, -1.0 + cascadePadding, 1.0 - cascadePadding) == shadowPos) break;
     }

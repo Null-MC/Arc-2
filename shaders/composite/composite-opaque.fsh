@@ -271,7 +271,7 @@ void main() {
         vec3 sss_phase_moon = max(HG(-VoL_sun, 0.16), 0.0) * MOON_BRIGHTNESS * moonTransmit * (1.0 - max(NoL_moon, 0.0));
         skyLightDiffuse += (sss_phase_sun + sss_phase_moon) * max(shadow_sss.w, 0.0) * abs(Scene_LocalLightDir.y);
 
-        vec3 blockLighting = blackbody(BLOCKLIGHT_TEMP) * (BLOCKLIGHT_BRIGHTNESS * lmCoord.x) * (occlusion*0.5 + 0.5);
+        vec3 blockLighting = blackbody(Lighting_BlockTemp) * (BLOCKLIGHT_BRIGHTNESS * lmCoord.x) * (occlusion*0.5 + 0.5);
 
         #if LIGHTING_MODE == LIGHT_MODE_RT
             if (IsInVoxelBounds(voxelPos)) {
@@ -362,7 +362,7 @@ void main() {
         vec3 view_F = material_fresnel(albedo.rgb, f0_metal, roughL, NoVm, isWet);
 
         float NoHm = max(dot(localTexNormal, H), 0.0);
-        vec3 specular = skyLight_NoLm * shadow_sss.rgb * SampleLightSpecular(NoLm, NoHm, LoHm, roughL);// * view_F;
+        vec3 specular = skyLight_NoLm * shadow_sss.rgb * SampleLightSpecular(NoLm, NoHm, LoHm, roughL);
 
         specular += skyReflectColor;
 
@@ -376,8 +376,6 @@ void main() {
         float smoothness = 1.0 - roughness;
         specular *= GetMetalTint(albedo.rgb, f0_metal) * _pow2(smoothness);
 
-        //diffuse *= 1.0 - view_F;
-
         #ifdef DEBUG_WHITE_WORLD
             albedo.rgb = WhiteWorld_Value;
         #endif
@@ -386,7 +384,6 @@ void main() {
             albedo.rgb = pow(albedo.rgb, vec3(1.8));
         }
 
-        //colorFinal = fma(albedo.rgb, diffuse, specular);
         colorFinal = mix(albedo.rgb * diffuse, specular, view_F);
 
         // float viewDist = length(localPos);

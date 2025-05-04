@@ -52,6 +52,7 @@ export function setupOptions() {
             .add(asBool("LIGHTING_TRACE_TRIANGLE", false, true))
             .build())
         .add(asInt("LIGHTING_VL_RES", 0, 1, 2).build(1))
+        .add(asIntRange("BLOCKLIGHT_TEMP", 3400, 1200, 9000, 100, false))
         .build();
 
     let screen_Voxel = new Page("Voxels")

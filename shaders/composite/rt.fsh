@@ -504,7 +504,7 @@ void main() {
                     // TODO: move cloud shadows to RSM sampling!!!
                     reflect_diffuse += voxelLight;// * cloudShadowF;// * SampleLightDiffuse(NoVm, 1.0, 1.0, roughL);
                 #else
-                    reflect_diffuse += blackbody(BLOCKLIGHT_TEMP) * (BLOCKLIGHT_BRIGHTNESS * reflect_lmcoord.x);
+                    reflect_diffuse += blackbody(Lighting_BlockTemp) * (BLOCKLIGHT_BRIGHTNESS * reflect_lmcoord.x);
                 #endif
 
                 reflect_diffuse += 0.0016;

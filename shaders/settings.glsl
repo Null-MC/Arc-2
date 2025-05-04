@@ -14,8 +14,6 @@
 #define EFFECT_SSAO_STRENGTH 1200
 
 
-const float BLOCKLIGHT_TEMP = 3400.0;
-
 const float ATMOSPHERE_MAX = 4200.0;
 const float SUN_SIZE = 2.2;
 const float MOON_SIZE = 3.4;
@@ -73,6 +71,7 @@ layout (std140, binding = 0) uniform SceneSettings {
 	float Scene_SkyFogSeaLevel;
 	int Scene_WaterWaveDetail;
 	float Material_EmissionBrightness;
+	int Lighting_BlockTemp;
 	float Scene_EffectBloomStrength;
 	float Scene_PostContrastF;
 	float Scene_PostExposureMin;

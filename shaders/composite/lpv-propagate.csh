@@ -230,12 +230,10 @@ vec3 trace_GI(const in vec3 traceOrigin, const in vec3 traceDir, const in int fa
 		vec3 stepSizes, nextDist;
 		dda_init(stepSizes, nextDist, tracePos, traceDir);
 
+		bool hit = false;
 		vec3 stepAxis = vec3(0.0); // todo: set initial?
 		vec3 traceTint = vec3(1.0);
-		bool hit = false;
 		ivec3 voxelPos = ivec3(traceOrigin);
-
-		//tracePos += dda_step(stepAxis, nextDist, stepSizes, traceDir);
 
 		for (int i = 0; i < VOXEL_GI_MAXSTEP && !hit; i++) {
 			vec3 stepAxisNext;
@@ -250,7 +248,6 @@ vec3 trace_GI(const in vec3 traceOrigin, const in vec3 traceDir, const in int fa
 
 			uint blockId = SampleVoxelBlock(voxelPos);
 
-			//bool isFullBlock = iris_isFullBlock(blockId);
 			if (blockId > 0u && iris_isFullBlock(blockId)) {
 				hit = true;
 				break;
@@ -273,7 +270,6 @@ vec3 trace_GI(const in vec3 traceOrigin, const in vec3 traceDir, const in int fa
 		traceDist = distance(traceOrigin, tracePos);
 
 		if (hit) {
-//			hitPos = currPos;
 			vec3 hitNormal = -sign(traceDir) * stepAxis;
 
 			int blockFaceIndex = GetVoxelBlockFaceIndex(hitNormal);
@@ -438,7 +434,7 @@ vec3 trace_GI(const in vec3 traceOrigin, const in vec3 traceDir, const in int fa
 					hit_diffuse += lpv_light * BLOCKLIGHT_BRIGHTNESS;
 				}
 			#else
-				hit_diffuse += blackbody(BLOCKLIGHT_TEMP) * (BLOCKLIGHT_BRIGHTNESS * hit_lmcoord.x);
+				hit_diffuse += blackbody(Lighting_BlockTemp) * (BLOCKLIGHT_BRIGHTNESS * hit_lmcoord.x);
 			#endif
 
 			float hit_metalness = mat_metalness(hit_f0_metal);

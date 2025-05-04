@@ -7,22 +7,6 @@ vec2 GetLightAttenuation(const in vec3 lightVec, const in float lightRange) {
     return vec2(pow(lightAtt, 5), lightAtt*lightAtt);
 }
 
-// float GetLightNoL(const in float geoNoL, const in vec3 texNormal, const in vec3 lightDir) {
-//     float NoL = 1.0;
-
-//     float texNoL = geoNoL;
-//     if (!all(lessThan(abs(texNormal), EPSILON3)))
-//         texNoL = dot(texNormal, lightDir);
-
-//     NoL = max(geoNoL, 0.0);
-
-//     if (!all(lessThan(abs(texNormal), EPSILON3))) {
-//         NoL = max(texNoL, 0.0) * step(0.0, geoNoL);
-//     }
-
-//     return saturate(NoL);
-// }
-
 float SampleLightDiffuse(const in float NoV, const in float NoL, const in float LoH, const in float roughL) {
     float f90 = 0.5 + 2.0*roughL * (LoH*LoH);
     float light_scatter = F_schlick(NoL, 1.0, f90);

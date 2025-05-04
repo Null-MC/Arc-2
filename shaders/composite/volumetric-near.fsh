@@ -24,11 +24,16 @@ uniform sampler2D texSkyMultiScatter;
 
 #include "/settings.glsl"
 #include "/lib/common.glsl"
+
 #include "/lib/buffers/scene.glsl"
 
 //#ifdef LPV_ENABLED
 //    #include "/lib/buffers/sh-lpv.glsl"
 //#endif
+
+#ifdef VOXEL_GI_ENABLED
+    #include "/lib/buffers/sh-gi.glsl"
+#endif
 
 #include "/lib/noise/ign.glsl"
 #include "/lib/hg.glsl"
@@ -47,10 +52,12 @@ uniform sampler2D texSkyMultiScatter;
 
 #ifdef LPV_ENABLED
     #include "/lib/voxel/voxel_common.glsl"
-    //#include "/lib/lpv/lpv_common.glsl"
-    //#include "/lib/lpv/lpv_sample.glsl"
     #include "/lib/lpv/floodfill.glsl"
 #endif
+
+//#ifdef VOXEL_GI_ENABLED
+//    #include "/lib/lpv/sh-gi-sample.glsl"
+//#endif
 
 
 const int VL_MaxSamples = 32;
@@ -341,6 +348,11 @@ void main() {
                 // TODO: TF?
             #endif
         }
+//        else {
+//            ivec3 blockWorldPos = ivec3(floor(sampleLocalPos + ap.camera.pos));
+//            uint blockId = uint(iris_getBlockAtPos(blockWorldPos).x);
+//            if (!iris_hasFluid(blockId)) sampleDensity = 0.0;
+//        }
 
         vec3 sampleLit = vec3(0.0);
 
@@ -352,8 +364,19 @@ void main() {
             }
         #endif
 
+//        #ifdef VOXEL_GI_ENABLED
+//            sampleLit += 2000.0;//100000.0 * sample_sh_gi(ivec3(floor(voxelPos)), localViewDir);
+//        #endif
+
         vec3 scatteringIntegral, sampleTransmittance, inScattering, extinction;
-        if (ap.camera.fluid != 1) {
+
+        bool isFluid = ap.camera.fluid == 1;
+
+        ivec3 blockWorldPos = ivec3(floor(sampleLocalPos + ap.camera.pos));
+        uint blockId = uint(iris_getBlockAtPos(blockWorldPos).x);
+        isFluid = iris_hasFluid(blockId);
+
+        if (!isFluid) {
             vec3 skyPos = getSkyPosition(sampleLocalPos);
 
             float mieDensity = sampleDensity + EPSILON;
@@ -364,7 +387,7 @@ void main() {
             sampleTransmittance = exp(-extinction * stepDist);
 
             vec3 psiMS = getValFromMultiScattLUT(texSkyMultiScatter, skyPos, Scene_LocalSunDir);
-            psiMS *= SKY_LUMINANCE * Scene_SkyBrightnessSmooth;
+            psiMS *= SKY_LUMINANCE * Scene_SkyBrightnessSmooth + 20.0;
 
             //vec3 rayleighInScattering = rayleighScattering * (rayleighPhaseValue * sunSkyLight * shadowSample + psiMS + sampleLit);
             vec3 mieSkyLight = miePhase_sun * sunSkyLight + miePhase_moon * moonSkyLight;

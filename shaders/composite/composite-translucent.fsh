@@ -173,6 +173,32 @@ void main() {
 
         vec3 localViewDir = normalize(localPosTrans);
 
+        // Refraction
+        vec3 refractSurfaceNormal = localTexNormal;
+        #ifdef MATERIAL_ROUGH_REFRACT
+            randomize_reflection(refractSurfaceNormal, localGeoNormal, roughness);
+        #endif
+
+        vec3 refractViewNormal = mat3(ap.camera.view) * (refractSurfaceNormal - localGeoNormal);
+
+        const float refractEta = (IOR_AIR/IOR_WATER);
+        const vec3 refractViewDir = vec3(0.0, 0.0, 1.0);
+        vec3 refractDir = refract(refractViewDir, refractViewNormal, refractEta);
+
+        #ifdef REFRACTION_SNELL
+            bool tir = false;
+            if (ap.camera.fluid == 1) {
+                vec3 tirViewNormal = mat3(ap.camera.view) * localTexNormal;
+
+                const float tirEta = (IOR_WATER/IOR_AIR);
+                vec3 tirViewDir = normalize(viewPosTrans);
+                vec3 tirDir = refract(tirViewDir, tirViewNormal, tirEta);
+
+                tir = all(lessThan(abs(tirDir), vec3(EPSILON)));
+            }
+        #endif
+
+        // Lighting
         vec3 H = normalize(Scene_LocalLightDir + -localViewDir);
 
         float NoLm = max(dot(localTexNormal, Scene_LocalLightDir), 0.0);
@@ -191,6 +217,10 @@ void main() {
         // #endif
 
         vec3 view_F = material_fresnel(albedo.rgb, f0_metal, roughL, NoVm, false);
+
+        #ifdef REFRACTION_SNELL
+            if (tir) view_F = vec3(1.0);
+        #endif
 
         vec3 sunTransmit, moonTransmit;
         GetSkyLightTransmission(localPosTrans, sunTransmit, moonTransmit);
@@ -341,23 +371,14 @@ void main() {
         #endif
 
         finalColor.a = albedo.a;
+
+        // TODO: is this killing foam?
         if (is_fluid) finalColor.a = 0.0;
 
         finalColor.rgb = albedo.rgb * diffuse * albedo.a + specular;
         //finalColor.a = min(finalColor.a + maxOf(specular), 1.0);
 
         // Refraction
-        vec3 refractSurfaceNormal = localTexNormal;
-        #ifdef MATERIAL_ROUGH_REFRACT
-            randomize_reflection(refractSurfaceNormal, localGeoNormal, roughness);
-        #endif
-
-        vec3 refractViewNormal = mat3(ap.camera.view) * (refractSurfaceNormal - localGeoNormal);
-
-        const float refractEta = (IOR_AIR/IOR_WATER);
-        const vec3 refractViewDir = vec3(0.0, 0.0, 1.0);
-        vec3 refractDir = refract(refractViewDir, refractViewNormal, refractEta);
-
         float linearDist = length(localPosOpaque - localPosTrans);
 
         vec2 refractMax = vec2(0.2);
@@ -387,6 +408,8 @@ void main() {
         #endif
 
         colorOpaque = textureLod(texFinalOpaque, refract_uv, refractMip).rgb;
+
+        colorOpaque *= 1.0 - view_F;
 
         // Fog
         // float viewDist = length(localPosTrans);

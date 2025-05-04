@@ -303,11 +303,11 @@ void populateShared(const in ivec3 voxelFrameOffset) {
 			#ifdef SHADOWS_ENABLED
 				int hit_shadowCascade;
 				vec3 hit_shadowViewPos = mul3(ap.celestial.view, hit_localPos);
-				vec3 hit_shadowPos = GetShadowSamplePos(hit_shadowViewPos, 0.0, hit_shadowCascade);
+				vec3 hit_shadowPos = GetShadowSamplePos(hit_shadowViewPos, 4.0, hit_shadowCascade);
 				hit_shadowPos.z -= GetShadowBias(hit_shadowCascade);
 
-				vec3 hit_shadow = vec3(Scene_SkyBrightnessSmooth);
-				if (hit_shadowCascade >= 0)
+				vec3 hit_shadow = vec3(0.0);// vec3(Scene_SkyBrightnessSmooth);
+				if (hit_shadowCascade >= 0 && hit_shadowCascade <= 3)
 					hit_shadow = SampleShadowColor(hit_shadowPos, hit_shadowCascade);
 			#else
 				float hit_shadow = 1.0;
@@ -581,7 +581,7 @@ void main() {
 				vec3 tracePos = cellIndex + noise_offset;
 				vec3 traceSample = trace_GI(tracePos, noise_dir, dir, traceDist);
 
-				float sampleWeight = 1.0 / (1.0 + traceDist);
+				float sampleWeight = 1.0;// / (1.0 + traceDist);
 				//sampleWeight *= f;
 
 				face_counter = clamp(face_counter + sampleWeight, 0.0, VOXEL_GI_MAXFRAMES);

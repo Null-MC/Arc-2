@@ -47,5 +47,5 @@ float SampleLightSpecular(const in float NoL, const in float NoH, const in float
     float k2 = k*k;
     float V = 1.0 / ((LoH*LoH) * (1.0 - k2) + k2);
 
-    return clamp((NoL * D * V), 0.0, 10.0);
+    return clamp((NoL * D * V), 0.0, 100.0);
 }

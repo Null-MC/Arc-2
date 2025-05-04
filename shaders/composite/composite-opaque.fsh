@@ -362,7 +362,7 @@ void main() {
         vec3 view_F = material_fresnel(albedo.rgb, f0_metal, roughL, NoVm, isWet);
 
         float NoHm = max(dot(localTexNormal, H), 0.0);
-        vec3 specular = skyLight_NoLm * shadow_sss.rgb * SampleLightSpecular(NoLm, NoHm, LoHm, roughL) * view_F;
+        vec3 specular = skyLight_NoLm * shadow_sss.rgb * SampleLightSpecular(NoLm, NoHm, LoHm, roughL);// * view_F;
 
         specular += skyReflectColor;
 

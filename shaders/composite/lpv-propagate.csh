@@ -201,14 +201,29 @@ void populateShared(const in ivec3 voxelFrameOffset) {
 #endif
 
 #ifdef LIGHTING_GI_ENABLED
-	vec3 trace_GI(const in vec3 traceOrigin, const in vec3 traceDir, const in int face_dir, out float traceDist) {
-//		vec3 color = vec3(1.0, 0.0, 1.0);
-//		if      (traceDir.x >  0.5) color = vec3(0.0, 0.0, 1.0);
-//		else if (traceDir.x < -0.5) color = vec3(0.0, 1.0, 1.0);
-//		else if (traceDir.z >  0.5) color = vec3(0.0, 1.0, 0.0);
-//		else if (traceDir.z < -0.5) color = vec3(1.0, 1.0, 0.0);
-//		else if (traceDir.y >  0.5) color = vec3(1.0, 0.0, 0.0);
+vec3 GetShadowSamplePos_LPV(const in vec3 shadowViewPos, out int cascadeIndex) {
+	cascadeIndex = -1;
+	vec3 shadowPos;
 
+	for (int i = 0; i < 4; i++) {
+		shadowPos = mul3(ap.celestial.projection[i], shadowViewPos).xyz;
+
+		float blockPadding = exp2(i+1);
+
+		vec2 cascadeSize = vec2(ap.celestial.projection[i][0].x, ap.celestial.projection[i][1].y);
+		vec3 cascadePadding = vec3(blockPadding * cascadeSize, 0.0);
+
+		if (clamp(shadowPos, -1.0 + cascadePadding, 1.0 - cascadePadding) == shadowPos) {
+			cascadeIndex = i;
+			break;
+		}
+	}
+
+	return shadowPos * 0.5 + 0.5;
+}
+
+
+vec3 trace_GI(const in vec3 traceOrigin, const in vec3 traceDir, const in int face_dir, out float traceDist) {
 		vec3 color = vec3(0.0);
 		vec3 tracePos = traceOrigin;
 
@@ -303,11 +318,11 @@ void populateShared(const in ivec3 voxelFrameOffset) {
 			#ifdef SHADOWS_ENABLED
 				int hit_shadowCascade;
 				vec3 hit_shadowViewPos = mul3(ap.celestial.view, hit_localPos);
-				vec3 hit_shadowPos = GetShadowSamplePos(hit_shadowViewPos, 4.0, hit_shadowCascade);
+				vec3 hit_shadowPos = GetShadowSamplePos_LPV(hit_shadowViewPos, hit_shadowCascade);
 				hit_shadowPos.z -= GetShadowBias(hit_shadowCascade);
 
 				vec3 hit_shadow = vec3(0.0);// vec3(Scene_SkyBrightnessSmooth);
-				if (hit_shadowCascade >= 0 && hit_shadowCascade <= 3)
+				if (hit_shadowCascade >= 0)
 					hit_shadow = SampleShadowColor(hit_shadowPos, hit_shadowCascade);
 			#else
 				float hit_shadow = 1.0;

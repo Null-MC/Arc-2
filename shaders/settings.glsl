@@ -5,7 +5,7 @@
 #define MATERIAL_ROUGH_REFRACT
 #define MATERIAL_PARALLAX_MAXDIST 48
 
-#define REFRACTION_SNELL
+//#define REFRACTION_SNELL
 
 #define VOXEL_GI_MAXSTEP 8 // [4 8 12 16 20 24]
 
@@ -51,7 +51,7 @@ const float PurkinjeStrength = 0.08;
 //const float Exposure_maxLogLum = POST_EXPOSURE_MAX;//  19.0;
 //const float Exposure_Speed = POST_EXPOSURE_SPEED;// 0.2;//2.1;
 
-const float WaterTintMinDist = 3.0;
+const float WaterTintMinDist = 1.0;
 const float shadowMapResolution = float(SHADOW_RESOLUTION);
 const float sunPathRotation = 25.0;
 const float cloudHeight = 320.0;

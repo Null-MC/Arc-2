@@ -1,4 +1,5 @@
 import type {} from './iris'
+import {BlockMap} from "./scripts/BlockMap";
 import {setLightColorEx, StreamBufferBuilder} from "./scripts/helpers";
 import {buildSettings, LightingModes, ReflectionModes, ShaderSettings} from "./scripts/settings";
 
@@ -8,8 +9,9 @@ const QUAD_BIN_SIZE = 2;
 
 const Settings = new ShaderSettings();
 
-let SceneSettingsBuffer: BuiltStreamingBuffer;
 const SceneSettingsBufferSize = 48;
+let SceneSettingsBuffer: BuiltStreamingBuffer;
+let BlockMappings: BlockMap;
 
 
 function applySettings(settings) {
@@ -132,6 +134,9 @@ function applySettings(settings) {
 export function setupShader() {
     print("Setting up shader");
 
+    BlockMappings = new BlockMap();
+    BlockMappings.map('grass_block', 'BLOCK_GRASS');
+
     const snapshot = Settings.getSnapshot();
     const settings = buildSettings(snapshot);
     applySettings(settings);
@@ -172,6 +177,8 @@ export function setupShader() {
     setLightColorEx("#7f3fb2", "purple_stained_glass", "purple_stained_glass_pane");
     setLightColorEx("#b24cd8", "magenta_stained_glass", "magenta_stained_glass_pane");
     setLightColorEx("#f27fa5", "pink_stained_glass", "pink_stained_glass_pane");
+
+    //addTag(1, new NamespacedId("minecraft", "leaves"));
 
     const screenWidth_half = Math.ceil(screenWidth / 2.0);
     const screenHeight_half = Math.ceil(screenHeight / 2.0);
@@ -1082,6 +1089,12 @@ export function setupShader() {
 
     setCombinationPass(new CombinationPass("post/final.fsh").build());
 
+    for (let blockName in BlockMappings.mappings) {
+        const meta = BlockMappings.get(blockName);
+        defineGlobally(meta.define, meta.index.toString());
+        //print(`Mapped block '${meta.block}' to '${meta.index}:${meta.define}'`)
+    }
+
     onSettingsChanged(null);
     setupFrame(null);
 }
@@ -1117,6 +1130,14 @@ export function setupFrame(state : WorldState) {
     // TEST_UBO.setFloat(0, testVal);
 
     SceneSettingsBuffer.uploadData();
+}
+
+export function getBlockId(block : BlockState) : number {
+    const name = block.getName();
+    const meta = BlockMappings.get(name);
+    if (meta != undefined) return meta.index;
+
+    return 0;
 }
 
 function setupSky(sceneBuffer) {

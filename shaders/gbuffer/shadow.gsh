@@ -99,16 +99,22 @@ void main() {
                     #ifdef VOXEL_BLOCK_FACE
                         // TODO: average face properties?
 
-                        VoxelBlockFace blockFace;
-                        blockFace.tex_id = vIn[0].textureId;
-                        blockFace.data = 0u;
+                        bool doVoxelize = true;
+                        uint blockMapId = iris_getCustomId(vIn[0].blockId);
+                        if (blockMapId == BLOCK_GRASS && abs(vIn[0].localNormal.y) < 0.5 && any(lessThan(vIn[0].color.rgb, vec3(1.0)))) doVoxelize = false;
 
-                        SetBlockFaceTint(blockFace.data, vIn[0].color.rgb);
-                        SetBlockFaceLightMap(blockFace.data, vIn[0].lmcoord);
+                        if (doVoxelize) {
+                            VoxelBlockFace blockFace;
+                            blockFace.tex_id = vIn[0].textureId;
+                            blockFace.data = 0u;
 
-                        int blockFaceIndex = GetVoxelBlockFaceIndex(vIn[0].localNormal);
-                        int blockFaceMapIndex = GetVoxelBlockFaceMapIndex(ivec3(voxelPos), blockFaceIndex);
-                        VoxelBlockFaceMap[blockFaceMapIndex] = blockFace;
+                            SetBlockFaceTint(blockFace.data, vIn[0].color.rgb);
+                            SetBlockFaceLightMap(blockFace.data, vIn[0].lmcoord);
+
+                            int blockFaceIndex = GetVoxelBlockFaceIndex(vIn[0].localNormal);
+                            int blockFaceMapIndex = GetVoxelBlockFaceMapIndex(ivec3(voxelPos), blockFaceIndex);
+                            VoxelBlockFaceMap[blockFaceMapIndex] = blockFace;
+                        }
                     #endif
                 #endif
 

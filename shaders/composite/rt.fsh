@@ -416,14 +416,14 @@ void main() {
 
                 vec3 reflect_specular = vec3(0.0);
 
+                vec2 skyIrradianceCoord = DirectionToUV(reflect_localTexNormal);
+                vec3 reflect_skyIrradiance = textureLod(texSkyIrradiance, skyIrradianceCoord, 0).rgb;
+                reflect_skyIrradiance = (SKY_AMBIENT * reflect_lmcoord.y) * reflect_skyIrradiance;
+
                 #ifdef LIGHTING_GI_ENABLED
                     vec3 giVoxelPos = GetVoxelPosition(reflect_localPos);
                     vec3 giVoxelSamplePos = 0.5*reflect_geoNormal + giVoxelPos;
-                    vec3 reflect_skyIrradiance = sample_sh_gi_linear(giVoxelSamplePos, reflect_localTexNormal);
-                #else
-                    vec2 skyIrradianceCoord = DirectionToUV(reflect_localTexNormal);
-                    vec3 reflect_skyIrradiance = textureLod(texSkyIrradiance, skyIrradianceCoord, 0).rgb;
-                    reflect_skyIrradiance = (SKY_AMBIENT * reflect_lmcoord.y) * reflect_skyIrradiance;
+                    reflect_skyIrradiance += sample_sh_gi_linear(giVoxelSamplePos, reflect_localTexNormal);
                 #endif
 
                 reflect_diffuse += reflect_skyIrradiance;
@@ -572,8 +572,8 @@ void main() {
             const bool isWet = false;
             float smoothness = 1.0 - roughness;
             //vec3 reflectTint = GetMetalTint(albedo.rgb, f0_metal);
-            vec3 view_F = material_fresnel(albedo.rgb, f0_metal, roughL, NoVm, isWet);
-            specularFinal += view_F * skyReflectColor;// * reflectTint * _pow2(smoothness);
+            //vec3 view_F = material_fresnel(albedo.rgb, f0_metal, roughL, NoVm, isWet);
+            specularFinal += skyReflectColor;// * reflectTint * _pow2(smoothness);
         #endif
     }
 

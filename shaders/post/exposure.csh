@@ -45,6 +45,7 @@ void main() {
 		// Here we take our weighted sum and divide it by the number of pixels
 		// that had luminance greater than zero (since the index == 0, we can
 		// use countForThisBin to find the number of black pixels)
+		float Exposure_numPixels = ap.game.screenSize.x * ap.game.screenSize.y;
 		float nonBlackPixelCount = Exposure_numPixels - countForThisBin;
 		float weightedLogAverage = (histogramShared[0] / max(nonBlackPixelCount, 1.0)) - 1.0;
 

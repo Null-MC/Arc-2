@@ -23,9 +23,9 @@ void main() {
 
     //color = PurkinjeShift(color, PurkinjeStrength);
 
-    color = tonemap_jodieReinhard(color);
+    //color = tonemap_jodieReinhard(color);
     //color = tonemap_Lottes(color);
-    //color = tonemap_ACESFit2(color);
+    color = tonemap_ACESFit2(color);
     //color = tonemap_AgX(color);
     //color = tonemap_Commerce(color);
 

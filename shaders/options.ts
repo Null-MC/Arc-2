@@ -52,7 +52,7 @@ export function setupOptions() {
             .add(asBool("LIGHTING_TRACE_TRIANGLE", false, true))
             .build())
         .add(asInt("LIGHTING_VL_RES", 0, 1, 2).build(1))
-        .add(asIntRange("BLOCKLIGHT_TEMP", 3400, 1200, 9000, 100, false))
+        .add(asIntRange("BLOCKLIGHT_TEMP", 3400, 1000, 8500, 100, false))
         .build();
 
     let screen_Voxel = new Page("Voxels")
@@ -76,9 +76,9 @@ export function setupOptions() {
     const screen_Post = new Page("Post")
         .add(asBool("EFFECT_TAA_ENABLED", true, true))
         .add(new Page("Exposure")
-            .add(asFloatRange("POST_EXPOSURE_MIN", -9.2, -12.0, -6.0, 0.2, false))
-            .add(asFloatRange("POST_EXPOSURE_MAX", 15.0, 6.0, 32.0, 0.5, false))
-            .add(asFloatRange("POST_EXPOSURE_RANGE", 9.6, 4.0, 24.0, 0.2, false))
+            .add(asFloatRange("POST_EXPOSURE_MIN", -8.6, -12.0, -6.0, 0.2, false))
+            .add(asFloatRange("POST_EXPOSURE_MAX", 24.0, 6.0, 32.0, 0.5, false))
+            .add(asFloatRange("POST_EXPOSURE_RANGE", 2.8, 0.0, 10.0, 0.1, false))
             .add(asFloatRange("POST_EXPOSURE_SPEED", 1.6, 0.2, 8.0, 0.2, false))
             .build())
         .add(asIntRange("POST_CONTRAST", 160,0, 300, 5, false))

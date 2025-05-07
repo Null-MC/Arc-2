@@ -750,7 +750,8 @@ export function setupShader() {
             .location("composite/lpv-propagate.csh")
             .workGroups(groupCount, groupCount, groupCount)
             .define("RENDER_COMPUTE", "1")
-            .ssbo(0, sceneBuffer);
+            .ssbo(0, sceneBuffer)
+            .ubo(0, SceneSettingsBuffer);
 
         if (snapshot.Lighting_GI_Enabled) {
             shader
@@ -1082,6 +1083,7 @@ export function setupShader() {
     setCombinationPass(new CombinationPass("post/final.fsh").build());
 
     onSettingsChanged(null);
+    setupFrame(null);
 }
 
 export function onSettingsChanged(state : WorldState) {

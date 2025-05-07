@@ -9,6 +9,8 @@ bool TraceReflection(const in vec3 localPos, const in vec3 localDir, out vec3 ti
     bool hit = false;
     ivec3 voxelPos;
 
+    float waterDist = 0.0;
+
     for (int i = 0; i < LIGHTING_REFLECT_MAXSTEP && !hit; i++) {
         vec3 stepAxisNext;
         vec3 step = dda_step(stepAxisNext, nextDist, stepSizes, localDir);
@@ -29,7 +31,15 @@ bool TraceReflection(const in vec3 localPos, const in vec3 localDir, out vec3 ti
         if (blockId > 0) {
             vec3 blockColor = iris_getLightColor(blockId).rgb;
             tint *= RgbToLinear(blockColor);
+
+            if (iris_hasFluid(blockId))
+                waterDist += length(step);
         }
+    }
+
+    if (waterDist > EPSILON) {
+        const vec3 waterExtinction = VL_WaterTransmit + VL_WaterScatter;
+        tint *= exp(-waterDist * VL_WaterDensity * waterExtinction);
     }
 
     if (hit) {

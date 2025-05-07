@@ -71,7 +71,7 @@ vec3 tonemap_Uchimura(vec3 x) {
     return _uchimura(x, P, a, m, l, c, b);
 }
 
-vec3 tonemap_bloopHDR(vec3 color) {
+vec3 tonemap_AgX(vec3 color) {
     // Constants for AgX inset and outset matrices
     const mat3 AgXInsetMatrix = mat3(
         0.856627153315983,  0.137318972929847, 0.11189821299995,
@@ -85,13 +85,13 @@ vec3 tonemap_bloopHDR(vec3 color) {
 
     // Constants for AgX exposure range
     const float AgxMinEv = -11.5;
-    const float AgxMaxEv = 3.6;
+    const float AgxMaxEv = 9.6;
 
     // Constants for agxAscCdl operation
-    const vec3 SLOPE = vec3(0.94);
+    const vec3 SLOPE = vec3(0.998);
     const vec3 OFFSET = vec3(0.0);
     const vec3 POWER = vec3(Scene_PostContrastF);
-    const float SATURATION = 1.16;
+    const float SATURATION = 1.4;
 
     // 1. agx()
     // Input transform (inset)

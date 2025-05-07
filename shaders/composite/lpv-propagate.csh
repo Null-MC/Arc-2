@@ -454,23 +454,25 @@ vec3 trace_GI(const in vec3 traceOrigin, const in vec3 traceDir, const in int fa
 				bool altFrame = ap.time.frames % 2 == 1;
 				int i_end = GetVoxelIndex(voxelPos);
 
-				uvec2 endVoxel_face;
-				if (altFrame) endVoxel_face = SH_LPV[i_end].data[face_dir];
-				else endVoxel_face = SH_LPV_alt[i_end].data[face_dir];
-
-				float face_counter;
-				decode_shVoxel_dir(endVoxel_face, color, face_counter);
-
-//				lpvShVoxel endVoxel;
-//				if (altFrame) endVoxel = SH_LPV[i_end];
-//				else endVoxel = SH_LPV_alt[i_end];
+//				uvec2 endVoxel_face;
+//				if (altFrame) endVoxel_face = SH_LPV[i_end].data[face_dir];
+//				else endVoxel_face = SH_LPV_alt[i_end].data[face_dir];
 //
-//				color = sample_sh_gi(endVoxel, traceDir);
+//				float face_counter;
+//				decode_shVoxel_dir(endVoxel_face, color, face_counter);
+
+				//color *= PI;
+
+				lpvShVoxel endVoxel;
+				if (altFrame) endVoxel = SH_LPV[i_end];
+				else endVoxel = SH_LPV_alt[i_end];
+
+				color = 0.5 * sample_sh_gi(endVoxel, traceDir);
 			}
-			else {
-				vec3 skyPos = getSkyPosition(vec3(0.0));
-				color = SKY_LUMINANCE * getValFromSkyLUT(texSkyView, skyPos, traceDir, Scene_LocalSunDir);
-			}
+//			else {
+//				vec3 skyPos = getSkyPosition(vec3(0.0));
+//				color = 3.0 * SKY_LUMINANCE * getValFromSkyLUT(texSkyView, skyPos, traceDir, Scene_LocalSunDir);
+//			}
 		}
 
 		return color * traceTint;

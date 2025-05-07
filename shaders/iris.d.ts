@@ -171,20 +171,9 @@ declare function setLightColor(name: NamespacedId, hex: number): void;
 
 // Uniforms
 
-/**
- * Registers uniforms.
- *
- * @throws IllegalStateException
- * if {@link finalizeUniforms} has already been called
- *
- * @param uniforms A list of uniforms to register.
- */
-declare function registerUniforms(...uniforms: string[]): void;
+declare function addTag(index : number, tag : NamespacedId) : void;
 
-/**
- * Finalizes uniforms.
- */
-declare function finalizeUniforms(): void;
+declare function createTag(tag : NamespacedId, ...blocks : NamespacedId[]) : NamespacedId;
 
 /**
  * Registers a define for all future shaders. Behavior for shaders already made is undefined.

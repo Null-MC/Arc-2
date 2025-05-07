@@ -61,7 +61,7 @@ void main() {
     // TODO: add velocity buffer
     vec3 velocity = vec3(0.0); //textureLod(BUFFER_VELOCITY, uv, 0).xyz;
     vec2 uvLast = getReprojectedClipPos(uv, depth, velocity).xy;
-    vec4 lastColor = sample_CatmullRom(texFinalPrevious, uvLast, ap.game.screenSize);
+    vec4 lastColor = sample_CatmullRom_RGBA(texFinalPrevious, uvLast, ap.game.screenSize);
 
     vec3 antialiased = lastColor.rgb;
     float mixRate = clamp(lastColor.a+1.0, TAA_MIX_MIN, TAA_MAX_FRAMES);

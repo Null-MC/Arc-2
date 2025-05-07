@@ -21,7 +21,7 @@ const float MOON_SIZE = 3.4;
 const float SUN_LUMINANCE = 2000.0;
 const float MOON_LUMINANCE = 0.16;
 const float STAR_LUMINANCE = 0.10;
-const float SKY_LUMINANCE = 80.0;
+const float SKY_LUMINANCE = 60.0;
 const float BLOCKLIGHT_LUMINANCE = 16.0;
 
 const float SUN_BRIGHTNESS = 32.0;
@@ -29,7 +29,7 @@ const float MOON_BRIGHTNESS = 0.012;
 const float SKY_BRIGHTNESS = 22.0;
 const float BLOCKLIGHT_BRIGHTNESS = 4.0;
 
-const float SKY_AMBIENT = 1.0;
+const float SKY_AMBIENT = 3.0;
 
 //#if (defined LPV_ENABLED && defined LPV_RSM_ENABLED) || defined EFFECT_SSGI_ENABLED
 //	const float SKY_AMBIENT = 1.0;

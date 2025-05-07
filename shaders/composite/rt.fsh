@@ -100,10 +100,12 @@ in vec2 uv;
 
     #include "/lib/utility/blackbody.glsl"
 
+    #include "/lib/light/volumetric.glsl"
+
     #ifdef LIGHTING_REFLECT_TRIANGLE
-        #include "/lib/effects/wsr-quad.glsl"
+        #include "/lib/voxel/wsr-quad.glsl"
     #else
-        #include "/lib/effects/wsr-block.glsl"
+        #include "/lib/voxel/wsr-block.glsl"
     #endif
 
     #ifdef SHADOWS_ENABLED
@@ -416,8 +418,8 @@ void main() {
 
                 #ifdef LIGHTING_GI_ENABLED
                     vec3 giVoxelPos = GetVoxelPosition(reflect_localPos);
-                    vec3 giVoxelSamplePos = 0.5*reflect_localTexNormal - 0.25*reflect_geoNormal + giVoxelPos; // TODO: FIX THIS< WRONG!
-                    vec3 reflect_skyIrradiance = 3.0 * sample_sh_gi_linear(giVoxelSamplePos, reflect_localTexNormal);
+                    vec3 giVoxelSamplePos = 0.5*reflect_geoNormal + giVoxelPos;
+                    vec3 reflect_skyIrradiance = sample_sh_gi_linear(giVoxelSamplePos, reflect_localTexNormal);
                 #else
                     vec2 skyIrradianceCoord = DirectionToUV(reflect_localTexNormal);
                     vec3 reflect_skyIrradiance = textureLod(texSkyIrradiance, skyIrradianceCoord, 0).rgb;
@@ -524,7 +526,7 @@ void main() {
                     vec3 reflect_reflectDir = reflect(reflectLocalDir, reflect_localTexNormal);
 
                     //vec3 voxelSamplePos = 0.5*localTexNormal - 0.25*localGeoNormal + voxelPos;
-                    vec3 reflect_irradiance = 3.0 * sample_sh_gi_linear(reflect_voxelPos, reflect_reflectDir);
+                    vec3 reflect_irradiance = sample_sh_gi_linear(reflect_voxelPos, reflect_reflectDir);
 
                     reflect_specular += reflect_irradiance; // * S * reflect_tint;
                 #endif
@@ -534,14 +536,19 @@ void main() {
 
                 float reflect_NoHm = max(dot(reflect_localTexNormal, H), 0.0);
                 float reflect_sunS = SampleLightSpecular(reflect_NoLm, reflect_NoHm, reflect_LoHm, reflect_roughL);
-                reflect_specular += reflect_skyLight * reflect_view_F * reflect_shadow * reflect_sunS;// * vec3(1,0,0);
+                reflect_specular += reflect_skyLight * reflect_shadow * reflect_sunS;// * vec3(1,0,0);
 
                 float smoothness = 1.0 - reflect_roughness;
                 reflect_specular *= GetMetalTint(reflection.rgb, reflect_f0_metal) * _pow2(smoothness);
 
-                reflect_diffuse *= 1.0 - reflect_view_F;
+                //reflect_diffuse *= 1.0 - reflect_view_F;
 
-                skyReflectColor = fma(reflection.rgb, reflect_diffuse, reflect_specular);
+                #ifdef DEBUG_WHITE_WORLD
+                    reflection.rgb = WhiteWorld_Value;
+                #endif
+
+                //skyReflectColor = fma(reflection.rgb, reflect_diffuse, reflect_specular);
+                skyReflectColor = mix(reflection.rgb * reflect_diffuse, reflect_specular, reflect_view_F);
             }
             else {
                 // SSR fallback

@@ -113,7 +113,7 @@ void main() {
 
     float phase_gF, phase_gB, phase_gM;
     vec3 scatterF, transmitF;
-    vec3 sampleAmbient = vec3(0.0);
+    vec3 ambientBase = vec3(0.0);
 
     if (ap.camera.fluid == 1) {
         scatterF = VL_WaterScatter;
@@ -122,8 +122,8 @@ void main() {
         phase_gB = VL_WaterPhaseB;
         phase_gM = VL_WaterPhaseM;
 
-        sampleAmbient = VL_WaterAmbient * Scene_SkyIrradianceUp;
-        sampleAmbient *= Scene_SkyBrightnessSmooth;
+        ambientBase = VL_WaterAmbient * Scene_SkyIrradianceUp;
+        //ambientBase *= Scene_SkyBrightnessSmooth;
     }
     else {
         scatterF = vec3(0.0);
@@ -137,7 +137,7 @@ void main() {
 //        phase_gB = -mix(0.16, 0.28, ap.world.rainStrength);
 //        phase_gM =  mix(0.36, 0.24, ap.world.rainStrength);
 //
-//        sampleAmbient = VL_AmbientF * mix(Scene_SkyIrradianceUp, vec3(0.5*luminance(Scene_SkyIrradianceUp)), ap.world.rainStrength);
+//        ambientBase = VL_AmbientF * mix(Scene_SkyIrradianceUp, vec3(0.5*luminance(Scene_SkyIrradianceUp)), ap.world.rainStrength);
         if (Scene_SkyFogDensityF < EPSILON) {
             outScatter = vec3(0.0);
             outTransmit = vec3(1.0);
@@ -145,8 +145,8 @@ void main() {
         }
     }
 
-//    sampleAmbient *= phaseIso * Scene_SkyBrightnessSmooth;
-    float far = ap.camera.far * 0.25;
+//    ambientBase *= phaseIso * Scene_SkyBrightnessSmooth;
+    float far = ap.camera.far * 0.5;
 
     vec3 traceEnd = localPos;
     if (len > far)
@@ -273,7 +273,6 @@ void main() {
             int shadowCascade;
             vec3 shadowPos = GetShadowSamplePos(shadowViewPos, shadowRadius, shadowCascade);
 
-            // TODO: get light depth for water absorb
             shadowSample *= SampleShadowColor(shadowPos, shadowCascade, waterDepth);
             waterDepth = max(waterDepth, EPSILON);
         #endif
@@ -285,7 +284,7 @@ void main() {
         vec3 sunSkyLight = SUN_LUMINANCE * sunTransmit;
         vec3 moonSkyLight = MOON_BRIGHTNESS * moonTransmit;
 
-        float sampleDensity = 1.0;
+        float sampleDensity = VL_WaterDensity;
         if (ap.camera.fluid != 1) {
             sampleDensity = GetSkyDensity(sampleLocalPos);
 
@@ -370,7 +369,7 @@ void main() {
 
         vec3 scatteringIntegral, sampleTransmittance, inScattering, extinction;
 
-        bool isFluid = ap.camera.fluid == 1;
+        bool isFluid;// = ap.camera.fluid == 1;
 
         ivec3 blockWorldPos = ivec3(floor(sampleLocalPos + ap.camera.pos));
         uint blockId = uint(iris_getBlockAtPos(blockWorldPos).x);
@@ -395,9 +394,16 @@ void main() {
             inScattering = mieInScattering;
         }
         else {
+            ivec3 blockWorldPos = ivec3(floor(sampleLocalPos + ap.camera.pos));
+            //uint blockId = uint(iris_getBlockAtPos(blockWorldPos).x);
+            //if (!iris_hasFluid(blockId)) sampleDensity = 0.0;
+            uint blockLightData = iris_getBlockAtPos(blockWorldPos).y;
+            uint blockSkyLight = bitfieldExtract(blockLightData, 16, 16);
+            vec3 sampleAmbient = ambientBase * (blockSkyLight/240.0);
+
             extinction = transmitF + scatterF;
 
-            shadowSample *= exp(-0.2*waterDepth * sampleDensity * extinction);
+            shadowSample *= exp(-0.8*waterDepth * sampleDensity * extinction);
 
             sampleTransmittance = exp(-stepDist * sampleDensity * extinction);
 

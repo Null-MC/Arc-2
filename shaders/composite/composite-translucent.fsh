@@ -417,7 +417,7 @@ void main() {
         // float fogF = smoothstep(fogStart, fogEnd, viewDist);
         // finalColor = mix(finalColor, vec4(fogColor.rgb, 1.0), fogF);
 
-        if (is_fluid == (ap.camera.fluid != 1)) {
+        if (is_fluid && ap.camera.fluid == 0) {
             colorOpaque *= exp(-WaterTintMinDist * VL_WaterTransmit);
         }
 
@@ -441,6 +441,10 @@ void main() {
 
     //vec4 clouds = textureLod(texClouds, uv, 0);
     //colorFinal = mix(colorFinal, clouds.rgb, clouds.a);
+
+    if (ap.camera.fluid == 1) {
+        colorFinal *= exp(-WaterTintMinDist * VL_WaterTransmit);
+    }
 
     #ifdef EFFECT_VL_ENABLED
         vec3 vlScatter = textureLod(texScatterVL, uv, 0).rgb;

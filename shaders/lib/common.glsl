@@ -18,6 +18,7 @@ float minOf(const in vec2 vec) {return min(vec[0], vec[1]);}
 float minOf(const in vec3 vec) {return min(min(vec[0], vec[1]), vec[2]);}
 
 int sumOf(ivec3 vec) {return vec.x + vec.y + vec.z;}
+float sumOf(vec3 vec) {return vec.x + vec.y + vec.z;}
 
 //vec3 LinearToRgb(const in vec3 color) {return pow(color, vec3(1.0 / 2.2));}
 

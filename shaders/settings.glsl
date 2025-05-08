@@ -7,8 +7,8 @@
 
 //#define REFRACTION_SNELL
 
+//#define VOXEL_GI_SKYLIGHT
 #define VOXEL_GI_MAXSTEP 8 // [4 8 12 16 20 24]
-
 #define VOXEL_GI_MAXFRAMES 60 // [60 120 240]
 
 #define EFFECT_SSAO_STRENGTH 1200
@@ -29,7 +29,7 @@ const float MOON_BRIGHTNESS = 0.012;
 const float SKY_BRIGHTNESS = 22.0;
 const float BLOCKLIGHT_BRIGHTNESS = 4.0;
 
-const float SKY_AMBIENT = 3.0;
+const float SKY_AMBIENT = 1.0;
 
 //#if (defined LPV_ENABLED && defined LPV_RSM_ENABLED) || defined EFFECT_SSGI_ENABLED
 //	const float SKY_AMBIENT = 1.0;
@@ -73,9 +73,11 @@ layout (std140, binding = 0) uniform SceneSettings {
 	float Material_EmissionBrightness;
 	int Lighting_BlockTemp;
 	float Scene_EffectBloomStrength;
-	float Scene_PostContrastF;
 	float Scene_PostExposureMin;
 	float Scene_PostExposureMax;
 	float Scene_PostExposureRange;
 	float Scene_PostExposureSpeed;
+	float Post_Tonemap_Contrast;
+	float Post_Tonemap_LinearStart;
+	float Post_Tonemap_LinearLength;
 };

@@ -21,15 +21,20 @@ void main() {
     
     ApplyAutoExposure(color, clamp(Scene_AvgExposure, -100.0, 100.0));
 
+    //if (gl_FragCoord.x > ap.game.screenSize.x/2)
+        color = LINEAR_RGB_TO_REC2020 * color;
+
     //color = PurkinjeShift(color, PurkinjeStrength);
 
-    //color = tonemap_jodieReinhard(color);
+    color = tonemap_jodieReinhard(color);
     //color = tonemap_Lottes(color);
-    color = tonemap_ACESFit2(color);
+    //color = tonemap_ACESFit2(color);
     //color = tonemap_AgX(color);
+    color = tonemap_Uchimura(color);
     //color = tonemap_Commerce(color);
 
     //color = color / (color + 0.155) * 1.019;
+
 
     outColor = vec4(color, 1.0);
 }

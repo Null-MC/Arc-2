@@ -81,7 +81,12 @@ export function setupOptions() {
             .add(asFloatRange("POST_EXPOSURE_RANGE", 2.8, 0.0, 10.0, 0.1, false))
             .add(asFloatRange("POST_EXPOSURE_SPEED", 1.6, 0.2, 8.0, 0.2, false))
             .build())
-        .add(asIntRange("POST_CONTRAST", 160,0, 300, 5, false))
+        .add(new Page("POST_TONEMAP")
+            .add(asFloatRange("POST_TONEMAP_CONTRAST", 1.04, 0.02, 2.0, 0.02, false))
+            .add(asFloatRange("POST_TONEMAP_LINEAR_START", 0.14, 0.02, 1.0, 0.02, false))
+            .add(asFloatRange("POST_TONEMAP_LINEAR_LENGTH", 0.40, 0.02, 1.0, 0.02, false))
+            .build())
+        //.add(asIntRange("POST_CONTRAST", 160,0, 300, 5, false))
         .build();
 
     const screen_Debug = new Page("Debug")

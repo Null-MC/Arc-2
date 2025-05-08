@@ -9,7 +9,7 @@ const QUAD_BIN_SIZE = 2;
 
 const Settings = new ShaderSettings();
 
-const SceneSettingsBufferSize = 48;
+const SceneSettingsBufferSize = 64;
 let SceneSettingsBuffer: BuiltStreamingBuffer;
 let BlockMappings: BlockMap;
 
@@ -19,7 +19,7 @@ function applySettings(settings) {
 
     worldSettings.disableShade = true;
     worldSettings.ambientOcclusionLevel = 0.0;
-    worldSettings.sunPathRotation = snapshot.Sky_SunAngle;
+    worldSettings.sunPathRotation = settings.realtime.Sky_SunAngle;
     worldSettings.shadowMapResolution = snapshot.Shadow_Resolution;
     worldSettings.renderStars = false;
     worldSettings.renderMoon = false;
@@ -38,7 +38,7 @@ function applySettings(settings) {
 
     if (snapshot.Water_WaveEnabled) {
         defineGlobally1("WATER_WAVES_ENABLED");
-        defineGlobally("WATER_WAVES_DETAIL", snapshot.Water_WaveDetail.toString());
+        //defineGlobally("WATER_WAVES_DETAIL", snapshot.Water_WaveDetail.toString());
 
         if (snapshot.Water_Tessellation) {
             defineGlobally1("WATER_TESSELLATION_ENABLED");
@@ -138,7 +138,8 @@ export function setupShader() {
     BlockMappings.map('grass_block', 'BLOCK_GRASS');
 
     const snapshot = Settings.getSnapshot();
-    const settings = buildSettings(snapshot);
+    const realtime = Settings.getRealTimeSnapshot();
+    const settings = buildSettings(snapshot, realtime);
     applySettings(settings);
 
     setLightColorEx("#f39849", "campfire");
@@ -1096,11 +1097,13 @@ export function setupShader() {
     }
 
     onSettingsChanged(null);
-    setupFrame(null);
+    //setupFrame(null);
 }
 
 export function onSettingsChanged(state : WorldState) {
     const snapshot = Settings.getRealTimeSnapshot();
+
+    worldSettings.sunPathRotation = snapshot.Sky_SunAngle;
 
     const d = snapshot.Sky_FogDensity * 0.01;
 
@@ -1113,17 +1116,22 @@ export function onSettingsChanged(state : WorldState) {
         .appendFloat(Math.pow(2.0, emission))
         .appendInt(snapshot.Lighting_BlockTemp)
         .appendFloat(snapshot.Effect_BloomStrength * 0.01)
-        .appendFloat(snapshot.Post_Contrast * 0.01)
+        //.appendFloat(snapshot.Post_Contrast * 0.01)
         .appendFloat(snapshot.Post_ExposureMin)
         .appendFloat(snapshot.Post_ExposureMax)
         .appendFloat(snapshot.Post_ExposureRange)
-        .appendFloat(snapshot.Post_ExposureSpeed);
+        .appendFloat(snapshot.Post_ExposureSpeed)
+        .appendFloat(snapshot.Post_Tonemap_Contrast)
+        .appendFloat(snapshot.Post_Tonemap_LinearStart)
+        .appendFloat(snapshot.Post_Tonemap_LinearLength);
+
+    //SceneSettingsBuffer.uploadData();
 }
 
 export function setupFrame(state : WorldState) {
-    const snapshot = Settings.getRealTimeSnapshot();
+    //const snapshot = Settings.getRealTimeSnapshot();
 
-    worldSettings.sunPathRotation = snapshot.Sky_SunAngle;
+    // worldSettings.sunPathRotation = snapshot.Sky_SunAngle;
 
     // if (isKeyDown(Keys.G)) testVal += 0.07;
     // if (isKeyDown(Keys.F)) testVal -= 0.07;

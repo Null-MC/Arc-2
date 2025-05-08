@@ -64,7 +64,10 @@ export class ShaderSettings {
     Post_ExposureMax = () => getFloatSetting("POST_EXPOSURE_MAX");
     Post_ExposureRange = () => getFloatSetting("POST_EXPOSURE_RANGE");
     Post_ExposureSpeed = () => getFloatSetting("POST_EXPOSURE_SPEED");
-    Post_Contrast = () => getIntSetting("POST_CONTRAST");
+    //Post_Contrast = () => getIntSetting("POST_CONTRAST");
+    Post_Tonemap_Contrast = () => getFloatSetting("POST_TONEMAP_CONTRAST");
+    Post_Tonemap_LinearStart = () => getFloatSetting("POST_TONEMAP_LINEAR_START");
+    Post_Tonemap_LinearLength = () => getFloatSetting("POST_TONEMAP_LINEAR_LENGTH");
     Debug_View = () => getStringSettingIndex("DEBUG_VIEW", 0, 'None', 'Material', 'Shadows', 'SSS', 'SSAO', 'SSGI', 'Volumetric Lighting', 'Ray-Traced Lighting', 'Accumulation', 'Sky Irradiance', 'ShadowMap Color', 'ShadowMap Normal');
     Debug_Material = () => getStringSettingIndex("DEBUG_MATERIAL", 0, 'Albedo', 'Geo-Normal', 'Tex-Normal', 'Occlusion', 'Roughness', 'F0/Metal', 'Porosity', 'SSS', 'Emission', 'LightMap');
     Debug_WhiteWorld = () => getBoolSetting("DEBUG_WHITE_WORLD");
@@ -75,13 +78,13 @@ export class ShaderSettings {
 
     getSnapshot() : SettingsSnapshot {
         const snapshot = new SettingsSnapshot();
-        snapshot.Sky_SunAngle = this.Sky_SunAngle();
-        snapshot.Sky_SeaLevel = this.Sky_SeaLevel();
+        //snapshot.Sky_SunAngle = this.Sky_SunAngle();
+        //snapshot.Sky_SeaLevel = this.Sky_SeaLevel();
         snapshot.Sky_Clouds = this.Sky_Clouds();
-        snapshot.Sky_FogDensity = this.Sky_FogDensity();
+        //snapshot.Sky_FogDensity = this.Sky_FogDensity();
         snapshot.Sky_FogNoise = this.Sky_FogNoise();
         snapshot.Water_WaveEnabled = this.Water_WaveEnabled();
-        snapshot.Water_WaveDetail = this.Water_WaveDetail();
+        //snapshot.Water_WaveDetail = this.Water_WaveDetail();
         snapshot.Water_Tessellation = this.Water_Tessellation();
         snapshot.Water_TessellationLevel = this.Water_TessellationLevel();
         snapshot.Shadow_Enabled = this.Shadow_Enabled();
@@ -108,7 +111,7 @@ export class ShaderSettings {
         snapshot.Lighting_ReflectionQuads = this.Lighting_ReflectionQuads();
         snapshot.Lighting_ReflectionStepCount = this.Lighting_ReflectionStepCount();
         snapshot.Lighting_VolumetricResolution = this.Lighting_VolumetricResolution();
-        snapshot.Lighting_BlockTemp = this.Lighting_BlockTemp();
+        //snapshot.Lighting_BlockTemp = this.Lighting_BlockTemp();
         snapshot.Voxel_Size = this.Voxel_Size();
         snapshot.Voxel_Offset = this.Voxel_Offset();
         snapshot.Lighting_GI_Enabled = this.Lighting_GI_Enabled();
@@ -119,13 +122,13 @@ export class ShaderSettings {
         snapshot.Effect_SSGI_Enabled = this.Effect_SSGI_Enabled();
         snapshot.Effect_SSGIAO_StepCount = this.Effect_SSGIAO_StepCount();
         snapshot.Effect_BloomEnabled = this.Effect_BloomEnabled();
-        snapshot.Effect_BloomStrength = this.Effect_BloomStrength();
+        //snapshot.Effect_BloomStrength = this.Effect_BloomStrength();
         snapshot.Effect_TAA_Enabled = this.Effect_TAA_Enabled();
-        snapshot.Post_ExposureMin = this.Post_ExposureMin();
-        snapshot.Post_ExposureMax = this.Post_ExposureMax();
-        snapshot.Post_ExposureRange = this.Post_ExposureRange();
-        snapshot.Post_ExposureSpeed = this.Post_ExposureSpeed();
-        snapshot.Post_Contrast = this.Post_Contrast();
+        //snapshot.Post_ExposureMin = this.Post_ExposureMin();
+        //snapshot.Post_ExposureMax = this.Post_ExposureMax();
+        //snapshot.Post_ExposureRange = this.Post_ExposureRange();
+        //snapshot.Post_ExposureSpeed = this.Post_ExposureSpeed();
+        //snapshot.Post_Contrast = this.Post_Contrast();
         snapshot.Debug_View = this.Debug_View();
         snapshot.Debug_Material = this.Debug_Material();
         snapshot.Debug_WhiteWorld = this.Debug_WhiteWorld();
@@ -148,7 +151,10 @@ export class ShaderSettings {
         snapshot.Post_ExposureMax = this.Post_ExposureMax();
         snapshot.Post_ExposureRange = this.Post_ExposureRange();
         snapshot.Post_ExposureSpeed = this.Post_ExposureSpeed();
-        snapshot.Post_Contrast = this.Post_Contrast();
+        //snapshot.Post_Contrast = this.Post_Contrast();
+        snapshot.Post_Tonemap_Contrast = this.Post_Tonemap_Contrast();
+        snapshot.Post_Tonemap_LinearStart = this.Post_Tonemap_LinearStart();
+        snapshot.Post_Tonemap_LinearLength = this.Post_Tonemap_LinearLength();
         return snapshot;
     }
 }
@@ -160,9 +166,10 @@ function getStringSettingIndex(name: string, defaultValue: number, ...options: s
     return index < 0 ? defaultValue : index;
 }
 
-export function buildSettings(snapshot: SettingsSnapshot) {
+export function buildSettings(snapshot: SettingsSnapshot, realtime: RealTimeSettingsSnapshot) {
     const settings = {
         snapshot: snapshot,
+        realtime: realtime,
         Internal: {
             Accumulation: false,
             Voxelization: false,
@@ -228,13 +235,13 @@ export function buildSettings(snapshot: SettingsSnapshot) {
 }
 
 export class SettingsSnapshot {
-    Sky_SunAngle: number;
-    Sky_SeaLevel: number;
+    //Sky_SunAngle: number;
+    //Sky_SeaLevel: number;
     Sky_Clouds: boolean;
-    Sky_FogDensity: number;
+    //Sky_FogDensity: number;
     Sky_FogNoise: boolean;
     Water_WaveEnabled: boolean;
-    Water_WaveDetail: number;
+    //Water_WaveDetail: number;
     Water_Tessellation: boolean;
     Water_TessellationLevel: number;
     Shadow_Enabled: boolean;
@@ -261,7 +268,7 @@ export class SettingsSnapshot {
     Lighting_ReflectionQuads: boolean;
     Lighting_ReflectionStepCount: number;
     Lighting_VolumetricResolution: number;
-    Lighting_BlockTemp: number;
+    //Lighting_BlockTemp: number;
     Lighting_GI_Enabled: boolean;
     Voxel_Size: number;
     Voxel_Offset: number;
@@ -272,13 +279,13 @@ export class SettingsSnapshot {
     Effect_SSGI_Enabled: boolean;
     Effect_SSGIAO_StepCount: number;
     Effect_BloomEnabled: boolean;
-    Effect_BloomStrength: number;
+    //Effect_BloomStrength: number;
     Effect_TAA_Enabled: boolean;
-    Post_ExposureMin: number;
-    Post_ExposureMax: number;
-    Post_ExposureRange: number;
-    Post_ExposureSpeed: number;
-    Post_Contrast: number;
+    //Post_ExposureMin: number;
+    //Post_ExposureMax: number;
+    //Post_ExposureRange: number;
+    //Post_ExposureSpeed: number;
+    //Post_Contrast: number;
     Debug_View: number;
     Debug_Material: number;
     Debug_WhiteWorld: boolean;
@@ -295,9 +302,12 @@ export class RealTimeSettingsSnapshot {
     Material_EmissionBrightness: number;
     Lighting_BlockTemp: number;
     Effect_BloomStrength: number;
-    Post_Contrast: number;
+    //Post_Contrast: number;
     Post_ExposureMin: number;
     Post_ExposureMax: number;
     Post_ExposureRange: number;
     Post_ExposureSpeed: number;
+    Post_Tonemap_Contrast: number;
+    Post_Tonemap_LinearStart: number;
+    Post_Tonemap_LinearLength: number;
 }

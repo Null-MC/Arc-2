@@ -1,3 +1,14 @@
+const mat3 REC2020_TO_SRGB = mat3(
+    1.6605, -0.1246, -0.0182,
+    -0.5876, 1.1329, -0.1006,
+    -0.0728, -0.0083, 1.1187);
+
+const mat3 LINEAR_RGB_TO_REC2020 = mat3(
+    0.6274, 0.0691, 0.0164,
+    0.3293, 0.9195, 0.0880,
+    0.0433, 0.0113, 0.8956);
+
+
 vec3 tonemap_jodieReinhard(vec3 c) {
     // From: https://www.shadertoy.com/view/tdSXzD
     float l = dot(c, vec3(0.2126, 0.7152, 0.0722));
@@ -23,11 +34,11 @@ vec3 tonemap_ACESFit2(const in vec3 color) {
 }
 
 vec3 tonemap_Lottes(const in vec3 color) {
-    const vec3 a = vec3(Scene_PostContrastF); // contrast
+    const vec3 a = vec3(Post_Tonemap_Contrast); // contrast
     const vec3 d = vec3(0.977); // shoulder
-    const vec3 hdrMax = vec3(16.0);
-    const vec3 midIn = vec3(0.42);
-    const vec3 midOut = vec3(0.18);
+    const vec3 hdrMax = vec3(8.0);
+    const vec3 midIn = vec3(Post_Tonemap_LinearStart);
+    const vec3 midOut = vec3(Post_Tonemap_LinearLength);
 
     const vec3 b =
         (-pow(midIn, a) + pow(hdrMax, a) * midOut) /
@@ -60,7 +71,7 @@ vec3 _uchimura(vec3 x, float P, float a, float m, float l, float c, float b) {
     return T * w0 + L * w1 + S * w2;
 }
 
-vec3 tonemap_Uchimura(vec3 x) {
+vec3 tonemap_Uchimura(const in vec3 color) {
     const float P = 1.00;  // max display brightness
     const float a = 1.30;  // contrast
     const float m = 0.22; // linear section start
@@ -68,7 +79,7 @@ vec3 tonemap_Uchimura(vec3 x) {
     const float c = 1.56; // black
     const float b = 0.00;  // pedestal
 
-    return _uchimura(x, P, a, m, l, c, b);
+    return _uchimura(color, P, Post_Tonemap_Contrast, Post_Tonemap_LinearStart, Post_Tonemap_LinearLength, c, b);
 }
 
 vec3 tonemap_AgX(vec3 color) {
@@ -85,13 +96,15 @@ vec3 tonemap_AgX(vec3 color) {
 
     // Constants for AgX exposure range
     const float AgxMinEv = -11.5;
-    const float AgxMaxEv = 9.6;
+    const float AgxMaxEv = 3.6;
 
     // Constants for agxAscCdl operation
     const vec3 SLOPE = vec3(0.998);
     const vec3 OFFSET = vec3(0.0);
-    const vec3 POWER = vec3(Scene_PostContrastF);
-    const float SATURATION = 1.4;
+    const vec3 POWER = vec3(Post_Tonemap_LinearStart);//vec3(1.0);
+    const float SATURATION = Post_Tonemap_Contrast;// 1.4;
+
+    //color = LINEAR_SRGB_TO_LINEAR_REC2020 * color;
 
     // 1. agx()
     // Input transform (inset)
@@ -119,7 +132,9 @@ vec3 tonemap_AgX(vec3 color) {
     // sRGB IEC 61966-2-1 2.2 Exponent Reference EOTF Display
     color = pow(max(vec3(0.0), color), vec3(2.2));
 
-    return color;
+    //color = LINEAR_REC2020_TO_LINEAR_SRGB * color;
+
+    return saturate(color);
 }
 
 vec3 tonemap_Commerce(vec3 color) {

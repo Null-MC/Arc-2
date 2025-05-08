@@ -121,8 +121,15 @@ option.POST_EXPOSURE_MAX=Maximum
 
 option.POST_EXPOSURE_SPEED=Speed
 
-option.POST_CONTRAST=Contrast
-suffix.POST_CONTRAST=%
+
+screen.POST_TONEMAP=Tonemapping
+
+option.POST_TONEMAP_CONTRAST=Contrast
+
+option.POST_TONEMAP_LINEAR_START=Linear Start
+
+option.POST_TONEMAP_LINEAR_LENGTH=Linear Length
+
 
 option.DEBUG_WHITE_WORLD=White-World
 option.DEBUG_WHITE_WORLD.comment=Makes all blocks in the world white, so that lighting can be visualized/debugged more easily.

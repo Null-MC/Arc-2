@@ -150,28 +150,24 @@ void iris_emitFragment() {
     vec2 lmcoord = saturate((mLight - (0.5/16.0)) / (15.0/16.0));
     vec3 localGeoNormal = normalize(vIn.localNormal);
 
+    #if MATERIAL_FORMAT != MAT_NONE
+        vec3 localTexNormal = mat_normal(normalData.xyz);
+        float roughness = mat_roughness(specularData.r);
+        float f0_metal = specularData.g;
+        float porosity = mat_porosity(specularData.b, roughness, f0_metal);
+    #endif
+
     #if MATERIAL_FORMAT == MAT_LABPBR
-        vec3 localTexNormal = mat_normal_lab(normalData.xy);
-        float occlusion = normalData.z;
-
-        float roughness = mat_roughness(specularData.r);
-        float f0_metal = specularData.g;
         float emission = mat_emission_lab(specularData.a);
-        float porosity = mat_porosity_lab(specularData.b);
         float sss = mat_sss_lab(specularData.b);
+        float occlusion = normalData.z;
     #elif MATERIAL_FORMAT == MAT_OLDPBR
-        vec3 localTexNormal = mat_normal_old(normalData.xyz);
-        float occlusion = 1.0;
-
-        float roughness = mat_roughness(specularData.r);
-        float f0_metal = specularData.g;
         float emission = specularData.b;
-        float porosity = 0.0;
+        float occlusion = 1.0;
         float sss = 0.0;
     #else
         vec3 localTexNormal = localGeoNormal;
         float occlusion = 1.0;
-
         float roughness = 0.92;
         float f0_metal = 0.0;
         float emission = iris_getEmission(vIn.blockId) / 15.0;
@@ -264,6 +260,6 @@ void iris_emitFragment() {
 
     outData.r = packUnorm4x8(vec4((localGeoNormal * 0.5 + 0.5), 0.0));
     outData.g = packUnorm4x8(vec4(roughness, f0_metal, emission, sss));
-    outData.b = packUnorm4x8(vec4(lmcoord, occlusion, 0.0));
+    outData.b = packUnorm4x8(vec4(lmcoord, occlusion, porosity));
     outData.a = vIn.blockId;
 }

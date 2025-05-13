@@ -56,7 +56,7 @@ uniform sampler2D texSkyIrradiance;
     uniform sampler2D texSpecularRT;
 #endif
 
-#ifdef LPV_ENABLED
+#if LIGHTING_MODE == LIGHT_MODE_LPV
     uniform sampler3D texFloodFill;
     uniform sampler3D texFloodFill_alt;
 #endif
@@ -121,7 +121,7 @@ uniform sampler2D texSkyIrradiance;
 
 void main() {
     ivec2 iuv = ivec2(gl_FragCoord.xy);
-    vec3 colorOpaque = texelFetch(texFinalOpaque, iuv, 0).rgb;
+    vec3 colorOpaque = texelFetch(texFinalOpaque, iuv, 0).rgb * 1000.0;
     vec4 albedo = texelFetch(texDeferredTrans_Color, iuv, 0);
 
     vec4 finalColor = vec4(0.0);
@@ -228,8 +228,8 @@ void main() {
         float NoL_sun = dot(localTexNormal, Scene_LocalSunDir);
         float NoL_moon = -NoL_sun;
 
-        vec3 skyLight_NoLm = SUN_BRIGHTNESS * sunTransmit * max(NoL_sun, 0.0)
-            + MOON_BRIGHTNESS * moonTransmit * max(NoL_moon, 0.0);
+        vec3 skyLight_NoLm = SUN_LUX * sunTransmit * max(NoL_sun, 0.0)
+            + MOON_LUX * moonTransmit * max(NoL_moon, 0.0);
 
         vec3 skyLightDiffuse = skyLight_NoLm * shadow_sss.rgb;
         skyLightDiffuse *= SampleLightDiffuse(NoVm, NoLm, LoHm, roughL);
@@ -289,9 +289,9 @@ void main() {
         diffuse *= 1.0 - metalness * (1.0 - roughL);
 
         #if MATERIAL_EMISSION_POWER != 1
-            diffuse += pow(emission, MATERIAL_EMISSION_POWER) * Material_EmissionBrightness;
+            diffuse += pow(emission, MATERIAL_EMISSION_POWER) * (Material_EmissionBrightness * BLOCK_LUX);
         #else
-            diffuse += emission * Material_EmissionBrightness;
+            diffuse += emission * Material_EmissionBrightness * BLOCK_LUX;
         #endif
 
         // reflections
@@ -306,10 +306,10 @@ void main() {
             #endif
 
             vec3 skyPos = getSkyPosition(vec3(0.0));
-            vec3 skyReflectColor = lmCoord.y * SKY_LUMINANCE * getValFromSkyLUT(texSkyView, skyPos, reflectLocalDir, Scene_LocalSunDir);
+            vec3 skyReflectColor = lmCoord.y * getValFromSkyLUT(texSkyView, skyPos, reflectLocalDir, Scene_LocalSunDir);
 
-            vec3 reflectSun = SUN_LUMINANCE * sun(reflectLocalDir, Scene_LocalSunDir) * sunTransmit;
-            vec3 reflectMoon = MOON_LUMINANCE * moon(reflectLocalDir, -Scene_LocalSunDir) * moonTransmit;
+            vec3 reflectSun = SUN_LUX * sun(reflectLocalDir, Scene_LocalSunDir) * sunTransmit;
+            vec3 reflectMoon = MOON_LUX * moon(reflectLocalDir, -Scene_LocalSunDir) * moonTransmit;
             skyReflectColor += shadow_sss.rgb * (reflectSun + reflectMoon);
 
             // vec3 starViewDir = getStarViewDir(reflectLocalDir);
@@ -408,7 +408,7 @@ void main() {
             refractMip = 6.0 * pow(roughness, 0.5) * min(viewDistFar * 0.2, 1.0);
         #endif
 
-        colorOpaque = textureLod(texFinalOpaque, refract_uv, refractMip).rgb;
+        colorOpaque = textureLod(texFinalOpaque, refract_uv, refractMip).rgb * 1000.0;
 
         colorOpaque *= 1.0 - view_F;
 
@@ -457,6 +457,8 @@ void main() {
 
     if (ap.camera.fluid == 2)
         colorFinal = RgbToLinear(vec3(0.0));
+
+    colorFinal = clamp(colorFinal * 0.001, 0.0, 65000.0);
 
     outColor = vec4(colorFinal, 1.0);
 }

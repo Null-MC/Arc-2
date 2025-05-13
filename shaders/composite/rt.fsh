@@ -35,7 +35,7 @@ uniform sampler2D texBlueNoise;
         uniform sampler2DArray texShadowColor;
     #endif
 
-    #ifdef LPV_ENABLED
+    #if LIGHTING_MODE == LIGHT_MODE_LPV
         uniform sampler3D texFloodFill;
         uniform sampler3D texFloodFill_alt;
     #endif
@@ -113,7 +113,7 @@ in vec2 uv;
         #include "/lib/shadow/sample.glsl"
     #endif
 
-    #ifdef LPV_ENABLED
+    #if LIGHTING_MODE == LIGHT_MODE_LPV
         #include "/lib/lpv/floodfill.glsl"
     #endif
 
@@ -297,10 +297,10 @@ void main() {
 
             // vec3 skyReflectColor = GetSkyColor(vec3(0.0), reflectLocalDir, shadow_sss.rgb, lmCoord.y);
             vec3 skyPos = getSkyPosition(vec3(0.0));
-            vec3 skyReflectColor = lmCoord.y * SKY_LUMINANCE * getValFromSkyLUT(texSkyView, skyPos, reflectLocalDir, Scene_LocalSunDir);
+            vec3 skyReflectColor = lmCoord.y * getValFromSkyLUT(texSkyView, skyPos, reflectLocalDir, Scene_LocalSunDir);
 
-            vec3 reflectSun = SUN_LUMINANCE * sun(reflectLocalDir, Scene_LocalSunDir) * sunTransmit;
-            vec3 reflectMoon = MOON_LUMINANCE * moon(reflectLocalDir, -Scene_LocalSunDir) * moonTransmit;
+            vec3 reflectSun = SUN_LUX * sun(reflectLocalDir, Scene_LocalSunDir) * sunTransmit;
+            vec3 reflectMoon = MOON_LUX * moon(reflectLocalDir, -Scene_LocalSunDir) * moonTransmit;
             skyReflectColor += shadow_sss.rgb * (reflectSun + reflectMoon);
 
             vec4 reflection = vec4(0.0);
@@ -367,7 +367,7 @@ void main() {
                 reflect_lmcoord = _pow3(reflect_lmcoord);
 
                 #if MATERIAL_FORMAT != MAT_NONE
-                    vec3 reflect_localTexNormal = mat_normal(reflect_normalData);
+                    vec3 reflect_localTexNormal = mat_normal(reflect_normalData.xyz);
                     float reflect_roughness = mat_roughness(reflect_specularData.r);
                     float reflect_f0_metal = reflect_specularData.g;
                     float reflect_emission = mat_emission(reflect_specularData);
@@ -515,9 +515,9 @@ void main() {
                 reflect_diffuse *= 1.0 - reflect_metalness * (1.0 - reflect_roughL);
 
                 #if MATERIAL_EMISSION_POWER != 1
-                    reflect_diffuse += pow(reflect_emission, MATERIAL_EMISSION_POWER) * Material_EmissionBrightness;
+                    reflect_diffuse += pow(reflect_emission, MATERIAL_EMISSION_POWER) * Material_EmissionBrightness * BLOCK_LUX;
                 #else
-                    reflect_diffuse += reflect_emission * Material_EmissionBrightness;
+                    reflect_diffuse += reflect_emission * Material_EmissionBrightness * BLOCK_LUX;
                 #endif
 
                 #ifdef LIGHTING_GI_ENABLED

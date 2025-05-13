@@ -63,6 +63,10 @@ float saturate(const in float x) {return clamp(x, 0.0, 1.0);}
 vec2 saturate(const in vec2 x) {return clamp(x, 0.0, 1.0);}
 vec3 saturate(const in vec3 x) {return clamp(x, 0.0, 1.0);}
 
+vec3 mul3(const in mat4 matrix, const in vec3 vector) {
+    return mat3(matrix) * vector + matrix[3].xyz;
+}
+
 vec3 unproject(const in vec4 pos) {
     return pos.xyz / pos.w;
 }
@@ -71,8 +75,8 @@ vec3 unproject(const in mat4 matProj, const in vec3 pos) {
     return unproject(matProj * vec4(pos, 1.0));
 }
 
-vec3 mul3(const in mat4 matrix, const in vec3 vector) {
-	return mat3(matrix) * vector + matrix[3].xyz;
+float unmix(const in float value, const in float valueMin, const in float valueMax) {
+    return (value - valueMin) / (valueMax - valueMin);
 }
 
 

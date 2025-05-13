@@ -31,6 +31,7 @@ uniform sampler2D texFinal;
         uniform sampler2D texAccumSpecular_opaque;
     #endif
 #elif DEBUG_VIEW == DEBUG_VIEW_SKY_IRRADIANCE
+    uniform sampler2D texSkyView;
     uniform sampler2D texSkyIrradiance;
 #elif DEBUG_VIEW == DEBUG_VIEW_SHADOWMAP_COLOR
     uniform sampler2DArray texShadowColor;
@@ -94,7 +95,7 @@ void main() {
             #elif DEBUG_VIEW == DEBUG_VIEW_SSGI
                 color = textureLod(TEX_SSGIAO, previewCoord, 0).rgb;
                 ApplyAutoExposure(color, Scene_AvgExposure);
-                color = tonemap_ACESFit2(color);
+                //color = tonemap_ACESFit2(color);
             #elif DEBUG_VIEW == DEBUG_VIEW_VL
                 color = textureLod(texScatterVL, previewCoord, 0).rgb;
             #elif DEBUG_VIEW == DEBUG_VIEW_RT
@@ -106,7 +107,9 @@ void main() {
                     color = textureLod(texAccumDiffuse_opaque, previewCoord, 0).rgb;
                 #endif
             #elif DEBUG_VIEW == DEBUG_VIEW_SKY_IRRADIANCE
-                color = textureLod(texSkyIrradiance, previewCoord, 0).rgb * 0.1;
+                color = textureLod(texSkyView, previewCoord, 0).rgb * 0.001;
+                //ApplyAutoExposure(color, Scene_AvgExposure);
+                color = tonemap_jodieReinhard(color);
             #endif
 
             #if DEBUG_VIEW == DEBUG_VIEW_MATERIAL
@@ -155,6 +158,10 @@ void main() {
                 #else
                     color = textureLod(texAccumSpecular_opaque, previewCoord2, 0).rgb;
                 #endif
+            #elif DEBUG_VIEW == DEBUG_VIEW_SKY_IRRADIANCE
+                color = textureLod(texSkyIrradiance, previewCoord2, 0).rgb * 0.001;
+                //ApplyAutoExposure(color, Scene_AvgExposure);
+                color = tonemap_jodieReinhard(color);
             #endif
         }
 

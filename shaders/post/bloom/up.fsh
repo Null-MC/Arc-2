@@ -7,6 +7,10 @@ layout(location = 0) out vec3 outColor;
 
 uniform sampler2D texBloom;
 
+#if BLOOM_INDEX == 0
+    uniform sampler2D texFinal;
+#endif
+
 in vec2 uv;
 
 #include "/lib/common.glsl"
@@ -39,5 +43,8 @@ void main() {
 
     #if BLOOM_INDEX == 0
         outColor *= Scene_EffectBloomStrength;
+
+        outColor += texelFetch(texFinal, ivec2(gl_FragCoord.xy), 0).rgb;
+        outColor = clamp(outColor, 0.0, 65.0);
     #endif
 }

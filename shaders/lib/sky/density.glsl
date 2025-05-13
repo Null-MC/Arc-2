@@ -2,7 +2,7 @@
 
 
 float GetSkyDensity(const in vec3 localPos) {
-    float density = Scene_SkyFogDensityF;
+    float density = Scene_SkyFogDensityF * 0.1;
 
     vec3 worldPos = localPos + ap.camera.pos;
     density *= 1.0 - saturate((worldPos.y - Scene_SkyFogSeaLevel) / 200.0);

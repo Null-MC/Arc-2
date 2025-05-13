@@ -52,6 +52,8 @@ function applySettings(settings) {
     defineGlobally("SHADOW_RESOLUTION", snapshot.Shadow_Resolution.toString());
 
     defineGlobally("MATERIAL_FORMAT", snapshot.Material_Format);
+    defineGlobally("MATERIAL_NORMAL_FORMAT", snapshot.Material_NormalFormat);
+    defineGlobally("MATERIAL_POROSITY_FORMAT", snapshot.Material_PorosityFormat);
     if (snapshot.Material_ParallaxEnabled) {
         defineGlobally1("MATERIAL_PARALLAX_ENABLED");
         defineGlobally("MATERIAL_PARALLAX_DEPTH", snapshot.Material_ParallaxDepth.toString());
@@ -102,15 +104,11 @@ function applySettings(settings) {
             defineGlobally("QUAD_BIN_SIZE", QUAD_BIN_SIZE.toString());
         }
 
-        if (settings.Internal.LPV) {
+        if (settings.Lighting_Mode == LightingModes.FloodFill)
             defineGlobally1("LPV_ENABLED");
 
-            if (snapshot.Lighting_LpvRsmEnabled)
-                defineGlobally1("LPV_RSM_ENABLED");
-
-            if (snapshot.Lighting_GI_Enabled)
-                defineGlobally1("LIGHTING_GI_ENABLED");
-        }
+        if (snapshot.Lighting_GI_Enabled)
+            defineGlobally1("LIGHTING_GI_ENABLED");
     }
 
     if (snapshot.Effect_SSAO_Enabled) defineGlobally1("EFFECT_SSAO_ENABLED");
@@ -178,6 +176,25 @@ export function setupShader() {
     setLightColorEx("#7f3fb2", "purple_stained_glass", "purple_stained_glass_pane");
     setLightColorEx("#b24cd8", "magenta_stained_glass", "magenta_stained_glass_pane");
     setLightColorEx("#f27fa5", "pink_stained_glass", "pink_stained_glass_pane");
+
+    if (snapshot.Lighting_ColorCandles) {
+        setLightColorEx("#ffffff", "white_candle");
+        setLightColorEx("#bbbbbb", "light_gray_candle");
+        setLightColorEx("#696969", "gray_candle");
+        setLightColorEx("#1f1f1f", "black_candle");
+        setLightColorEx("#8f5b35", "brown_candle");
+        setLightColorEx("#b53129", "red_candle");
+        setLightColorEx("#ff8118", "orange_candle");
+        setLightColorEx("#ffcc4b", "yellow_candle");
+        setLightColorEx("#7bc618", "lime_candle");
+        setLightColorEx("#608116", "green_candle");
+        setLightColorEx("#129e9d", "cyan_candle");
+        setLightColorEx("#29a1d5", "light_blue_candle");
+        setLightColorEx("#455abe", "blue_candle");
+        setLightColorEx("#832cb4", "purple_candle");
+        setLightColorEx("#bd3cb4", "magenta_candle");
+        setLightColorEx("#f689ac", "pink_candle");
+    }
 
     //addTag(1, new NamespacedId("minecraft", "leaves"));
 
@@ -751,27 +768,35 @@ export function setupShader() {
             .build());
     }
 
-    if (settings.Internal.LPV) {
+    if (snapshot.Lighting_Mode == LightingModes.FloodFill) {
         const groupCount = Math.ceil(snapshot.Voxel_Size / 8);
 
-        const shader = new Compute("lpv-propagate")
-            .location("composite/lpv-propagate.csh")
+        registerShader(Stage.POST_RENDER, new Compute("floodfill")
+            .location("composite/floodfill.csh")
             .workGroups(groupCount, groupCount, groupCount)
             .define("RENDER_COMPUTE", "1")
             .ssbo(0, sceneBuffer)
+            .ubo(0, SceneSettingsBuffer)
+            .build());
+    }
+
+    if (snapshot.Lighting_GI_Enabled) {
+        const groupCount = Math.ceil(snapshot.Voxel_Size / 8);
+
+        const shader = new Compute("global-illumination")
+            .location("composite/global-illumination.csh")
+            .workGroups(groupCount, groupCount, groupCount)
+            .define("RENDER_COMPUTE", "1")
+            .ssbo(0, sceneBuffer)
+            .ssbo(1, shLpvBuffer)
+            .ssbo(2, shLpvBuffer_alt)
+            .ssbo(5, blockFaceBuffer)
             .ubo(0, SceneSettingsBuffer);
 
-        if (snapshot.Lighting_GI_Enabled) {
-            shader
-                .ssbo(1, shLpvBuffer)
-                .ssbo(2, shLpvBuffer_alt)
-                .ssbo(5, blockFaceBuffer);
+        if (snapshot.Lighting_Mode == LightingModes.RayTraced) {
+            registerBarrier(Stage.POST_RENDER, new MemoryBarrier(SSBO_BIT));
 
-            if (snapshot.Lighting_Mode == LightingModes.RayTraced) {
-                registerBarrier(Stage.POST_RENDER, new MemoryBarrier(SSBO_BIT));
-
-                shader.ssbo(3, lightListBuffer);
-            }
+            shader.ssbo(3, lightListBuffer);
         }
 
         registerShader(Stage.POST_RENDER, shader.build());
@@ -1069,6 +1094,7 @@ export function setupShader() {
             .ssbo(0, sceneBuffer)
             .ssbo(3, lightListBuffer)
             .ssbo(4, quadListBuffer)
+            .ubo(0, SceneSettingsBuffer)
             .define("TEX_COLOR", snapshot.Debug_Translucent
                 ? "texDeferredTrans_Color"
                 : "texDeferredOpaque_Color")
@@ -1107,25 +1133,22 @@ export function onSettingsChanged(state : WorldState) {
 
     const d = snapshot.Sky_FogDensity * 0.01;
 
-    let emission = snapshot.Material_EmissionBrightness * 0.01;
-
     new StreamBufferBuilder(SceneSettingsBuffer)
         .appendFloat(d*d)
         .appendFloat(snapshot.Sky_SeaLevel)
         .appendInt(snapshot.Water_WaveDetail)
-        .appendFloat(Math.pow(2.0, emission))
+        .appendFloat(snapshot.Water_WaveHeight)
+        .appendFloat(snapshot.Material_EmissionBrightness * 0.01)
         .appendInt(snapshot.Lighting_BlockTemp)
         .appendFloat(snapshot.Effect_BloomStrength * 0.01)
-        //.appendFloat(snapshot.Post_Contrast * 0.01)
         .appendFloat(snapshot.Post_ExposureMin)
         .appendFloat(snapshot.Post_ExposureMax)
         .appendFloat(snapshot.Post_ExposureRange)
         .appendFloat(snapshot.Post_ExposureSpeed)
         .appendFloat(snapshot.Post_Tonemap_Contrast)
         .appendFloat(snapshot.Post_Tonemap_LinearStart)
-        .appendFloat(snapshot.Post_Tonemap_LinearLength);
-
-    //SceneSettingsBuffer.uploadData();
+        .appendFloat(snapshot.Post_Tonemap_LinearLength)
+        .appendFloat(snapshot.Post_Tonemap_Black);
 }
 
 export function setupFrame(state : WorldState) {
@@ -1212,7 +1235,7 @@ function setupBloom(texFinal) {
     const screenHeight_half = Math.ceil(screenHeight / 2.0);
 
     let maxLod = Math.log2(Math.min(screenWidth, screenHeight));
-    maxLod = Math.floor(maxLod - 1);
+    maxLod = Math.floor(maxLod - 2);
     maxLod = Math.max(Math.min(maxLod, 8), 0);
 
     print(`Bloom enabled with ${maxLod} LODs`);
@@ -1250,10 +1273,14 @@ function setupBloom(texFinal) {
             .define("BLOOM_INDEX", i.toString())
             .define("MIP_INDEX", i.toString());
 
-        if (i == 0) shader.target(0, texFinal);
-        else shader.target(0, texBloom, i-1);
-
-        shader.blendFunc(0, Func.ONE, Func.ONE, Func.ONE, Func.ONE);
+        if (i == 0) {
+            shader.target(0, texFinal);
+            shader.blendFunc(0, Func.ONE, Func.ZERO, Func.ONE, Func.ZERO);
+        }
+        else {
+            shader.target(0, texBloom, i-1);
+            shader.blendFunc(0, Func.ONE, Func.ONE, Func.ONE, Func.ONE);
+        }
 
         registerShader(Stage.POST_RENDER, shader.build());
     }

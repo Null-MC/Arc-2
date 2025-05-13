@@ -37,8 +37,10 @@ void main() {
     vec3 l = sample_src(fma(srcPixelSize, vec2(-1.0, -1.0), uv));
     vec3 m = sample_src(fma(srcPixelSize, vec2(+1.0, -1.0), uv));
 
-    outColor  = e * 0.125;
+    outColor  = e         * 0.125;
     outColor += (a+c+g+i) * 0.03125;
     outColor += (b+d+f+h) * 0.0625;
     outColor += (j+k+l+m) * 0.125;
+
+    outColor = clamp(outColor, 0.0, 65000.0);
 }

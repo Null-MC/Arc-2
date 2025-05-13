@@ -79,7 +79,13 @@ vec3 tonemap_Uchimura(const in vec3 color) {
     const float c = 1.56; // black
     const float b = 0.00;  // pedestal
 
-    return _uchimura(color, P, Post_Tonemap_Contrast, Post_Tonemap_LinearStart, Post_Tonemap_LinearLength, c, b);
+    return _uchimura(color,
+        P,
+        Post_Tonemap_Contrast,
+        Post_Tonemap_LinearStart,
+        Post_Tonemap_LinearLength,
+        Post_Tonemap_Black,
+        b);
 }
 
 vec3 tonemap_AgX(vec3 color) {

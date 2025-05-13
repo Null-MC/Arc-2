@@ -1,8 +1,9 @@
 vec3 getValFromSkyLUT(const in sampler2D texSkyView, vec3 skyPos, vec3 rayDir, vec3 sunDir) {
     float height = length(skyPos);
     vec3 up = skyPos / height;
-    
-    float horizonAngle = safeacos(sqrt(height * height - groundRadiusMM * groundRadiusMM) / height);
+
+    float elevation2 = max(height * height - groundRadiusMM * groundRadiusMM, 0.0);
+    float horizonAngle = safeacos(sqrt(elevation2) / height);
     float altitudeAngle = horizonAngle - acos(dot(rayDir, up)); // Between -PI/2 and PI/2
     float azimuthAngle; // Between 0 and 2*PI
     if (abs(altitudeAngle) > (0.5*PI - 0.0001)) {

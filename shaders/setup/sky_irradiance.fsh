@@ -51,12 +51,13 @@ vec3 CalculateIrradiance(const in vec3 normal) {
                 cos_theta);
 
             // tangent space to world
+            //tangentSample = vec3(0.0, 0.0, 1.0);
             vec3 sampleVec = normalize(tbn * tangentSample);
 
             // vec2 uv = DirectionToUV(sampleVec);
             // vec3 skyColor = textureLod(texSkyView, uv, 0).rgb;
 
-            vec3 skyColor = SKY_LUMINANCE * getValFromSkyLUT(texSkyView, skyPos, sampleVec, Scene_LocalSunDir);
+            vec3 skyColor = getValFromSkyLUT(texSkyView, skyPos, sampleVec, Scene_LocalSunDir);
 
 //            if (rayIntersectSphere(skyPos, sampleVec, groundRadiusMM) < 0.0) {
 //                float sunLum = SUN_LUMINANCE * sun(sampleVec, Scene_LocalSunDir);
@@ -79,5 +80,5 @@ void main() {
     vec3 viewDir = DirectionFromUV(uv);
     vec3 irradiance = CalculateIrradiance(viewDir);
 
-    outColor = vec4(irradiance, 0.1);
+    outColor = vec4(irradiance * PI, 0.1);
 }

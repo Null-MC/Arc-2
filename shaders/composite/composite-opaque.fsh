@@ -53,7 +53,7 @@ uniform sampler3D texFogNoise;
     uniform sampler2D texSpecularRT;
 #endif
 
-#ifdef LPV_ENABLED
+#if LIGHTING_MODE == LIGHT_MODE_LPV
     uniform sampler3D texFloodFill;
     uniform sampler3D texFloodFill_alt;
 #endif
@@ -167,6 +167,7 @@ void main() {
         vec4 data_b = unpackUnorm4x8(data.b);
         vec2 lmCoord = data_b.rg;
         float texOcclusion = data_b.b;
+        float porosity = data_b.a;
 
         // float data_trans_water = unpackUnorm4x8(data_trans_a).b;
         bool is_trans_fluid = iris_hasFluid(trans_blockId);
@@ -235,8 +236,8 @@ void main() {
         float NoL_sun = dot(localTexNormal, Scene_LocalSunDir);
         float NoL_moon = -NoL_sun;
 
-        vec3 skyLight_NoLm = SUN_BRIGHTNESS * sunTransmit * max(NoL_sun, 0.0)
-            + MOON_BRIGHTNESS * moonTransmit * max(NoL_moon, 0.0);
+        vec3 skyLight_NoLm = SUN_LUX * sunTransmit * max(NoL_sun, 0.0)
+            + MOON_LUX * moonTransmit * max(NoL_moon, 0.0);
 
         vec3 skyLightDiffuse = skyLight_NoLm * shadow_sss.rgb;
         skyLightDiffuse *= SampleLightDiffuse(NoVm, NoLm, LoHm, roughL);
@@ -273,9 +274,12 @@ void main() {
 
         float VoL_sun = dot(localViewDir, Scene_LocalSunDir);
 //        float VoL_moon = dot(localViewDir, -Scene_LocalSunDir);
-        vec3 sss_phase_sun = max(HG(VoL_sun, 0.16), 0.0) * SUN_BRIGHTNESS * sunTransmit * (1.0 - max(NoL_sun, 0.0));
-        vec3 sss_phase_moon = max(HG(-VoL_sun, 0.16), 0.0) * MOON_BRIGHTNESS * moonTransmit * (1.0 - max(NoL_moon, 0.0));
-        skyLightDiffuse += (sss_phase_sun + sss_phase_moon) * max(shadow_sss.w, 0.0) * abs(Scene_LocalLightDir.y);
+        vec3 sss_phase_sun = max(HG(VoL_sun, 0.16), 0.0) * SUN_LUX * sunTransmit;
+        vec3 sss_phase_moon = max(HG(-VoL_sun, 0.16), 0.0) * MOON_LUX * moonTransmit;
+
+        vec3 skyLightSSS = 0.3 * (sss_phase_sun + sss_phase_moon) * abs(Scene_LocalLightDir.y);
+        skyLightDiffuse = mix(skyLightDiffuse, skyLightSSS, shadow_sss.w * sss);
+        //skyLightDiffuse += (sss_phase_sun + sss_phase_moon) * max(shadow_sss.w, 0.0) * abs(Scene_LocalLightDir.y);
 
         vec3 blockLighting = blackbody(Lighting_BlockTemp) * (BLOCKLIGHT_BRIGHTNESS * lmCoord.x) * (occlusion*0.5 + 0.5);
 
@@ -305,9 +309,9 @@ void main() {
         diffuse *= 1.0 - metalness * (1.0 - roughL);
 
         #if MATERIAL_EMISSION_POWER != 1
-            diffuse += pow(emission, MATERIAL_EMISSION_POWER) * Material_EmissionBrightness;
+            diffuse += pow(emission, MATERIAL_EMISSION_POWER) * Material_EmissionBrightness * BLOCK_LUX;
         #else
-            diffuse += emission * Material_EmissionBrightness;
+            diffuse += emission * Material_EmissionBrightness * BLOCK_LUX;
         #endif
 
         // reflections
@@ -322,7 +326,7 @@ void main() {
             #endif
 
             vec3 skyPos = getSkyPosition(vec3(0.0));
-            vec3 skyReflectColor = lmCoord.y * SKY_LUMINANCE * getValFromSkyLUT(texSkyView, skyPos, reflectLocalDir, Scene_LocalSunDir);
+            vec3 skyReflectColor = lmCoord.y * getValFromSkyLUT(texSkyView, skyPos, reflectLocalDir, Scene_LocalSunDir);
 
             vec3 reflectSun = SUN_LUMINANCE * sun(reflectLocalDir, Scene_LocalSunDir) * sunTransmit;
             vec3 reflectMoon = MOON_LUMINANCE * moon(reflectLocalDir, -Scene_LocalSunDir) * moonTransmit;
@@ -387,7 +391,8 @@ void main() {
         #endif
 
         if (isWet) {
-            albedo.rgb = pow(albedo.rgb, vec3(1.8));
+            albedo.rgb *= 1.0 - 0.2*porosity;
+            albedo.rgb = pow(albedo.rgb, vec3(1.0 + 1.2*porosity));
         }
 
         colorFinal = mix(albedo.rgb * diffuse, specular, view_F);
@@ -398,7 +403,7 @@ void main() {
     }
     else {
         vec3 skyPos = getSkyPosition(vec3(0.0));
-        colorFinal = SKY_LUMINANCE * getValFromSkyLUT(texSkyView, skyPos, localViewDir, Scene_LocalSunDir);
+        colorFinal = getValFromSkyLUT(texSkyView, skyPos, localViewDir, Scene_LocalSunDir);
 
         if (rayIntersectSphere(skyPos, localViewDir, groundRadiusMM) < 0.0) {
             float sunLum = SUN_LUMINANCE * sun(localViewDir, Scene_LocalSunDir);
@@ -419,6 +424,8 @@ void main() {
         vec3 vlTransmit = textureLod(texTransmitVL, uv, 0).rgb;
         colorFinal = fma(colorFinal, vlTransmit, vlScatter);
     #endif
+
+    colorFinal = clamp(colorFinal * 0.001, 0.0, 65000.0);
 
     outColor = vec4(colorFinal, 1.0);
 }

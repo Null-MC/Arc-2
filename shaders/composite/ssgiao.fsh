@@ -42,12 +42,12 @@ void main() {
     float occlusion = 0.0;
 
     if (depth < 1.0) {
-         #if defined(EFFECT_TAA_ENABLED) || defined(ACCUM_ENABLED)
-             //float dither = InterleavedGradientNoiseTime(ivec2(gl_FragCoord.xy));
-            vec2 dither = sample_blueNoise(gl_FragCoord.xy * 2.0).xy;
-         #else
-            vec2 dither = vec2(InterleavedGradientNoise(ivec2(gl_FragCoord.xy)));
-         #endif
+        #if defined(EFFECT_TAA_ENABLED) || defined(ACCUM_ENABLED)
+            float dither = InterleavedGradientNoiseTime(ivec2(gl_FragCoord.xy));
+            //vec2 dither = sample_blueNoise(gl_FragCoord.xy * 2.0).xy;
+        #else
+           vec2 dither = vec2(InterleavedGradientNoise(ivec2(gl_FragCoord.xy)));
+        #endif
 
         vec2 pixelSize = 1.0 / ap.game.screenSize;
 
@@ -64,8 +64,8 @@ void main() {
 
         float viewDist = length(viewPos);
 
-        float distF = min(viewDist * 0.005, 1.0);
-        float max_radius_ao = mix(1.5, 12.0, distF);
+        float distF = min(viewDist * 0.002, 1.0);
+        float max_radius_ao = mix(0.8, 8.0, distF);
         float max_radius_gi = mix(2.0, 9.0, distF);
 
         float rStep = 1.0 / EFFECT_SSGIAO_SAMPLES;

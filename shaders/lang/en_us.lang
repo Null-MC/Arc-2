@@ -40,7 +40,23 @@ suffix.MATERIAL_PARALLAX_DEPTH=%
 
 option.MATERIAL_PARALLAX_DEPTHWRITE=Depth-Write
 
+option.MATERIAL_NORMALS=Normals
+screen.MATERIAL_NORMALS=Material Normals
+
+option.MATERIAL_NORMAL_FORMAT=Format
+value.MATERIAL_NORMAL_FORMAT.0=Default
+value.MATERIAL_NORMAL_FORMAT.1=Lab-PBR
+value.MATERIAL_NORMAL_FORMAT.2=Old-PBR
+
 option.MATERIAL_NORMAL_SMOOTH=Smooth Normals
+
+option.MATERIAL_POROSITY=Porosity
+screen.MATERIAL_POROSITY=Material Porosity
+
+option.MATERIAL_POROSITY_FORMAT=Format
+value.MATERIAL_POROSITY_FORMAT.0=Default
+value.MATERIAL_POROSITY_FORMAT.1=Lab-PBR
+value.MATERIAL_POROSITY_FORMAT.2=Old-PBR
 
 option.MATERIAL_EMISSION_BRIGHTNESS=Emission Brightness
 
@@ -60,6 +76,9 @@ option.BLOCKLIGHT_TEMP.comment=The color-temperature of light-map based lighting
 
 option.LIGHTING_GI_ENABLED=Global Illumination
 option.LIGHTING_GI_ENABLED.comment=Allows light to bounce, for more realistic ambient lighting. Heavy on performance!
+
+option.LIGHTING_COLOR_CANDLES=Colored Candles
+option.LIGHTING_COLOR_CANDLES.comment=Makes the lighting cast from candles match their color.
 
 option.LIGHTING_REFLECT_MODE=Reflection Mode
 value.LIGHTING_REFLECT_MODE.0=Sky Only

@@ -42,8 +42,8 @@ vec3 raymarchScattering(vec3 pos, vec3 rayDir, vec3 sunDir, float tMax, float nu
         vec3 sunTransmittance = getValFromTLUT(texSkyTransmit, newPos, sunDir);
         vec3 psiMS = getValFromMultiScattLUT(texSkyMultiScatter, newPos, sunDir);
 
-        vec3 rayleighInScattering = rayleighScattering*(rayleighPhaseValue*sunTransmittance + psiMS);
-        vec3 mieInScattering = mieScattering*(miePhaseValue*sunTransmittance + psiMS);
+        vec3 rayleighInScattering = rayleighScattering*(rayleighPhaseValue*sunTransmittance*SUN_LUX + psiMS);
+        vec3 mieInScattering = mieScattering*(miePhaseValue*sunTransmittance*SUN_LUX + psiMS);
         vec3 inScattering = (rayleighInScattering + mieInScattering);
 
         // Integrated scattering within path segment.
@@ -77,8 +77,9 @@ void main() {
     vec3 skyPos = getSkyPosition(vec3(0.0));
     float height = length(skyPos);
     vec3 up = skyPos / height;
-    
-    float horizonAngle = safeacos(sqrt(height * height - groundRadiusMM * groundRadiusMM) / height) - 0.5*PI;
+
+    float elevation2 = max(height * height - groundRadiusMM * groundRadiusMM, 0.0);
+    float horizonAngle = safeacos(sqrt(elevation2) / height) - 0.5*PI;
     float altitudeAngle = adjV*0.5*PI - horizonAngle;
     
     float cosAltitude = cos(altitudeAngle);

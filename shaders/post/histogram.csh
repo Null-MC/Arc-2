@@ -28,7 +28,7 @@ void main() {
 	barrier();
 
 	if (all(lessThan(gl_GlobalInvocationID.xy, ivec2(ap.game.screenSize)))) {
-		vec3 hdrColor = imageLoad(imgFinal, ivec2(gl_GlobalInvocationID.xy)).rgb;
+		vec3 hdrColor = imageLoad(imgFinal, ivec2(gl_GlobalInvocationID.xy)).rgb * 1000.0;
 		uint binIndex = colorToBin(hdrColor, Scene_PostExposureMin, Exposure_logLumRange);
 
 		atomicAdd(histogramShared[binIndex], 1u);

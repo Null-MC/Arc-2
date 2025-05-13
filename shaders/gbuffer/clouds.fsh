@@ -55,7 +55,7 @@ void iris_emitFragment() {
     vec3 skyLighting = skyLight * NoLm;// * SampleLightDiffuse(NoVm, NoLm, LoHm, roughL);
 
     vec2 skyIrradianceCoord = DirectionToUV(localNormal);
-    skyLighting += SKY_AMBIENT * SKY_BRIGHTNESS * textureLod(texSkyIrradiance, skyIrradianceCoord, 0).rgb;
+    skyLighting += SKY_AMBIENT * textureLod(texSkyIrradiance, skyIrradianceCoord, 0).rgb;
 
     colorFinal.rgb *= skyLighting + 0.002;
 

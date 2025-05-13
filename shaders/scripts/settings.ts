@@ -21,6 +21,7 @@ export class ShaderSettings {
     Sky_FogNoise = () => getBoolSetting("SKY_FOG_NOISE");
     Water_WaveEnabled = () => getBoolSetting("WATER_WAVES_ENABLED");
     Water_WaveDetail = () => getIntSetting("WATER_WAVES_DETAIL");
+    Water_WaveHeight = () => getFloatSetting("WATER_WAVES_HEIGHT");
     Water_Tessellation = () => getBoolSetting("WATER_TESSELLATION_ENABLED");
     Water_TessellationLevel = () => getIntSetting("WATER_TESSELLATION_LEVEL");
     Shadow_Enabled = () => getBoolSetting("SHADOWS_ENABLED");
@@ -34,13 +35,14 @@ export class ShaderSettings {
     Material_ParallaxStepCount = () => getIntSetting("MATERIAL_PARALLAX_SAMPLES");
     Material_ParallaxSharp = () => getBoolSetting("MATERIAL_PARALLAX_SHARP");
     Material_ParallaxDepthWrite = () => getBoolSetting("MATERIAL_PARALLAX_DEPTHWRITE");
+    Material_NormalFormat = () => parseInt(getStringSetting("MATERIAL_NORMAL_FORMAT"));
     Material_NormalSmooth = () => getBoolSetting("MATERIAL_NORMAL_SMOOTH");
+    Material_PorosityFormat = () => parseInt(getStringSetting("MATERIAL_POROSITY_FORMAT"));
     Material_EmissionBrightness = () => getIntSetting("MATERIAL_EMISSION_BRIGHTNESS");
     Material_FancyLava = () => getBoolSetting("FANCY_LAVA");
     Material_FancyLavaResolution = () => getIntSetting("FANCY_LAVA_RES");
     Lighting_Mode = () => parseInt(getStringSetting("LIGHTING_MODE"));
     Lighting_GI_Enabled = () => getBoolSetting("LIGHTING_GI_ENABLED");
-    Lighting_LpvRsmEnabled = () => false;
     Lighting_TraceSampleCount = () => getIntSetting("RT_MAX_SAMPLE_COUNT");
     Lighting_TraceQuads = () => getBoolSetting("LIGHTING_TRACE_TRIANGLE");
     Lighting_ReflectionMode = () => getStringSettingIndex("LIGHTING_REFLECT_MODE", 2, 'Sky Only', 'Screen-Space', 'World-Space');
@@ -48,6 +50,7 @@ export class ShaderSettings {
     Lighting_ReflectionQuads = () => getBoolSetting("LIGHTING_REFLECT_TRIANGLE");
     Lighting_ReflectionStepCount = () => getIntSetting("LIGHTING_REFLECT_MAXSTEP");
     Lighting_VolumetricResolution = () => getIntSetting("LIGHTING_VL_RES");
+    Lighting_ColorCandles = () => getBoolSetting("LIGHTING_COLOR_CANDLES");
     Lighting_BlockTemp = () => getIntSetting("BLOCKLIGHT_TEMP");
     Voxel_Size = () => getIntSetting("VOXEL_SIZE");
     Voxel_Offset = () => getIntSetting("VOXEL_FRUSTUM_OFFSET");
@@ -64,10 +67,10 @@ export class ShaderSettings {
     Post_ExposureMax = () => getFloatSetting("POST_EXPOSURE_MAX");
     Post_ExposureRange = () => getFloatSetting("POST_EXPOSURE_RANGE");
     Post_ExposureSpeed = () => getFloatSetting("POST_EXPOSURE_SPEED");
-    //Post_Contrast = () => getIntSetting("POST_CONTRAST");
     Post_Tonemap_Contrast = () => getFloatSetting("POST_TONEMAP_CONTRAST");
     Post_Tonemap_LinearStart = () => getFloatSetting("POST_TONEMAP_LINEAR_START");
     Post_Tonemap_LinearLength = () => getFloatSetting("POST_TONEMAP_LINEAR_LENGTH");
+    Post_Tonemap_Black = () => getFloatSetting("POST_TONEMAP_BLACK");
     Debug_View = () => getStringSettingIndex("DEBUG_VIEW", 0, 'None', 'Material', 'Shadows', 'SSS', 'SSAO', 'SSGI', 'Volumetric Lighting', 'Ray-Traced Lighting', 'Accumulation', 'Sky Irradiance', 'ShadowMap Color', 'ShadowMap Normal');
     Debug_Material = () => getStringSettingIndex("DEBUG_MATERIAL", 0, 'Albedo', 'Geo-Normal', 'Tex-Normal', 'Occlusion', 'Roughness', 'F0/Metal', 'Porosity', 'SSS', 'Emission', 'LightMap');
     Debug_WhiteWorld = () => getBoolSetting("DEBUG_WHITE_WORLD");
@@ -78,13 +81,9 @@ export class ShaderSettings {
 
     getSnapshot() : SettingsSnapshot {
         const snapshot = new SettingsSnapshot();
-        //snapshot.Sky_SunAngle = this.Sky_SunAngle();
-        //snapshot.Sky_SeaLevel = this.Sky_SeaLevel();
         snapshot.Sky_Clouds = this.Sky_Clouds();
-        //snapshot.Sky_FogDensity = this.Sky_FogDensity();
         snapshot.Sky_FogNoise = this.Sky_FogNoise();
         snapshot.Water_WaveEnabled = this.Water_WaveEnabled();
-        //snapshot.Water_WaveDetail = this.Water_WaveDetail();
         snapshot.Water_Tessellation = this.Water_Tessellation();
         snapshot.Water_TessellationLevel = this.Water_TessellationLevel();
         snapshot.Shadow_Enabled = this.Shadow_Enabled();
@@ -98,12 +97,13 @@ export class ShaderSettings {
         snapshot.Material_ParallaxStepCount = this.Material_ParallaxStepCount();
         snapshot.Material_ParallaxSharp = this.Material_ParallaxSharp();
         snapshot.Material_ParallaxDepthWrite = this.Material_ParallaxDepthWrite();
+        snapshot.Material_NormalFormat = this.Material_NormalFormat();
         snapshot.Material_NormalSmooth = this.Material_NormalSmooth();
+        snapshot.Material_PorosityFormat = this.Material_PorosityFormat();
         snapshot.Material_EmissionBrightness = this.Material_EmissionBrightness();
         snapshot.Material_FancyLava = this.Material_FancyLava();
         snapshot.Material_FancyLavaResolution = this.Material_FancyLavaResolution();
         snapshot.Lighting_Mode = this.Lighting_Mode();
-        snapshot.Lighting_LpvRsmEnabled = this.Lighting_LpvRsmEnabled();
         snapshot.Lighting_TraceSampleCount = this.Lighting_TraceSampleCount();
         snapshot.Lighting_TraceQuads = this.Lighting_TraceQuads();
         snapshot.Lighting_ReflectionMode = this.Lighting_ReflectionMode();
@@ -111,7 +111,7 @@ export class ShaderSettings {
         snapshot.Lighting_ReflectionQuads = this.Lighting_ReflectionQuads();
         snapshot.Lighting_ReflectionStepCount = this.Lighting_ReflectionStepCount();
         snapshot.Lighting_VolumetricResolution = this.Lighting_VolumetricResolution();
-        //snapshot.Lighting_BlockTemp = this.Lighting_BlockTemp();
+        snapshot.Lighting_ColorCandles = this.Lighting_ColorCandles();
         snapshot.Voxel_Size = this.Voxel_Size();
         snapshot.Voxel_Offset = this.Voxel_Offset();
         snapshot.Lighting_GI_Enabled = this.Lighting_GI_Enabled();
@@ -122,13 +122,7 @@ export class ShaderSettings {
         snapshot.Effect_SSGI_Enabled = this.Effect_SSGI_Enabled();
         snapshot.Effect_SSGIAO_StepCount = this.Effect_SSGIAO_StepCount();
         snapshot.Effect_BloomEnabled = this.Effect_BloomEnabled();
-        //snapshot.Effect_BloomStrength = this.Effect_BloomStrength();
         snapshot.Effect_TAA_Enabled = this.Effect_TAA_Enabled();
-        //snapshot.Post_ExposureMin = this.Post_ExposureMin();
-        //snapshot.Post_ExposureMax = this.Post_ExposureMax();
-        //snapshot.Post_ExposureRange = this.Post_ExposureRange();
-        //snapshot.Post_ExposureSpeed = this.Post_ExposureSpeed();
-        //snapshot.Post_Contrast = this.Post_Contrast();
         snapshot.Debug_View = this.Debug_View();
         snapshot.Debug_Material = this.Debug_Material();
         snapshot.Debug_WhiteWorld = this.Debug_WhiteWorld();
@@ -144,6 +138,7 @@ export class ShaderSettings {
         snapshot.Sky_SeaLevel = this.Sky_SeaLevel();
         snapshot.Sky_FogDensity = this.Sky_FogDensity();
         snapshot.Water_WaveDetail = this.Water_WaveDetail();
+        snapshot.Water_WaveHeight = this.Water_WaveHeight();
         snapshot.Material_EmissionBrightness = this.Material_EmissionBrightness();
         snapshot.Lighting_BlockTemp = this.Lighting_BlockTemp();
         snapshot.Effect_BloomStrength = this.Effect_BloomStrength();
@@ -151,10 +146,10 @@ export class ShaderSettings {
         snapshot.Post_ExposureMax = this.Post_ExposureMax();
         snapshot.Post_ExposureRange = this.Post_ExposureRange();
         snapshot.Post_ExposureSpeed = this.Post_ExposureSpeed();
-        //snapshot.Post_Contrast = this.Post_Contrast();
         snapshot.Post_Tonemap_Contrast = this.Post_Tonemap_Contrast();
         snapshot.Post_Tonemap_LinearStart = this.Post_Tonemap_LinearStart();
         snapshot.Post_Tonemap_LinearLength = this.Post_Tonemap_LinearLength();
+        snapshot.Post_Tonemap_Black = this.Post_Tonemap_Black();
         return snapshot;
     }
 }
@@ -176,7 +171,6 @@ export function buildSettings(snapshot: SettingsSnapshot, realtime: RealTimeSett
             VoxelizeBlockFaces: false,
             VoxelizeTriangles: false,
             DebugEnabled: false,
-            LPV: false,
         },
     };
 
@@ -186,7 +180,6 @@ export function buildSettings(snapshot: SettingsSnapshot, realtime: RealTimeSett
     switch (snapshot.Lighting_Mode) {
         case LightingModes.FloodFill:
             settings.Internal.Voxelization = true;
-            settings.Internal.LPV = true;
             break;
         case LightingModes.RayTraced:
             settings.Internal.Voxelization = true;
@@ -214,15 +207,9 @@ export function buildSettings(snapshot: SettingsSnapshot, realtime: RealTimeSett
         // }
     }
 
-    if (snapshot.Lighting_LpvRsmEnabled) {
-        settings.Internal.Voxelization = true;
-        settings.Internal.LPV = true;
-    }
-
     if (snapshot.Lighting_GI_Enabled) {
         settings.Internal.Voxelization = true;
         settings.Internal.VoxelizeBlockFaces = true;
-        settings.Internal.LPV = true;
     }
 
     if (snapshot.Debug_View != 0)
@@ -235,13 +222,9 @@ export function buildSettings(snapshot: SettingsSnapshot, realtime: RealTimeSett
 }
 
 export class SettingsSnapshot {
-    //Sky_SunAngle: number;
-    //Sky_SeaLevel: number;
     Sky_Clouds: boolean;
-    //Sky_FogDensity: number;
     Sky_FogNoise: boolean;
     Water_WaveEnabled: boolean;
-    //Water_WaveDetail: number;
     Water_Tessellation: boolean;
     Water_TessellationLevel: number;
     Shadow_Enabled: boolean;
@@ -255,12 +238,13 @@ export class SettingsSnapshot {
     Material_ParallaxStepCount: number;
     Material_ParallaxSharp: boolean;
     Material_ParallaxDepthWrite: boolean;
+    Material_NormalFormat: number;
     Material_NormalSmooth: boolean;
+    Material_PorosityFormat: number;
     Material_EmissionBrightness: number;
     Material_FancyLava: boolean;
     Material_FancyLavaResolution: number;
     Lighting_Mode: number;
-    Lighting_LpvRsmEnabled: boolean;
     Lighting_TraceSampleCount: number;
     Lighting_TraceQuads: boolean;
     Lighting_ReflectionMode: number;
@@ -268,7 +252,7 @@ export class SettingsSnapshot {
     Lighting_ReflectionQuads: boolean;
     Lighting_ReflectionStepCount: number;
     Lighting_VolumetricResolution: number;
-    //Lighting_BlockTemp: number;
+    Lighting_ColorCandles: boolean;
     Lighting_GI_Enabled: boolean;
     Voxel_Size: number;
     Voxel_Offset: number;
@@ -279,13 +263,7 @@ export class SettingsSnapshot {
     Effect_SSGI_Enabled: boolean;
     Effect_SSGIAO_StepCount: number;
     Effect_BloomEnabled: boolean;
-    //Effect_BloomStrength: number;
     Effect_TAA_Enabled: boolean;
-    //Post_ExposureMin: number;
-    //Post_ExposureMax: number;
-    //Post_ExposureRange: number;
-    //Post_ExposureSpeed: number;
-    //Post_Contrast: number;
     Debug_View: number;
     Debug_Material: number;
     Debug_WhiteWorld: boolean;
@@ -299,10 +277,10 @@ export class RealTimeSettingsSnapshot {
     Sky_SeaLevel: number;
     Sky_FogDensity: number;
     Water_WaveDetail: number;
+    Water_WaveHeight: number;
     Material_EmissionBrightness: number;
     Lighting_BlockTemp: number;
     Effect_BloomStrength: number;
-    //Post_Contrast: number;
     Post_ExposureMin: number;
     Post_ExposureMax: number;
     Post_ExposureRange: number;
@@ -310,4 +288,5 @@ export class RealTimeSettingsSnapshot {
     Post_Tonemap_Contrast: number;
     Post_Tonemap_LinearStart: number;
     Post_Tonemap_LinearLength: number;
+    Post_Tonemap_Black: number;
 }

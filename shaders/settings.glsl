@@ -1,5 +1,5 @@
 #define FOG_CAVE_ENABLED
-#define FOG_CAVE_DENSITY 0.8
+#define FOG_CAVE_DENSITY 0.4
 
 #define MATERIAL_EMISSION_POWER 1
 #define MATERIAL_ROUGH_REFRACT
@@ -8,26 +8,38 @@
 //#define REFRACTION_SNELL
 
 //#define VOXEL_GI_SKYLIGHT
-#define VOXEL_GI_MAXSTEP 8 // [4 8 12 16 20 24]
+//#define VOXEL_GI_MAXSTEP 16 // [4 8 12 16 20 24]
 #define VOXEL_GI_MAXFRAMES 60 // [60 120 240]
 
-#define EFFECT_SSAO_STRENGTH 1200
+#ifdef VOXEL_GI_SKYLIGHT
+	#define VOXEL_GI_MAXSTEP 16
+#else
+	#define VOXEL_GI_MAXSTEP 4
+#endif
+
+#define EFFECT_SSAO_STRENGTH 1000
 
 
 const float ATMOSPHERE_MAX = 4200.0;
+
 const float SUN_SIZE = 2.2;
+const float SUN_LUMINANCE = 16000000;//1.6e9;
+const float SUN_LUX = 64000.0;
+
 const float MOON_SIZE = 3.4;
+const float MOON_LUMINANCE = 40.00;
+const float MOON_LUX = 64.0;
 
-const float SUN_LUMINANCE = 2000.0;
-const float MOON_LUMINANCE = 0.16;
-const float STAR_LUMINANCE = 0.10;
-const float SKY_LUMINANCE = 60.0;
-const float BLOCKLIGHT_LUMINANCE = 16.0;
+const float BLOCKLIGHT_LUMINANCE = 32000.0;
+const float BLOCK_LUX = 8000.0;
 
-const float SUN_BRIGHTNESS = 32.0;
-const float MOON_BRIGHTNESS = 0.012;
-const float SKY_BRIGHTNESS = 22.0;
-const float BLOCKLIGHT_BRIGHTNESS = 4.0;
+const float STAR_LUMINANCE = 1.00;
+const float SKY_LUMINANCE = 64.0;
+
+const float SUN_BRIGHTNESS = 64000.0;
+const float MOON_BRIGHTNESS = 64.0;
+//const float SKY_BRIGHTNESS = 19000.0;
+const float BLOCKLIGHT_BRIGHTNESS = 800.0;
 
 const float SKY_AMBIENT = 1.0;
 
@@ -70,6 +82,7 @@ layout (std140, binding = 0) uniform SceneSettings {
 	float Scene_SkyFogDensityF;
 	float Scene_SkyFogSeaLevel;
 	int Scene_WaterWaveDetail;
+	float Water_WaveHeight;
 	float Material_EmissionBrightness;
 	int Lighting_BlockTemp;
 	float Scene_EffectBloomStrength;
@@ -80,4 +93,5 @@ layout (std140, binding = 0) uniform SceneSettings {
 	float Post_Tonemap_Contrast;
 	float Post_Tonemap_LinearStart;
 	float Post_Tonemap_LinearLength;
+	float Post_Tonemap_Black;
 };

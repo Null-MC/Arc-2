@@ -76,7 +76,7 @@ void main() {
             float dither = InterleavedGradientNoise(gl_FragCoord.xy);
         #endif
         
-        float lightStrength = Scene_LocalSunDir.y > 0.0 ? SUN_BRIGHTNESS : MOON_BRIGHTNESS;
+        //float lightStrength = Scene_LocalSunDir.y > 0.0 ? SUN_BRIGHTNESS : MOON_BRIGHTNESS;
 
         bool is_trans_fluid = iris_hasFluid(blockId); //unpackUnorm4x8(data_g).z > 0.5
         bool isWater = is_trans_fluid && ap.camera.fluid != 1;
@@ -182,8 +182,8 @@ void main() {
 
             vec3 sunTransmit, moonTransmit;
             GetSkyLightTransmission(sampleLocalPos, sunTransmit, moonTransmit);
-            vec3 sunSkyLight = SUN_LUMINANCE * sunTransmit;
-            vec3 moonSkyLight = MOON_BRIGHTNESS * moonTransmit;
+            vec3 sunSkyLight = SUN_LUX * sunTransmit;
+            vec3 moonSkyLight = MOON_LUX * moonTransmit;
 
             float sampleDensity = VL_WaterDensity;
             if (!isWater) {
@@ -204,7 +204,7 @@ void main() {
                 vec3 voxelPos = GetVoxelPosition(sampleLocalPos);
                 if (IsInVoxelBounds(voxelPos)) {
                     vec3 blockLight = sample_floodfill(voxelPos);
-                    sampleLit += blockLight * BLOCKLIGHT_LUMINANCE; // * phaseIso
+                    sampleLit += blockLight * BLOCK_LUX; // * phaseIso
                 }
             #endif
 
@@ -222,7 +222,7 @@ void main() {
                 sampleTransmittance = exp(-extinction * stepDist);
 
                 vec3 psiMS = getValFromMultiScattLUT(texSkyMultiScatter, skyPos, Scene_LocalSunDir);
-                psiMS *= SKY_LUMINANCE * Scene_SkyBrightnessSmooth;
+                psiMS *= Scene_SkyBrightnessSmooth;
 
                 // TODO: add moon
                 vec3 mieInScattering = mieScattering * (miePhaseValue * sunSkyLight * shadowSample + psiMS + sampleLit);

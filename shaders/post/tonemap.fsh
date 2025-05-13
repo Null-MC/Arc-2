@@ -17,9 +17,10 @@ uniform sampler2D texFinal;
 
 void main() {
     ivec2 iuv = ivec2(gl_FragCoord.xy);
-    vec3 color = texelFetch(texFinal, iuv, 0).rgb;
-    
-    ApplyAutoExposure(color, clamp(Scene_AvgExposure, -100.0, 100.0));
+    vec3 color = texelFetch(texFinal, iuv, 0).rgb * 100.0;
+
+    float exposureF = clamp(Scene_AvgExposure, Scene_PostExposureMin, Scene_PostExposureMax);
+    ApplyAutoExposure(color, exposureF);
 
     //if (gl_FragCoord.x > ap.game.screenSize.x/2)
         color = LINEAR_RGB_TO_REC2020 * color;
@@ -35,6 +36,7 @@ void main() {
 
     //color = color / (color + 0.155) * 1.019;
 
+    color = REC2020_TO_SRGB * color;
 
     outColor = vec4(color, 1.0);
 }

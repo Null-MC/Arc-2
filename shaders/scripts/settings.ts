@@ -85,7 +85,7 @@ export class ShaderSettings {
         snapshot.Sky_FogNoise = this.Sky_FogNoise();
         snapshot.Water_WaveEnabled = this.Water_WaveEnabled();
         snapshot.Water_Tessellation = this.Water_Tessellation();
-        snapshot.Water_TessellationLevel = this.Water_TessellationLevel();
+        //snapshot.Water_TessellationLevel = this.Water_TessellationLevel();
         snapshot.Shadow_Enabled = this.Shadow_Enabled();
         snapshot.Shadow_CloudEnabled = this.Shadow_CloudEnabled();
         snapshot.Shadow_Resolution = this.Shadow_Resolution();
@@ -139,6 +139,7 @@ export class ShaderSettings {
         snapshot.Sky_FogDensity = this.Sky_FogDensity();
         snapshot.Water_WaveDetail = this.Water_WaveDetail();
         snapshot.Water_WaveHeight = this.Water_WaveHeight();
+        snapshot.Water_TessellationLevel = this.Water_TessellationLevel();
         snapshot.Material_EmissionBrightness = this.Material_EmissionBrightness();
         snapshot.Lighting_BlockTemp = this.Lighting_BlockTemp();
         snapshot.Effect_BloomStrength = this.Effect_BloomStrength();
@@ -226,7 +227,7 @@ export class SettingsSnapshot {
     Sky_FogNoise: boolean;
     Water_WaveEnabled: boolean;
     Water_Tessellation: boolean;
-    Water_TessellationLevel: number;
+    //Water_TessellationLevel: number;
     Shadow_Enabled: boolean;
     Shadow_CloudEnabled: boolean;
     Shadow_Resolution: number;
@@ -278,6 +279,7 @@ export class RealTimeSettingsSnapshot {
     Sky_FogDensity: number;
     Water_WaveDetail: number;
     Water_WaveHeight: number;
+    Water_TessellationLevel: number;
     Material_EmissionBrightness: number;
     Lighting_BlockTemp: number;
     Effect_BloomStrength: number;

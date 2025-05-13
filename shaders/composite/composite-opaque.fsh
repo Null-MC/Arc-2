@@ -176,9 +176,9 @@ void main() {
             ? (depthTrans >= depthOpaque)
             : (depthTrans < depthOpaque && is_trans_fluid);
 
-        if (isWet) {
-            roughness = 0.08;
-        }
+//        if (isWet) {
+//            roughness = 0.08;
+//        }
 
         lmCoord = lmCoord*lmCoord*lmCoord;
 

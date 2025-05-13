@@ -28,13 +28,13 @@ const float SUN_LUX = 64000.0;
 
 const float MOON_SIZE = 3.4;
 const float MOON_LUMINANCE = 40.00;
-const float MOON_LUX = 64.0;
+const float MOON_LUX = 32.0;
+
+const float STAR_LUMINANCE = 32.00;
 
 const float BLOCKLIGHT_LUMINANCE = 32000.0;
 const float BLOCK_LUX = 8000.0;
 
-const float STAR_LUMINANCE = 1.00;
-const float SKY_LUMINANCE = 64.0;
 
 const float SUN_BRIGHTNESS = 64000.0;
 const float MOON_BRIGHTNESS = 64.0;
@@ -83,6 +83,7 @@ layout (std140, binding = 0) uniform SceneSettings {
 	float Scene_SkyFogSeaLevel;
 	int Scene_WaterWaveDetail;
 	float Water_WaveHeight;
+	float Water_TessellationLevel;
 	float Material_EmissionBrightness;
 	int Lighting_BlockTemp;
 	float Scene_EffectBloomStrength;

@@ -296,7 +296,7 @@ vec3 trace_GI(const in vec3 traceOrigin, const in vec3 traceDir, const in int fa
 				vec3 lightColor = iris_getLightColor(blockId).rgb;
 				lightColor = RgbToLinear(lightColor);
 
-				lightColor *= (lightRange/15.0) * BLOCKLIGHT_BRIGHTNESS;
+				lightColor *= (lightRange/15.0) * BLOCK_LUX;
 
 				vec3 lightVec = light_LocalPos - hit_localPos;
 				vec2 lightAtt = GetLightAttenuation(lightVec, lightRange);

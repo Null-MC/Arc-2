@@ -5,7 +5,7 @@ const float Sky_StarRes = 512.0;
 const float Sky_StarSpeed = 1.2;
 const float Sky_StarBrightness = 8.0;
 const float Sky_StarTempMin = 2000.0;
-const float Sky_StarTempMax = 30000.0;
+const float Sky_StarTempMax = 16000.0;
 
 
 vec3 hash33_stars(in vec3 p) {
@@ -37,7 +37,7 @@ vec3 GetStarLight(const in vec3 viewDir) {
         vec3 id = floor(D1 * Sky_StarRes);
         vec2 rn = hash33_stars(id).xy;
         float c2 = 1.0 - smoothstep(0.0, 0.6, length(q));
-        c2 *= step(rn.x, 0.0005 + i*i * 0.001);
+        c2 *= step(rn.x, 0.0007 + i * 0.002);
 
         float layer_scale = 1.0 / (1.0 + i+rn.y);
         float temp = StarTempRange * pow(layer_scale, 2.0) + Sky_StarTempMin;

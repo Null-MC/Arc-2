@@ -14,4 +14,4 @@ const float VL_WaterDensity = 0.20;
 
 vec3 VL_WaterScatter = RgbToLinear(vec3(0.545, 0.682, 0.690));
 vec3 VL_WaterTransmit = RgbToLinear(1.0 - vec3(0.106, 0.498, 0.549));
-vec3 VL_WaterAmbient = RgbToLinear(vec3(0.325, 0.588, 0.439));
+vec3 VL_WaterAmbient = 12.0 * RgbToLinear(vec3(0.325, 0.588, 0.439));

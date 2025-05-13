@@ -21,6 +21,7 @@ function applySettings(settings) {
     worldSettings.ambientOcclusionLevel = 0.0;
     worldSettings.sunPathRotation = settings.realtime.Sky_SunAngle;
     worldSettings.shadowMapResolution = snapshot.Shadow_Resolution;
+    worldSettings.renderWaterOverlay = false;
     worldSettings.renderStars = false;
     worldSettings.renderMoon = false;
     worldSettings.renderSun = false;
@@ -42,7 +43,7 @@ function applySettings(settings) {
 
         if (snapshot.Water_Tessellation) {
             defineGlobally1("WATER_TESSELLATION_ENABLED");
-            defineGlobally("WATER_TESSELLATION_LEVEL", snapshot.Water_TessellationLevel.toString());
+            //defineGlobally("WATER_TESSELLATION_LEVEL", snapshot.Water_TessellationLevel.toString());
         }
     }
 
@@ -1138,6 +1139,7 @@ export function onSettingsChanged(state : WorldState) {
         .appendFloat(snapshot.Sky_SeaLevel)
         .appendInt(snapshot.Water_WaveDetail)
         .appendFloat(snapshot.Water_WaveHeight)
+        .appendFloat(snapshot.Water_TessellationLevel)
         .appendFloat(snapshot.Material_EmissionBrightness * 0.01)
         .appendInt(snapshot.Lighting_BlockTemp)
         .appendFloat(snapshot.Effect_BloomStrength * 0.01)

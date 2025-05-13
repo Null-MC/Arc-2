@@ -7,11 +7,17 @@ suffix.SKY_SUN_ANGLE=°
 option.SKY_FOG_DENSITY=Fog Density
 suffix.SKY_FOG_DENSITY=%
 
+option.SKY_CLOUDS_ENABLED=Clouds Enabled
+
 option.SKY_FOG_NOISE=Fog Clouds
 
 option.WATER_WAVES_ENABLED=Waves
 
-option.WATER_TESSELLATION_ENABLED=Tessellation
+option.WATER_WAVES_DETAIL=Wave Detail
+
+option.WATER_WAVES_HEIGHT=Wave Height
+
+option.WATER_TESSELLATION_ENABLED=Tessellation Enabled
 
 option.WATER_TESSELLATION_LEVEL=Tessellation Level
 option.WATER_TESSELLATION_LEVEL.comment=The maximum number of times to subdivide a water blocks surface.
@@ -19,9 +25,10 @@ suffix.WATER_TESSELLATION_LEVEL=x
 
 option.SHADOWS_ENABLED=Enabled
 
-option.SHADOWS_CLOUD_ENABLED=Clouds
-
 option.SHADOW_RESOLUTION=Resolution
+suffix.SHADOW_RESOLUTION=px
+
+option.SHADOWS_CLOUD_ENABLED=Cloud Shadows
 
 option.MATERIAL_FORMAT=Format
 option.MATERIAL_FORMAT.comment=The format of the PBR resource pack currently loaded.
@@ -152,6 +159,8 @@ option.POST_TONEMAP_LINEAR_LENGTH=Linear Length
 
 option.DEBUG_WHITE_WORLD=White-World
 option.DEBUG_WHITE_WORLD.comment=Makes all blocks in the world white, so that lighting can be visualized/debugged more easily.
+
+option.DEBUG_TRANSLUCENT=View Translucent
 
 option.DEBUG_VIEW=View
 value.DEBUG_VIEW.0=None

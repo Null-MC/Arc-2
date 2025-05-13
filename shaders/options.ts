@@ -5,26 +5,29 @@ export function setupOptions() {
         .add(asIntRange("SKY_SEA_LEVEL", 60, -40, 140, 2, false))
         .add(asIntRange("SKY_SUN_ANGLE", -20, -90, 90, 2, false))
         .add(asIntRange("SKY_FOG_DENSITY", 8, 0, 100, 1, false))
-        .add(asBool("SKY_CLOUDS_ENABLED", false, true))
         .add(asBool("SKY_FOG_NOISE", false, true))
+        .add(EMPTY)
+        .add(asBool("SKY_CLOUDS_ENABLED", false, true))
         .build();
 
     let screen_Water = new Page("Water")
         .add(asBool("WATER_WAVES_ENABLED", true, true))
         .add(asIntRange("WATER_WAVES_DETAIL", 14, 2, 32, 1, false))
         .add(asFloatRange("WATER_WAVES_HEIGHT", 0.8, 0.0, 1.0, 0.05, false))
+        .add(EMPTY)
         .add(asBool("WATER_TESSELLATION_ENABLED", true, true))
         .add(asIntRange("WATER_TESSELLATION_LEVEL", 4, 2, 12, 1, false))
         .build();
 
     const screen_Shadows = new Page("Shadows")
         .add(asBool("SHADOWS_ENABLED", true, true))
-        .add(asBool("SHADOWS_CLOUD_ENABLED", true, true))
         .add(asInt("SHADOW_RESOLUTION", 256, 512, 1024, 2048, 4096).build(1024))
+        .add(asBool("SHADOWS_CLOUD_ENABLED", true, true))
         .build();
 
     let screen_Material = new Page("Material")
         .add(asString("MATERIAL_FORMAT", "0", "1", "2").build("1"))
+        .add(EMPTY)
         .add(new Page("Parallax")
             .add(asBool("MATERIAL_PARALLAX_ENABLED", true, true))
             .add(asIntRange("MATERIAL_PARALLAX_SAMPLES", 32, 8, 128, 8))
@@ -42,13 +45,14 @@ export function setupOptions() {
         .add(new Page("MATERIAL_EMISSION")
             .add(asIntRange("MATERIAL_EMISSION_BRIGHTNESS", 160, 0, 800, 5, false))
             .build())
-        .add(asBool("FANCY_LAVA", true, true))
         .add(EMPTY)
+        .add(asBool("FANCY_LAVA", true, true))
         .add(asInt("FANCY_LAVA_RES", 4, 8, 16, 32, 64, 128, 0).build(0))
         .build();
 
     let screen_Lighting = new Page("Lighting")
         .add(asString("LIGHTING_MODE", "0", "1", "2").build("1"))
+        .add(EMPTY)
         .add(asBool("LIGHTING_GI_ENABLED", true, true))
         .add(new Page("Reflections")
             .add(asString("LIGHTING_REFLECT_MODE", 'Sky Only', 'Screen-Space', 'World-Space').build('World-Space'))
@@ -102,9 +106,10 @@ export function setupOptions() {
 
     const screen_Debug = new Page("Debug")
         .add(asString("DEBUG_VIEW", 'None', 'Material', 'Shadows', 'SSS', 'SSAO', 'SSGI', 'Volumetric Lighting', 'Ray-Traced Lighting', 'Accumulation', 'Sky Irradiance', 'ShadowMap Color', 'ShadowMap Normal').needsReload(true).build('None'))
-        .add(asBool("DEBUG_WHITE_WORLD", false, true))
         .add(asString("DEBUG_MATERIAL", 'Albedo', 'Geo-Normal', 'Tex-Normal', 'Occlusion', 'Roughness', 'F0/Metal', 'Porosity', 'SSS', 'Emission', 'LightMap').needsReload(true).build('Albedo'))
         .add(asBool("DEBUG_TRANSLUCENT", false, true))
+        .add(EMPTY)
+        .add(asBool("DEBUG_WHITE_WORLD", false, true))
         .build();
 
     return new Page("main")

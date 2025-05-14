@@ -1,5 +1,5 @@
 #define FOG_CAVE_ENABLED
-#define FOG_CAVE_DENSITY 0.4
+#define FOG_CAVE_DENSITY 0.8
 
 #define MATERIAL_EMISSION_POWER 1
 #define MATERIAL_ROUGH_REFRACT
@@ -26,7 +26,7 @@ const float SUN_LUX = 64000.0;
 
 const float MOON_SIZE = 3.4;
 const float MOON_LUMINANCE = 80.00;
-const float MOON_LUX = 32.0;
+const float MOON_LUX = 12.0;
 
 const float STAR_LUMINANCE = 32.00;
 

@@ -13,6 +13,8 @@ const float mieAbsorptionBase = 4.4;
 
 const vec3 ozoneAbsorptionBase = vec3(2.291, 1.540, 0.000);//*1e-3;
 
+const float Sky_MinLight = 2.5;
+
 
 float safeacos(const float x) {
     return acos(clamp(x, -1.0, 1.0));

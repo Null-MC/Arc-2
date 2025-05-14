@@ -145,6 +145,7 @@ export function setupShader() {
     const settings = buildSettings(snapshot, realtime);
     applySettings(settings);
 
+    setLightColorEx("#362b21", "brown_mushroom");
     setLightColorEx("#f39849", "campfire");
     setLightColorEx("#935b2c", "cave_vines", "cave_vines_plant");
     setLightColorEx("#7f17a8", "crying_obsidian");

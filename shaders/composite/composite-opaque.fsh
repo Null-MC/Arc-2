@@ -269,7 +269,7 @@ void main() {
 
         vec2 skyIrradianceCoord = DirectionToUV(localTexNormal);
         vec3 skyIrradiance = textureLod(texSkyIrradiance, skyIrradianceCoord, 0).rgb;
-        skyIrradiance = (SKY_AMBIENT * lmCoord.y) * skyIrradiance;
+        skyIrradiance = (SKY_AMBIENT * lmCoord.y) * (skyIrradiance + Sky_MinLight);
 
         #if !(defined(LIGHTING_GI_ENABLED) && defined(LIGHTING_GI_SKYLIGHT))
             skyIrradiance *= 2.0;

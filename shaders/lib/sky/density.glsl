@@ -21,7 +21,7 @@ float GetSkyDensity(const in vec3 localPos) {
         density = mix(density, FOG_CAVE_DENSITY, caveFogF);
     #endif
 
-    return density * 10.0;
+    return density;
 
 
 //    //    float sampleY = localPos.y + ap.camera.pos.y;

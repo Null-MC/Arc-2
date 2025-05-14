@@ -76,8 +76,8 @@ void getMulScattValues(vec3 pos, vec3 sunDir, out vec3 lumTotal, out vec3 fms) {
 
                 // This is slightly different from the paper, but I think the paper has a mistake?
                 // In equation (6), I think S(x,w_s) should be S(x-tv,w_s).
-                vec3 sunTransmittance = getValFromTLUT(texSkyTransmit, newPos, sunDir);
-                vec3 moonTransmittance = getValFromTLUT(texSkyTransmit, newPos, -sunDir);
+                vec3 sunTransmittanceLux = getValFromTLUT(texSkyTransmit, newPos, sunDir) * SUN_LUX;
+                vec3 moonTransmittanceLux = getValFromTLUT(texSkyTransmit, newPos, -sunDir) * MOON_LUX;
 
                 vec3 rayleighInScattering_sun = rayleighScattering * rayleighPhase_sun;
                 float mieInScattering_sun = mieScattering * miePhase_sun;
@@ -85,8 +85,9 @@ void getMulScattValues(vec3 pos, vec3 sunDir, out vec3 lumTotal, out vec3 fms) {
                 vec3 rayleighInScattering_moon = rayleighScattering * rayleighPhase_moon;
                 float mieInScattering_moon = mieScattering * miePhase_moon;
 
-                vec3 inScattering = (rayleighInScattering_sun + mieInScattering_sun) * sunTransmittance * SUN_LUX;
-                                  + (rayleighInScattering_moon + mieInScattering_moon) * moonTransmittance * MOON_LUX;
+                vec3 inScattering = (rayleighInScattering_sun + mieInScattering_sun) * sunTransmittanceLux
+                                  + (rayleighInScattering_moon + mieInScattering_moon) * moonTransmittanceLux
+                                  + Sky_MinLight;
 
                 // Integrated scattering within path segment.
                 vec3 scatteringIntegral = (inScattering - inScattering * sampleTransmittance) / extinction;

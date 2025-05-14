@@ -22,12 +22,11 @@ void main() {
     float exposureF = clamp(Scene_AvgExposure, Scene_PostExposureMin, Scene_PostExposureMax);
     ApplyAutoExposure(color, exposureF);
 
-    //if (gl_FragCoord.x > ap.game.screenSize.x/2)
-        color = LINEAR_RGB_TO_REC2020 * color;
+    color = LINEAR_RGB_TO_REC2020 * color;
 
     //color = PurkinjeShift(color, PurkinjeStrength);
 
-    color = tonemap_jodieReinhard(color);
+    //color = tonemap_jodieReinhard(color);
     //color = tonemap_Lottes(color);
     //color = tonemap_ACESFit2(color);
     //color = tonemap_AgX(color);

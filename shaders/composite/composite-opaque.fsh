@@ -236,10 +236,14 @@ void main() {
         float NoL_sun = dot(localTexNormal, Scene_LocalSunDir);
         float NoL_moon = -NoL_sun;
 
-        vec3 skyLight_NoLm = SUN_LUX * sunTransmit * max(NoL_sun, 0.0)
-            + MOON_LUX * moonTransmit * max(NoL_moon, 0.0);
+        float skyLightF = smoothstep(0.0, 0.2, Scene_LocalLightDir.y);
+        vec3 sunLight = skyLightF * SUN_LUX * sunTransmit;
+        vec3 moonLight = skyLightF * MOON_LUX * moonTransmit;
 
-        vec3 skyLightDiffuse = skyLight_NoLm * shadow_sss.rgb;
+        vec3 skyLight_NoLm = sunLight * max(NoL_sun, 0.0)
+                           + moonLight * max(NoL_moon, 0.0);
+
+        vec3 skyLightDiffuse = skyLight_NoLm * shadow_sss.rgb * max(Scene_LocalLightDir.y, 0.0);
         skyLightDiffuse *= SampleLightDiffuse(NoVm, NoLm, LoHm, roughL);
 
         #ifdef VOXEL_ENABLED
@@ -274,10 +278,10 @@ void main() {
 
         float VoL_sun = dot(localViewDir, Scene_LocalSunDir);
 //        float VoL_moon = dot(localViewDir, -Scene_LocalSunDir);
-        vec3 sss_phase_sun = max(HG(VoL_sun, 0.16), 0.0) * SUN_LUX * sunTransmit;
-        vec3 sss_phase_moon = max(HG(-VoL_sun, 0.16), 0.0) * MOON_LUX * moonTransmit;
+        vec3 sss_phase_sun = max(HG(VoL_sun, 0.16), 0.0) * sunLight;
+        vec3 sss_phase_moon = max(HG(-VoL_sun, 0.16), 0.0) * moonLight;
 
-        vec3 skyLightSSS = 0.3 * (sss_phase_sun + sss_phase_moon) * abs(Scene_LocalLightDir.y);
+        vec3 skyLightSSS = 0.3 * (sss_phase_sun + sss_phase_moon);
         skyLightDiffuse = mix(skyLightDiffuse, skyLightSSS, shadow_sss.w * sss);
         //skyLightDiffuse += (sss_phase_sun + sss_phase_moon) * max(shadow_sss.w, 0.0) * abs(Scene_LocalLightDir.y);
 

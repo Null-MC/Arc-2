@@ -281,8 +281,9 @@ void main() {
 
         vec3 sunTransmit, moonTransmit;
         GetSkyLightTransmission(sampleLocalPos, sunTransmit, moonTransmit);
-        vec3 sunSkyLight = SUN_LUX * sunTransmit;
-        vec3 moonSkyLight = MOON_LUX * moonTransmit;
+        float skyLightF = smoothstep(0.0, 0.2, Scene_LocalLightDir.y);
+        vec3 sunSkyLight = skyLightF * SUN_LUX * sunTransmit;
+        vec3 moonSkyLight = skyLightF * MOON_LUX * moonTransmit;
 
         float sampleDensity = VL_WaterDensity;
         if (ap.camera.fluid != 1) {
@@ -355,11 +356,11 @@ void main() {
 
         vec3 sampleLit = vec3(0.0);
 
-        #ifdef LPV_ENABLED
+        #if LIGHTING_MODE == LIGHT_MODE_LPV
             vec3 voxelPos = GetVoxelPosition(sampleLocalPos);
             if (IsInVoxelBounds(voxelPos)) {
                 vec3 blockLight = sample_floodfill(voxelPos);
-                sampleLit += blockLight * BLOCK_LUX; // * phaseIso;
+                sampleLit += blockLight * BLOCK_LUX * 100.0; // * phaseIso;
             }
         #endif
 

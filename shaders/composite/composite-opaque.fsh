@@ -243,8 +243,25 @@ void main() {
         vec3 skyLight_NoLm = sunLight * max(NoL_sun, 0.0)
                            + moonLight * max(NoL_moon, 0.0);
 
-        vec3 skyLightDiffuse = skyLight_NoLm * shadow_sss.rgb * max(Scene_LocalLightDir.y, 0.0);
+        vec3 skyLightDiffuse = skyLight_NoLm * shadow_sss.rgb;
         skyLightDiffuse *= SampleLightDiffuse(NoVm, NoLm, LoHm, roughL);
+
+        // SSS
+        const float sss_G = 0.24;
+
+        vec2 sss_skyIrradianceCoord = DirectionToUV(localViewDir);
+        vec3 sss_skyIrradiance = textureLod(texSkyIrradiance, sss_skyIrradianceCoord, 0).rgb;
+        sss_skyIrradiance = (SKY_AMBIENT * lmCoord.y) * sss_skyIrradiance;
+
+        float VoL_sun = dot(localViewDir, Scene_LocalSunDir);
+        //        float VoL_moon = dot(localViewDir, -Scene_LocalSunDir);
+        vec3 sss_phase_sun = max(HG(VoL_sun, sss_G), 0.0) * abs(NoL_sun) * sunLight;
+        vec3 sss_phase_moon = max(HG(-VoL_sun, sss_G), 0.0) * abs(NoL_moon) * moonLight;
+        vec3 sss_skyLight = shadow_sss.w * (sss_phase_sun + sss_phase_moon)
+        + phaseIso * sss_skyIrradiance * occlusion;
+
+        skyLightDiffuse = mix(skyLightDiffuse, sss_skyLight, sss);
+        //skyLightDiffuse += (sss_phase_sun + sss_phase_moon) * max(shadow_sss.w, 0.0) * abs(Scene_LocalLightDir.y);
 
         #ifdef VOXEL_ENABLED
             vec3 voxelPos = GetVoxelPosition(localPos);
@@ -253,6 +270,10 @@ void main() {
         vec2 skyIrradianceCoord = DirectionToUV(localTexNormal);
         vec3 skyIrradiance = textureLod(texSkyIrradiance, skyIrradianceCoord, 0).rgb;
         skyIrradiance = (SKY_AMBIENT * lmCoord.y) * skyIrradiance;
+
+        #if !(defined(LIGHTING_GI_ENABLED) && defined(VOXEL_GI_SKYLIGHT))
+            skyIrradiance *= 2.0;
+        #endif
 
         #ifdef LIGHTING_GI_ENABLED
             if (IsInVoxelBounds(voxelPos)) {
@@ -275,15 +296,6 @@ void main() {
         #if defined EFFECT_SSGI_ENABLED && !defined ACCUM_ENABLED
             skyLightDiffuse += gi_ao.rgb;
         #endif
-
-        float VoL_sun = dot(localViewDir, Scene_LocalSunDir);
-//        float VoL_moon = dot(localViewDir, -Scene_LocalSunDir);
-        vec3 sss_phase_sun = max(HG(VoL_sun, 0.16), 0.0) * sunLight;
-        vec3 sss_phase_moon = max(HG(-VoL_sun, 0.16), 0.0) * moonLight;
-
-        vec3 skyLightSSS = 0.3 * (sss_phase_sun + sss_phase_moon);
-        skyLightDiffuse = mix(skyLightDiffuse, skyLightSSS, shadow_sss.w * sss);
-        //skyLightDiffuse += (sss_phase_sun + sss_phase_moon) * max(shadow_sss.w, 0.0) * abs(Scene_LocalLightDir.y);
 
         vec3 blockLighting = blackbody(Lighting_BlockTemp) * (BLOCKLIGHT_BRIGHTNESS * lmCoord.x) * (occlusion*0.5 + 0.5);
 

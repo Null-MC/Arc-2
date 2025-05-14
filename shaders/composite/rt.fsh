@@ -190,8 +190,9 @@ void main() {
 
                 vec3 voxelPos_out = voxelPos + 0.08*localGeoNormal;
 
-                //vec3 jitter = hash33(vec3(gl_FragCoord.xy, ap.time.frames)) - 0.5;
-                vec3 jitter = sample_blueNoise(gl_FragCoord.xy);
+                vec3 jitter = hash33(vec3(gl_FragCoord.xy, ap.time.frames)) - 0.5;
+                //vec3 jitter = sample_blueNoise(gl_FragCoord.xy) * 0.5;
+                jitter *= Lighting_PenumbraSize;
 
                 #if RT_MAX_SAMPLE_COUNT > 0
                     uint maxSampleCount = min(binLightCount, RT_MAX_SAMPLE_COUNT);
@@ -209,7 +210,7 @@ void main() {
                     uint light_voxelIndex = LightBinMap[lightBinIndex].lightList[i2];
 
                     vec3 light_voxelPos = GetLightVoxelPos(light_voxelIndex) + 0.5;
-                    light_voxelPos += jitter*0.125;
+                    light_voxelPos += jitter;
 
                     vec3 light_LocalPos = GetVoxelLocalPos(light_voxelPos);
 
@@ -224,7 +225,7 @@ void main() {
                     lightColor *= (lightRange/15.0) * BLOCKLIGHT_BRIGHTNESS;
 
                     vec3 lightVec = light_LocalPos - localPos;
-                    vec2 lightAtt = GetLightAttenuation(lightVec, lightRange);
+                    float lightAtt = GetLightAttenuation(lightVec, lightRange);
 
                     vec3 lightDir = normalize(lightVec);
 
@@ -236,14 +237,14 @@ void main() {
 
                     if (NoLm == 0.0 || dot(localGeoNormal, lightDir) <= 0.0) continue;
                     float D = SampleLightDiffuse(NoVm, NoLm, LoHm, roughL);
-                    vec3 sampleDiffuse = (NoLm * lightAtt.x * D) * lightColor;
+                    vec3 sampleDiffuse = (NoLm * lightAtt * D) * lightColor;
 
                     float NoHm = max(dot(localTexNormal, H), 0.0);
 
                     const bool isUnderWater = false;
                     vec3 F = material_fresnel(albedo.rgb, f0_metal, roughL, NoVm, isUnderWater);
                     float S = SampleLightSpecular(NoLm, NoHm, LoHm, roughL);
-                    vec3 sampleSpecular = lightAtt.x * S * F * lightColor;
+                    vec3 sampleSpecular = lightAtt * S * F * lightColor;
 
                     vec3 traceStart = light_voxelPos;
                     vec3 traceEnd = voxelPos_out;
@@ -468,7 +469,7 @@ void main() {
                         lightColor *= (lightRange/15.0) * BLOCKLIGHT_BRIGHTNESS;
 
                         vec3 lightVec = light_LocalPos - reflect_localPos;
-                        vec2 lightAtt = GetLightAttenuation(lightVec, lightRange);
+                        float lightAtt = GetLightAttenuation(lightVec, lightRange);
 
                         vec3 lightDir = normalize(lightVec);
 
@@ -480,14 +481,14 @@ void main() {
 
                         if (NoLm == 0.0 || dot(reflect_geoNormal, lightDir) <= 0.0) continue;
                         float D = SampleLightDiffuse(NoVm, NoLm, LoHm, reflect_roughL);
-                        vec3 sampleDiffuse = (NoLm * lightAtt.x * D) * lightColor;
+                        vec3 sampleDiffuse = (NoLm * lightAtt * D) * lightColor;
 
                         float NoHm = max(dot(localTexNormal, H), 0.0);
 
                         const bool reflect_isUnderWater = false;
                         vec3 F = material_fresnel(albedo.rgb, f0_metal, reflect_roughL, NoVm, reflect_isUnderWater);
                         float S = SampleLightSpecular(NoLm, NoHm, LoHm, reflect_roughL);
-                        vec3 sampleSpecular = lightAtt.x * S * F * lightColor;
+                        vec3 sampleSpecular = lightAtt * S * F * lightColor;
 
                         vec3 traceStart = light_voxelPos;
                         vec3 traceEnd = voxelPos_out;

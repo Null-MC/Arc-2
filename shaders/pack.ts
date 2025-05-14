@@ -9,7 +9,7 @@ const QUAD_BIN_SIZE = 2;
 
 const Settings = new ShaderSettings();
 
-const SceneSettingsBufferSize = 64;
+const SceneSettingsBufferSize = 128;
 let SceneSettingsBuffer: BuiltStreamingBuffer;
 let BlockMappings: BlockMap;
 
@@ -142,7 +142,6 @@ export function setupShader() {
     applySettings(settings);
 
     setLightColorEx("#f39849", "campfire");
-    setLightColorEx("#8c4836", "candle");
     setLightColorEx("#935b2c", "cave_vines", "cave_vines_plant");
     setLightColorEx("#7f17a8", "crying_obsidian");
     setLightColorEx("#5f9889", "glow_lichen");
@@ -179,6 +178,7 @@ export function setupShader() {
     setLightColorEx("#f27fa5", "pink_stained_glass", "pink_stained_glass_pane");
 
     if (snapshot.Lighting_ColorCandles) {
+        setLightColorEx("#c07047", "candle");
         setLightColorEx("#ffffff", "white_candle");
         setLightColorEx("#bbbbbb", "light_gray_candle");
         setLightColorEx("#696969", "gray_candle");
@@ -195,6 +195,11 @@ export function setupShader() {
         setLightColorEx("#832cb4", "purple_candle");
         setLightColorEx("#bd3cb4", "magenta_candle");
         setLightColorEx("#f689ac", "pink_candle");
+    }
+    else {
+        setLightColorEx("#c07047", "candle", "white_candle", "light_gray_candle", "gray_candle", "black_candle",
+            "brown_candle", "red_candle", "orange_candle", "yellow_candle", "lime_candle", "green_candle", "cyan_candle",
+            "light_blue_candle", "blue_candle", "purple_candle", "magenta_candle", "pink_candle");
     }
 
     //addTag(1, new NamespacedId("minecraft", "leaves"));
@@ -1142,6 +1147,7 @@ export function onSettingsChanged(state : WorldState) {
         .appendFloat(snapshot.Water_TessellationLevel)
         .appendFloat(snapshot.Material_EmissionBrightness * 0.01)
         .appendInt(snapshot.Lighting_BlockTemp)
+        .appendFloat(snapshot.Lighting_PenumbraSize * 0.01)
         .appendFloat(snapshot.Effect_BloomStrength * 0.01)
         .appendFloat(snapshot.Post_ExposureMin)
         .appendFloat(snapshot.Post_ExposureMax)
@@ -1178,7 +1184,7 @@ function setupSky(sceneBuffer) {
         .format(Format.RGB16F)
         .clear(false)
         .width(256)
-        .height(64)
+        .height(128)
         .build();
 
     const texSkyMultiScatter = new Texture("texSkyMultiScatter")

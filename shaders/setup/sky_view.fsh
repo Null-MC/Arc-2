@@ -59,8 +59,8 @@ vec3 raymarchScattering(vec3 pos, vec3 rayDir, vec3 sunDir, float tMax, float nu
 
 
 void main() {
-    float u = gl_FragCoord.x / 256.0;
-    float v = gl_FragCoord.y / 256.0;
+    float u = uv.x;//gl_FragCoord.x / 256.0;
+    float v = uv.y;//gl_FragCoord.y / 256.0;
     
     float azimuthAngle = (u - 0.5) * 2.0*PI;
 

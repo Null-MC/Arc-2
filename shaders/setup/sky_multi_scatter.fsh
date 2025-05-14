@@ -14,8 +14,8 @@ uniform sampler2D texSkyTransmit;
 
 
 void main() {
-    float u = gl_FragCoord.x / 32.0;
-    float v = gl_FragCoord.y / 32.0;
+    float u = uv.x;//gl_FragCoord.x / 32.0;
+    float v = uv.y;//gl_FragCoord.y / 32.0;
     
     float sunCosTheta = 2.0*u - 1.0;
     float sunTheta = safeacos(sunCosTheta);

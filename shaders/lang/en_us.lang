@@ -100,6 +100,9 @@ option.LIGHTING_REFLECT_NOISE.comment=Allows surfaces to scatter reflected light
 
 option.LIGHTING_REFLECT_MAXSTEP=WSR Max Step Count
 
+option.LIGHT_TRACE_PENUMBRA=Penumbra Size
+suffix.LIGHT_TRACE_PENUMBRA=%
+
 option.LIGHTING_TRACE_TRIANGLE=Full Quad Tracing
 option.LIGHTING_REFLECT_TRIANGLE.comment=Allows full-detail, per-quad tracing for ray-traced lighting. WARNING: Heavy on performance!
 

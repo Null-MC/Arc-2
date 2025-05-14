@@ -7,8 +7,7 @@
 
 //#define REFRACTION_SNELL
 
-//#define VOXEL_GI_SKYLIGHT
-//#define VOXEL_GI_MAXSTEP 16 // [4 8 12 16 20 24]
+#define VOXEL_GI_SKYLIGHT
 #define VOXEL_GI_MAXFRAMES 60 // [60 120 240]
 
 #ifdef VOXEL_GI_SKYLIGHT
@@ -86,6 +85,7 @@ layout (std140, binding = 0) uniform SceneSettings {
 	float Water_TessellationLevel;
 	float Material_EmissionBrightness;
 	int Lighting_BlockTemp;
+	float Lighting_PenumbraSize;
 	float Scene_EffectBloomStrength;
 	float Scene_PostExposureMin;
 	float Scene_PostExposureMax;

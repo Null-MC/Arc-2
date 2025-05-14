@@ -1,10 +1,19 @@
 const float ROUGH_MIN = 0.02;
 
 // xy: diffuse, specular
-vec2 GetLightAttenuation(const in vec3 lightVec, const in float lightRange) {
+float GetLightAttenuation(const in vec3 lightVec, const in float lightRange, const in float A, const in float R) {
     float lightDist = length(lightVec);
-    float lightAtt = 1.0 - saturate(lightDist / lightRange);
-    return vec2(pow(lightAtt, 5), lightAtt*lightAtt);
+//    float lightAtt = 1.0 - saturate(lightDist / lightRange);
+//    return vec2(pow(lightAtt, 5), lightAtt*lightAtt);
+
+    //return pow(saturate(1.0 - pow(lightDist/lightRange, 4)), 2) / (_pow2(lightDist) + 1.0);
+
+    float d_r = lightDist / R;
+    return A / (1.0 + _pow2(d_r));
+}
+
+float GetLightAttenuation(const in vec3 lightVec, const in float lightRange) {
+    return GetLightAttenuation(lightVec, lightRange, 100.0, 0.2);
 }
 
 float SampleLightDiffuse(const in float NoV, const in float NoL, const in float LoH, const in float roughL) {

@@ -13,12 +13,9 @@ const float sunTransmittanceSteps = 40.0;
 
 
 void main() {
-    float u = uv.x;//gl_FragCoord.x / 256.0;
-    float v = uv.y;//gl_FragCoord.y / 64.0;
-
-    float sunCosTheta = 2.0*u - 1.0;
+    float sunCosTheta = 2.0*uv.x - 1.0;
     float sunTheta = safeacos(sunCosTheta);
-    float height = mix(groundRadiusMM, atmosphereRadiusMM, v);
+    float height = mix(groundRadiusMM, atmosphereRadiusMM, uv.y);
     
     vec3 pos = vec3(0.0, height, 0.0); 
     vec3 sunDir = normalize(vec3(0.0, sunCosTheta, -sin(sunTheta)));

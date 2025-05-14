@@ -299,7 +299,7 @@ vec3 trace_GI(const in vec3 traceOrigin, const in vec3 traceDir, const in int fa
 				lightColor *= (lightRange/15.0) * BLOCK_LUX;
 
 				vec3 lightVec = light_LocalPos - hit_localPos;
-				vec2 lightAtt = GetLightAttenuation(lightVec, lightRange);
+				float lightAtt = GetLightAttenuation(lightVec, lightRange);
 
 				vec3 lightDir = normalize(lightVec);
 
@@ -313,14 +313,14 @@ vec3 trace_GI(const in vec3 traceOrigin, const in vec3 traceDir, const in int fa
 					float NoVm = max(dot(hitNormal, -traceDir), 0.0);
 
 					float D = SampleLightDiffuse(NoVm, NoLm, LoHm, hit_roughL);
-					vec3 sampleDiffuse = lightColor * lightAtt.x * D;//(NoLm * lightAtt.x * D) * lightColor;
+					vec3 sampleDiffuse = lightColor * lightAtt * D;//(NoLm * lightAtt * D) * lightColor;
 
 					float NoHm = max(dot(hitNormal, H), 0.0);
 
 					const bool hit_isUnderWater = false;
 					vec3 F = material_fresnel(albedo.rgb, hit_f0_metal, hit_roughL, NoVm, hit_isUnderWater);
 					float S = SampleLightSpecular(NoLm, NoHm, LoHm, hit_roughL);
-					vec3 sampleSpecular = lightAtt.x * S * F * lightColor;
+					vec3 sampleSpecular = lightAtt * S * F * lightColor;
 
 					vec3 traceStart = light_voxelPos;
 					vec3 traceEnd = voxelPos_out;

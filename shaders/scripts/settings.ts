@@ -45,6 +45,7 @@ export class ShaderSettings {
     Lighting_GI_Enabled = () => getBoolSetting("LIGHTING_GI_ENABLED");
     Lighting_TraceSampleCount = () => getIntSetting("RT_MAX_SAMPLE_COUNT");
     Lighting_TraceQuads = () => getBoolSetting("LIGHTING_TRACE_TRIANGLE");
+    Lighting_PenumbraSize = () => getIntSetting("LIGHT_TRACE_PENUMBRA");
     Lighting_ReflectionMode = () => getStringSettingIndex("LIGHTING_REFLECT_MODE", 2, 'Sky Only', 'Screen-Space', 'World-Space');
     Lighting_ReflectionNoise = () => getBoolSetting("LIGHTING_REFLECT_NOISE");
     Lighting_ReflectionQuads = () => getBoolSetting("LIGHTING_REFLECT_TRIANGLE");
@@ -54,7 +55,7 @@ export class ShaderSettings {
     Lighting_BlockTemp = () => getIntSetting("BLOCKLIGHT_TEMP");
     Voxel_Size = () => getIntSetting("VOXEL_SIZE");
     Voxel_Offset = () => getIntSetting("VOXEL_FRUSTUM_OFFSET");
-    Voxel_MaxLightCount = () => 64;
+    Voxel_MaxLightCount = () => 128;
     Voxel_MaxQuadCount = () => 64;
     Voxel_UseProvided = () => getBoolSetting("VOXEL_PROVIDED");
     Effect_SSAO_Enabled = () => getBoolSetting("EFFECT_SSAO_ENABLED");
@@ -142,6 +143,7 @@ export class ShaderSettings {
         snapshot.Water_TessellationLevel = this.Water_TessellationLevel();
         snapshot.Material_EmissionBrightness = this.Material_EmissionBrightness();
         snapshot.Lighting_BlockTemp = this.Lighting_BlockTemp();
+        snapshot.Lighting_PenumbraSize = this.Lighting_PenumbraSize();
         snapshot.Effect_BloomStrength = this.Effect_BloomStrength();
         snapshot.Post_ExposureMin = this.Post_ExposureMin();
         snapshot.Post_ExposureMax = this.Post_ExposureMax();
@@ -282,6 +284,7 @@ export class RealTimeSettingsSnapshot {
     Water_TessellationLevel: number;
     Material_EmissionBrightness: number;
     Lighting_BlockTemp: number;
+    Lighting_PenumbraSize: number;
     Effect_BloomStrength: number;
     Post_ExposureMin: number;
     Post_ExposureMax: number;

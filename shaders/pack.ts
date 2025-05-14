@@ -148,6 +148,7 @@ export function setupShader() {
     setLightColorEx("#f39849", "campfire");
     setLightColorEx("#935b2c", "cave_vines", "cave_vines_plant");
     setLightColorEx("#7f17a8", "crying_obsidian");
+    setLightColorEx("#bea935", "firefly_bush");
     setLightColorEx("#5f9889", "glow_lichen");
     setLightColorEx("#d3b178", "glowstone");
     setLightColorEx("#f39e49", "lantern");

@@ -10,5 +10,5 @@ vec3 sample_floodfill(const in vec3 lpvPos) {
 
     //color = RgbToLinear(color);
 
-    return color * BLOCKLIGHT_BRIGHTNESS;
+    return color * BLOCK_LUX;
 }

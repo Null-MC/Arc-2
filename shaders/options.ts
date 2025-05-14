@@ -58,7 +58,7 @@ export function setupOptions() {
             .build())
         .add(EMPTY)
         .add(new Page("Reflections")
-            .add(asString("LIGHTING_REFLECT_MODE", 'Sky Only', 'Screen-Space', 'World-Space').build('World-Space'))
+            .add(asString("LIGHTING_REFLECT_MODE", '0', '1', '2').build('2'))
             .add(asBool("LIGHTING_REFLECT_TRIANGLE", false, true))
             .add(asBool("LIGHTING_REFLECT_NOISE", true, true))
             .add(asIntRange("LIGHTING_REFLECT_MAXSTEP", 64, 8, 256, 8))

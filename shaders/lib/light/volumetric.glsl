@@ -1,11 +1,11 @@
-const float VL_Phase = 0.86;
-const float VL_Scatter  = 0.090;
-const float VL_Transmit = 0.012;
-const float VL_AmbientF = 1.0;
+//const float VL_Phase = 0.86;
+//const float VL_Scatter  = 0.90;
+//const float VL_Transmit = 0.012;
+//const float VL_AmbientF = 1.0;
 
-const float VL_RainPhase = 0.72;
-const float VL_RainScatter  = 0.090;
-const float VL_RainTransmit = 0.012;
+//const float VL_RainPhase = 0.72;
+//const float VL_RainScatter  = 0.090;
+//const float VL_RainTransmit = 0.012;
 
 const float VL_WaterPhaseF =  0.86;
 const float VL_WaterPhaseB = -0.14;

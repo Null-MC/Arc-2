@@ -1,5 +1,8 @@
 #version 430 core
 
+#include "/settings.glsl"
+#include "/lib/constants.glsl"
+
 layout(location = 0) out vec3 outScatter;
 layout(location = 1) out vec3 outTransmit;
 
@@ -17,23 +20,21 @@ uniform sampler2D texSkyMultiScatter;
     uniform sampler2DArray texShadowColor;
 #endif
 
-#ifdef LPV_ENABLED
+#if LIGHTING_MODE == LIGHT_MODE_LPV
     uniform sampler3D texFloodFill;
     uniform sampler3D texFloodFill_alt;
 #endif
 
-#include "/settings.glsl"
 #include "/lib/common.glsl"
-
 #include "/lib/buffers/scene.glsl"
 
 //#ifdef LPV_ENABLED
 //    #include "/lib/buffers/sh-lpv.glsl"
 //#endif
 
-#ifdef LIGHTING_GI_ENABLED
-    #include "/lib/buffers/sh-gi.glsl"
-#endif
+//#ifdef LIGHTING_GI_ENABLED
+//    #include "/lib/buffers/sh-gi.glsl"
+//#endif
 
 #include "/lib/noise/ign.glsl"
 #include "/lib/hg.glsl"
@@ -50,7 +51,7 @@ uniform sampler2D texSkyMultiScatter;
 
 #include "/lib/light/volumetric.glsl"
 
-#ifdef LPV_ENABLED
+#if LIGHTING_MODE == LIGHT_MODE_LPV
     #include "/lib/voxel/voxel_common.glsl"
     #include "/lib/lpv/floodfill.glsl"
 #endif
@@ -360,7 +361,7 @@ void main() {
             vec3 voxelPos = GetVoxelPosition(sampleLocalPos);
             if (IsInVoxelBounds(voxelPos)) {
                 vec3 blockLight = sample_floodfill(voxelPos);
-                sampleLit += blockLight * BLOCK_LUX * 100.0; // * phaseIso;
+                sampleLit += phaseIso * blockLight;
             }
         #endif
 
@@ -374,13 +375,13 @@ void main() {
 
         ivec3 blockWorldPos = ivec3(floor(sampleLocalPos + ap.camera.pos));
         uint blockId = uint(iris_getBlockAtPos(blockWorldPos).x);
-        isFluid = iris_hasFluid(blockId);
+        isFluid = iris_hasFluid(blockId) && iris_getEmission(blockId) == 0;
 
         if (!isFluid) {
             vec3 skyPos = getSkyPosition(sampleLocalPos);
 
             float mieDensity = sampleDensity + EPSILON;
-            float mieScattering = 0.0004 * mieDensity;
+            float mieScattering = 0.004 * mieDensity;
             float mieAbsorption = 0.0020 * mieDensity;
             extinction = vec3(mieScattering + mieAbsorption);
 

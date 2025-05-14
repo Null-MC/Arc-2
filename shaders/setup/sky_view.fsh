@@ -40,11 +40,17 @@ vec3 raymarchScattering(vec3 pos, vec3 rayDir, vec3 sunDir, float tMax, float nu
         vec3 sampleTransmittance = exp(-dt*extinction);
 
         vec3 sunTransmittance = getValFromTLUT(texSkyTransmit, newPos, sunDir);
+        vec3 moonTransmittance = getValFromTLUT(texSkyTransmit, newPos, -sunDir);
+
         vec3 psiMS = getValFromMultiScattLUT(texSkyMultiScatter, newPos, sunDir);
 
-        vec3 rayleighInScattering = rayleighScattering*(rayleighPhaseValue*sunTransmittance*SUN_LUX + psiMS);
-        vec3 mieInScattering = mieScattering*(miePhaseValue*sunTransmittance*SUN_LUX + psiMS);
-        vec3 inScattering = (rayleighInScattering + mieInScattering);
+        vec3 rayleighInScattering_sun = rayleighScattering * (rayleighPhaseValue * sunTransmittance * SUN_LUX + psiMS);
+        vec3 mieInScattering_sun = mieScattering * (miePhaseValue*sunTransmittance * SUN_LUX + psiMS);
+
+        vec3 rayleighInScattering_moon = rayleighScattering * (rayleighPhaseValue * moonTransmittance * MOON_LUX + psiMS);
+        vec3 mieInScattering_moon = mieScattering * (miePhaseValue * moonTransmittance * MOON_LUX + psiMS);
+
+        vec3 inScattering = (rayleighInScattering_sun + rayleighInScattering_moon + mieInScattering_sun + mieInScattering_moon);
 
         // Integrated scattering within path segment.
         vec3 scatteringIntegral = (inScattering - inScattering * sampleTransmittance) / extinction;

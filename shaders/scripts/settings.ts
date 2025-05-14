@@ -47,7 +47,7 @@ export class ShaderSettings {
     Lighting_TraceSampleCount = () => getIntSetting("RT_MAX_SAMPLE_COUNT");
     Lighting_TraceQuads = () => getBoolSetting("LIGHTING_TRACE_TRIANGLE");
     Lighting_PenumbraSize = () => getIntSetting("LIGHT_TRACE_PENUMBRA");
-    Lighting_ReflectionMode = () => getStringSettingIndex("LIGHTING_REFLECT_MODE", 2, 'Sky Only', 'Screen-Space', 'World-Space');
+    Lighting_ReflectionMode = () => parseInt(getStringSetting("LIGHTING_REFLECT_MODE"));
     Lighting_ReflectionNoise = () => getBoolSetting("LIGHTING_REFLECT_NOISE");
     Lighting_ReflectionQuads = () => getBoolSetting("LIGHTING_REFLECT_TRIANGLE");
     Lighting_ReflectionStepCount = () => getIntSetting("LIGHTING_REFLECT_MAXSTEP");

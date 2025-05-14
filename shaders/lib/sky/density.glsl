@@ -7,7 +7,7 @@ float GetSkyDensity(const in vec3 localPos) {
     vec3 worldPos = localPos + ap.camera.pos;
     density *= 1.0 - saturate((worldPos.y - Scene_SkyFogSeaLevel) / 200.0);
 
-    density = mix(density, 1.0, ap.world.rainStrength) * 100.0;
+    density = mix(density, 1.0, ap.world.rainStrength);
 
     #ifdef FOG_CAVE_ENABLED
 //        uint blockLightCoord = iris_getBlockAtPos(ivec3(floor(worldPos))).y;
@@ -21,7 +21,7 @@ float GetSkyDensity(const in vec3 localPos) {
         density = mix(density, FOG_CAVE_DENSITY, caveFogF);
     #endif
 
-    return density;
+    return density * 10.0;
 
 
 //    //    float sampleY = localPos.y + ap.camera.pos.y;

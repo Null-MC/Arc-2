@@ -1,5 +1,8 @@
 #version 430 core
 
+#include "/settings.glsl"
+#include "/lib/constants.glsl"
+
 layout(location = 0) out vec3 outScatter;
 layout(location = 1) out vec3 outTransmit;
 
@@ -24,7 +27,6 @@ uniform sampler2D texSkyMultiScatter;
     uniform sampler3D texFloodFill_alt;
 #endif
 
-#include "/settings.glsl"
 #include "/lib/common.glsl"
 #include "/lib/buffers/scene.glsl"
 
@@ -204,7 +206,7 @@ void main() {
                 vec3 voxelPos = GetVoxelPosition(sampleLocalPos);
                 if (IsInVoxelBounds(voxelPos)) {
                     vec3 blockLight = sample_floodfill(voxelPos);
-                    sampleLit += blockLight * BLOCK_LUX; // * phaseIso
+                    sampleLit += phaseIso * blockLight;
                 }
             #endif
 

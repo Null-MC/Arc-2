@@ -108,8 +108,12 @@ function applySettings(settings) {
         if (settings.Lighting_Mode == LightingModes.FloodFill)
             defineGlobally1("LPV_ENABLED");
 
-        if (snapshot.Lighting_GI_Enabled)
+        if (snapshot.Lighting_GI_Enabled) {
             defineGlobally1("LIGHTING_GI_ENABLED");
+
+            if (snapshot.Lighting_GI_SkyLight)
+                defineGlobally1("LIGHTING_GI_SKYLIGHT");
+        }
     }
 
     if (snapshot.Effect_SSAO_Enabled) defineGlobally1("EFFECT_SSAO_ENABLED");

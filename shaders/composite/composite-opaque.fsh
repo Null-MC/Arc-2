@@ -271,7 +271,7 @@ void main() {
         vec3 skyIrradiance = textureLod(texSkyIrradiance, skyIrradianceCoord, 0).rgb;
         skyIrradiance = (SKY_AMBIENT * lmCoord.y) * skyIrradiance;
 
-        #if !(defined(LIGHTING_GI_ENABLED) && defined(VOXEL_GI_SKYLIGHT))
+        #if !(defined(LIGHTING_GI_ENABLED) && defined(LIGHTING_GI_SKYLIGHT))
             skyIrradiance *= 2.0;
         #endif
 
@@ -279,7 +279,7 @@ void main() {
             if (IsInVoxelBounds(voxelPos)) {
                 //skyIrradiance *= 0.5;
 
-                #ifdef VOXEL_GI_SKYLIGHT
+                #ifdef LIGHTING_GI_SKYLIGHT
                     skyIrradiance = vec3(0.0);
                 #endif
 

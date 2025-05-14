@@ -52,8 +52,11 @@ export function setupOptions() {
 
     let screen_Lighting = new Page("Lighting")
         .add(asString("LIGHTING_MODE", "0", "1", "2").build("1"))
+        .add(new Page("Global Illumination")
+            .add(asBool("LIGHTING_GI_ENABLED", true, true))
+            .add(asBool("LIGHTING_GI_SKYLIGHT", false, true))
+            .build())
         .add(EMPTY)
-        .add(asBool("LIGHTING_GI_ENABLED", true, true))
         .add(new Page("Reflections")
             .add(asString("LIGHTING_REFLECT_MODE", 'Sky Only', 'Screen-Space', 'World-Space').build('World-Space'))
             .add(asBool("LIGHTING_REFLECT_TRIANGLE", false, true))

@@ -374,7 +374,7 @@ vec3 trace_GI(const in vec3 traceOrigin, const in vec3 traceDir, const in int fa
 			color = 0.5 * sample_sh_gi(endVoxel, traceDir) * 1000.0;
 		}
 		else {
-			#ifdef VOXEL_GI_SKYLIGHT
+			#ifdef LIGHTING_GI_SKYLIGHT
 				vec3 skyPos = getSkyPosition(vec3(0.0));
 				color = getValFromSkyLUT(texSkyView, skyPos, traceDir, Scene_LocalSunDir);
 				color *= max(Scene_LocalSunDir.y, 0.0);

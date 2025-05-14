@@ -81,8 +81,14 @@ value.LIGHTING_MODE.2=Ray Traced
 option.BLOCKLIGHT_TEMP=LightMap Temp
 option.BLOCKLIGHT_TEMP.comment=The color-temperature of light-map based lighting.
 
-option.LIGHTING_GI_ENABLED=Global Illumination
+
+screen.LIGHTING_GI=Global Illumination
+
+option.LIGHTING_GI_ENABLED=Enabled
 option.LIGHTING_GI_ENABLED.comment=Allows light to bounce, for more realistic ambient lighting. Heavy on performance!
+
+option.LIGHTING_GI_SKYLIGHT=Include Sky Lighting
+option.LIGHTING_GI_SKYLIGHT.comment=More realistic but also still buggy.
 
 option.LIGHTING_COLOR_CANDLES=Colored Candles
 option.LIGHTING_COLOR_CANDLES.comment=Makes the lighting cast from candles match their color.

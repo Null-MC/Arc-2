@@ -43,6 +43,7 @@ export class ShaderSettings {
     Material_FancyLavaResolution = () => getIntSetting("FANCY_LAVA_RES");
     Lighting_Mode = () => parseInt(getStringSetting("LIGHTING_MODE"));
     Lighting_GI_Enabled = () => getBoolSetting("LIGHTING_GI_ENABLED");
+    Lighting_GI_SkyLight = () => getBoolSetting("LIGHTING_GI_SKYLIGHT");
     Lighting_TraceSampleCount = () => getIntSetting("RT_MAX_SAMPLE_COUNT");
     Lighting_TraceQuads = () => getBoolSetting("LIGHTING_TRACE_TRIANGLE");
     Lighting_PenumbraSize = () => getIntSetting("LIGHT_TRACE_PENUMBRA");
@@ -105,6 +106,8 @@ export class ShaderSettings {
         snapshot.Material_FancyLava = this.Material_FancyLava();
         snapshot.Material_FancyLavaResolution = this.Material_FancyLavaResolution();
         snapshot.Lighting_Mode = this.Lighting_Mode();
+        snapshot.Lighting_GI_Enabled = this.Lighting_GI_Enabled();
+        snapshot.Lighting_GI_SkyLight = this.Lighting_GI_SkyLight();
         snapshot.Lighting_TraceSampleCount = this.Lighting_TraceSampleCount();
         snapshot.Lighting_TraceQuads = this.Lighting_TraceQuads();
         snapshot.Lighting_ReflectionMode = this.Lighting_ReflectionMode();
@@ -115,7 +118,6 @@ export class ShaderSettings {
         snapshot.Lighting_ColorCandles = this.Lighting_ColorCandles();
         snapshot.Voxel_Size = this.Voxel_Size();
         snapshot.Voxel_Offset = this.Voxel_Offset();
-        snapshot.Lighting_GI_Enabled = this.Lighting_GI_Enabled();
         snapshot.Voxel_MaxLightCount = this.Voxel_MaxLightCount();
         snapshot.Voxel_MaxQuadCount = this.Voxel_MaxQuadCount();
         snapshot.Voxel_UseProvided = this.Voxel_UseProvided();
@@ -257,6 +259,7 @@ export class SettingsSnapshot {
     Lighting_VolumetricResolution: number;
     Lighting_ColorCandles: boolean;
     Lighting_GI_Enabled: boolean;
+    Lighting_GI_SkyLight: boolean;
     Voxel_Size: number;
     Voxel_Offset: number;
     Voxel_MaxLightCount: number;

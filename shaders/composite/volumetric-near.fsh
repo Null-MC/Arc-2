@@ -28,14 +28,6 @@ uniform sampler2D texSkyMultiScatter;
 #include "/lib/common.glsl"
 #include "/lib/buffers/scene.glsl"
 
-//#ifdef LPV_ENABLED
-//    #include "/lib/buffers/sh-lpv.glsl"
-//#endif
-
-//#ifdef LIGHTING_GI_ENABLED
-//    #include "/lib/buffers/sh-gi.glsl"
-//#endif
-
 #include "/lib/noise/ign.glsl"
 #include "/lib/hg.glsl"
 
@@ -55,10 +47,6 @@ uniform sampler2D texSkyMultiScatter;
     #include "/lib/voxel/voxel_common.glsl"
     #include "/lib/lpv/floodfill.glsl"
 #endif
-
-//#ifdef LIGHTING_GI_ENABLED
-//    #include "/lib/lpv/sh-gi-sample.glsl"
-//#endif
 
 
 const int VL_MaxSamples = 32;
@@ -330,23 +318,32 @@ void main() {
             #endif
 
             #ifdef SKY_FOG_NOISE
-                float fogNoise = SampleFogNoise(sampleLocalPos);
-                sampleDensity += fogNoise;
+                sampleDensity += SampleFogNoise(sampleLocalPos);
+            #endif
 
+            #ifdef VL_SELF_SHADOW
                 float shadow_dither = dither;
 
                 float shadowStepDist = 1.0;
                 float shadowDensity = 0.0;
                 for (float ii = shadow_dither; ii < 8.0; ii += 1.0) {
                     vec3 fogShadow_localPos = (shadowStepDist * ii) * Scene_LocalLightDir + sampleLocalPos;
-                    shadowDensity += SampleFogNoise(fogShadow_localPos) * shadowStepDist;// * (1.0 - max(1.0 - ii, 0.0));
+
+                    float shadowSampleDensity = VL_WaterDensity;
+                    if (ap.camera.fluid != 1) {
+                        shadowSampleDensity = GetSkyDensity(fogShadow_localPos);
+
+                        #ifdef SKY_FOG_NOISE
+                            shadowSampleDensity += SampleFogNoise(fogShadow_localPos);
+                        #endif
+                    }
+
+                    shadowDensity += shadowSampleDensity * shadowStepDist;// * (1.0 - max(1.0 - ii, 0.0));
                     shadowStepDist *= 2.0;
                 }
 
                 if (shadowDensity > 0.0)
-                    shadowSample *= exp(-shadowDensity * 0.2);
-            #else
-                // TODO: TF?
+                    shadowSample *= exp(-VL_ShadowTransmit * shadowDensity);
             #endif
         }
 //        else {
@@ -381,8 +378,8 @@ void main() {
             vec3 skyPos = getSkyPosition(sampleLocalPos);
 
             float mieDensity = sampleDensity + EPSILON;
-            float mieScattering = 0.04 * mieDensity;
-            float mieAbsorption = 0.02 * mieDensity;
+            float mieScattering = mieScatteringF * mieDensity;
+            float mieAbsorption = mieAbsorptionF * mieDensity;
             extinction = vec3(mieScattering + mieAbsorption);
 
             sampleTransmittance = exp(-extinction * stepDist);

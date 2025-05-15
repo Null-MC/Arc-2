@@ -221,7 +221,18 @@ void iris_emitFragment() {
         }
     #endif
 
-    if (iris_discardFragment(albedo)) {discard; return;}
+    #ifdef RENDER_TRANSLUCENT
+        #ifdef RENDER_TERRAIN
+            float alphaThreshold = is_fluid ? -1.0 : (0.5/255.0);
+        #else
+            const float alphaThreshold = (0.5/255.0);
+        #endif
+    #else
+        const float alphaThreshold = 0.2;
+    #endif
+
+    //if (iris_discardFragment(albedo)) {discard; return;}
+    if (albedo.a < alphaThreshold) {discard; return;}
 
     albedo *= mColor;
 

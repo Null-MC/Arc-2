@@ -7,6 +7,8 @@
 
 //#define REFRACTION_SNELL
 
+#define VL_SELF_SHADOW
+
 #define VOXEL_GI_MAXFRAMES 60 // [60 120 240]
 
 #ifdef LIGHTING_GI_SKYLIGHT

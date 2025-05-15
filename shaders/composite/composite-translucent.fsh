@@ -228,11 +228,28 @@ void main() {
         float NoL_sun = dot(localTexNormal, Scene_LocalSunDir);
         float NoL_moon = -NoL_sun;
 
-        vec3 skyLight_NoLm = SUN_LUX * sunTransmit * max(NoL_sun, 0.0)
-            + MOON_LUX * moonTransmit * max(NoL_moon, 0.0);
+        float skyLightF = smoothstep(0.0, 0.2, Scene_LocalLightDir.y);
+        vec3 sunLight = skyLightF * SUN_LUX * sunTransmit;
+        vec3 moonLight = skyLightF * MOON_LUX * moonTransmit;
 
-        vec3 skyLightDiffuse = skyLight_NoLm * shadow_sss.rgb;
-        skyLightDiffuse *= SampleLightDiffuse(NoVm, NoLm, LoHm, roughL);
+        vec3 skyLight_NoLm = sunLight * max(NoL_sun, 0.0) + moonLight * max(NoL_moon, 0.0);
+
+        vec3 skyLightDiffuse = skyLight_NoLm * shadow_sss.rgb * SampleLightDiffuse(NoVm, NoLm, LoHm, roughL);
+
+        // SSS
+        const float sss_G = 0.24;
+
+        vec2 sss_skyIrradianceCoord = DirectionToUV(localViewDir);
+        vec3 sss_skyIrradiance = textureLod(texSkyIrradiance, sss_skyIrradianceCoord, 0).rgb;
+        sss_skyIrradiance = (SKY_AMBIENT * lmCoord.y) * sss_skyIrradiance;
+
+        float VoL_sun = dot(localViewDir, Scene_LocalSunDir);
+        vec3 sss_phase_sun = max(HG(VoL_sun, sss_G), 0.0) * abs(NoL_sun) * sunLight;
+        vec3 sss_phase_moon = max(HG(-VoL_sun, sss_G), 0.0) * abs(NoL_moon) * moonLight;
+        vec3 sss_skyLight = shadow_sss.w * (sss_phase_sun + sss_phase_moon)
+                          + phaseIso * sss_skyIrradiance * occlusion;
+
+        skyLightDiffuse = mix(skyLightDiffuse, sss_skyLight * PI, sss);
 
         #ifdef VOXEL_ENABLED
             vec3 voxelPos = GetVoxelPosition(localPosTrans);
@@ -240,25 +257,29 @@ void main() {
 
         vec2 skyIrradianceCoord = DirectionToUV(localTexNormal);
         vec3 skyIrradiance = textureLod(texSkyIrradiance, skyIrradianceCoord, 0).rgb;
-        skyIrradiance = (SKY_AMBIENT * lmCoord.y) * skyIrradiance;
+        skyIrradiance = (SKY_AMBIENT * lmCoord.y) * (skyIrradiance + Sky_MinLight);
+
+        #if !(defined(LIGHTING_GI_ENABLED) && defined(LIGHTING_GI_SKYLIGHT))
+            skyIrradiance *= 2.0;
+        #endif
 
         #ifdef LIGHTING_GI_ENABLED
             if (IsInVoxelBounds(voxelPos)) {
-                //vec3 voxelSamplePos = 0.5*localTexNormal - 0.25*localGeoNormal + voxelPos;
+                #ifdef LIGHTING_GI_SKYLIGHT
+                    skyIrradiance = vec3(0.0);
+                #endif
+
                 vec3 voxelSamplePos = 0.5*localGeoNormal + voxelPos;
-                skyIrradiance = sample_sh_gi_linear(voxelSamplePos, localTexNormal);
+                skyIrradiance += sample_sh_gi_linear(voxelSamplePos, localTexNormal);
             }
         #endif
 
         skyLightDiffuse += skyIrradiance;
-
         skyLightDiffuse *= occlusion;
 
         #if defined EFFECT_SSGI_ENABLED && !defined ACCUM_ENABLED
             skyLightDiffuse += gi_ao.rgb;
         #endif
-
-        // TODO: SSS?
 
         vec3 blockLighting = blackbody(Lighting_BlockTemp) * (BLOCKLIGHT_BRIGHTNESS * lmCoord.x) * (occlusion*0.5 + 0.5);
 
@@ -270,8 +291,6 @@ void main() {
             if (IsInVoxelBounds(voxelPos)) {
                 vec3 voxelSamplePos = 0.5*localTexNormal - 0.25*localGeoNormal + voxelPos;
                 blockLighting = sample_floodfill(voxelSamplePos);
-
-                //blockLighting = voxelLight * cloudShadowF * SampleLightDiffuse(NoVm, 1.0, 1.0, roughL) * PI;
             }
         #endif
 

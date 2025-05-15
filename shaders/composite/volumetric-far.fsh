@@ -217,8 +217,8 @@ void main() {
                 vec3 skyPos = getSkyPosition(sampleLocalPos);
 
                 float mieDensity = max(sampleDensity, EPSILON);
-                float mieScattering = 0.0004 * mieDensity;
-                float mieAbsorption = 0.0020 * mieDensity;
+                float mieScattering = mieScatteringF * mieDensity;
+                float mieAbsorption = mieAbsorptionF * mieDensity;
                 extinction = vec3(mieScattering + mieAbsorption);
 
                 sampleTransmittance = exp(-extinction * stepDist);

@@ -7,7 +7,7 @@ const float Scene_WaterWaveHeight = 0.8;
 int WaterWaveOctaveMin = int(ceil(Scene_WaterWaveDetail * 0.75));
 int WaterWaveOctaveMax = Scene_WaterWaveDetail;
 
-const vec3 WaterWaveScaleF = vec3(1.0, 1.0/Water_WaveHeight, 1.0);
+vec3 WaterWaveScaleF = vec3(1.0, 1.0/Water_WaveHeight, 1.0);
 
 vec2 waveDx(const in vec2 position, const in vec2 direction, const in float frequency, const in float timeshift) {
     float x = dot(direction, position) * frequency + timeshift;

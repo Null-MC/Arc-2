@@ -89,10 +89,11 @@ vec3 TraceDDA(vec3 origin, const in vec3 endPos, const in float range, const in 
 
                 if (blockId != 0u) {
                     bool isFullBlock = iris_isFullBlock(blockId);
+
                     if (isFullBlock) hit = true;
                     else {
-                        vec3 tintColor = iris_getLightColor(blockId).rgb;
-                        color *= RgbToLinear(tintColor);
+//                        vec3 tintColor = iris_getLightColor(blockId).rgb;
+//                        color *= RgbToLinear(tintColor);
                     }
                 }
             #endif

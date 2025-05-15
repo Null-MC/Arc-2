@@ -55,9 +55,10 @@ in vec2 uv;
     #include "/lib/buffers/quad-list.glsl"
 #endif
 
+#include "/lib/utility/hsv.glsl"
+
 #include "/lib/noise/ign.glsl"
 #include "/lib/noise/hash.glsl"
-
 #include "/lib/noise/blue.glsl"
 
 #include "/lib/light/hcm.glsl"
@@ -222,10 +223,16 @@ void main() {
                     vec3 lightColor = iris_getLightColor(blockId).rgb;
                     lightColor = RgbToLinear(lightColor);
 
-                    lightColor *= (lightRange/15.0) * BLOCKLIGHT_BRIGHTNESS;
+                    vec3 light_hsv = RgbToHsv(lightColor);
+                    lightColor = HsvToRgb(vec3(light_hsv.xy, 1.0));
+                    float lightIntensity = 1.0 - clamp(light_hsv.z, 0.0, 0.9);// mix(1000.0, 1.0, light_hsv.z);
+                    float lightIntensity2 = 0.0;//clamp(light_hsv.z, EPSILON, 1.0);//mix(1.0, 0.1, light_hsv.z);
 
                     vec3 lightVec = light_LocalPos - localPos;
-                    float lightAtt = GetLightAttenuation(lightVec, lightRange);
+                    float lightAtt = GetLightAttenuation(lightVec, lightRange, lightIntensity, lightIntensity2);
+                    lightAtt *= light_hsv.z;
+
+                    vec3 lightColorAtt = BLOCK_LUX * lightAtt * lightColor;
 
                     vec3 lightDir = normalize(lightVec);
 
@@ -237,14 +244,14 @@ void main() {
 
                     if (NoLm == 0.0 || dot(localGeoNormal, lightDir) <= 0.0) continue;
                     float D = SampleLightDiffuse(NoVm, NoLm, LoHm, roughL);
-                    vec3 sampleDiffuse = (NoLm * lightAtt * D) * lightColor;
+                    vec3 sampleDiffuse = (NoLm * D) * lightColorAtt;
 
                     float NoHm = max(dot(localTexNormal, H), 0.0);
 
                     const bool isUnderWater = false;
                     vec3 F = material_fresnel(albedo.rgb, f0_metal, roughL, NoVm, isUnderWater);
                     float S = SampleLightSpecular(NoLm, NoHm, LoHm, roughL);
-                    vec3 sampleSpecular = lightAtt * S * F * lightColor;
+                    vec3 sampleSpecular = S * F * lightColorAtt;
 
                     vec3 traceStart = light_voxelPos;
                     vec3 traceEnd = voxelPos_out;

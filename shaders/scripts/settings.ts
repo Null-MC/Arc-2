@@ -45,6 +45,7 @@ export class ShaderSettings {
     Lighting_GI_Enabled = () => getBoolSetting("LIGHTING_GI_ENABLED");
     Lighting_GI_SkyLight = () => getBoolSetting("LIGHTING_GI_SKYLIGHT");
     Lighting_TraceSampleCount = () => getIntSetting("RT_MAX_SAMPLE_COUNT");
+    Lighting_TraceLightMax = () => getIntSetting("RT_MAX_LIGHT_COUNT");
     Lighting_TraceQuads = () => getBoolSetting("LIGHTING_TRACE_TRIANGLE");
     Lighting_PenumbraSize = () => getIntSetting("LIGHT_TRACE_PENUMBRA");
     Lighting_ReflectionMode = () => parseInt(getStringSetting("LIGHTING_REFLECT_MODE"));
@@ -56,7 +57,6 @@ export class ShaderSettings {
     Lighting_BlockTemp = () => getIntSetting("BLOCKLIGHT_TEMP");
     Voxel_Size = () => getIntSetting("VOXEL_SIZE");
     Voxel_Offset = () => getIntSetting("VOXEL_FRUSTUM_OFFSET");
-    Voxel_MaxLightCount = () => 128;
     Voxel_MaxQuadCount = () => 64;
     Voxel_UseProvided = () => getBoolSetting("VOXEL_PROVIDED");
     Effect_SSAO_Enabled = () => getBoolSetting("EFFECT_SSAO_ENABLED");
@@ -87,7 +87,6 @@ export class ShaderSettings {
         snapshot.Sky_FogNoise = this.Sky_FogNoise();
         snapshot.Water_WaveEnabled = this.Water_WaveEnabled();
         snapshot.Water_Tessellation = this.Water_Tessellation();
-        //snapshot.Water_TessellationLevel = this.Water_TessellationLevel();
         snapshot.Shadow_Enabled = this.Shadow_Enabled();
         snapshot.Shadow_CloudEnabled = this.Shadow_CloudEnabled();
         snapshot.Shadow_Resolution = this.Shadow_Resolution();
@@ -109,6 +108,7 @@ export class ShaderSettings {
         snapshot.Lighting_GI_Enabled = this.Lighting_GI_Enabled();
         snapshot.Lighting_GI_SkyLight = this.Lighting_GI_SkyLight();
         snapshot.Lighting_TraceSampleCount = this.Lighting_TraceSampleCount();
+        snapshot.Lighting_TraceLightMax = this.Lighting_TraceLightMax();
         snapshot.Lighting_TraceQuads = this.Lighting_TraceQuads();
         snapshot.Lighting_ReflectionMode = this.Lighting_ReflectionMode();
         snapshot.Lighting_ReflectionNoise = this.Lighting_ReflectionNoise();
@@ -118,7 +118,6 @@ export class ShaderSettings {
         snapshot.Lighting_ColorCandles = this.Lighting_ColorCandles();
         snapshot.Voxel_Size = this.Voxel_Size();
         snapshot.Voxel_Offset = this.Voxel_Offset();
-        snapshot.Voxel_MaxLightCount = this.Voxel_MaxLightCount();
         snapshot.Voxel_MaxQuadCount = this.Voxel_MaxQuadCount();
         snapshot.Voxel_UseProvided = this.Voxel_UseProvided();
         snapshot.Effect_SSAO_Enabled = this.Effect_SSAO_Enabled();
@@ -251,6 +250,7 @@ export class SettingsSnapshot {
     Material_FancyLavaResolution: number;
     Lighting_Mode: number;
     Lighting_TraceSampleCount: number;
+    Lighting_TraceLightMax: number;
     Lighting_TraceQuads: boolean;
     Lighting_ReflectionMode: number;
     Lighting_ReflectionNoise: boolean;
@@ -262,7 +262,6 @@ export class SettingsSnapshot {
     Lighting_GI_SkyLight: boolean;
     Voxel_Size: number;
     Voxel_Offset: number;
-    Voxel_MaxLightCount: number;
     Voxel_MaxQuadCount: number;
     Voxel_UseProvided: boolean;
     Effect_SSAO_Enabled: boolean;

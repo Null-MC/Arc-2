@@ -121,6 +121,9 @@ option.RT_MAX_SAMPLE_COUNT=Max Sample Count
 option.RT_MAX_SAMPLE_COUNT.comment=The maximum number of lights that can be sampled per-pixel, per-frame. Increasing this value will improve quality but reduce performance.
 value.RT_MAX_SAMPLE_COUNT.0=Infinite
 
+option.RT_MAX_LIGHT_COUNT=Max Light Count
+option.RT_MAX_SAMPLE_COUNT.comment=The maximum number of lights that can be stored in voxel data, per-bin. Increasing this value will improve quality but reduce performance.
+
 option.VOXEL_SIZE=Size
 option.VOXEL_SIZE.comment=The size of the voxel volume [in blocks].
 suffix.VOXEL_SIZE=^3

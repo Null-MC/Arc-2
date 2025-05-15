@@ -80,8 +80,8 @@ function applySettings(settings) {
 
     if (settings.Internal.Voxelization) {
         defineGlobally1("VOXEL_ENABLED");
-        defineGlobally("VOXEL_SIZE", snapshot.Voxel_Size.toString());
-        defineGlobally("VOXEL_FRUSTUM_OFFSET", snapshot.Voxel_Offset.toString());
+        defineGlobally("VOXEL_SIZE", snapshot.Voxel_Size);
+        defineGlobally("VOXEL_FRUSTUM_OFFSET", snapshot.Voxel_Offset);
 
         if (snapshot.Voxel_UseProvided)
             defineGlobally1("VOXEL_PROVIDED");
@@ -89,8 +89,9 @@ function applySettings(settings) {
         if (snapshot.Lighting_Mode == LightingModes.RayTraced) {
             defineGlobally1("RT_ENABLED");
             defineGlobally("RT_MAX_SAMPLE_COUNT", `${snapshot.Lighting_TraceSampleCount}u`);
-            defineGlobally("LIGHT_BIN_MAX", snapshot.Voxel_MaxLightCount.toString());
-            defineGlobally("LIGHT_BIN_SIZE", LIGHT_BIN_SIZE.toString());
+            defineGlobally("RT_MAX_LIGHT_COUNT", snapshot.Lighting_TraceLightMax)
+            //defineGlobally("LIGHT_BIN_MAX", snapshot.Voxel_MaxLightCount);
+            defineGlobally("LIGHT_BIN_SIZE", LIGHT_BIN_SIZE);
 
             if (snapshot.Lighting_TraceQuads) defineGlobally1("RT_TRI_ENABLED");
         }
@@ -565,7 +566,7 @@ export function setupShader() {
     let blockFaceBuffer: BuiltBuffer | null = null;
     let quadListBuffer: BuiltBuffer | null = null;
     if (settings.Internal.Voxelization) {
-        const lightBinSize = 4 * (1 + snapshot.Voxel_MaxLightCount);
+        const lightBinSize = 4 * (1 + snapshot.Lighting_TraceLightMax);
         const lightListBinCount = Math.ceil(snapshot.Voxel_Size / LIGHT_BIN_SIZE);
         const lightListBufferSize = lightBinSize * cubed(lightListBinCount) + 4;
         print(`Light-List Buffer Size: ${lightListBufferSize.toLocaleString()}`);

@@ -197,7 +197,7 @@ void main() {
 
                 #if RT_MAX_SAMPLE_COUNT > 0
                     uint maxSampleCount = min(binLightCount, RT_MAX_SAMPLE_COUNT);
-                    float bright_scale = ceil(binLightCount / float(RT_MAX_SAMPLE_COUNT));
+                    float bright_scale = binLightCount / float(RT_MAX_SAMPLE_COUNT);
                 #else
                     uint maxSampleCount = binLightCount;
                     const float bright_scale = 1.0;

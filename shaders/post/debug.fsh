@@ -246,7 +246,7 @@ void main() {
 //     printUnsignedInt(ap.time.frames);
 //     printLine();
 
-    #if LIGHTING_MODE == LIGHT_MODE_RT
+    #if LIGHTING_MODE == LIGHT_MODE_RT && defined(DEBUG_RT)
         printString((_L, _i, _g, _h, _t, _s, _colon, _space));
         printUnsignedInt(Scene_LightCount);
         printLine();

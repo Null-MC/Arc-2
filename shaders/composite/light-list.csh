@@ -24,8 +24,8 @@ void main() {
 		int lightRange = iris_getEmission(blockId);
 		
 		if (lightRange > 0) {
-			ivec3 voxelBinMin = ivec3((voxelPos - lightRange) / LIGHT_BIN_SIZE);
-			ivec3 voxelBinMax = ivec3((voxelPos + lightRange) / LIGHT_BIN_SIZE);
+			ivec3 voxelBinMin = ivec3(floor((voxelPos - lightRange) / LIGHT_BIN_SIZE));
+			ivec3 voxelBinMax = ivec3(ceil((voxelPos + lightRange) / LIGHT_BIN_SIZE));
 
 			uint voxelIndex = GetVoxelIndex(voxelPos);
 
@@ -35,14 +35,13 @@ void main() {
 						ivec3 neighborBinPos = ivec3(x, y, z);
 						if (clamp(neighborBinPos, 0, LightBinGridSize) != neighborBinPos) continue;
 
-						// TODO: box-sphere intersection check
 						vec3 boxPos = clamp(voxelPos, neighborBinPos*LIGHT_BIN_SIZE, (neighborBinPos+1)*LIGHT_BIN_SIZE);
 						if (lengthSq(boxPos - voxelPos) >= lightRange*lightRange) continue;
 
 						int neighborBinIndex = GetLightBinIndex(neighborBinPos);
 						uint lightIndex = atomicAdd(LightBinMap[neighborBinIndex].lightCount, 1u);
 
-						if (lightIndex < LIGHT_BIN_MAX) {
+						if (lightIndex < RT_MAX_LIGHT_COUNT) {
 							LightBinMap[neighborBinIndex].lightList[lightIndex] = voxelIndex;
 						}
 					}
@@ -51,16 +50,18 @@ void main() {
 		}
 	}
 
-	barrier();
+	#ifdef DEBUG_RT
+		barrier();
 
-	ivec3 globalBinPos = ivec3(gl_GlobalInvocationID) / LIGHT_BIN_SIZE;
-	ivec3 localBinPos = ivec3(gl_GlobalInvocationID) - globalBinPos*LIGHT_BIN_SIZE;
+		ivec3 globalBinPos = ivec3(gl_GlobalInvocationID) / LIGHT_BIN_SIZE;
+		ivec3 localBinPos = ivec3(gl_GlobalInvocationID) - globalBinPos*LIGHT_BIN_SIZE;
 
-	if (all(equal(localBinPos, ivec3(0)))) {
-		int lightBinIndex = GetLightBinIndex(globalBinPos);
-		atomicAdd(Scene_LightCount, LightBinMap[lightBinIndex].lightCount);
+		if (all(equal(localBinPos, ivec3(0)))) {
+			int lightBinIndex = GetLightBinIndex(globalBinPos);
+			atomicAdd(Scene_LightCount, LightBinMap[lightBinIndex].lightCount);
 
-		// int triangleBinIndex = GetTriangleBinIndex(globalBinPos);
-		// atomicAdd(Scene_TriangleCount, TriangleBinMap[binIndex].triangleCount);
-	}
+			// int triangleBinIndex = GetTriangleBinIndex(globalBinPos);
+			// atomicAdd(Scene_TriangleCount, TriangleBinMap[binIndex].triangleCount);
+		}
+	#endif
 }

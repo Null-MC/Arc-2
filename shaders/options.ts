@@ -65,6 +65,7 @@ export function setupOptions() {
             .build())
         .add(new Page("Ray Tracing")
             .add(asInt("RT_MAX_SAMPLE_COUNT", 2, 4, 8, 12, 16, 20, 24, 28, 32, 48, 64, 0).build(16))
+            .add(asIntRange("RT_MAX_LIGHT_COUNT", 64, 4, 256, 4, true))
             .add(asIntRange("LIGHT_TRACE_PENUMBRA", 100, 0, 100, 2, false))
             .add(asBool("LIGHTING_TRACE_TRIANGLE", false, true))
             .build())

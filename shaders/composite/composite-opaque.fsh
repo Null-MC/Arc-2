@@ -258,9 +258,9 @@ void main() {
         vec3 sss_phase_sun = max(HG(VoL_sun, sss_G), 0.0) * abs(NoL_sun) * sunLight;
         vec3 sss_phase_moon = max(HG(-VoL_sun, sss_G), 0.0) * abs(NoL_moon) * moonLight;
         vec3 sss_skyLight = shadow_sss.w * (sss_phase_sun + sss_phase_moon)
-        + phaseIso * sss_skyIrradiance * occlusion;
+                          + phaseIso * sss_skyIrradiance * occlusion;
 
-        skyLightDiffuse = mix(skyLightDiffuse, sss_skyLight, sss);
+        skyLightDiffuse = mix(skyLightDiffuse, sss_skyLight * 3.0, sss);
         //skyLightDiffuse += (sss_phase_sun + sss_phase_moon) * max(shadow_sss.w, 0.0) * abs(Scene_LocalLightDir.y);
 
         #ifdef VOXEL_ENABLED
@@ -268,6 +268,7 @@ void main() {
         #endif
 
         vec2 skyIrradianceCoord = DirectionToUV(localTexNormal);
+        //skyIrradianceCoord = clamp(skyIrradianceCoord, 0.5/32.0, 1.0-0.5/32.0);
         vec3 skyIrradiance = textureLod(texSkyIrradiance, skyIrradianceCoord, 0).rgb;
         skyIrradiance = (SKY_AMBIENT * lmCoord.y) * (skyIrradiance + Sky_MinLight);
 

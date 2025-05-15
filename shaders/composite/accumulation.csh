@@ -199,11 +199,13 @@ void main() {
 
     float depthL = linearizeDepth(depth, ap.camera.near, ap.camera.far);
 
-    float offsetThreshold = saturate(depthL * 0.04);
+    float offsetThreshold = depthL * 0.04;
 
     float counterF = 1.0;
     if (saturate(uvLast) != uvLast) counterF = 0.0;
     if (distance(localPosPrev, localPosLast.xyz) > offsetThreshold) counterF = 0.0;
+
+    float counter = localPosLast.w * counterF + 1.0;
 
     vec3 diffuse = vec3(0.0);
     vec3 specular = vec3(0.0);
@@ -211,6 +213,34 @@ void main() {
     #if LIGHTING_MODE == LIGHT_MODE_RT || LIGHTING_REFLECT_MODE == REFLECT_MODE_WSR
         diffuse = textureLod(texDiffuseRT, uv, 0).rgb;
         specular = textureLod(texSpecularRT, uv, 0).rgb;
+
+        if (uv.x > 0.5) {
+            vec2 rtPixelSize = 1.0 / rtBufferSize;
+
+            vec3 a = textureLod(texDiffuseRT, fma(rtPixelSize, vec2(-2.0, +2.0), uv), 0).rgb;
+            vec3 b = textureLod(texDiffuseRT, fma(rtPixelSize, vec2( 0.0, +2.0), uv), 0).rgb;
+            vec3 c = textureLod(texDiffuseRT, fma(rtPixelSize, vec2(+2.0, +2.0), uv), 0).rgb;
+
+            vec3 d = textureLod(texDiffuseRT, fma(rtPixelSize, vec2(-2.0, 0.0), uv), 0).rgb;
+            vec3 e = textureLod(texDiffuseRT, fma(rtPixelSize, vec2( 0.0, 0.0), uv), 0).rgb;
+            vec3 f = textureLod(texDiffuseRT, fma(rtPixelSize, vec2(+2.0, 0.0), uv), 0).rgb;
+
+            vec3 g = textureLod(texDiffuseRT, fma(rtPixelSize, vec2(-2.0, -2.0), uv), 0).rgb;
+            vec3 h = textureLod(texDiffuseRT, fma(rtPixelSize, vec2( 0.0, -2.0), uv), 0).rgb;
+            vec3 i = textureLod(texDiffuseRT, fma(rtPixelSize, vec2(+2.0, -2.0), uv), 0).rgb;
+
+            vec3 j = textureLod(texDiffuseRT, fma(rtPixelSize, vec2(-1.0, +1.0), uv), 0).rgb;
+            vec3 k = textureLod(texDiffuseRT, fma(rtPixelSize, vec2(+1.0, +1.0), uv), 0).rgb;
+            vec3 l = textureLod(texDiffuseRT, fma(rtPixelSize, vec2(-1.0, -1.0), uv), 0).rgb;
+            vec3 m = textureLod(texDiffuseRT, fma(rtPixelSize, vec2(+1.0, -1.0), uv), 0).rgb;
+
+            vec3 blurColor = e         * 0.125;
+            blurColor     += (a+c+g+i) * 0.03125;
+            blurColor     += (b+d+f+h) * 0.0625;
+            blurColor     += (j+k+l+m) * 0.125;
+
+            diffuse = mix(diffuse, blurColor, 1.0 / counter);
+        }
     #endif
 
 //    #ifdef EFFECT_SSGI_ENABLED
@@ -220,8 +250,6 @@ void main() {
     #ifdef EFFECT_SSAO_ENABLED
         float occlusion = textureLod(TEX_SSGIAO, uv, 0).a;
     #endif
-
-    float counter = localPosLast.w * counterF + 1.0;
 
     float roughness = unpackUnorm4x8(data_g).x;
     float roughL = _pow2(roughness);

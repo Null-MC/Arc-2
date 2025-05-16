@@ -89,7 +89,7 @@ uniform sampler3D texFogNoise;
 #include "/lib/sky/stars.glsl"
 #include "/lib/sky/density.glsl"
 #include "/lib/sky/transmittance.glsl"
-#include "/lib/sky/clouds.glsl"
+//#include "/lib/sky/clouds.glsl"
 
 #if LIGHTING_REFLECT_MODE == REFLECT_MODE_SSR
     #include "/lib/effects/ssr.glsl"
@@ -101,6 +101,11 @@ uniform sampler3D texFogNoise;
 
 #if LIGHTING_MODE == LIGHT_MODE_LPV
     #include "/lib/lpv/floodfill.glsl"
+#endif
+
+#if defined(SKY_CLOUDS_ENABLED) && defined(SHADOWS_CLOUD_ENABLED)
+    #include "/lib/sky/clouds.glsl"
+    #include "/lib/shadow/clouds.glsl"
 #endif
 
 #ifdef LIGHTING_GI_ENABLED
@@ -195,20 +200,10 @@ void main() {
             shadow_sss = textureLod(TEX_SHADOW, uv, 0);
         #endif
 
-        float cloudShadowF = 1.0;
+        float skyLightF = smoothstep(0.0, 0.2, Scene_LocalLightDir.y);
+
         #if defined(SKY_CLOUDS_ENABLED) && defined(SHADOWS_CLOUD_ENABLED)
-            vec3 worldPos = localPos + ap.camera.pos;
-
-            vec3 cloudPos = (cloudHeight-worldPos.y) / Scene_LocalLightDir.y * Scene_LocalLightDir + worldPos;
-            float cloudDensity = 60.0*SampleCloudDensity(cloudPos);
-
-//            cloudPos = (cloudHeight2-worldPos.y) / Scene_LocalLightDir.y * Scene_LocalLightDir + worldPos;
-//            cloudDensity += SampleCloudDensity2(cloudPos);
-
-            cloudShadowF = exp(-VL_ShadowTransmit * cloudDensity);
-            cloudShadowF = max(cloudShadowF, 0.16);
-
-            shadow_sss *= cloudShadowF;
+            skyLightF *= SampleCloudShadows(localPos);
         #endif
 
         #if defined(EFFECT_SSAO_ENABLED) || defined(EFFECT_SSGI_ENABLED)
@@ -235,7 +230,6 @@ void main() {
         float NoL_sun = dot(localTexNormal, Scene_LocalSunDir);
         float NoL_moon = -NoL_sun;
 
-        float skyLightF = smoothstep(0.0, 0.2, Scene_LocalLightDir.y);
         vec3 sunLight = skyLightF * SUN_LUX * sunTransmit;
         vec3 moonLight = skyLightF * MOON_LUX * moonTransmit;
 
@@ -280,7 +274,7 @@ void main() {
 
         vec2 sss_skyIrradianceCoord = DirectionToUV(localViewDir);
         vec3 sss_skyIrradiance = textureLod(texSkyIrradiance, sss_skyIrradianceCoord, 0).rgb;
-        sss_skyIrradiance = (SKY_AMBIENT * lmCoord.y) * sss_skyIrradiance;
+        sss_skyIrradiance = (SKY_AMBIENT * lmCoord.y * skyLightF) * sss_skyIrradiance;
 
         float VoL_sun = dot(localViewDir, Scene_LocalSunDir);
         vec3 sss_phase_sun = max(HG(VoL_sun, sss_G), 0.0) * abs(NoL_sun) * sunLight;
@@ -296,7 +290,7 @@ void main() {
 
         vec2 skyIrradianceCoord = DirectionToUV(localTexNormal);
         vec3 skyIrradiance = textureLod(texSkyIrradiance, skyIrradianceCoord, 0).rgb;
-        skyIrradiance = (SKY_AMBIENT * lmCoord.y) * (skyIrradiance + Sky_MinLight);
+        skyIrradiance = (SKY_AMBIENT * lmCoord.y * skyLightF) * (skyIrradiance + Sky_MinLight);
 
         #if !(defined(LIGHTING_GI_ENABLED) && defined(LIGHTING_GI_SKYLIGHT))
             skyIrradiance *= 2.0;

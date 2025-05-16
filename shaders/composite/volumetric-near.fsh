@@ -233,7 +233,7 @@ void main() {
                         vec3 worldPos = sampleLocalPos + ap.camera.pos;
                         worldPos += (cloudHeight - worldPos.y) / Scene_LocalLightDir.y * Scene_LocalLightDir;
 
-                        float cloudShadowDensity = SampleCloudDensity(worldPos) * 10.0;
+                        float cloudShadowDensity = SampleCloudDensity(worldPos) * 100.0;
                         shadowSample *= mix(1.0, exp(-VL_ShadowTransmit * cloudShadowDensity), cloudShadowF);
                     }
 

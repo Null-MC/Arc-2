@@ -61,6 +61,10 @@ uniform sampler2D texSkyIrradiance;
     uniform sampler3D texFloodFill_alt;
 #endif
 
+#if defined(SKY_CLOUDS_ENABLED) && defined(SHADOWS_CLOUD_ENABLED)
+    uniform sampler3D texFogNoise;
+#endif
+
 #include "/lib/common.glsl"
 #include "/lib/buffers/scene.glsl"
 
@@ -106,6 +110,11 @@ uniform sampler2D texSkyIrradiance;
 
 #if LIGHTING_MODE == LIGHT_MODE_LPV
     #include "/lib/lpv/floodfill.glsl"
+#endif
+
+#if defined(SKY_CLOUDS_ENABLED) && defined(SHADOWS_CLOUD_ENABLED)
+    #include "/lib/sky/clouds.glsl"
+    #include "/lib/shadow/clouds.glsl"
 #endif
 
 #ifdef LIGHTING_GI_ENABLED
@@ -210,6 +219,12 @@ void main() {
             shadow_sss = textureLod(TEX_SHADOW, uv, 0);
         #endif
 
+        float skyLightF = smoothstep(0.0, 0.2, Scene_LocalLightDir.y);
+
+        #if defined(SKY_CLOUDS_ENABLED) && defined(SHADOWS_CLOUD_ENABLED)
+            skyLightF *= SampleCloudShadows(localPosTrans);
+        #endif
+
         float occlusion = texOcclusion;
         // #if defined EFFECT_SSAO_ENABLED //&& !defined ACCUM_ENABLED
         //     vec4 gi_ao = textureLod(TEX_SSGIAO, uv, 0);
@@ -228,7 +243,7 @@ void main() {
         float NoL_sun = dot(localTexNormal, Scene_LocalSunDir);
         float NoL_moon = -NoL_sun;
 
-        float skyLightF = smoothstep(0.0, 0.2, Scene_LocalLightDir.y);
+        //float skyLightF = smoothstep(0.0, 0.2, Scene_LocalLightDir.y);
         vec3 sunLight = skyLightF * SUN_LUX * sunTransmit;
         vec3 moonLight = skyLightF * MOON_LUX * moonTransmit;
 

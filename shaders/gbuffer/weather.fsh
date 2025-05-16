@@ -101,7 +101,7 @@ void iris_emitFragment() {
     finalColor.rgb = textureLod(texFinalPrevious, uv, lod).rgb * 1000.0;
     finalColor.a = 1.0;
 
-    finalColor.rgb += textureLod(texBloom, uv, 0).rgb * 1000.0 * 0.04;
+    finalColor.rgb += textureLod(texBloom, uv, 0).rgb * 1000.0 * 0.02;
 
     vec3 localViewDir = normalize(vIn.localPos);
     float VoLm_sun = max(dot(localViewDir, Scene_LocalSunDir), 0.0);

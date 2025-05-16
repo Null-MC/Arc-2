@@ -7,7 +7,14 @@ suffix.SKY_SUN_ANGLE=°
 option.SKY_FOG_DENSITY=Fog Density
 suffix.SKY_FOG_DENSITY=%
 
-option.SKY_CLOUDS_ENABLED=Clouds Enabled
+
+screen.SKY_CLOUDS=Clouds
+
+option.SKY_CLOUDS_ENABLED=Enabled
+
+option.SKY_CLOUD_COVERAGE=Coverage
+suffix.SKY_CLOUD_COVERAGE=%
+
 
 option.SKY_FOG_NOISE=Fog Clouds
 

@@ -200,7 +200,7 @@ void main() {
             vec3 worldPos = localPos + ap.camera.pos;
 
             vec3 cloudPos = (cloudHeight-worldPos.y) / Scene_LocalLightDir.y * Scene_LocalLightDir + worldPos;
-            float cloudDensity = 30.0*SampleCloudDensity(cloudPos);
+            float cloudDensity = 60.0*SampleCloudDensity(cloudPos);
 
 //            cloudPos = (cloudHeight2-worldPos.y) / Scene_LocalLightDir.y * Scene_LocalLightDir + worldPos;
 //            cloudDensity += SampleCloudDensity2(cloudPos);

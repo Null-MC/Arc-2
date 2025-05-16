@@ -25,10 +25,16 @@ uniform sampler2D texBloom;
     uniform sampler2DArray texShadowColor;
 #endif
 
+#if LIGHTING_MODE == LIGHT_MODE_LPV
+    uniform sampler3D texFloodFill;
+    uniform sampler3D texFloodFill_alt;
+#endif
+
 #include "/lib/common.glsl"
 #include "/lib/buffers/scene.glsl"
+
 #include "/lib/noise/ign.glsl"
-#include "/lib/erp.glsl"
+#include "/lib/sampling/erp.glsl"
 #include "/lib/hg.glsl"
 
 #include "/lib/utility/blackbody.glsl"
@@ -41,6 +47,11 @@ uniform sampler2D texBloom;
 #ifdef SHADOWS_ENABLED
     #include "/lib/shadow/csm.glsl"
     #include "/lib/shadow/sample.glsl"
+#endif
+
+#if LIGHTING_MODE == LIGHT_MODE_LPV
+    #include "/lib/voxel/voxel_common.glsl"
+    #include "/lib/lpv/floodfill.glsl"
 #endif
 
 
@@ -98,24 +109,34 @@ void iris_emitFragment() {
     float lod = 6.0 / (viewDist*0.1 + 1.0);
 
     vec2 uv = gl_FragCoord.xy / ap.game.screenSize;
-    finalColor.rgb = textureLod(texFinalPrevious, uv, lod).rgb * 1000.0;
+    finalColor.rgb = textureLod(texFinalPrevious, uv, lod).rgb * 1000.0 * 0.8;
     finalColor.a = 1.0;
 
     finalColor.rgb += textureLod(texBloom, uv, 0).rgb * 1000.0 * 0.02;
 
     vec3 localViewDir = normalize(vIn.localPos);
-    float VoLm_sun = max(dot(localViewDir, Scene_LocalSunDir), 0.0);
-    float VoLm_moon = max(dot(localViewDir, -Scene_LocalSunDir), 0.0);
+    float VoL_sun = dot(localViewDir, Scene_LocalSunDir);
 
     vec3 sunTransmit, moonTransmit;
     GetSkyLightTransmission(vIn.localPos, sunTransmit, moonTransmit);
 
-    //finalColor.rgb += 0.1 * shadowSample * DHG(VoLm_sun, 0.88, -0.12, 0.7) * SUN_LUX * sunTransmit;
-    //finalColor.rgb += HG(VoLm_moon, 0.8) * MOON_LUX * moonTransmit;
+    float sun_phase = max(HG(VoL_sun, 0.8), 0.0);
+    float moon_phase = max(HG(-VoL_sun, 0.8), 0.0);
+    vec3 sun_light = SUN_LUX * sunTransmit * sun_phase;
+    vec3 moon_light = MOON_LUX * moonTransmit * moon_phase;
 
-    // float viewDist = length(vIn.localPos);
-    // float fogF = smoothstep(fogStart, fogEnd, viewDist);
-    // finalColor.rgb = mix(finalColor.rgb, fogColor.rgb, fogF);
+    finalColor.rgb += 0.02 * (sun_light + moon_light) * shadowSample;
+
+    #if LIGHTING_MODE == LIGHT_MODE_LPV
+        vec3 voxelPos = GetVoxelPosition(vIn.localPos);
+
+        if (IsInVoxelBounds(voxelPos))
+            finalColor.rgb += 0.04 * sample_floodfill(voxelPos);
+    #endif
+
+    //float viewDist = length(vIn.localPos);
+    //float fogF = smoothstep(fogStart, fogEnd, viewDist);
+    //finalColor.rgb = mix(finalColor.rgb, fogColor.rgb, fogF);
 
     outColor = finalColor;
 }

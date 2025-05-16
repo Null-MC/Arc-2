@@ -173,7 +173,7 @@ export function buildSettings(snapshot: SettingsSnapshot, realtime: RealTimeSett
         realtime: realtime,
         Internal: {
             Accumulation: false,
-            Voxelization: false,
+            VoxelizeBlocks: false,
             VoxelizeBlockFaces: false,
             VoxelizeTriangles: false,
             DebugEnabled: false,
@@ -185,10 +185,10 @@ export function buildSettings(snapshot: SettingsSnapshot, realtime: RealTimeSett
 
     switch (snapshot.Lighting_Mode) {
         case LightingModes.FloodFill:
-            settings.Internal.Voxelization = true;
+            settings.Internal.VoxelizeBlocks = true;
             break;
         case LightingModes.RayTraced:
-            settings.Internal.Voxelization = true;
+            settings.Internal.VoxelizeBlocks = true;
             settings.Internal.Accumulation = true;
 
             if (snapshot.Lighting_TraceQuads)
@@ -197,7 +197,7 @@ export function buildSettings(snapshot: SettingsSnapshot, realtime: RealTimeSett
     }
 
     if (snapshot.Lighting_ReflectionMode == ReflectionModes.WorldSpace) {
-        settings.Internal.Voxelization = true;
+        settings.Internal.VoxelizeBlocks = true;
         settings.Internal.Accumulation = true;
 
         if (snapshot.Lighting_ReflectionQuads) {
@@ -214,7 +214,7 @@ export function buildSettings(snapshot: SettingsSnapshot, realtime: RealTimeSett
     }
 
     if (snapshot.Lighting_GI_Enabled) {
-        settings.Internal.Voxelization = true;
+        settings.Internal.VoxelizeBlocks = true;
         settings.Internal.VoxelizeBlockFaces = true;
     }
 

@@ -28,7 +28,7 @@ function applySettings(settings) {
     // worldSettings.vignette = false;
     // worldSettings.clouds = false;
 
-    if (settings.Internal.Voxelization)
+    if (settings.Internal.VoxelizeBlocks)
         worldSettings.cascadeSafeZones[0] = snapshot.Voxel_Size / 2;
 
     defineGlobally1("EFFECT_VL_ENABLED");
@@ -50,35 +50,35 @@ function applySettings(settings) {
     if (snapshot.Shadow_Enabled) defineGlobally1("SHADOWS_ENABLED");
     if (snapshot.Shadow_CloudEnabled) defineGlobally1("SHADOWS_CLOUD_ENABLED");
     if (snapshot.Shadow_SS_Fallback) defineGlobally1("SHADOW_SCREEN");
-    defineGlobally("SHADOW_RESOLUTION", snapshot.Shadow_Resolution.toString());
+    defineGlobally("SHADOW_RESOLUTION", snapshot.Shadow_Resolution);
 
     defineGlobally("MATERIAL_FORMAT", snapshot.Material_Format);
     defineGlobally("MATERIAL_NORMAL_FORMAT", snapshot.Material_NormalFormat);
     defineGlobally("MATERIAL_POROSITY_FORMAT", snapshot.Material_PorosityFormat);
     if (snapshot.Material_ParallaxEnabled) {
         defineGlobally1("MATERIAL_PARALLAX_ENABLED");
-        defineGlobally("MATERIAL_PARALLAX_DEPTH", snapshot.Material_ParallaxDepth.toString());
-        defineGlobally("MATERIAL_PARALLAX_SAMPLES", snapshot.Material_ParallaxStepCount.toString());
+        defineGlobally("MATERIAL_PARALLAX_DEPTH", snapshot.Material_ParallaxDepth);
+        defineGlobally("MATERIAL_PARALLAX_SAMPLES", snapshot.Material_ParallaxStepCount);
         if (snapshot.Material_ParallaxSharp) defineGlobally1("MATERIAL_PARALLAX_SHARP");
         if (snapshot.Material_ParallaxDepthWrite) defineGlobally1("MATERIAL_PARALLAX_DEPTHWRITE");
     }
     if (snapshot.Material_NormalSmooth) defineGlobally1("MATERIAL_NORMAL_SMOOTH");
     if (snapshot.Material_FancyLava) {
         defineGlobally1("FANCY_LAVA");
-        defineGlobally("FANCY_LAVA_RES", snapshot.Material_FancyLavaResolution.toString());
+        defineGlobally("FANCY_LAVA_RES", snapshot.Material_FancyLavaResolution);
     }
 
-    defineGlobally("LIGHTING_MODE", snapshot.Lighting_Mode.toString());
-    //defineGlobally("LIGHTING_VL_RES", snapshot.Lighting_VolumetricResolution.toString());
+    defineGlobally("LIGHTING_MODE", snapshot.Lighting_Mode);
+    defineGlobally("LIGHTING_VL_RES", snapshot.Lighting_VolumetricResolution);
 
-    defineGlobally("LIGHTING_REFLECT_MODE", snapshot.Lighting_ReflectionMode.toString());
-    defineGlobally("LIGHTING_REFLECT_MAXSTEP", snapshot.Lighting_ReflectionStepCount.toString())
+    defineGlobally("LIGHTING_REFLECT_MODE", snapshot.Lighting_ReflectionMode);
+    defineGlobally("LIGHTING_REFLECT_MAXSTEP", snapshot.Lighting_ReflectionStepCount)
     if (snapshot.Lighting_ReflectionNoise) defineGlobally1("MATERIAL_ROUGH_REFLECT_NOISE");
     if (snapshot.Lighting_ReflectionMode == ReflectionModes.WorldSpace) {
         if (snapshot.Lighting_ReflectionQuads) defineGlobally1("LIGHTING_REFLECT_TRIANGLE");
     }
 
-    if (settings.Internal.Voxelization) {
+    if (settings.Internal.VoxelizeBlocks) {
         defineGlobally1("VOXEL_ENABLED");
         defineGlobally("VOXEL_SIZE", snapshot.Voxel_Size);
         defineGlobally("VOXEL_FRUSTUM_OFFSET", snapshot.Voxel_Offset);
@@ -102,8 +102,8 @@ function applySettings(settings) {
 
         if (settings.Internal.VoxelizeTriangles) {
             defineGlobally1("VOXEL_TRI_ENABLED");
-            defineGlobally("QUAD_BIN_MAX", snapshot.Voxel_MaxQuadCount.toString());
-            defineGlobally("QUAD_BIN_SIZE", QUAD_BIN_SIZE.toString());
+            defineGlobally("QUAD_BIN_MAX", snapshot.Voxel_MaxQuadCount);
+            defineGlobally("QUAD_BIN_SIZE", QUAD_BIN_SIZE);
         }
 
         if (settings.Lighting_Mode == LightingModes.FloodFill)
@@ -129,8 +129,8 @@ function applySettings(settings) {
     //if (snapshot.Debug_QuadLists) defineGlobally1("DEBUG_QUADS");
 
     if (settings.Internal.DebugEnabled) {
-        defineGlobally("DEBUG_VIEW", snapshot.Debug_View.toString());
-        defineGlobally("DEBUG_MATERIAL", snapshot.Debug_Material.toString());
+        defineGlobally("DEBUG_VIEW", snapshot.Debug_View);
+        defineGlobally("DEBUG_MATERIAL", snapshot.Debug_Material);
         if (snapshot.Debug_Translucent) defineGlobally1("DEBUG_TRANSLUCENT");
     }
 }
@@ -323,14 +323,16 @@ export function setupShader() {
             .build();
     }
 
-    const texVoxelBlock = new Texture("texVoxelBlock")
-        .imageName("imgVoxelBlock")
-        .format(Format.R32UI)
-        .clearColor(0.0, 0.0, 0.0, 0.0)
-        .width(snapshot.Voxel_Size)
-        .height(snapshot.Voxel_Size)
-        .depth(snapshot.Voxel_Size)
-        .build();
+    if (settings.Internal.VoxelizeBlocks && !snapshot.Voxel_UseProvided) {
+        new Texture("texVoxelBlock")
+            .imageName("imgVoxelBlock")
+            .format(Format.R32UI)
+            .clearColor(0.0, 0.0, 0.0, 0.0)
+            .width(snapshot.Voxel_Size)
+            .height(snapshot.Voxel_Size)
+            .depth(snapshot.Voxel_Size)
+            .build();
+    }
 
     let texDiffuseRT: BuiltTexture | null = null;
     let texSpecularRT: BuiltTexture | null = null;
@@ -505,6 +507,24 @@ export function setupShader() {
         .clear(false)
         .build();
 
+    if (snapshot.Lighting_VolumetricResolution > 0) {
+        new Texture("texScatterFinal")
+            .imageName("imgScatterFinal")
+            .format(Format.RGBA16F)
+            .width(screenWidth)
+            .height(screenHeight)
+            .clear(false)
+            .build();
+
+        new Texture("texTransmitFinal")
+            .imageName("imgTransmitFinal")
+            .format(Format.RGBA16F)
+            .width(screenWidth)
+            .height(screenHeight)
+            .clear(false)
+            .build();
+    }
+
     let shLpvBuffer: BuiltBuffer | null = null;
     let shLpvBuffer_alt: BuiltBuffer | null = null;
     if (snapshot.Lighting_GI_Enabled) {
@@ -565,7 +585,7 @@ export function setupShader() {
     let lightListBuffer: BuiltBuffer | null = null;
     let blockFaceBuffer: BuiltBuffer | null = null;
     let quadListBuffer: BuiltBuffer | null = null;
-    if (settings.Internal.Voxelization) {
+    if (settings.Internal.VoxelizeBlocks) {
         const lightBinSize = 4 * (1 + snapshot.Lighting_TraceLightMax);
         const lightListBinCount = Math.ceil(snapshot.Voxel_Size / LIGHT_BIN_SIZE);
         const lightListBufferSize = lightBinSize * cubed(lightListBinCount) + 4;
@@ -1014,6 +1034,14 @@ export function setupShader() {
         // .ssbo(2, shLpvBuffer_alt)
         .ubo(0, SceneSettingsBuffer)
         .build());
+
+    if (snapshot.Lighting_VolumetricResolution > 0) {
+        registerShader(Stage.POST_RENDER, new Compute("volumetric-near-filter")
+            .location("composite/volumetric-filter.csh")
+            .workGroups(Math.ceil(screenWidth / 16.0), Math.ceil(screenHeight / 16.0), 1)
+            .define("TEX_DEPTH", "mainDepthTex")
+            .build());
+    }
 
     registerShader(Stage.POST_RENDER, new GenerateMips(texFinalOpaque));
 

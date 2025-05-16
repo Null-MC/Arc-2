@@ -65,8 +65,8 @@ uniform sampler3D texFogNoise;
     #include "/lib/buffers/sh-gi.glsl"
 #endif
 
-#include "/lib/erp.glsl"
-#include "/lib/depth.glsl"
+#include "/lib/sampling/erp.glsl"
+#include "/lib/sampling/depth.glsl"
 #include "/lib/hg.glsl"
 
 #include "/lib/noise/ign.glsl"

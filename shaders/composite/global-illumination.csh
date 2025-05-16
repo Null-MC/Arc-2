@@ -5,7 +5,7 @@
 
 layout (local_size_x = 8, local_size_y = 8, local_size_z = 8) in;
 
-shared uint sharedBlockMap[10*10*10];
+//shared uint sharedBlockMap[10*10*10];
 
 uniform sampler2D blockAtlas;
 uniform sampler2D blockAtlasS;
@@ -38,7 +38,7 @@ uniform sampler2DArray texShadowColor;
 #include "/lib/voxel/voxel_common.glsl"
 #include "/lib/voxel/voxel-sample.glsl"
 
-#include "/lib/erp.glsl"
+#include "/lib/sampling/erp.glsl"
 
 #include "/lib/noise/hash.glsl"
 #include "/lib/noise/blue.glsl"
@@ -70,13 +70,11 @@ uniform sampler2DArray texShadowColor;
 #endif
 
 
-const float LpvFalloff = 0.998;
-const float LpvBlockRange = 1.0;
-const ivec3 flattenShared = ivec3(1, 10, 100);
+//const ivec3 flattenShared = ivec3(1, 10, 100);
 
-int getSharedCoord(ivec3 pos) {
-	return sumOf(pos * flattenShared);
-}
+//int getSharedCoord(ivec3 pos) {
+//	return sumOf(pos * flattenShared);
+//}
 
 ivec3 GetVoxelFrameOffset() {
     vec3 viewDir = ap.camera.viewInv[2].xyz;
@@ -90,30 +88,30 @@ ivec3 GetVoxelFrameOffset() {
     return ivec3(posNow) - ivec3(posLast);
 }
 
-void populateShared(const in ivec3 voxelFrameOffset) {
-	uint i1 = uint(gl_LocalInvocationIndex) * 2u;
-	if (i1 >= 1000u) return;
-
-	uint i2 = i1 + 1u;
-	ivec3 workGroupOffset = ivec3(gl_WorkGroupID * gl_WorkGroupSize) - 1;
-
-	ivec3 pos1 = workGroupOffset + ivec3(i1 / flattenShared) % 10;
-	ivec3 pos2 = workGroupOffset + ivec3(i2 / flattenShared) % 10;
-
-	uint blockId1 = 0u;
-	uint blockId2 = 0u;
-
-	if (IsInVoxelBounds(pos1)) {
-		blockId1 = SampleVoxelBlock(pos1);
-	}
-
-	if (IsInVoxelBounds(pos2)) {
-		blockId2 = SampleVoxelBlock(pos2);
-	}
-
-	sharedBlockMap[i1] = blockId1;
-	sharedBlockMap[i2] = blockId2;
-}
+//void populateShared(const in ivec3 voxelFrameOffset) {
+//	uint i1 = uint(gl_LocalInvocationIndex) * 2u;
+//	if (i1 >= 1000u) return;
+//
+//	uint i2 = i1 + 1u;
+//	ivec3 workGroupOffset = ivec3(gl_WorkGroupID * gl_WorkGroupSize) - 1;
+//
+//	ivec3 pos1 = workGroupOffset + ivec3(i1 / flattenShared) % 10;
+//	ivec3 pos2 = workGroupOffset + ivec3(i2 / flattenShared) % 10;
+//
+//	uint blockId1 = 0u;
+//	uint blockId2 = 0u;
+//
+//	if (IsInVoxelBounds(pos1)) {
+//		blockId1 = SampleVoxelBlock(pos1);
+//	}
+//
+//	if (IsInVoxelBounds(pos2)) {
+//		blockId2 = SampleVoxelBlock(pos2);
+//	}
+//
+//	sharedBlockMap[i1] = blockId1;
+//	sharedBlockMap[i2] = blockId2;
+//}
 
 vec3 GetShadowSamplePos_LPV(const in vec3 shadowViewPos, out int cascadeIndex) {
 	cascadeIndex = -1;
@@ -387,31 +385,32 @@ vec3 trace_GI(const in vec3 traceOrigin, const in vec3 traceDir, const in int fa
 
 
 void main() {
-	uvec3 chunkPos = gl_WorkGroupID * gl_WorkGroupSize;
-	if (any(greaterThanEqual(chunkPos, VoxelBufferSize))) return;
+//	uvec3 chunkPos = gl_WorkGroupID * gl_WorkGroupSize;
+//	if (any(greaterThanEqual(chunkPos, VoxelBufferSize))) return;
 
-	ivec3 voxelFrameOffset = GetVoxelFrameOffset();
-
-	populateShared(voxelFrameOffset);
-	barrier();
+//	populateShared(voxelFrameOffset);
+//	barrier();
 
 	ivec3 cellIndex = ivec3(gl_GlobalInvocationID);
 	if (any(greaterThanEqual(cellIndex, VoxelBufferSize))) return;
 
 	bool altFrame = ap.time.frames % 2 == 1;
 
-    vec3 viewDir = ap.camera.viewInv[2].xyz;
-    vec3 voxelCenter = GetVoxelCenter(ap.camera.pos, viewDir);
-    vec3 localPos = cellIndex - voxelCenter + 0.5;
+    //vec3 viewDir = ap.camera.viewInv[2].xyz;
+    //vec3 voxelCenter = GetVoxelCenter(ap.camera.pos, viewDir);
+    //vec3 localPos = cellIndex - voxelCenter + 0.5;
 
-	ivec3 localCellIndex = ivec3(gl_LocalInvocationID);
-	int sharedCoord = getSharedCoord(localCellIndex + 1);
-	uint blockId = sharedBlockMap[sharedCoord];
+	//ivec3 localCellIndex = ivec3(gl_LocalInvocationID);
+	//int sharedCoord = getSharedCoord(localCellIndex + 1);
+	//uint blockId = sharedBlockMap[sharedCoord];
+
+	ivec3 voxelFrameOffset = GetVoxelFrameOffset();
+	uint blockId = SampleVoxelBlock(cellIndex + 0.5);
 
 	bool isFullBlock = false;
-	vec3 blockTint = vec3(1.0);
-	vec3 lightColor = vec3(0.0);
-	int lightRange = 0;
+	//vec3 blockTint = vec3(1.0);
+	//vec3 lightColor = vec3(0.0);
+	//int lightRange = 0;
 
 	if (blockId > 0u) {
 		isFullBlock = iris_isFullBlock(blockId);

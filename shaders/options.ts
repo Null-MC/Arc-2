@@ -9,7 +9,7 @@ export function setupOptions() {
         .add(EMPTY)
         .add(new Page("Clouds")
             .add(asBool("SKY_CLOUDS_ENABLED", false, true))
-            .add(asIntRange("SKY_CLOUD_COVERAGE", 50, 0, 100, 2, true))
+            .add(asIntRange("SKY_CLOUD_COVERAGE", 50, 0, 100, 2, false))
             .build())
         .build();
 

@@ -1,5 +1,8 @@
 #version 430
 
+#include "/settings.glsl"
+#include "/lib/constants.glsl"
+
 layout(location = 0) out vec4 outColor;
 
 in VertexData2 {
@@ -16,11 +19,9 @@ in VertexData2 {
 uniform sampler2D texSkyTransmit;
 uniform sampler2D texSkyIrradiance;
 
-#include "/settings.glsl"
 #include "/lib/common.glsl"
 #include "/lib/buffers/scene.glsl"
-#include "/lib/erp.glsl"
-
+#include "/lib/sampling/erp.glsl"
 #include "/lib/sky/common.glsl"
 
 

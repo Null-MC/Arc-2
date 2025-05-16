@@ -9,7 +9,7 @@ uniform sampler2D texSkyIrradiance;
 
 #include "/lib/common.glsl"
 #include "/lib/buffers/scene.glsl"
-#include "/lib/erp.glsl"
+#include "/lib/sampling/erp.glsl"
 
 
 void main() {

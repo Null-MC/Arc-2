@@ -91,7 +91,7 @@ in vec2 uv;
         #include "/lib/buffers/sh-gi.glsl"
     #endif
 
-    #include "/lib/erp.glsl"
+    #include "/lib/sampling/erp.glsl"
     #include "/lib/material/material.glsl"
 
     #include "/lib/sky/common.glsl"
@@ -122,7 +122,7 @@ in vec2 uv;
         #include "/lib/lpv/sh-gi-sample.glsl"
     #endif
 
-    #include "/lib/depth.glsl"
+    #include "/lib/sampling/depth.glsl"
     #include "/lib/effects/ssr.glsl"
 
     #include "/lib/composite-shared.glsl"

@@ -1,5 +1,8 @@
 #version 430 core
 
+#include "/settings.glsl"
+#include "/lib/constants.glsl"
+
 layout(location = 0) out vec4 outShadowSSS;
 
 in vec2 uv;
@@ -11,12 +14,11 @@ uniform sampler2DArray solidShadowMap;
 uniform sampler2DArray texShadowColor;
 uniform usampler2D texDeferredTrans_Data;
 
-#include "/settings.glsl"
 #include "/lib/common.glsl"
 #include "/lib/buffers/scene.glsl"
 
 #include "/lib/noise/ign.glsl"
-#include "/lib/depth.glsl"
+#include "/lib/sampling/depth.glsl"
 
 #include "/lib/shadow/csm.glsl"
 #include "/lib/shadow/sample.glsl"

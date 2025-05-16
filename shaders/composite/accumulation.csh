@@ -22,7 +22,7 @@ layout(rgba16f) uniform writeonly image2D IMG_ACCUM_DIFFUSE_ALT;
 layout(rgba16f) uniform writeonly image2D IMG_ACCUM_SPECULAR_ALT;
 layout(rgba16f) uniform writeonly image2D IMG_ACCUM_POSITION_ALT;
 
-#ifdef EFFECT_SSAO_ENABLED
+#if defined(EFFECT_SSAO_ENABLED) && !defined(RENDER_TRANSLUCENT)
     layout(r16f) uniform writeonly image2D IMG_ACCUM_OCCLUSION;
     layout(r16f) uniform writeonly image2D IMG_ACCUM_OCCLUSION_ALT;
 #endif
@@ -37,11 +37,11 @@ uniform sampler2D TEX_ACCUM_DIFFUSE_ALT;
 uniform sampler2D TEX_ACCUM_SPECULAR_ALT;
 uniform sampler2D TEX_ACCUM_POSITION_ALT;
 
-#if defined(EFFECT_SSAO_ENABLED) || defined(EFFECT_SSGI_ENABLED)
+#if defined(EFFECT_SSGI_ENABLED) || (defined(EFFECT_SSAO_ENABLED) && !defined(RENDER_TRANSLUCENT))
     uniform sampler2D TEX_SSGIAO;
 #endif
 
-#ifdef EFFECT_SSAO_ENABLED
+#if defined(EFFECT_SSAO_ENABLED) && !defined(RENDER_TRANSLUCENT)
     uniform sampler2D TEX_ACCUM_OCCLUSION;
     uniform sampler2D TEX_ACCUM_OCCLUSION_ALT;
 #endif
@@ -52,8 +52,8 @@ uniform sampler2D TEX_ACCUM_POSITION_ALT;
 #endif
 
 #include "/lib/common.glsl"
-#include "/lib/depth.glsl"
-#include "/lib/gaussian.glsl"
+#include "/lib/sampling/depth.glsl"
+#include "/lib/sampling/gaussian.glsl"
 #include "/lib/sampling/catmull-rom.glsl"
 
 
@@ -185,7 +185,7 @@ void main() {
         localPosLast = textureLod(TEX_ACCUM_POSITION_ALT, uvLast, 0);
     }
 
-    #ifdef EFFECT_SSAO_ENABLED
+    #if defined(EFFECT_SSAO_ENABLED) && !defined(RENDER_TRANSLUCENT)
         vec2 aoBufferSize = 0.5 * ap.game.screenSize;
 
         float previousOcclusion;
@@ -247,7 +247,7 @@ void main() {
 //        diffuse += sampleSharedBuffer(depthL);
 //    #endif
 
-    #ifdef EFFECT_SSAO_ENABLED
+    #if defined(EFFECT_SSAO_ENABLED) && !defined(RENDER_TRANSLUCENT)
         float occlusion = textureLod(TEX_SSGIAO, uv, 0).a;
     #endif
 
@@ -263,7 +263,7 @@ void main() {
     diffuseFinal = clamp(diffuseFinal, 0.0, 65000.0);
     specularFinal = clamp(specularFinal, 0.0, 65000.0);
 
-    #ifdef EFFECT_SSAO_ENABLED
+    #if defined(EFFECT_SSAO_ENABLED) && !defined(RENDER_TRANSLUCENT)
         //float occlusionCounter = clamp(counter, 1.0, 1.0 + AccumulationMax_Diffuse * roughL);
         float occlusionFinal = mix(previousOcclusion, occlusion, 1.0 / diffuseCounter);
 
@@ -281,7 +281,7 @@ void main() {
         imageStore(IMG_ACCUM_POSITION, iuv, vec4(localPos, counter));
     }
 
-    #ifdef EFFECT_SSAO_ENABLED
+    #if defined(EFFECT_SSAO_ENABLED) && !defined(RENDER_TRANSLUCENT)
         if (altFrame) {
             imageStore(IMG_ACCUM_OCCLUSION_ALT,  iuv, vec4(vec3(occlusionFinal), 1.0));
         }

@@ -42,8 +42,13 @@ uniform sampler2D texSkyIrradiance;
 #endif
 
 #ifdef EFFECT_VL_ENABLED
-    uniform sampler2D texScatterVL;
-    uniform sampler2D texTransmitVL;
+    #if LIGHTING_VL_RES == 0
+        uniform sampler2D texScatterVL;
+        uniform sampler2D texTransmitVL;
+    #else
+        uniform sampler2D texScatterFinal;
+        uniform sampler2D texTransmitFinal;
+    #endif
 #endif
 
 #ifdef ACCUM_ENABLED
@@ -76,8 +81,8 @@ uniform sampler2D texSkyIrradiance;
 //    #include "/lib/buffers/triangle-list.glsl"
 //#endif
 
-#include "/lib/erp.glsl"
-#include "/lib/depth.glsl"
+#include "/lib/sampling/erp.glsl"
+#include "/lib/sampling/depth.glsl"
 #include "/lib/hg.glsl"
 
 #include "/lib/noise/ign.glsl"
@@ -481,8 +486,14 @@ void main() {
     }
 
     #ifdef EFFECT_VL_ENABLED
-        vec3 vlScatter = textureLod(texScatterVL, uv, 0).rgb;
-        vec3 vlTransmit = textureLod(texTransmitVL, uv, 0).rgb;
+        #if LIGHTING_VL_RES == 0
+            vec3 vlScatter = textureLod(texScatterVL, uv, 0).rgb;
+            vec3 vlTransmit = textureLod(texTransmitVL, uv, 0).rgb;
+        #else
+            vec3 vlScatter = textureLod(texScatterFinal, uv, 0).rgb;
+            vec3 vlTransmit = textureLod(texTransmitFinal, uv, 0).rgb;
+        #endif
+
         colorFinal = colorFinal * vlTransmit + vlScatter;
     #endif
 

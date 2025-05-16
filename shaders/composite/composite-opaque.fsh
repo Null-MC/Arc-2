@@ -89,7 +89,6 @@ uniform sampler3D texFogNoise;
 #include "/lib/sky/stars.glsl"
 #include "/lib/sky/density.glsl"
 #include "/lib/sky/transmittance.glsl"
-//#include "/lib/sky/clouds.glsl"
 
 #if LIGHTING_REFLECT_MODE == REFLECT_MODE_SSR
     #include "/lib/effects/ssr.glsl"
@@ -150,12 +149,6 @@ void main() {
             bool altFrame = (ap.time.frames % 2) == 1;
         #endif
 
-        // #if defined EFFECT_SSAO_ENABLED || defined EFFECT_SSGI_ENABLED
-        //     vec4 gi_ao = textureLod(TEX_SSGIAO, uv, 0);
-        // #else
-        //     const vec4 gi_ao = vec4(vec3(0.0), 1.0);
-        // #endif
-
         albedo.rgb = RgbToLinear(albedo.rgb);
 
         vec3 localTexNormal = normalize(fma(texNormalData, vec3(2.0), vec3(-1.0)));
@@ -174,16 +167,11 @@ void main() {
         float texOcclusion = data_b.b;
         float porosity = data_b.a;
 
-        // float data_trans_water = unpackUnorm4x8(data_trans_a).b;
         bool is_trans_fluid = iris_hasFluid(trans_blockId);
 
         bool isWet = ap.camera.fluid == 1
             ? (depthTrans >= depthOpaque)
             : (depthTrans < depthOpaque && is_trans_fluid);
-
-//        if (isWet) {
-//            roughness = 0.08;
-//        }
 
         lmCoord = lmCoord*lmCoord*lmCoord;
 

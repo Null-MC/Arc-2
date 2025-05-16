@@ -8,7 +8,7 @@ export function setupOptions() {
         .add(asBool("SKY_FOG_NOISE", false, true))
         .add(EMPTY)
         .add(new Page("Clouds")
-            .add(asBool("SKY_CLOUDS_ENABLED", false, true))
+            .add(asBool("SKY_CLOUDS_ENABLED", true, true))
             .add(asIntRange("SKY_CLOUD_COVERAGE", 50, 0, 100, 2, false))
             .build())
         .build();

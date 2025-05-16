@@ -5,8 +5,6 @@
 
 layout (local_size_x = 8, local_size_y = 8, local_size_z = 8) in;
 
-//shared uint sharedBlockMap[10*10*10];
-
 uniform sampler2D blockAtlas;
 uniform sampler2D blockAtlasS;
 
@@ -24,6 +22,10 @@ uniform sampler2DArray shadowMap;
 uniform sampler2DArray solidShadowMap;
 uniform sampler2DArray texShadowColor;
 
+#if defined(SKY_CLOUDS_ENABLED) && defined(SHADOWS_CLOUD_ENABLED)
+	uniform sampler3D texFogNoise;
+#endif
+
 #include "/lib/common.glsl"
 
 #include "/lib/buffers/scene.glsl"
@@ -40,6 +42,7 @@ uniform sampler2DArray texShadowColor;
 
 #include "/lib/sampling/erp.glsl"
 
+#include "/lib/noise/ign.glsl"
 #include "/lib/noise/hash.glsl"
 #include "/lib/noise/blue.glsl"
 
@@ -58,6 +61,13 @@ uniform sampler2DArray texShadowColor;
 	#include "/lib/shadow/sample.glsl"
 #endif
 
+#if defined(SKY_CLOUDS_ENABLED) && defined(SHADOWS_CLOUD_ENABLED)
+	#include "/lib/light/volumetric.glsl"
+	#include "/lib/sky/density.glsl"
+	#include "/lib/sky/clouds.glsl"
+	#include "/lib/shadow/clouds.glsl"
+#endif
+
 #if LIGHTING_MODE == LIGHT_MODE_RT
 	#include "/lib/light/hcm.glsl"
 	#include "/lib/light/fresnel.glsl"
@@ -70,12 +80,6 @@ uniform sampler2DArray texShadowColor;
 #endif
 
 
-//const ivec3 flattenShared = ivec3(1, 10, 100);
-
-//int getSharedCoord(ivec3 pos) {
-//	return sumOf(pos * flattenShared);
-//}
-
 ivec3 GetVoxelFrameOffset() {
     vec3 viewDir = ap.camera.viewInv[2].xyz;
     vec3 posNow = GetVoxelCenter(ap.camera.pos, viewDir);
@@ -87,31 +91,6 @@ ivec3 GetVoxelFrameOffset() {
 
     return ivec3(posNow) - ivec3(posLast);
 }
-
-//void populateShared(const in ivec3 voxelFrameOffset) {
-//	uint i1 = uint(gl_LocalInvocationIndex) * 2u;
-//	if (i1 >= 1000u) return;
-//
-//	uint i2 = i1 + 1u;
-//	ivec3 workGroupOffset = ivec3(gl_WorkGroupID * gl_WorkGroupSize) - 1;
-//
-//	ivec3 pos1 = workGroupOffset + ivec3(i1 / flattenShared) % 10;
-//	ivec3 pos2 = workGroupOffset + ivec3(i2 / flattenShared) % 10;
-//
-//	uint blockId1 = 0u;
-//	uint blockId2 = 0u;
-//
-//	if (IsInVoxelBounds(pos1)) {
-//		blockId1 = SampleVoxelBlock(pos1);
-//	}
-//
-//	if (IsInVoxelBounds(pos2)) {
-//		blockId2 = SampleVoxelBlock(pos2);
-//	}
-//
-//	sharedBlockMap[i1] = blockId1;
-//	sharedBlockMap[i2] = blockId2;
-//}
 
 vec3 GetShadowSamplePos_LPV(const in vec3 shadowViewPos, out int cascadeIndex) {
 	cascadeIndex = -1;
@@ -245,7 +224,43 @@ vec3 trace_GI(const in vec3 traceOrigin, const in vec3 traceDir, const in int fa
 		vec3 skyLight = SUN_LUX * hit_sunTransmit * max(NoL_sun, 0.0)
 			+ MOON_LUX * hit_moonTransmit * max(NoL_moon, 0.0);
 
-		vec3 hit_diffuse = skyLight * hit_shadow;
+		float skyLightF = smoothstep(0.0, 0.2, Scene_LocalLightDir.y);
+
+		#if defined(SKY_CLOUDS_ENABLED) && defined(SHADOWS_CLOUD_ENABLED)
+			skyLightF *= SampleCloudShadows(hit_localPos);
+		#endif
+
+		#ifdef VL_SELF_SHADOW
+			vec2 dither_seed = gl_GlobalInvocationID.xz + gl_GlobalInvocationID.y*3;
+			#ifdef EFFECT_TAA_ENABLED
+				float shadow_dither = InterleavedGradientNoiseTime(dither_seed);
+			#else
+				float shadow_dither = InterleavedGradientNoise(dither_seed);
+			#endif
+
+			float shadowStepDist = 1.0;
+			float shadowDensity = 0.0;
+			for (float ii = shadow_dither; ii < 8.0; ii += 1.0) {
+				vec3 fogShadow_localPos = (shadowStepDist * ii) * Scene_LocalLightDir + hit_localPos;
+
+				float shadowSampleDensity = VL_WaterDensity;
+				if (ap.camera.fluid != 1) {
+					shadowSampleDensity = GetSkyDensity(fogShadow_localPos);
+
+					#ifdef SKY_FOG_NOISE
+					shadowSampleDensity += SampleFogNoise(fogShadow_localPos);
+					#endif
+				}
+
+				shadowDensity += shadowSampleDensity * shadowStepDist;// * (1.0 - max(1.0 - ii, 0.0));
+				shadowStepDist *= 2.0;
+			}
+
+			if (shadowDensity > 0.0)
+				skyLightF *= exp(-VL_ShadowTransmit * shadowDensity);
+		#endif
+
+		vec3 hit_diffuse = skyLight * skyLightF * hit_shadow;
 		//hit_diffuse *= SampleLightDiffuse(hit_NoVm, hit_NoLm, hit_LoHm, hit_roughL);
 
 //			vec2 skyIrradianceCoord = DirectionToUV(hitNormal);
@@ -285,8 +300,6 @@ vec3 trace_GI(const in vec3 traceOrigin, const in vec3 traceDir, const in int fa
 				//light_voxelPos += jitter*0.125;
 
 				vec3 light_LocalPos = GetVoxelLocalPos(light_voxelPos);
-
-				//uint blockId = imageLoad(imgVoxelBlock, ivec3(light_voxelPos)).r;
 
 				uint blockId = SampleVoxelBlock(light_voxelPos);
 
@@ -385,32 +398,15 @@ vec3 trace_GI(const in vec3 traceOrigin, const in vec3 traceDir, const in int fa
 
 
 void main() {
-//	uvec3 chunkPos = gl_WorkGroupID * gl_WorkGroupSize;
-//	if (any(greaterThanEqual(chunkPos, VoxelBufferSize))) return;
-
-//	populateShared(voxelFrameOffset);
-//	barrier();
-
 	ivec3 cellIndex = ivec3(gl_GlobalInvocationID);
 	if (any(greaterThanEqual(cellIndex, VoxelBufferSize))) return;
 
 	bool altFrame = ap.time.frames % 2 == 1;
 
-    //vec3 viewDir = ap.camera.viewInv[2].xyz;
-    //vec3 voxelCenter = GetVoxelCenter(ap.camera.pos, viewDir);
-    //vec3 localPos = cellIndex - voxelCenter + 0.5;
-
-	//ivec3 localCellIndex = ivec3(gl_LocalInvocationID);
-	//int sharedCoord = getSharedCoord(localCellIndex + 1);
-	//uint blockId = sharedBlockMap[sharedCoord];
-
 	ivec3 voxelFrameOffset = GetVoxelFrameOffset();
 	uint blockId = SampleVoxelBlock(cellIndex + 0.5);
 
 	bool isFullBlock = false;
-	//vec3 blockTint = vec3(1.0);
-	//vec3 lightColor = vec3(0.0);
-	//int lightRange = 0;
 
 	if (blockId > 0u) {
 		isFullBlock = iris_isFullBlock(blockId);
@@ -458,11 +454,8 @@ void main() {
 			vec3 traceSample = trace_GI(tracePos, noise_dir, dir, traceDist);
 
 			float sampleWeight = f;// / (1.0 + traceDist);
-			//sampleWeight *= f;
 
 			face_counter = clamp(face_counter + sampleWeight, 0.0, VOXEL_GI_MAXFRAMES);
-
-			//float coneDiameter = 2.0 * tan(coneHalfAngle) * traceDist;
 
 			traceSample = clamp(traceSample * 0.001, 0.0, 65000.0);
 

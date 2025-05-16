@@ -17,6 +17,7 @@ export class ShaderSettings {
     Sky_SunAngle = () => getIntSetting("SKY_SUN_ANGLE");
     Sky_SeaLevel = () => getIntSetting("SKY_SEA_LEVEL");
     Sky_Clouds = () => getBoolSetting("SKY_CLOUDS_ENABLED");
+    Sky_CloudCoverage = () => getIntSetting("SKY_CLOUD_COVERAGE");
     Sky_FogDensity = () => getIntSetting("SKY_FOG_DENSITY");
     Sky_FogNoise = () => getBoolSetting("SKY_FOG_NOISE");
     Water_WaveEnabled = () => getBoolSetting("WATER_WAVES_ENABLED");
@@ -138,6 +139,7 @@ export class ShaderSettings {
         const snapshot = new RealTimeSettingsSnapshot();
         snapshot.Sky_SunAngle = this.Sky_SunAngle();
         snapshot.Sky_SeaLevel = this.Sky_SeaLevel();
+        snapshot.Sky_CloudCoverage = this.Sky_CloudCoverage();
         snapshot.Sky_FogDensity = this.Sky_FogDensity();
         snapshot.Water_WaveDetail = this.Water_WaveDetail();
         snapshot.Water_WaveHeight = this.Water_WaveHeight();
@@ -280,6 +282,7 @@ export class SettingsSnapshot {
 export class RealTimeSettingsSnapshot {
     Sky_SunAngle: number;
     Sky_SeaLevel: number;
+    Sky_CloudCoverage: number;
     Sky_FogDensity: number;
     Water_WaveDetail: number;
     Water_WaveHeight: number;

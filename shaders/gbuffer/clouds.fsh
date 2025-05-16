@@ -50,7 +50,7 @@ void iris_emitFragment() {
     vec3 skyPos = getSkyPosition(vIn.localPos);
     vec3 sunTransmit = getValFromTLUT(texSkyTransmit, skyPos, Scene_LocalSunDir);
     vec3 moonTransmit = getValFromTLUT(texSkyTransmit, skyPos, -Scene_LocalSunDir);
-    vec3 skyLight = SUN_BRIGHTNESS * sunTransmit + MOON_BRIGHTNESS * moonTransmit;
+    vec3 skyLight = SUN_LUX * sunTransmit + MOON_LUX * moonTransmit;
 
     vec3 skyLighting = skyLight * NoLm;// * SampleLightDiffuse(NoVm, NoLm, LoHm, roughL);
 

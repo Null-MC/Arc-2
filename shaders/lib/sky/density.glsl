@@ -1,13 +1,10 @@
-//const float AirDensityF = Scene_SkyFogDensityF; //SKY_FOG_DENSITY * 0.01;
-
-
 float GetSkyDensity(const in vec3 localPos) {
     float density = Scene_SkyFogDensityF;
 
     vec3 worldPos = localPos + ap.camera.pos;
     density *= 1.0 - saturate((worldPos.y - Scene_SkyFogSeaLevel) / 200.0);
 
-    density = mix(density, 1.0, ap.world.rainStrength);
+    density = mix(density, VL_RainDensity, ap.world.rainStrength);
 
     #ifdef FOG_CAVE_ENABLED
 //        uint blockLightCoord = iris_getBlockAtPos(ivec3(floor(worldPos))).y;
@@ -22,39 +19,36 @@ float GetSkyDensity(const in vec3 localPos) {
     #endif
 
     return density;
-
-
-//    //    float sampleY = localPos.y + ap.camera.pos.y;
-//    vec3 sampleWorldPos = localPos + ap.camera.pos;
-//    float sampleDensity = clamp((sampleWorldPos.y - SKY_SEA_LEVEL) / (200.0), 0.0, 1.0);
-//
-//    float p = mix(8.0, 1.0, ap.world.rainStrength);
-//    sampleDensity = pow(1.0 - sampleDensity, p);
-//
-//    float nightF = max(1.0 - Scene_LocalSunDir.y, 0.0);
-//    float densityF = fma(nightF, 5.0, 1.0);
-//    densityF = mix(densityF, 40.0, ap.world.rainStrength);
-//
-//    densityF *= AirDensityF * sampleDensity;
-//
-//    #ifdef FOG_NOISE
-//        vec3 local_skyPos = sampleWorldPos; //localPos + ap.camera.pos;
-//        local_skyPos.y -= SKY_SEA_LEVEL;
-//        local_skyPos /= 80.0;//(ATMOSPHERE_MAX - SKY_SEA_LEVEL);
-//        local_skyPos.xz /= (256.0/32.0);// * 4.0;
-//        //local_skyPos.xz *= 0.4;// * 4.0;
-//
-//        float fogNoise = 0.0;
-//        fogNoise = textureLod(texFogNoise, local_skyPos, 0).r;
-//        fogNoise *= 1.0 - textureLod(texFogNoise, local_skyPos * 0.33, 0).r;
-//        //                fogNoise = pow(fogNoise, 2);
-//        fogNoise = fogNoise*fogNoise;
-//        fogNoise = fogNoise*fogNoise;
-//
-//        fogNoise *= 100.0;
-//
-//        densityF = densityF * fogNoise + densityF; //pow(fogNoise, 4.0) * 20.0;
-//    #endif
-//
-//    return densityF * 0.001;
 }
+
+#ifdef SKY_FOG_NOISE
+    float SampleFogNoise(const in vec3 localPos) {
+        vec3 skyPos = localPos + ap.camera.pos;
+        skyPos.y -= Scene_SkyFogSeaLevel;
+
+        vec3 samplePos = skyPos;
+        samplePos /= 60.0;//(ATMOSPHERE_MAX - SKY_SEA_LEVEL);
+        samplePos.y *= 0.2;
+        samplePos.xz /= (256.0/32.0);// * 4.0;
+
+        float fogNoise = 0.0;
+        fogNoise = textureLod(texFogNoise, samplePos, 0).r;
+        fogNoise *= 1.0 - textureLod(texFogNoise, samplePos * 0.33, 0).r;
+
+        //fogNoise = pow(fogNoise, 3.6);
+        float threshold_min = mix(0.3, 0.25, ap.world.rainStrength);
+        float threshold_max = threshold_min + 0.3;
+        fogNoise = smoothstep(threshold_min, 1.0, fogNoise);
+
+        float fogStrength = exp(-0.2 * max(skyPos.y, 0.0));
+
+        //        float cloudMin = smoothstep(200.0, 220.0, skyPos.y);
+        //        float cloudMax = smoothstep(260.0, 240.0, skyPos.y);
+        //        fogStrength = max(fogStrength, cloudMin * cloudMax);
+
+        fogNoise *= fogStrength;
+        fogNoise *= 100.0;
+
+        return fogNoise;
+    }
+#endif

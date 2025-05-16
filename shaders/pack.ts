@@ -1152,6 +1152,7 @@ export function onSettingsChanged(state : WorldState) {
     const d = snapshot.Sky_FogDensity * 0.01;
 
     new StreamBufferBuilder(SceneSettingsBuffer)
+        .appendFloat(snapshot.Sky_CloudCoverage * 0.01)
         .appendFloat(d*d)
         .appendFloat(snapshot.Sky_SeaLevel)
         .appendInt(snapshot.Water_WaveDetail)

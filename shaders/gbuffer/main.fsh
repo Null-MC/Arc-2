@@ -228,7 +228,7 @@ void iris_emitFragment() {
             const float alphaThreshold = (0.5/255.0);
         #endif
     #else
-        const float alphaThreshold = 0.2;
+        const float alphaThreshold = 0.1;
     #endif
 
     //if (iris_discardFragment(albedo)) {discard; return;}

@@ -281,7 +281,7 @@ void main() {
             skyLightDiffuse += gi_ao.rgb;
         #endif
 
-        vec3 blockLighting = blackbody(Lighting_BlockTemp) * (BLOCKLIGHT_BRIGHTNESS * lmCoord.x) * (occlusion*0.5 + 0.5);
+        vec3 blockLighting = blackbody(Lighting_BlockTemp) * (BLOCK_LUX * lmCoord.x) * (occlusion*0.5 + 0.5);
 
         #if LIGHTING_MODE == LIGHT_MODE_RT
             if (IsInVoxelBounds(voxelPos)) {

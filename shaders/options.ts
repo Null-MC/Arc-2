@@ -7,7 +7,10 @@ export function setupOptions() {
         .add(asIntRange("SKY_FOG_DENSITY", 8, 0, 100, 1, false))
         .add(asBool("SKY_FOG_NOISE", false, true))
         .add(EMPTY)
-        .add(asBool("SKY_CLOUDS_ENABLED", false, true))
+        .add(new Page("Clouds")
+            .add(asBool("SKY_CLOUDS_ENABLED", false, true))
+            .add(asIntRange("SKY_CLOUD_COVERAGE", 50, 0, 100, 2, true))
+            .build())
         .build();
 
     let screen_Water = new Page("Water")

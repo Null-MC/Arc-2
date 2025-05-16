@@ -36,10 +36,10 @@ const float BLOCKLIGHT_LUMINANCE = 32000.0;
 const float BLOCK_LUX = 8000.0;
 
 
-const float SUN_BRIGHTNESS = 64000.0;
-const float MOON_BRIGHTNESS = 64.0;
+//const float SUN_BRIGHTNESS = 64000.0;
+//const float MOON_BRIGHTNESS = 64.0;
 //const float SKY_BRIGHTNESS = 19000.0;
-const float BLOCKLIGHT_BRIGHTNESS = 800.0;
+//const float BLOCKLIGHT_BRIGHTNESS = 800.0;
 
 const float SKY_AMBIENT = 1.0;
 
@@ -79,6 +79,7 @@ const float shadowPixelSize = 1.0 / shadowMapResolution;
 #endif
 
 layout (std140, binding = 0) uniform SceneSettings {
+	float Sky_CloudCoverage;
 	float Scene_SkyFogDensityF;
 	float Scene_SkyFogSeaLevel;
 	int Scene_WaterWaveDetail;

@@ -416,8 +416,8 @@ void main() {
                 float NoL_sun = dot(reflect_localTexNormal, Scene_LocalSunDir);
                 float NoL_moon = -NoL_sun;//dot(localTexNormal, -Scene_LocalSunDir);
 
-                vec3 reflect_skyLight = SUN_BRIGHTNESS * reflect_sunTransmit * max(NoL_sun, 0.0)
-                    + MOON_BRIGHTNESS * reflect_moonTransmit * max(NoL_moon, 0.0);
+                vec3 reflect_skyLight = SUN_LUX * reflect_sunTransmit * max(NoL_sun, 0.0)
+                    + MOON_LUX * reflect_moonTransmit * max(NoL_moon, 0.0);
 
                 vec3 reflect_diffuse = reflect_skyLight * reflect_shadow;
                 reflect_diffuse *= SampleLightDiffuse(reflect_NoVm, reflect_NoLm, reflect_LoHm, reflect_roughL);
@@ -473,7 +473,7 @@ void main() {
                         vec3 lightColor = iris_getLightColor(blockId).rgb;
                         lightColor = RgbToLinear(lightColor);
 
-                        lightColor *= (lightRange/15.0) * BLOCKLIGHT_BRIGHTNESS;
+                        lightColor *= (lightRange/15.0) * BLOCK_LUX;
 
                         vec3 lightVec = light_LocalPos - reflect_localPos;
                         float lightAtt = GetLightAttenuation(lightVec, lightRange);
@@ -514,7 +514,7 @@ void main() {
                     // TODO: move cloud shadows to RSM sampling!!!
                     reflect_diffuse += voxelLight;// * cloudShadowF;// * SampleLightDiffuse(NoVm, 1.0, 1.0, roughL);
                 #else
-                    reflect_diffuse += blackbody(Lighting_BlockTemp) * (BLOCKLIGHT_BRIGHTNESS * reflect_lmcoord.x);
+                    reflect_diffuse += blackbody(Lighting_BlockTemp) * (BLOCK_LUX * reflect_lmcoord.x);
                 #endif
 
                 reflect_diffuse += 0.0016;

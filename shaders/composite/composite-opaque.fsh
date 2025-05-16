@@ -81,6 +81,7 @@ uniform sampler3D texFogNoise;
 #include "/lib/utility/matrix.glsl"
 
 #include "/lib/light/sampling.glsl"
+#include "/lib/light/volumetric.glsl"
 
 #include "/lib/sky/common.glsl"
 #include "/lib/sky/view.glsl"
@@ -89,8 +90,6 @@ uniform sampler3D texFogNoise;
 #include "/lib/sky/density.glsl"
 #include "/lib/sky/transmittance.glsl"
 #include "/lib/sky/clouds.glsl"
-
-#include "/lib/light/volumetric.glsl"
 
 #if LIGHTING_REFLECT_MODE == REFLECT_MODE_SSR
     #include "/lib/effects/ssr.glsl"
@@ -201,12 +200,13 @@ void main() {
             vec3 worldPos = localPos + ap.camera.pos;
 
             vec3 cloudPos = (cloudHeight-worldPos.y) / Scene_LocalLightDir.y * Scene_LocalLightDir + worldPos;
-            float cloudDensity = SampleCloudDensity(cloudPos);
+            float cloudDensity = 30.0*SampleCloudDensity(cloudPos);
 
-            cloudPos = (cloudHeight2-worldPos.y) / Scene_LocalLightDir.y * Scene_LocalLightDir + worldPos;
-            cloudDensity += SampleCloudDensity2(cloudPos);
+//            cloudPos = (cloudHeight2-worldPos.y) / Scene_LocalLightDir.y * Scene_LocalLightDir + worldPos;
+//            cloudDensity += SampleCloudDensity2(cloudPos);
 
-            cloudShadowF = max(1.0 - 0.2*cloudDensity, 0.3);
+            cloudShadowF = exp(-VL_ShadowTransmit * cloudDensity);
+            cloudShadowF = max(cloudShadowF, 0.16);
 
             shadow_sss *= cloudShadowF;
         #endif
@@ -320,7 +320,7 @@ void main() {
             skyLightDiffuse += gi_ao.rgb;
         #endif
 
-        vec3 blockLighting = blackbody(Lighting_BlockTemp) * (BLOCKLIGHT_BRIGHTNESS * lmCoord.x) * (occlusion*0.5 + 0.5);
+        vec3 blockLighting = blackbody(Lighting_BlockTemp) * (BLOCK_LUX * lmCoord.x) * (occlusion*0.5 + 0.5);
 
         #if LIGHTING_MODE == LIGHT_MODE_RT
             if (IsInVoxelBounds(voxelPos)) {

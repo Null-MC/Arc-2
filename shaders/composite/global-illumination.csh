@@ -345,10 +345,10 @@ vec3 trace_GI(const in vec3 traceOrigin, const in vec3 traceDir, const in int fa
 					? textureLod(texFloodFill, texcoord, 0).rgb
 					: textureLod(texFloodFill_alt, texcoord, 0).rgb;
 
-				hit_diffuse += lpv_light * BLOCKLIGHT_BRIGHTNESS;
+				hit_diffuse += lpv_light * BLOCK_LUX;
 			}
 		#else
-			hit_diffuse += blackbody(Lighting_BlockTemp) * (BLOCKLIGHT_BRIGHTNESS * hit_lmcoord.x);
+			hit_diffuse += blackbody(Lighting_BlockTemp) * (BLOCK_LUX * hit_lmcoord.x);
 		#endif
 
 		float hit_metalness = mat_metalness(hit_f0_metal);

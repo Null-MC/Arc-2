@@ -42,11 +42,11 @@ uniform sampler2D texSkyMultiScatter;
     #include "/lib/shadow/sample.glsl"
 #endif
 
+#include "/lib/light/volumetric.glsl"
+
 #include "/lib/sky/common.glsl"
 #include "/lib/sky/transmittance.glsl"
 #include "/lib/sky/density.glsl"
-
-#include "/lib/light/volumetric.glsl"
 
 #ifdef LPV_ENABLED
     #include "/lib/voxel/voxel_common.glsl"

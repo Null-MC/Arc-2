@@ -52,6 +52,7 @@ uniform sampler2DArray texShadowColor;
 
 #include "/lib/utility/blackbody.glsl"
 #include "/lib/material/material.glsl"
+#include "/lib/material/wetness.glsl"
 #include "/lib/voxel/dda.glsl"
 
 #include "/lib/lpv/sh-gi-sample.glsl"
@@ -122,6 +123,7 @@ vec3 trace_GI(const in vec3 traceOrigin, const in vec3 traceDir, const in int fa
 	dda_init(stepSizes, nextDist, tracePos, traceDir);
 
 	bool hit = false;
+	uint blockId = 0u;
 	vec3 stepAxis = vec3(0.0); // todo: set initial?
 	vec3 traceTint = vec3(1.0);
 	ivec3 voxelPos = ivec3(traceOrigin);
@@ -132,12 +134,30 @@ vec3 trace_GI(const in vec3 traceOrigin, const in vec3 traceDir, const in int fa
 
 		voxelPos = ivec3(floor(fma(step, vec3(0.5), tracePos)));
 
+		blockId = SampleVoxelBlock(voxelPos);
+
+		for (int t = 0; t < 8 && blockId == 0u; t++) {
+			tracePos += step;
+			stepAxis = stepAxisNext;
+
+			step = dda_step(stepAxisNext, nextDist, stepSizes, traceDir);
+
+			voxelPos = ivec3(floor(fma(step, vec3(0.5), tracePos)));
+
+			blockId = SampleVoxelBlock(voxelPos);
+		}
+
+//		vec3 stepAxisNext;
+//		vec3 step = dda_step(stepAxisNext, nextDist, stepSizes, traceDir);
+//
+//		voxelPos = ivec3(floor(fma(step, vec3(0.5), tracePos)));
+
 		if (!IsInVoxelBounds(voxelPos)) {
 			//tracePos += step;
 			break;
 		}
 
-		uint blockId = SampleVoxelBlock(voxelPos);
+		//uint blockId = SampleVoxelBlock(voxelPos);
 
 		if (blockId > 0u && iris_isFullBlock(blockId)) {
 			hit = true;
@@ -176,12 +196,12 @@ vec3 trace_GI(const in vec3 traceOrigin, const in vec3 traceDir, const in int fa
 
 		vec3 tex_tint = GetBlockFaceTint(blockFace.data);
 		vec2 hit_lmcoord = GetBlockFaceLightMap(blockFace.data);
-		hit_lmcoord = _pow3(hit_lmcoord);
+		//hit_lmcoord = _pow3(hit_lmcoord);
 
 		iris_TextureInfo tex = iris_getTexture(blockFace.tex_id);
 		vec2 hit_uv = fma(hitCoord, tex.maxCoord - tex.minCoord, tex.minCoord);
 
-		vec4 hitColor = textureLod(blockAtlas, hit_uv, 4);
+		vec4 hitColor = textureLod(blockAtlas, hit_uv, 0);
 		vec3 albedo = RgbToLinear(hitColor.rgb * tex_tint);
 
 		#if MATERIAL_FORMAT != MAT_NONE
@@ -190,17 +210,25 @@ vec3 trace_GI(const in vec3 traceOrigin, const in vec3 traceDir, const in int fa
 			//vec3 hit_localTexNormal = mat_normal(reflect_normalData);
 			float hit_roughness = mat_roughness(hit_specularData.r);
 			float hit_f0_metal = hit_specularData.g;
+			float hit_porosity = mat_porosity(hit_specularData.b, hit_roughness, hit_f0_metal);
 			float hit_emission = mat_emission(hit_specularData);
 		#else
 			//vec3 hit_localTexNormal = localGeoNormal;
 			float hit_roughness = 0.92;
 			float hit_f0_metal = 0.0;
-			float hit_emission = 0.0;
+			float hit_porosity = 1.0;
+
+			float hit_emission = iris_getEmission(blockId) / 15.0;
 		#endif
 
 		float hit_roughL = _pow2(hit_roughness);
 		vec3 hit_localPos = GetVoxelLocalPos(tracePos);
 		float hit_NoL = dot(-traceDir, hitNormal);
+
+		float wetness = float(ap.camera.fluid == 1);
+
+		float sky_wetness = smoothstep(0.9, 1.0, hit_lmcoord.y) * ap.world.rain;
+		wetness = max(wetness, sky_wetness);
 
 		#ifdef SHADOWS_ENABLED
 			int hit_shadowCascade;
@@ -215,20 +243,19 @@ vec3 trace_GI(const in vec3 traceOrigin, const in vec3 traceDir, const in int fa
 			float hit_shadow = 1.0;
 		#endif
 
-		vec3 hit_sunTransmit, hit_moonTransmit;
-		GetSkyLightTransmission(hit_localPos, hit_sunTransmit, hit_moonTransmit);
-
 		float NoL_sun = dot(hitNormal, Scene_LocalSunDir);
 		float NoL_moon = -NoL_sun;//dot(localTexNormal, -Scene_LocalSunDir);
-
-		vec3 skyLight = SUN_LUX * hit_sunTransmit * max(NoL_sun, 0.0)
-			+ MOON_LUX * hit_moonTransmit * max(NoL_moon, 0.0);
 
 		float skyLightF = smoothstep(0.0, 0.2, Scene_LocalLightDir.y);
 
 		#if defined(SKY_CLOUDS_ENABLED) && defined(SHADOWS_CLOUD_ENABLED)
 			skyLightF *= SampleCloudShadows(hit_localPos);
 		#endif
+
+		vec3 hit_sunTransmit, hit_moonTransmit;
+		GetSkyLightTransmission(hit_localPos, hit_sunTransmit, hit_moonTransmit);
+		vec3 skyLight = SUN_LUX  * hit_sunTransmit  * max(NoL_sun, 0.0)
+					  + MOON_LUX * hit_moonTransmit * max(NoL_moon, 0.0);
 
 		#ifdef VL_SELF_SHADOW
 			vec2 dither_seed = gl_GlobalInvocationID.xz + gl_GlobalInvocationID.y*3;
@@ -248,7 +275,7 @@ vec3 trace_GI(const in vec3 traceOrigin, const in vec3 traceDir, const in int fa
 					shadowSampleDensity = GetSkyDensity(fogShadow_localPos);
 
 					#ifdef SKY_FOG_NOISE
-					shadowSampleDensity += SampleFogNoise(fogShadow_localPos);
+						shadowSampleDensity += SampleFogNoise(fogShadow_localPos);
 					#endif
 				}
 
@@ -284,7 +311,7 @@ vec3 trace_GI(const in vec3 traceOrigin, const in vec3 traceDir, const in int fa
 //					float bright_scale = ceil(binLightCount / float(RT_MAX_SAMPLE_COUNT));
 //				#else
 				//uint maxSampleCount = binLightCount;
-				const float bright_scale = 3.0;
+				const float bright_scale = 3.0; // TODO: why isn't this 1.0?
 //				#endif
 
 			int i_offset = int(binLightCount * hash13(vec3(gl_GlobalInvocationID.xy, ap.time.frames)));
@@ -370,6 +397,8 @@ vec3 trace_GI(const in vec3 traceOrigin, const in vec3 traceDir, const in int fa
 		#else
 			hit_diffuse += hit_emission * Material_EmissionBrightness * BLOCK_LUX;
 		#endif
+
+		ApplyWetness_albedo(albedo, hit_porosity, wetness);
 
 		color = albedo * hit_diffuse;// * max(hit_NoL, 0.0);
 	}

@@ -18,6 +18,10 @@ uniform sampler2D texBlueNoise;
     uniform sampler2D blockAtlas;
 #endif
 
+#if defined(SKY_CLOUDS_ENABLED) && defined(SHADOWS_CLOUD_ENABLED)
+    uniform sampler3D texFogNoise;
+#endif
+
 #if LIGHTING_REFLECT_MODE == REFLECT_MODE_WSR
     uniform sampler2D blockAtlasN;
     uniform sampler2D blockAtlasS;
@@ -93,6 +97,7 @@ in vec2 uv;
 
     #include "/lib/sampling/erp.glsl"
     #include "/lib/material/material.glsl"
+    #include "/lib/material/wetness.glsl"
 
     #include "/lib/sky/common.glsl"
     #include "/lib/sky/view.glsl"
@@ -116,6 +121,13 @@ in vec2 uv;
 
     #if LIGHTING_MODE == LIGHT_MODE_LPV
         #include "/lib/lpv/floodfill.glsl"
+    #endif
+
+    #if defined(SKY_CLOUDS_ENABLED) && defined(SHADOWS_CLOUD_ENABLED)
+        //#include "/lib/light/volumetric.glsl"
+        #include "/lib/sky/density.glsl"
+        #include "/lib/sky/clouds.glsl"
+        #include "/lib/shadow/clouds.glsl"
     #endif
 
     #ifdef LIGHTING_GI_ENABLED
@@ -372,18 +384,21 @@ void main() {
                 reflection.rgb *= reflect_tint;
                 reflection.rgb = RgbToLinear(reflection.rgb);
 
-                reflect_lmcoord = _pow3(reflect_lmcoord);
+                //reflect_lmcoord = _pow3(reflect_lmcoord);
 
                 #if MATERIAL_FORMAT != MAT_NONE
                     vec3 reflect_localTexNormal = mat_normal(reflect_normalData.xyz);
                     float reflect_roughness = mat_roughness(reflect_specularData.r);
                     float reflect_f0_metal = reflect_specularData.g;
+                    float reflect_porosity = mat_porosity(reflect_specularData.b, reflect_roughness, reflect_f0_metal);
                     float reflect_emission = mat_emission(reflect_specularData);
                 #else
                     vec3 reflect_localTexNormal = localGeoNormal;
                     float reflect_roughness = 0.92;
                     float reflect_f0_metal = 0.0;
-                    float reflect_emission = 0.0;
+                    float reflect_porosity = 1.0;
+
+                    float reflect_emission = iris_getEmission(blockId) / 15.0;
                 #endif
 
                 // TODO: get from TBN
@@ -392,6 +407,14 @@ void main() {
                 float reflect_roughL = _pow2(reflect_roughness);
 
                 vec3 reflect_localPos = GetVoxelLocalPos(reflect_voxelPos);
+
+                float reflect_wetness = float(ap.camera.fluid == 1);
+
+                float sky_wetness = smoothstep(0.9, 1.0, reflect_lmcoord.y) * ap.world.rain;
+                reflect_wetness = max(reflect_wetness, sky_wetness);
+
+                ApplyWetness_roughL(reflect_roughL, reflect_wetness);
+                reflect_roughness = sqrt(reflect_roughL);
 
                 #ifdef SHADOWS_ENABLED
                     int reflect_shadowCascade;
@@ -410,16 +433,21 @@ void main() {
                 float reflect_LoHm = max(dot(Scene_LocalLightDir, H), 0.0);
                 float reflect_NoVm = max(dot(reflect_localTexNormal, -reflectLocalDir), 0.0);
 
-                vec3 reflect_sunTransmit, reflect_moonTransmit;
-                GetSkyLightTransmission(reflect_localPos, reflect_sunTransmit, reflect_moonTransmit);
-
                 float NoL_sun = dot(reflect_localTexNormal, Scene_LocalSunDir);
                 float NoL_moon = -NoL_sun;//dot(localTexNormal, -Scene_LocalSunDir);
 
-                vec3 reflect_skyLight = SUN_LUX * reflect_sunTransmit * max(NoL_sun, 0.0)
-                    + MOON_LUX * reflect_moonTransmit * max(NoL_moon, 0.0);
+                float skyLightF = smoothstep(0.0, 0.2, Scene_LocalLightDir.y);
 
-                vec3 reflect_diffuse = reflect_skyLight * reflect_shadow;
+                #if defined(SKY_CLOUDS_ENABLED) && defined(SHADOWS_CLOUD_ENABLED)
+                    skyLightF *= SampleCloudShadows(reflect_localPos);
+                #endif
+
+                vec3 reflect_sunTransmit, reflect_moonTransmit;
+                GetSkyLightTransmission(reflect_localPos, reflect_sunTransmit, reflect_moonTransmit);
+                vec3 reflect_skyLight = SUN_LUX  * reflect_sunTransmit  * max(NoL_sun, 0.0)
+                                      + MOON_LUX * reflect_moonTransmit * max(NoL_moon, 0.0);
+
+                vec3 reflect_diffuse = reflect_skyLight * skyLightF * reflect_shadow;
                 reflect_diffuse *= SampleLightDiffuse(reflect_NoVm, reflect_NoLm, reflect_LoHm, reflect_roughL);
 
                 vec3 reflect_specular = vec3(0.0);
@@ -554,6 +582,8 @@ void main() {
                 #ifdef DEBUG_WHITE_WORLD
                     reflection.rgb = WhiteWorld_Value;
                 #endif
+
+                ApplyWetness_albedo(reflection.rgb, reflect_porosity, reflect_wetness);
 
                 //skyReflectColor = fma(reflection.rgb, reflect_diffuse, reflect_specular);
                 skyReflectColor = mix(reflection.rgb * reflect_diffuse, reflect_specular, reflect_view_F);

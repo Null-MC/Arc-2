@@ -92,6 +92,7 @@ uniform sampler2D texSkyIrradiance;
 #include "/lib/light/fresnel.glsl"
 #include "/lib/material/material.glsl"
 #include "/lib/material/material_fresnel.glsl"
+#include "/lib/material/wetness.glsl"
 
 #include "/lib/utility/blackbody.glsl"
 #include "/lib/utility/matrix.glsl"
@@ -174,16 +175,24 @@ void main() {
         float emission = data_g.z;
         float sss = data_g.w;
 
-        vec3 data_b = unpackUnorm4x8(data.b).xyz;
+        vec4 data_b = unpackUnorm4x8(data.b);
         vec2 lmCoord = data_b.xy;
         float texOcclusion = data_b.b;
+        float porosity = data_b.a;
 
         uint blockId = data.a;
 
-        lmCoord = _pow3(lmCoord);
+        //lmCoord = _pow3(lmCoord);
         float roughL = _pow2(roughness);
 
         is_fluid = iris_hasFluid(blockId);
+
+//        bool is_trans_fluid = iris_hasFluid(trans_blockId);
+
+        float wetness = float(ap.camera.fluid == 1);
+
+        float sky_wetness = smoothstep(0.9, 1.0, lmCoord.y) * ap.world.rain;
+        wetness = max(wetness, sky_wetness);
 
         vec3 localViewDir = normalize(localPosTrans);
 
@@ -414,6 +423,8 @@ void main() {
 
         // TODO: is this killing foam?
         if (is_fluid) finalColor.a = 0.0;
+
+        ApplyWetness_albedo(albedo.rgb, porosity, wetness);
 
         finalColor.rgb = mix(albedo.rgb * diffuse * albedo.a, specular, view_F);
         //finalColor.a = min(finalColor.a + maxOf(specular), 1.0);

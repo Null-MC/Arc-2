@@ -98,6 +98,8 @@ void iris_sendParameters(in VertexData data) {
     vOut.color = data.color;
     vOut.blockId = data.blockId;
 
+	//vOut.light = saturate(unmix(vOut.light, (0.5/16.0), (15.5/16.0)));
+
 	vec3 viewNormal = mat3(iris_modelViewMatrix) * data.normal;
 	vOut.localNormal = mat3(ap.camera.viewInv) * viewNormal;
 

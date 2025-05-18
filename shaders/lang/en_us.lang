@@ -4,8 +4,15 @@ option.SKY_SEA_LEVEL.comment=The Y level of the sea for the currently loaded map
 option.SKY_SUN_ANGLE=Sun Angle
 suffix.SKY_SUN_ANGLE=°
 
-option.SKY_FOG_DENSITY=Fog Density
+
+screen.SKY_FOG=Fog
+
+option.SKY_FOG_DENSITY=Density
 suffix.SKY_FOG_DENSITY=%
+
+option.SKY_FOG_NOISE=Chunky
+
+option.FOG_CAVE_ENABLED=Cave Fog
 
 
 screen.SKY_CLOUDS=Clouds
@@ -15,8 +22,6 @@ option.SKY_CLOUDS_ENABLED=Enabled
 option.SKY_CLOUD_COVERAGE=Coverage
 suffix.SKY_CLOUD_COVERAGE=%
 
-
-option.SKY_FOG_NOISE=Fog Clouds
 
 option.WATER_WAVES_ENABLED=Waves
 

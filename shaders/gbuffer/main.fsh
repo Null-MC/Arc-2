@@ -45,6 +45,7 @@ in VertexData2 {
 #include "/lib/material/material.glsl"
 
 #include "/lib/sampling/atlas.glsl"
+#include "/lib/sampling/lightmap.glsl"
 
 #ifdef MATERIAL_NORMAL_SMOOTH
     #include "/lib/sampling/linear.glsl"
@@ -147,7 +148,7 @@ void iris_emitFragment() {
         vec4 specularData = iris_sampleSpecularMapLod(mUV, int(mLOD));
     #endif
 
-    vec2 lmcoord = saturate((mLight - (0.5/16.0)) / (15.0/16.0));
+    vec2 lmcoord = LightMapNorm(mLight);
     vec3 localGeoNormal = normalize(vIn.localNormal);
 
     #if MATERIAL_FORMAT != MAT_NONE
@@ -170,11 +171,11 @@ void iris_emitFragment() {
         float occlusion = 1.0;
         float roughness = 0.92;
         float f0_metal = 0.0;
-        float emission = iris_getEmission(vIn.blockId) / 15.0;
-        float porosity = 0.0;
+        float porosity = 1.0;
         float sss = 0.0;
+        float emission = iris_getEmission(vIn.blockId) / 15.0;
 
-        emission *= lmcoord.x;
+        //emission *= lmcoord.x;
     #endif
 
     #if MATERIAL_FORMAT != MAT_NONE

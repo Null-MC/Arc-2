@@ -76,6 +76,7 @@ uniform sampler3D texFogNoise;
 #include "/lib/light/fresnel.glsl"
 #include "/lib/material/material.glsl"
 #include "/lib/material/material_fresnel.glsl"
+#include "/lib/material/wetness.glsl"
 
 #include "/lib/utility/blackbody.glsl"
 #include "/lib/utility/matrix.glsl"
@@ -169,13 +170,23 @@ void main() {
 
         bool is_trans_fluid = iris_hasFluid(trans_blockId);
 
+        float wetness = ap.camera.fluid == 1
+            ? step(depthOpaque, depthTrans)
+            : step(depthTrans, depthOpaque-EPSILON) * float(is_trans_fluid);
+
+        float sky_wetness = smoothstep(0.9, 1.0, lmCoord.y) * ap.world.rain;
+        wetness = max(wetness, sky_wetness);
+
         bool isWet = ap.camera.fluid == 1
             ? (depthTrans >= depthOpaque)
             : (depthTrans < depthOpaque && is_trans_fluid);
 
-        lmCoord = lmCoord*lmCoord*lmCoord;
+        //lmCoord = _pow3(lmCoord);
 
-        float roughL = roughness*roughness;
+        float roughL = _pow2(roughness);
+
+        ApplyWetness_roughL(roughL, wetness);
+        roughness = sqrt(roughL);
 
         vec3 H = normalize(Scene_LocalLightDir + -localViewDir);
 
@@ -214,12 +225,11 @@ void main() {
 
         vec3 sunTransmit, moonTransmit;
         GetSkyLightTransmission(localPos, sunTransmit, moonTransmit);
+        vec3 sunLight = skyLightF * SUN_LUX * sunTransmit;
+        vec3 moonLight = skyLightF * MOON_LUX * moonTransmit;
 
         float NoL_sun = dot(localTexNormal, Scene_LocalSunDir);
         float NoL_moon = -NoL_sun;
-
-        vec3 sunLight = skyLightF * SUN_LUX * sunTransmit;
-        vec3 moonLight = skyLightF * MOON_LUX * moonTransmit;
 
         #ifdef VL_SELF_SHADOW
             #ifdef EFFECT_TAA_ENABLED
@@ -262,7 +272,7 @@ void main() {
 
         vec2 sss_skyIrradianceCoord = DirectionToUV(localViewDir);
         vec3 sss_skyIrradiance = textureLod(texSkyIrradiance, sss_skyIrradianceCoord, 0).rgb;
-        sss_skyIrradiance = (SKY_AMBIENT * lmCoord.y * skyLightF) * sss_skyIrradiance;
+        sss_skyIrradiance = (SKY_AMBIENT * lmCoord.y) * sss_skyIrradiance;
 
         float VoL_sun = dot(localViewDir, Scene_LocalSunDir);
         vec3 sss_phase_sun = max(HG(VoL_sun, sss_G), 0.0) * abs(NoL_sun) * sunLight;
@@ -278,11 +288,11 @@ void main() {
 
         vec2 skyIrradianceCoord = DirectionToUV(localTexNormal);
         vec3 skyIrradiance = textureLod(texSkyIrradiance, skyIrradianceCoord, 0).rgb;
-        skyIrradiance = (SKY_AMBIENT * lmCoord.y * skyLightF) * (skyIrradiance + Sky_MinLight);
+        skyIrradiance = (SKY_AMBIENT * lmCoord.y) * (skyIrradiance + Sky_MinLight);
 
-        #if !(defined(LIGHTING_GI_ENABLED) && defined(LIGHTING_GI_SKYLIGHT))
-            skyIrradiance *= 2.0;
-        #endif
+//        #if !(defined(LIGHTING_GI_ENABLED) && defined(LIGHTING_GI_SKYLIGHT))
+//            skyIrradiance *= 2.0;
+//        #endif
 
         #ifdef LIGHTING_GI_ENABLED
             if (IsInVoxelBounds(voxelPos)) {
@@ -409,10 +419,11 @@ void main() {
             albedo.rgb = WhiteWorld_Value;
         #endif
 
-        if (isWet) {
-            albedo.rgb *= 1.0 - 0.2*porosity;
-            albedo.rgb = pow(albedo.rgb, vec3(1.0 + 1.2*porosity));
-        }
+//        float wetnessDarkenF = wetness*porosity;
+//        albedo.rgb *= 1.0 - 0.2*wetnessDarkenF;
+//        albedo.rgb = pow(albedo.rgb, vec3(1.0 + 1.2*wetnessDarkenF));
+
+        ApplyWetness_albedo(albedo.rgb, porosity, wetness);
 
         colorFinal = mix(albedo.rgb * diffuse, specular, view_F);
 

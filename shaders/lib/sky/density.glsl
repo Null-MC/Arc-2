@@ -4,7 +4,7 @@ float GetSkyDensity(const in vec3 localPos) {
     vec3 worldPos = localPos + ap.camera.pos;
     density *= 1.0 - saturate((worldPos.y - Scene_SkyFogSeaLevel) / 200.0);
 
-    density = mix(density, VL_RainDensity, ap.world.rainStrength);
+    density = mix(density, VL_RainDensity, ap.world.rain);
 
     #ifdef FOG_CAVE_ENABLED
 //        uint blockLightCoord = iris_getBlockAtPos(ivec3(floor(worldPos))).y;
@@ -36,7 +36,7 @@ float GetSkyDensity(const in vec3 localPos) {
         fogNoise *= 1.0 - textureLod(texFogNoise, samplePos * 0.33, 0).r;
 
         //fogNoise = pow(fogNoise, 3.6);
-        float threshold_min = mix(0.3, 0.25, ap.world.rainStrength);
+        float threshold_min = mix(0.3, 0.25, ap.world.rain);
         float threshold_max = threshold_min + 0.3;
         fogNoise = smoothstep(threshold_min, 1.0, fogNoise);
 

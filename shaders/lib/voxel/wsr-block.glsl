@@ -7,17 +7,74 @@ bool TraceReflection(const in vec3 localPos, const in vec3 localDir, out vec3 ti
     vec3 stepAxis = vec3(0.0); // todo: set initial?
     tint = vec3(1.0);
     bool hit = false;
-    ivec3 voxelPos;
+    ivec3 voxelPos = ivec3(floor(currPos));
 
     float waterDist = 0.0;
 
-    for (int i = 0; i < LIGHTING_REFLECT_MAXSTEP && !hit; i++) {
-        vec3 stepAxisNext;
-        vec3 step = dda_step(stepAxisNext, nextDist, stepSizes, localDir);
+    vec3 voxel_offset = GetVoxelCenter(ap.camera.pos, ap.camera.viewInv[2].xyz);
 
-        voxelPos = ivec3(floor(fma(step, vec3(0.5), currPos)));
-        
-        uint blockId = SampleVoxelBlock(voxelPos);
+    for (int i = 0; i < LIGHTING_REFLECT_MAXSTEP && !hit; i++) {
+        #ifdef VOXEL_SKIP_EMPTY
+            #ifdef VOXEL_SKIP_SECTIONS
+                vec3 ap_blockPos = voxelPos - voxel_offset + ap.camera.pos;
+                ivec3 ap_voxelPos = ivec3(floor(ap_blockPos));
+                bool isSectionLoaded = iris_isSectionLoaded(ap_voxelPos);
+
+                if (!isSectionLoaded) {
+                    tint *= vec3(1.0, 0.5, 0.5);
+
+                    vec3 section_pos = ap_blockPos / 16.0;
+                    section_pos.y += ap.world.internal_chunkDiameter.z;
+
+                    vec3 section_stepSizes, section_nextDist;
+                    dda_init(section_stepSizes, section_nextDist, section_pos, localDir);
+
+                    vec3 section_stepAxisNext;
+                    vec3 section_step = dda_step(section_stepAxisNext, section_nextDist, section_stepSizes, localDir);
+
+                    section_pos += section_step;
+                    //section_stepAxis = section_stepAxisNext;
+
+                    section_pos.y -= ap.world.internal_chunkDiameter.z;
+                    ap_blockPos = section_pos * 16.0;
+                    currPos = ap_blockPos + voxel_offset - ap.camera.pos;
+
+                    dda_init(stepSizes, nextDist, currPos, localDir);
+                }
+
+                vec3 stepAxisNext;
+                vec3 step = dda_step(stepAxisNext, nextDist, stepSizes, localDir);
+
+                voxelPos = ivec3(floor(fma(step, vec3(0.5), currPos)));
+
+                uint blockId = SampleVoxelBlock(voxelPos);
+            #else
+                vec3 stepAxisNext;
+                vec3 step = dda_step(stepAxisNext, nextDist, stepSizes, localDir);
+
+                voxelPos = ivec3(floor(fma(step, vec3(0.5), currPos)));
+
+                uint blockId = SampleVoxelBlock(voxelPos);
+
+                for (int t = 0; t < 8 && blockId == 0u; t++) {
+                    currPos += step;
+                    stepAxis = stepAxisNext;
+
+                    step = dda_step(stepAxisNext, nextDist, stepSizes, localDir);
+
+                    voxelPos = ivec3(floor(fma(step, vec3(0.5), currPos)));
+
+                    blockId = SampleVoxelBlock(voxelPos);
+                }
+            #endif
+        #else
+            vec3 stepAxisNext;
+            vec3 step = dda_step(stepAxisNext, nextDist, stepSizes, localDir);
+
+            voxelPos = ivec3(floor(fma(step, vec3(0.5), currPos)));
+
+            uint blockId = SampleVoxelBlock(voxelPos);
+        #endif
 
         bool isFullBlock = iris_isFullBlock(blockId);
         if (blockId > 0u && isFullBlock) {

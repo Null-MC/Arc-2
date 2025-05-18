@@ -1,4 +1,3 @@
-#define FOG_CAVE_ENABLED
 #define FOG_CAVE_DENSITY 0.8
 
 #define MATERIAL_EMISSION_POWER 1
@@ -11,11 +10,16 @@
 
 #define VOXEL_GI_MAXFRAMES 60 // [60 120 240]
 
-#ifdef LIGHTING_GI_SKYLIGHT
-	#define VOXEL_GI_MAXSTEP 16
-#else
-	#define VOXEL_GI_MAXSTEP 4
-#endif
+#define VOXEL_GI_MAXSTEP 4
+
+#define VOXEL_SKIP_EMPTY
+//#define VOXEL_SKIP_SECTIONS
+
+//#ifdef LIGHTING_GI_SKYLIGHT
+//	#define VOXEL_GI_MAXSTEP 16
+//#else
+//	#define VOXEL_GI_MAXSTEP 4
+//#endif
 
 #define EFFECT_SSAO_STRENGTH 1000
 

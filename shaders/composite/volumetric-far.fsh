@@ -22,17 +22,13 @@ uniform sampler2D texSkyMultiScatter;
     uniform sampler2DArray texShadowColor;
 #endif
 
-#ifdef LPV_ENABLED
+#if LIGHTING_MODE == LIGHT_MODE_LPV
     uniform sampler3D texFloodFill;
     uniform sampler3D texFloodFill_alt;
 #endif
 
 #include "/lib/common.glsl"
 #include "/lib/buffers/scene.glsl"
-
-//#ifdef LPV_ENABLED
-//    #include "/lib/buffers/sh-lpv.glsl"
-//#endif
 
 #include "/lib/noise/ign.glsl"
 #include "/lib/hg.glsl"
@@ -47,11 +43,14 @@ uniform sampler2D texSkyMultiScatter;
 #include "/lib/sky/common.glsl"
 #include "/lib/sky/transmittance.glsl"
 #include "/lib/sky/density.glsl"
+#include "/lib/sky/clouds.glsl"
 
-#ifdef LPV_ENABLED
+#if defined(SKY_CLOUDS_ENABLED) && defined(SHADOWS_CLOUD_ENABLED)
+    #include "/lib/shadow/clouds.glsl"
+#endif
+
+#if LIGHTING_MODE == LIGHT_MODE_LPV
     #include "/lib/voxel/voxel_common.glsl"
-    //#include "/lib/lpv/lpv_common.glsl"
-    //#include "/lib/lpv/lpv_sample.glsl"
     #include "/lib/lpv/floodfill.glsl"
 #endif
 
@@ -103,13 +102,13 @@ void main() {
             phase_gF = 0.0;
             phase_gB = 0.0;
             phase_gM = 0.0;
-//            scatterF = vec3(mix(VL_Scatter, VL_RainScatter, ap.world.rainStrength));
-//            transmitF = vec3(mix(VL_Transmit, VL_RainTransmit, ap.world.rainStrength));
-//            phase_gF = mix(VL_Phase, VL_RainPhase, ap.world.rainStrength);
+//            scatterF = vec3(mix(VL_Scatter, VL_RainScatter, ap.world.rain));
+//            transmitF = vec3(mix(VL_Transmit, VL_RainTransmit, ap.world.rain));
+//            phase_gF = mix(VL_Phase, VL_RainPhase, ap.world.rain);
 //            phase_gB = -0.32;
 //            phase_gM = 0.36;
 //
-//            ambientBase = vec3(VL_AmbientF * mix(Scene_SkyIrradianceUp, vec3(0.3), 0.8*ap.world.rainStrength));
+//            ambientBase = vec3(VL_AmbientF * mix(Scene_SkyIrradianceUp, vec3(0.3), 0.8*ap.world.rain));
             if (Scene_SkyFogDensityF < EPSILON) {
                 outScatter = vec3(0.0);
                 outTransmit = vec3(1.0);
@@ -182,10 +181,28 @@ void main() {
 //            vec3 skyLighting = getValFromTLUT(texSkyTransmit, skyPos, Scene_LocalLightDir);
 //            vec3 sampleColor = lightStrength * skyLighting * shadowSample;
 
+            float skyLightF = smoothstep(0.0, 0.2, Scene_LocalLightDir.y);
+
+            #if defined(SKY_CLOUDS_ENABLED) && defined(SHADOWS_CLOUD_ENABLED)
+                skyLightF *= SampleCloudShadows(sampleLocalPos);
+            #endif
+
             vec3 sunTransmit, moonTransmit;
             GetSkyLightTransmission(sampleLocalPos, sunTransmit, moonTransmit);
-            vec3 sunSkyLight = SUN_LUX * sunTransmit;
-            vec3 moonSkyLight = MOON_LUX * moonTransmit;
+//            float skyLightF = smoothstep(0.0, 0.2, Scene_LocalLightDir.y);
+            vec3 sunSkyLight = skyLightF * SUN_LUX * sunTransmit;
+            vec3 moonSkyLight = skyLightF * MOON_LUX * moonTransmit;
+
+//            #if defined(SKY_CLOUDS_ENABLED) && defined(SHADOWS_CLOUD_ENABLED)
+//                // Cloud Shadows
+//                if (sampleLocalPos.y+ap.camera.pos.y < cloudHeight) {
+//                    vec3 worldPos = sampleLocalPos + ap.camera.pos;
+//                    worldPos += (cloudHeight - worldPos.y) / Scene_LocalLightDir.y * Scene_LocalLightDir;
+//
+//                    float cloudShadowDensity = SampleCloudDensity(worldPos) * 100.0;
+//                    shadowSample *= mix(1.0, exp(-VL_ShadowTransmit * cloudShadowDensity), cloudShadowF);
+//                }
+//            #endif
 
             float sampleDensity = VL_WaterDensity;
             if (!isWater) {
@@ -202,8 +219,9 @@ void main() {
             vec3 sampleLit = vec3(0.0);//fma(sampleColor, shadowSample, ambientBase);
             //vec3 sampleTransmit = exp(-sampleDensity * transmitF);
 
-            #ifdef LPV_ENABLED
+            #if LIGHTING_MODE == LIGHT_MODE_LPV
                 vec3 voxelPos = GetVoxelPosition(sampleLocalPos);
+
                 if (IsInVoxelBounds(voxelPos)) {
                     vec3 blockLight = sample_floodfill(voxelPos);
                     sampleLit += phaseIso * blockLight;

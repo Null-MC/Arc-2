@@ -1,4 +1,3 @@
-import type {} from './iris'
 import {BlockMap} from "./scripts/BlockMap";
 import {setLightColorEx, StreamBufferBuilder} from "./scripts/helpers";
 import {buildSettings, LightingModes, ReflectionModes, ShaderSettings} from "./scripts/settings";
@@ -28,6 +27,9 @@ function applySettings(settings) {
     // worldSettings.vignette = false;
     // worldSettings.clouds = false;
 
+    // TODO: fix hands later, for now just unbreak them
+    worldSettings.mergedHandDepth = true;
+
     if (settings.Internal.VoxelizeBlocks)
         worldSettings.cascadeSafeZones[0] = snapshot.Voxel_Size / 2;
 
@@ -36,6 +38,7 @@ function applySettings(settings) {
 
     if (snapshot.Sky_Clouds) defineGlobally1("SKY_CLOUDS_ENABLED");
     if (snapshot.Sky_FogNoise) defineGlobally1("SKY_FOG_NOISE");
+    if (snapshot.Sky_Fog_CaveEnabled) defineGlobally1("FOG_CAVE_ENABLED");
 
     if (snapshot.Water_WaveEnabled) {
         defineGlobally1("WATER_WAVES_ENABLED");
@@ -106,7 +109,7 @@ function applySettings(settings) {
             defineGlobally("QUAD_BIN_SIZE", QUAD_BIN_SIZE);
         }
 
-        if (settings.Lighting_Mode == LightingModes.FloodFill)
+        if (() => parseInt(getStringSetting("LIGHTING_MODE")) == LightingModes.FloodFill)
             defineGlobally1("LPV_ENABLED");
 
         if (snapshot.Lighting_GI_Enabled) {
@@ -141,7 +144,7 @@ export function setupShader() {
     BlockMappings = new BlockMap();
     BlockMappings.map('grass_block', 'BLOCK_GRASS');
 
-    const snapshot = Settings.getSnapshot();
+    const snapshot = Settings.getStaticSnapshot();
     const realtime = Settings.getRealTimeSnapshot();
     const settings = buildSettings(snapshot, realtime);
     applySettings(settings);
@@ -1194,10 +1197,10 @@ export function onSettingsChanged(state : WorldState) {
         .appendFloat(snapshot.Post_ExposureMax)
         .appendFloat(snapshot.Post_ExposureRange)
         .appendFloat(snapshot.Post_ExposureSpeed)
-        .appendFloat(snapshot.Post_Tonemap_Contrast)
-        .appendFloat(snapshot.Post_Tonemap_LinearStart)
-        .appendFloat(snapshot.Post_Tonemap_LinearLength)
-        .appendFloat(snapshot.Post_Tonemap_Black);
+        .appendFloat(snapshot.Post_ToneMap_Contrast)
+        .appendFloat(snapshot.Post_ToneMap_LinearStart)
+        .appendFloat(snapshot.Post_ToneMap_LinearLength)
+        .appendFloat(snapshot.Post_ToneMap_Black);
 }
 
 export function setupFrame(state : WorldState) {

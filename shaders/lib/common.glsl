@@ -79,6 +79,13 @@ float unmix(const in float value, const in float valueMin, const in float valueM
     return (value - valueMin) / (valueMax - valueMin);
 }
 
+vec2 unmix(const in vec2 value, const in float valueMin, const in float valueMax) {
+    return (value - valueMin) / (valueMax - valueMin);
+}
+vec2 unmix(const in vec2 value, const in vec2 valueMin, const in vec2 valueMax) {
+    return (value - valueMin) / (valueMax - valueMin);
+}
+
 
 #define _pow2(x) ((x)*(x))
 #define _pow3(x) ((x)*(x)*(x))

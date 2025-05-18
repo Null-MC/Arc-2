@@ -204,6 +204,17 @@ void main() {
         vec3 sunSkyLight = skyLightF * SUN_LUX * sunTransmit;
         vec3 moonSkyLight = skyLightF * MOON_LUX * moonTransmit;
 
+        #if defined(SKY_CLOUDS_ENABLED) && defined(SHADOWS_CLOUD_ENABLED)
+            // Cloud Shadows
+            if (sampleLocalPos.y+ap.camera.pos.y < cloudHeight) {
+                vec3 worldPos = sampleLocalPos + ap.camera.pos;
+                worldPos += (cloudHeight - worldPos.y) / Scene_LocalLightDir.y * Scene_LocalLightDir;
+
+                float cloudShadowDensity = SampleCloudDensity(worldPos) * 100.0;
+                shadowSample *= mix(1.0, exp(-VL_ShadowTransmit * cloudShadowDensity), cloudShadowF);
+            }
+        #endif
+
         float sampleDensity = VL_WaterDensity;
         if (ap.camera.fluid != 1) {
             sampleDensity = GetSkyDensity(sampleLocalPos);
@@ -226,25 +237,6 @@ void main() {
 //                    //sunSkyLight *= cloud_shadowSun;
 //                    //moonSkyLight *= cloud_shadowMoon;
 //                }
-
-                #ifdef SHADOWS_CLOUD_ENABLED
-                    // Cloud Shadows
-                    if (sampleLocalPos.y+ap.camera.pos.y < cloudHeight) {
-                        vec3 worldPos = sampleLocalPos + ap.camera.pos;
-                        worldPos += (cloudHeight - worldPos.y) / Scene_LocalLightDir.y * Scene_LocalLightDir;
-
-                        float cloudShadowDensity = SampleCloudDensity(worldPos) * 100.0;
-                        shadowSample *= mix(1.0, exp(-VL_ShadowTransmit * cloudShadowDensity), cloudShadowF);
-                    }
-
-//                    if (sampleLocalPos.y+ap.camera.pos.y < cloudHeight2) {
-//                        vec3 worldPos = sampleLocalPos + ap.camera.pos;
-//                        worldPos += (cloudHeight2 - worldPos.y) / Scene_LocalLightDir.y * Scene_LocalLightDir;
-//
-//                        float cloudShadowDensity = SampleCloudDensity2(worldPos) * 10.0;
-//                        shadowSample *= mix(1.0, exp(-VL_ShadowTransmit * cloudShadowDensity), cloudShadowF);
-//                    }
-                #endif
             #endif
 
             #ifdef SKY_FOG_NOISE
@@ -286,6 +278,7 @@ void main() {
 
         #if LIGHTING_MODE == LIGHT_MODE_LPV
             vec3 voxelPos = GetVoxelPosition(sampleLocalPos);
+
             if (IsInVoxelBounds(voxelPos)) {
                 vec3 blockLight = sample_floodfill(voxelPos);
                 sampleLit += phaseIso * blockLight;

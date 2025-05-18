@@ -59,6 +59,16 @@ float luminance(const in vec3 color) {
    return dot(color, luma_factor);
 }
 
+float pow4(const in float x) {
+    float x2 = x*x;
+    return x2*x2;
+}
+
+float pow5(const in float x) {
+    float x2 = x*x;
+    return x2*x2*x;
+}
+
 float saturate(const in float x) {return clamp(x, 0.0, 1.0);}
 vec2 saturate(const in vec2 x) {return clamp(x, 0.0, 1.0);}
 vec3 saturate(const in vec3 x) {return clamp(x, 0.0, 1.0);}

@@ -121,8 +121,7 @@ function applySettings(settings) {
     }
 
     if (snapshot.Effect_SSAO_Enabled) defineGlobally1("EFFECT_SSAO_ENABLED");
-    if (snapshot.Effect_SSGI_Enabled) defineGlobally1("EFFECT_SSGI_ENABLED");
-    defineGlobally("EFFECT_SSGIAO_SAMPLES", snapshot.Effect_SSGIAO_StepCount);
+    defineGlobally("EFFECT_SSAO_SAMPLES", snapshot.Effect_SSAO_StepCount);
 
     if (snapshot.Effect_TAA_Enabled) defineGlobally1("EFFECT_TAA_ENABLED");
 
@@ -357,19 +356,19 @@ export function setupShader() {
             .build();
     }
 
-    let texSSGIAO: BuiltTexture | null = null;
-    let texSSGIAO_final: BuiltTexture | null = null;
-    if (snapshot.Effect_SSAO_Enabled || snapshot.Effect_SSGI_Enabled) {
-        texSSGIAO = new Texture("texSSGIAO")
-            .format(Format.RGBA16F)
+    let texSSAO: BuiltTexture | null = null;
+    let texSSAO_final: BuiltTexture | null = null;
+    if (snapshot.Effect_SSAO_Enabled) {
+        texSSAO = new Texture("texSSAO")
+            .format(Format.R16F)
             .width(screenWidth_half)
             .height(screenHeight_half)
             .clear(false)
             .build();
 
-        texSSGIAO_final = new Texture("texSSGIAO_final")
-            .imageName("imgSSGIAO_final")
-            .format(Format.RGBA16F)
+        texSSAO_final = new Texture("texSSAO_final")
+            .imageName("imgSSAO_final")
+            .format(Format.R16F)
             .width(screenWidth)
             .height(screenHeight)
             .clear(false)
@@ -897,16 +896,16 @@ export function setupShader() {
         registerShader(Stage.POST_RENDER, rtOpaqueShader.build());
     }
 
-    if (snapshot.Effect_SSAO_Enabled || snapshot.Effect_SSGI_Enabled) {
-        registerShader(Stage.POST_RENDER, new Composite("ssgiao-opaque")
+    if (snapshot.Effect_SSAO_Enabled) {
+        registerShader(Stage.POST_RENDER, new Composite("ssao-opaque")
             .vertex("shared/bufferless.vsh")
-            .fragment("composite/ssgiao.fsh")
-            .target(0, texSSGIAO)
+            .fragment("composite/ssao.fsh")
+            .target(0, texSSAO)
             .build());
 
-        // registerShader(Stage.POST_RENDER, new Compute("ssgiao-filter-opaque")
+        // registerShader(Stage.POST_RENDER, new Compute("ssao-filter-opaque")
         //     // .barrier(true)
-        //     .location("composite/ssgiao-filter-opaque.csh")
+        //     .location("composite/ssao-filter-opaque.csh")
         //     .workGroups(Math.ceil(screenWidth / 16.0), Math.ceil(screenHeight / 16.0), 1)
         //     .build());
     }
@@ -916,7 +915,7 @@ export function setupShader() {
             .location("composite/accumulation.csh")
             .workGroups(Math.ceil(screenWidth / 16.0), Math.ceil(screenHeight / 16.0), 1)
             .define("TEX_DEPTH", "solidDepthTex")
-            .define("TEX_SSGIAO", "texSSGIAO")
+            .define("TEX_SSAO", "texSSAO")
             .define("TEX_DEFERRED_DATA", "texDeferredOpaque_Data")
             .define("IMG_ACCUM_DIFFUSE", "imgAccumDiffuse_opaque")
             .define("IMG_ACCUM_SPECULAR", "imgAccumSpecular_opaque")
@@ -958,7 +957,7 @@ export function setupShader() {
         .ssbo(4, quadListBuffer)
         .ubo(0, SceneSettingsBuffer)
         .define("TEX_SHADOW", texShadow_src)
-        .define("TEX_SSGIAO", "texSSGIAO_final");
+        .define("TEX_SSAO", "texSSAO_final");
 
     // if (snapshot.Lighting_ReflectionMode == ReflectMode_SSR)
     //     compositeOpaqueShader.generateMips(texFinalPrevious);
@@ -1006,7 +1005,7 @@ export function setupShader() {
             .workGroups(Math.ceil(screenWidth / 16.0), Math.ceil(screenHeight / 16.0), 1)
             .define("RENDER_TRANSLUCENT", "1")
             .define("TEX_DEPTH", "mainDepthTex")
-            .define("TEX_SSGIAO", "texSSGIAO")
+            .define("TEX_SSAO", "texSSAO")
             .define("TEX_DEFERRED_DATA", "texDeferredTrans_Data")
             .define("IMG_ACCUM_DIFFUSE", "imgAccumDiffuse_translucent")
             .define("IMG_ACCUM_SPECULAR", "imgAccumSpecular_translucent")
@@ -1156,7 +1155,7 @@ export function setupShader() {
             .define("TEX_SHADOW", snapshot.Debug_Translucent
                 ? "texShadow"
                 : texShadow_src)
-            .define("TEX_SSGIAO", "texSSGIAO_final")
+            .define("TEX_SSAO", "texSSAO")
             .define("TEX_ACCUM_OCCLUSION", snapshot.Debug_Translucent
                 ? "texAccumOcclusion_translucent"
                 : "texAccumOcclusion_opaque")

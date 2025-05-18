@@ -21,7 +21,7 @@
 //	#define VOXEL_GI_MAXSTEP 4
 //#endif
 
-#define EFFECT_SSAO_STRENGTH 1000
+#define EFFECT_SSAO_STRENGTH 800
 
 
 const float ATMOSPHERE_MAX = 4200.0;

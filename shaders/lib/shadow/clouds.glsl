@@ -17,7 +17,8 @@ float SampleCloudShadows(const in vec3 localPos) {
     float horizonF = smoothstep(0.15, 0.30, Scene_LocalLightDir.y);
     cloudShadowF = mix(0.0, cloudShadowF, horizonF);
 
-    cloudShadowF = max(cloudShadowF, CloudShadowMinF);
+    //cloudShadowF = max(cloudShadowF, CloudShadowMinF);
+    cloudShadowF = CloudShadowMinF + (1.0 - CloudShadowMinF) * cloudShadowF;
 
     return cloudShadowF;
 }

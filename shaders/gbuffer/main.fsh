@@ -56,7 +56,7 @@ in VertexData2 {
 #endif
 
 #if LIGHTING_MODE == LIGHT_MODE_VANILLA
-    #include "/lib/light/lightmap.glsl"
+    #include "/lib/lightmap/directional.glsl"
 #endif
 
 #ifdef FANCY_LAVA

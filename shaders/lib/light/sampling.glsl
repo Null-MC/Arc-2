@@ -12,9 +12,10 @@ float GetLightAttenuation(const in vec3 lightVec, const in float lightRange, con
 //    float att = A / (1.0 + _pow2(d_r));
 
     float linear = 1.0 - saturate(lightDist / lightRange);
-    return pow(linear, 1.0 / clamp(intensity, EPSILON, 1.0));
+    //return pow(linear, 1.0 / clamp(intensity, EPSILON, 1.0));
+    float inv_sq = 10.0 / (1.0 + 1.2*_pow2(lightDist));
 
-//    return min(att, linear);
+    return min(inv_sq, linear);
 //    return linear;
 }
 

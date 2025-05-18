@@ -9,12 +9,12 @@ const int sharedBufferRes = 20;
 const int sharedBufferSize = sharedBufferRes*sharedBufferRes;
 
 shared float gaussianBuffer[5];
-shared vec4 sharedOcclusionBuffer[sharedBufferSize];
+shared float sharedOcclusionBuffer[sharedBufferSize];
 shared float sharedDepthBuffer[sharedBufferSize];
 
-layout(rgba16f) uniform image2D imgSSGIAO_final;
+layout(r16f) uniform image2D imgSSAO_final;
 
-uniform sampler2D texSSGIAO;
+uniform sampler2D texSSAO;
 uniform sampler2D solidDepthTex;
 
 
@@ -47,9 +47,9 @@ void populateSharedBuffer() {
 	    ivec2 uv = uv_base + uv_i;
 
         float depthL = ap.camera.far;
-        vec4 occlusion = vec4(vec3(0.0), 1.0);
+        float occlusion = 1.0;
 	    if (all(greaterThanEqual(uv, ivec2(0))) && all(lessThan(uv, ivec2(ap.game.screenSize + 0.5)))) {
-	    	occlusion = texelFetch(texSSGIAO, uv/2, 0);
+	    	occlusion = texelFetch(texSSAO, uv/2, 0).r;
 	    	float depth = texelFetch(solidDepthTex, uv, 0).r;
 	    	depthL = linearizeDepth(depth, ap.camera.near, ap.camera.far);
 	    }
@@ -59,11 +59,11 @@ void populateSharedBuffer() {
     }
 }
 
-vec4 sampleSharedBuffer(const in float depthL) {
+float sampleSharedBuffer(const in float depthL) {
     ivec2 uv_base = ivec2(gl_LocalInvocationID.xy) + 2;
 
     float total = 0.0;
-    vec4 accum = vec4(0.0);
+    float accum = 0.0;
     
     for (int iy = 0; iy < 5; iy++) {
         float fy = gaussianBuffer[iy];
@@ -74,7 +74,7 @@ vec4 sampleSharedBuffer(const in float depthL) {
             ivec2 uv_shared = uv_base + ivec2(ix, iy) - 2;
             int i_shared = uv_shared.y * sharedBufferRes + uv_shared.x;
 
-            vec4 sampleValue = sharedOcclusionBuffer[i_shared];
+            float sampleValue = sharedOcclusionBuffer[i_shared];
             float sampleDepthL = sharedDepthBuffer[i_shared];
             
             float depthDiff = sampleDepthL - depthL;
@@ -86,7 +86,7 @@ vec4 sampleSharedBuffer(const in float depthL) {
         }
     }
     
-    if (total <= EPSILON) return vec4(vec3(0.0), 1.0);
+    if (total <= EPSILON) return 1.0;
     return accum / total;
 }
 
@@ -103,6 +103,6 @@ void main() {
     int i_shared = uv_shared.y * sharedBufferRes + uv_shared.x;
 	float depthL = sharedDepthBuffer[i_shared];
 
-	vec4 gi_ao = sampleSharedBuffer(depthL);
-	imageStore(imgSSGIAO_final, uv, gi_ao);
+    float occlusion = sampleSharedBuffer(depthL);
+	imageStore(imgSSAO_final, uv, vec4(occlusion));
 }

@@ -154,9 +154,6 @@ option.VOXEL_PROVIDED.comment=Allows the shader to use built-in voxel data provi
 option.EFFECT_SSAO_ENABLED=SSAO
 option.EFFECT_SSAO_ENABLED.comment=Screen-Space Ambient Occlusion
 
-option.EFFECT_SSGI_ENABLED=SSGI
-option.EFFECT_SSGI_ENABLED.comment=Screen-Space Global Illumination
-
 option.EFFECT_BLOOM_ENABLED=Enabled
 
 option.EFFECT_BLOOM_STRENGTH=Strength
@@ -192,7 +189,7 @@ value.DEBUG_VIEW.1=Material
 value.DEBUG_VIEW.2=Shadows
 value.DEBUG_VIEW.3=SSS
 value.DEBUG_VIEW.4=SSAO
-value.DEBUG_VIEW.5=SSGI
+
 value.DEBUG_VIEW.6=VL
 value.DEBUG_VIEW.7=RT
 value.DEBUG_VIEW.8=Accumulation

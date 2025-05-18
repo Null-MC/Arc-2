@@ -12,10 +12,8 @@ uniform sampler2D texFinal;
 #elif DEBUG_VIEW == DEBUG_VIEW_SSS
     uniform sampler2D TEX_SHADOW;
 #elif DEBUG_VIEW == DEBUG_VIEW_SSAO
-    uniform sampler2D TEX_SSGIAO;
+    uniform sampler2D TEX_SSAO;
     uniform sampler2D TEX_ACCUM_OCCLUSION;
-#elif DEBUG_VIEW == DEBUG_VIEW_SSGI
-    uniform sampler2D TEX_SSGIAO;
 #elif DEBUG_VIEW == DEBUG_VIEW_VL
     uniform sampler2D texScatterVL;
     uniform sampler2D texTransmitVL;
@@ -91,11 +89,7 @@ void main() {
             #elif DEBUG_VIEW == DEBUG_VIEW_SSS
                 color = textureLod(TEX_SHADOW, previewCoord, 0).aaa;
             #elif DEBUG_VIEW == DEBUG_VIEW_SSAO
-                color = textureLod(TEX_SSGIAO, previewCoord, 0).aaa;
-            #elif DEBUG_VIEW == DEBUG_VIEW_SSGI
-                color = textureLod(TEX_SSGIAO, previewCoord, 0).rgb;
-                ApplyAutoExposure(color, Scene_AvgExposure);
-                //color = tonemap_ACESFit2(color);
+                color = textureLod(TEX_SSAO, previewCoord, 0).rrr;
             #elif DEBUG_VIEW == DEBUG_VIEW_VL
                 color = textureLod(texScatterVL, previewCoord, 0).rgb;
             #elif DEBUG_VIEW == DEBUG_VIEW_RT

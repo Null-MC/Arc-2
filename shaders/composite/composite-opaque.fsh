@@ -29,8 +29,8 @@ uniform sampler3D texFogNoise;
     uniform sampler2D texFinalPrevious;
 #endif
 
-#if defined EFFECT_SSAO_ENABLED || defined EFFECT_SSGI_ENABLED
-    uniform sampler2D TEX_SSGIAO;
+#ifdef EFFECT_SSAO_ENABLED
+    uniform sampler2D TEX_SSAO;
 #endif
 
 #ifdef EFFECT_VL_ENABLED
@@ -74,6 +74,7 @@ uniform sampler3D texFogNoise;
 
 #include "/lib/light/hcm.glsl"
 #include "/lib/light/fresnel.glsl"
+
 #include "/lib/material/material.glsl"
 #include "/lib/material/material_fresnel.glsl"
 #include "/lib/material/wetness.glsl"
@@ -83,6 +84,7 @@ uniform sampler3D texFogNoise;
 
 #include "/lib/light/sampling.glsl"
 #include "/lib/light/volumetric.glsl"
+#include "/lib/lightmap/sample.glsl"
 
 #include "/lib/sky/common.glsl"
 #include "/lib/sky/view.glsl"
@@ -205,19 +207,15 @@ void main() {
             skyLightF *= SampleCloudShadows(localPos);
         #endif
 
-        #if defined(EFFECT_SSAO_ENABLED) || defined(EFFECT_SSGI_ENABLED)
-            vec4 gi_ao = textureLod(TEX_SSGIAO, uv, 0);
-        #endif
-
         float occlusion = texOcclusion;
 
-        #ifdef EFFECT_SSAO_ENABLED //&& !defined ACCUM_ENABLED
+        #ifdef EFFECT_SSAO_ENABLED
             #ifdef ACCUM_ENABLED
                 float ssao_occlusion;
                 if (altFrame) ssao_occlusion = textureLod(texAccumOcclusion_opaque_alt, uv, 0).r;
                 else ssao_occlusion = textureLod(texAccumOcclusion_opaque, uv, 0).r;
             #else
-                float ssao_occlusion = gi_ao.a;
+                float ssao_occlusion = textureLod(TEX_SSAO, uv, 0).r;
             #endif
 
             occlusion *= ssao_occlusion;
@@ -308,11 +306,7 @@ void main() {
         skyLightDiffuse += skyIrradiance;
         skyLightDiffuse *= occlusion;
 
-        #if defined EFFECT_SSGI_ENABLED && !defined ACCUM_ENABLED
-            skyLightDiffuse += gi_ao.rgb;
-        #endif
-
-        vec3 blockLighting = blackbody(Lighting_BlockTemp) * (BLOCK_LUX * lmCoord.x) * (occlusion*0.5 + 0.5);
+        vec3 blockLighting = GetVanillaBlockLight(lmCoord.x, occlusion);
 
         #if LIGHTING_MODE == LIGHT_MODE_RT
             if (IsInVoxelBounds(voxelPos)) {

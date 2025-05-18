@@ -3,7 +3,7 @@ float cloudHeight2 = cloudHeight + 240.0;
 
 float SampleCloudDensity(const in vec3 worldPos) {
     float time = mod(ap.time.elapsed * 0.006, 1.0);
-    vec2 wind = 3.0 * vec2(0.7, 0.3) * ap.time.elapsed;
+    vec2 wind = 9.0 * vec2(0.7, 0.3) * ap.time.elapsed;
 
     vec2 samplePos = worldPos.xz + wind;
     float detailLow  = textureLod(texFogNoise, vec3(samplePos * 0.0002, time).xzy, 0).r;

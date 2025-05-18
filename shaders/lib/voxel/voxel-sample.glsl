@@ -24,8 +24,7 @@
 
 uint SampleVoxelBlock(const in vec3 voxelPos) {
     #ifdef VOXEL_PROVIDED
-        // TODO: The +0.5 should not be here! but it breaks without it
-        ivec3 blockWorldPos = ivec3(floor(GetVoxelLocalPos(voxelPos + 0.5) + ap.camera.pos));
+        ivec3 blockWorldPos = ivec3(floor(GetVoxelLocalPos(voxelPos) + ap.camera.pos));
         //return uint(_iris_getBlockAtPos(blockWorldPos).x);
         return uint(iris_getBlockAtPos(blockWorldPos).x);
     #else

@@ -55,11 +55,10 @@ export class ShaderSettings {
         snapshot.Voxel_MaxQuadCount = 64;
         snapshot.Voxel_UseProvided = getBoolSetting("VOXEL_PROVIDED");
         snapshot.Effect_SSAO_Enabled = getBoolSetting("EFFECT_SSAO_ENABLED");
-        snapshot.Effect_SSGI_Enabled = getBoolSetting("EFFECT_SSGI_ENABLED");
-        snapshot.Effect_SSGIAO_StepCount = getIntSetting("EFFECT_SSGIAO_SAMPLES");
+        snapshot.Effect_SSAO_StepCount = getIntSetting("EFFECT_SSAO_SAMPLES");
         snapshot.Effect_BloomEnabled = getBoolSetting("EFFECT_BLOOM_ENABLED");
         snapshot.Effect_TAA_Enabled = getBoolSetting("EFFECT_TAA_ENABLED");
-        snapshot.Debug_View = getStringSettingIndex("DEBUG_VIEW", 0, 'None', 'Material', 'Shadows', 'SSS', 'SSAO', 'SSGI', 'Volumetric Lighting', 'Ray-Traced Lighting', 'Accumulation', 'Sky Irradiance', 'ShadowMap Color', 'ShadowMap Normal');
+        snapshot.Debug_View = getStringSettingIndex("DEBUG_VIEW", 0, 'None', 'Material', 'Shadows', 'SSS', 'SSAO', 'Volumetric Lighting', 'Ray-Traced Lighting', 'Accumulation', 'Sky Irradiance', 'ShadowMap Color', 'ShadowMap Normal');
         snapshot.Debug_Material = getStringSettingIndex("DEBUG_MATERIAL", 0, 'Albedo', 'Geo-Normal', 'Tex-Normal', 'Occlusion', 'Roughness', 'F0/Metal', 'Porosity', 'SSS', 'Emission', 'LightMap');
         snapshot.Debug_WhiteWorld = getBoolSetting("DEBUG_WHITE_WORLD");
         snapshot.Debug_Translucent = getBoolSetting("DEBUG_TRANSLUCENT");
@@ -113,7 +112,6 @@ export function buildSettings(snapshot: StaticSettingsSnapshot, realtime: RealTi
     };
 
     if (snapshot.Effect_SSAO_Enabled) settings.Internal.Accumulation = true;
-    if (snapshot.Effect_SSGI_Enabled) settings.Internal.Accumulation = true;
 
     switch (snapshot.Lighting_Mode) {
         case LightingModes.FloodFill:
@@ -196,8 +194,7 @@ export class StaticSettingsSnapshot {
     Voxel_MaxQuadCount: number;
     Voxel_UseProvided: boolean;
     Effect_SSAO_Enabled: boolean;
-    Effect_SSGI_Enabled: boolean;
-    Effect_SSGIAO_StepCount: number;
+    Effect_SSAO_StepCount: number;
     Effect_BloomEnabled: boolean;
     Effect_TAA_Enabled: boolean;
     Debug_View: number;

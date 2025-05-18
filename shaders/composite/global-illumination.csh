@@ -78,6 +78,8 @@ uniform sampler2DArray texShadowColor;
 
 	#include "/lib/voxel/light-list.glsl"
 	#include "/lib/voxel/light-trace.glsl"
+#elif LIGHTING_MODE == LIGHT_MODE_NONE
+	#include "/lib/lightmap/sample.glsl"
 #endif
 
 
@@ -311,7 +313,7 @@ vec3 trace_GI(const in vec3 traceOrigin, const in vec3 traceDir, const in int fa
 //					float bright_scale = ceil(binLightCount / float(RT_MAX_SAMPLE_COUNT));
 //				#else
 				//uint maxSampleCount = binLightCount;
-				const float bright_scale = 3.0; // TODO: why isn't this 1.0?
+				const float bright_scale = 1.0; // TODO: why isn't this 1.0?
 //				#endif
 
 			int i_offset = int(binLightCount * hash13(vec3(gl_GlobalInvocationID.xy, ap.time.frames)));
@@ -386,7 +388,8 @@ vec3 trace_GI(const in vec3 traceOrigin, const in vec3 traceDir, const in int fa
 				hit_diffuse += lpv_light * BLOCK_LUX;
 			}
 		#else
-			hit_diffuse += blackbody(Lighting_BlockTemp) * (BLOCK_LUX * hit_lmcoord.x);
+			const float occlusion = 1.0;
+			hit_diffuse += GetVanillaBlockLight(hit_lmcoord.x, occlusion);
 		#endif
 
 		float hit_metalness = mat_metalness(hit_f0_metal);
@@ -482,14 +485,14 @@ void main() {
 			vec3 tracePos = cellIndex + noise_offset;
 			vec3 traceSample = trace_GI(tracePos, noise_dir, dir, traceDist);
 
-			float sampleWeight = f;// / (1.0 + traceDist);
+			float sampleWeight = f / (1.0 + traceDist);
 
 			face_counter = clamp(face_counter + sampleWeight, 0.0, VOXEL_GI_MAXFRAMES);
 
 			traceSample = clamp(traceSample * 0.001, 0.0, 65000.0);
 
 			float mixF = 1.0 / (1.0 + face_counter);
-			face_color = mix(face_color, traceSample, mixF * f);// * max(f, 0.0);
+			face_color = mix(face_color, traceSample, mixF * sampleWeight);// * max(f, 0.0);
 
 			voxel_gi.data[dir] = encode_shVoxel_dir(face_color, face_counter);
 		}

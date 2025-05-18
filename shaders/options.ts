@@ -89,10 +89,9 @@ export function setupOptions() {
         .build();
 
     const screen_Effects = new Page("Effects")
-        .add(new Page("SSGI/SSAO")
+        .add(new Page("SSAO")
             .add(asBool("EFFECT_SSAO_ENABLED", true, true))
-            .add(asBool("EFFECT_SSGI_ENABLED", false, true))
-            .add(asIntRange("EFFECT_SSGIAO_SAMPLES", 12, 1, 64, 1))
+            .add(asIntRange("EFFECT_SSAO_SAMPLES", 4, 1, 16, 1))
             .build())
         .add(new Page("Bloom")
             .add(asBool("EFFECT_BLOOM_ENABLED", true, true))
@@ -118,7 +117,7 @@ export function setupOptions() {
         .build();
 
     const screen_Debug = new Page("Debug")
-        .add(asString("DEBUG_VIEW", 'None', 'Material', 'Shadows', 'SSS', 'SSAO', 'SSGI', 'Volumetric Lighting', 'Ray-Traced Lighting', 'Accumulation', 'Sky Irradiance', 'ShadowMap Color', 'ShadowMap Normal').needsReload(true).build('None'))
+        .add(asString("DEBUG_VIEW", 'None', 'Material', 'Shadows', 'SSS', 'SSAO', 'Volumetric Lighting', 'Ray-Traced Lighting', 'Accumulation', 'Sky Irradiance', 'ShadowMap Color', 'ShadowMap Normal').needsReload(true).build('None'))
         .add(asString("DEBUG_MATERIAL", 'Albedo', 'Geo-Normal', 'Tex-Normal', 'Occlusion', 'Roughness', 'F0/Metal', 'Porosity', 'SSS', 'Emission', 'LightMap').needsReload(true).build('Albedo'))
         .add(asBool("DEBUG_TRANSLUCENT", false, true))
         .add(EMPTY)

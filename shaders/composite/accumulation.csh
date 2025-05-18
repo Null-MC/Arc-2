@@ -37,11 +37,8 @@ uniform sampler2D TEX_ACCUM_DIFFUSE_ALT;
 uniform sampler2D TEX_ACCUM_SPECULAR_ALT;
 uniform sampler2D TEX_ACCUM_POSITION_ALT;
 
-#if defined(EFFECT_SSGI_ENABLED) || (defined(EFFECT_SSAO_ENABLED) && !defined(RENDER_TRANSLUCENT))
-    uniform sampler2D TEX_SSGIAO;
-#endif
-
 #if defined(EFFECT_SSAO_ENABLED) && !defined(RENDER_TRANSLUCENT)
+    uniform sampler2D TEX_SSAO;
     uniform sampler2D TEX_ACCUM_OCCLUSION;
     uniform sampler2D TEX_ACCUM_OCCLUSION_ALT;
 #endif
@@ -81,17 +78,11 @@ const float g_sigmaV = 0.002;
 //        ivec2 uv = uv_base + uv_i;
 //
 //        float depthL = ap.camera.far;
-//        vec3 ssgi = vec3(0.0);
 //        if (all(greaterThanEqual(uv, ivec2(0))) && all(lessThan(uv, ivec2(ap.game.screenSize + 0.5)))) {
 //            float depth = texelFetch(TEX_DEPTH, uv/2*2+1, 0).r;
 //            depthL = linearizeDepth(depth, ap.camera.near, ap.camera.far);
-//
-//            #ifdef EFFECT_SSGI_ENABLED
-//                ssgi = texelFetch(TEX_SSGIAO, uv/2, 0).rgb;
-//            #endif
 //        }
 //
-//        sharedOcclusionBuffer[i_shared] = ssgi;
 //        sharedDepthBuffer[i_shared] = depthL;
 //    }
 //}
@@ -248,7 +239,7 @@ void main() {
 //    #endif
 
     #if defined(EFFECT_SSAO_ENABLED) && !defined(RENDER_TRANSLUCENT)
-        float occlusion = textureLod(TEX_SSGIAO, uv, 0).a;
+        float occlusion = textureLod(TEX_SSAO, uv, 0).r;
     #endif
 
     float roughness = unpackUnorm4x8(data_g).x;

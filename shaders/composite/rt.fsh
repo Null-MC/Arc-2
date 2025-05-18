@@ -137,6 +137,10 @@ in vec2 uv;
     #include "/lib/sampling/depth.glsl"
     #include "/lib/effects/ssr.glsl"
 
+    #if LIGHTING_MODE == LIGHT_MODE_NONE
+        #include "/lib/lightmap/sample.glsl"
+    #endif
+
     #include "/lib/composite-shared.glsl"
 #endif
 
@@ -542,7 +546,8 @@ void main() {
                     // TODO: move cloud shadows to RSM sampling!!!
                     reflect_diffuse += voxelLight;// * cloudShadowF;// * SampleLightDiffuse(NoVm, 1.0, 1.0, roughL);
                 #else
-                    reflect_diffuse += blackbody(Lighting_BlockTemp) * (BLOCK_LUX * reflect_lmcoord.x);
+                    const float occlusion = 1.0;
+                    reflect_diffuse += GetVanillaBlockLight(reflect_lmcoord.x, occlusion);
                 #endif
 
                 reflect_diffuse += 0.0016;

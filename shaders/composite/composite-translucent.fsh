@@ -90,6 +90,7 @@ uniform sampler2D texSkyIrradiance;
 
 #include "/lib/light/hcm.glsl"
 #include "/lib/light/fresnel.glsl"
+
 #include "/lib/material/material.glsl"
 #include "/lib/material/material_fresnel.glsl"
 #include "/lib/material/wetness.glsl"
@@ -99,6 +100,7 @@ uniform sampler2D texSkyIrradiance;
 
 #include "/lib/light/sampling.glsl"
 #include "/lib/light/volumetric.glsl"
+#include "/lib/lightmap/sample.glsl"
 
 #include "/lib/sky/common.glsl"
 #include "/lib/sky/view.glsl"
@@ -241,7 +243,7 @@ void main() {
 
         float occlusion = texOcclusion;
         // #if defined EFFECT_SSAO_ENABLED //&& !defined ACCUM_ENABLED
-        //     vec4 gi_ao = textureLod(TEX_SSGIAO, uv, 0);
+        //     vec4 gi_ao = textureLod(TEX_SSAO, uv, 0);
         //     occlusion *= gi_ao.a;
         // #endif
 
@@ -251,13 +253,11 @@ void main() {
             if (tir) view_F = vec3(1.0);
         #endif
 
-        vec3 sunTransmit, moonTransmit;
-        GetSkyLightTransmission(localPosTrans, sunTransmit, moonTransmit);
-
         float NoL_sun = dot(localTexNormal, Scene_LocalSunDir);
         float NoL_moon = -NoL_sun;
 
-        //float skyLightF = smoothstep(0.0, 0.2, Scene_LocalLightDir.y);
+        vec3 sunTransmit, moonTransmit;
+        GetSkyLightTransmission(localPosTrans, sunTransmit, moonTransmit);
         vec3 sunLight = skyLightF * SUN_LUX * sunTransmit;
         vec3 moonLight = skyLightF * MOON_LUX * moonTransmit;
 
@@ -306,11 +306,7 @@ void main() {
         skyLightDiffuse += skyIrradiance;
         skyLightDiffuse *= occlusion;
 
-        #if defined EFFECT_SSGI_ENABLED && !defined ACCUM_ENABLED
-            skyLightDiffuse += gi_ao.rgb;
-        #endif
-
-        vec3 blockLighting = blackbody(Lighting_BlockTemp) * (BLOCK_LUX * lmCoord.x) * (occlusion*0.5 + 0.5);
+        vec3 blockLighting = GetVanillaBlockLight(lmCoord.x, occlusion);
 
         #if LIGHTING_MODE == LIGHT_MODE_RT
             if (IsInVoxelBounds(voxelPos)) {

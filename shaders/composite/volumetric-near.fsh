@@ -215,6 +215,7 @@ void main() {
             }
         #endif
 
+        float vs_shadowF = 1.0;
         float sampleDensity = VL_WaterDensity;
         if (ap.camera.fluid != 1) {
             sampleDensity = GetSkyDensity(sampleLocalPos);
@@ -264,8 +265,10 @@ void main() {
                     shadowStepDist *= 2.0;
                 }
 
-                if (shadowDensity > 0.0)
-                    shadowSample *= exp(-VL_ShadowTransmit * shadowDensity);
+                if (shadowDensity > 0.0) {
+                    vs_shadowF = exp(-VL_ShadowTransmit * shadowDensity);
+                    shadowSample *= vs_shadowF;
+                }
             #endif
         }
 //        else {
@@ -307,8 +310,8 @@ void main() {
 
             sampleTransmittance = exp(-extinction * stepDist);
 
-            vec3 psiMS = getValFromMultiScattLUT(texSkyMultiScatter, skyPos, Scene_LocalSunDir) + Sky_MinLight;
-            psiMS *= Scene_SkyBrightnessSmooth;
+            vec3 psiMS = getValFromMultiScattLUT(texSkyMultiScatter, skyPos, Scene_LocalSunDir);// + Sky_MinLight;
+            psiMS *= Scene_SkyBrightnessSmooth * vs_shadowF;
 
             //vec3 rayleighInScattering = rayleighScattering * (rayleighPhaseValue * sunSkyLight * shadowSample + psiMS + sampleLit);
             vec3 mieSkyLight = miePhase_sun * sunSkyLight + miePhase_moon * moonSkyLight;

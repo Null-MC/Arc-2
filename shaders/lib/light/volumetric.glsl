@@ -1,7 +1,8 @@
 const float mieScatteringF = 0.04;
 const float mieAbsorptionF = 0.02;
 
-const float VL_RainDensity = 0.08;
+const float VL_RainDensity = 0.05;
+const float VL_ThunderDensity = 0.12;
 
 const float VL_WaterPhaseF =  0.86;
 const float VL_WaterPhaseB = -0.14;

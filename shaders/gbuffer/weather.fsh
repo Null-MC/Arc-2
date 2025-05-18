@@ -19,6 +19,8 @@ uniform sampler2D texSkyIrradiance;
 uniform sampler2D texFinalPrevious;
 uniform sampler2D texBloom;
 
+uniform sampler3D texFogNoise;
+
 #ifdef SHADOWS_ENABLED
     uniform sampler2DArray shadowMap;
     uniform sampler2DArray solidShadowMap;
@@ -47,6 +49,16 @@ uniform sampler2D texBloom;
 #ifdef SHADOWS_ENABLED
     #include "/lib/shadow/csm.glsl"
     #include "/lib/shadow/sample.glsl"
+#endif
+
+#if defined(SKY_CLOUDS_ENABLED) && defined(SHADOWS_CLOUD_ENABLED)
+    #include "/lib/light/volumetric.glsl"
+    #include "/lib/sky/clouds.glsl"
+    #include "/lib/shadow/clouds.glsl"
+#endif
+
+#ifdef VL_SELF_SHADOW
+    #include "/lib/sky/density.glsl"
 #endif
 
 #if LIGHTING_MODE == LIGHT_MODE_LPV
@@ -84,12 +96,49 @@ void iris_emitFragment() {
 
     // vec3 skyLight = vec3(0.0);//GetSkyLight(vIn.localPos);
 
-     vec3 shadowSample = vec3(1.0);
-     #ifdef SHADOWS_ENABLED
-         int shadowCascade;
-         vec3 shadowPos = GetShadowSamplePos(vIn.shadowViewPos, Shadow_MaxPcfSize, shadowCascade);
-         shadowSample = SampleShadowColor_PCSS(shadowPos, shadowCascade);
-     #endif
+    vec3 shadowSample = vec3(1.0);
+    #ifdef SHADOWS_ENABLED
+        int shadowCascade;
+        vec3 shadowPos = GetShadowSamplePos(vIn.shadowViewPos, Shadow_MaxPcfSize, shadowCascade);
+        shadowSample = SampleShadowColor_PCSS(shadowPos, shadowCascade);
+    #endif
+
+    float skyLightF = smoothstep(0.0, 0.2, Scene_LocalLightDir.y);
+
+    #if defined(SKY_CLOUDS_ENABLED) && defined(SHADOWS_CLOUD_ENABLED)
+        skyLightF *= SampleCloudShadows(vIn.localPos);
+    #endif
+
+    #ifdef VL_SELF_SHADOW
+        #ifdef EFFECT_TAA_ENABLED
+            float shadow_dither = InterleavedGradientNoiseTime(gl_FragCoord.xy);
+        #else
+            float shadow_dither = InterleavedGradientNoise(gl_FragCoord.xy);
+        #endif
+
+        float shadowStepDist = 1.0;
+        float shadowDensity = 0.0;
+        for (float ii = shadow_dither; ii < 8.0; ii += 1.0) {
+            vec3 fogShadow_localPos = (shadowStepDist * ii) * Scene_LocalLightDir + vIn.localPos;
+
+            float shadowSampleDensity = VL_WaterDensity;
+            if (ap.camera.fluid != 1) {
+                shadowSampleDensity = GetSkyDensity(fogShadow_localPos);
+
+                #ifdef SKY_FOG_NOISE
+                    shadowSampleDensity += SampleFogNoise(fogShadow_localPos);
+                #endif
+            }
+
+            shadowDensity += shadowSampleDensity * shadowStepDist;// * (1.0 - max(1.0 - ii, 0.0));
+            shadowStepDist *= 2.0;
+        }
+
+        if (shadowDensity > 0.0) {
+            float transmittance = exp(-VL_ShadowTransmit * shadowDensity);
+            skyLightF *= transmittance;
+        }
+    #endif
 
     // // vec3 skyPos = getSkyPosition(vIn.localPos);
     // // vec3 skyLighting = getValFromTLUT(texSkyTransmit, skyPos, Scene_LocalSunDir);
@@ -125,7 +174,7 @@ void iris_emitFragment() {
     vec3 sun_light = SUN_LUX * sunTransmit * sun_phase;
     vec3 moon_light = MOON_LUX * moonTransmit * moon_phase;
 
-    finalColor.rgb += 0.02 * (sun_light + moon_light) * shadowSample;
+    finalColor.rgb += 0.02 * skyLightF * (sun_light + moon_light) * shadowSample;
 
     #if LIGHTING_MODE == LIGHT_MODE_LPV
         vec3 voxelPos = GetVoxelPosition(vIn.localPos);

@@ -259,7 +259,7 @@ vec3 trace_GI(const in vec3 traceOrigin, const in vec3 traceDir, const in int fa
 		vec3 skyLight = SUN_LUX  * hit_sunTransmit  * max(NoL_sun, 0.0)
 					  + MOON_LUX * hit_moonTransmit * max(NoL_moon, 0.0);
 
-		#ifdef VL_SELF_SHADOW
+		#if defined(VL_SELF_SHADOW) && defined(SKY_CLOUDS_ENABLED)
 			vec2 dither_seed = gl_GlobalInvocationID.xz + gl_GlobalInvocationID.y*3;
 			#ifdef EFFECT_TAA_ENABLED
 				float shadow_dither = InterleavedGradientNoiseTime(dither_seed);
@@ -414,7 +414,7 @@ vec3 trace_GI(const in vec3 traceOrigin, const in vec3 traceDir, const in int fa
 			if (altFrame) endVoxel = SH_LPV[i_end];
 			else endVoxel = SH_LPV_alt[i_end];
 
-			color = 0.5 * sample_sh_gi(endVoxel, traceDir) * 1000.0;
+			color = 0.5 * sample_gi_voxel(endVoxel, traceDir) * 1000.0;
 		}
 		else {
 			#ifdef LIGHTING_GI_SKYLIGHT

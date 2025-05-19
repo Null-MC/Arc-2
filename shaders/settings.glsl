@@ -50,6 +50,10 @@ const int SHADOW_PCSS_SAMPLES = 6;
 const float SHADOW_PENUMBRA_SCALE = 64.0;
 const float Shadow_MaxPcfSize = 0.8;
 
+const int SHADOW_SCREEN_STEPS = 12;
+const float ShadowScreenSlope = 0.85;
+
+
 //const float Bloom_Power = 1.0;
 //const float Bloom_Strength = 0.03;
 
@@ -61,7 +65,6 @@ const float PurkinjeStrength = 0.08;
 
 const float WaterTintMinDist = 1.0;
 const float shadowMapResolution = float(SHADOW_RESOLUTION);
-const float sunPathRotation = 25.0;
 const float cloudHeight = 320.0;
 
 const vec3 WhiteWorld_Value = vec3(0.8);
@@ -75,6 +78,7 @@ const float shadowPixelSize = 1.0 / shadowMapResolution;
 #endif
 
 layout (std140, binding = 0) uniform SceneSettings {
+	float Sky_sunPathRotation;
 	float Sky_CloudCoverage;
 	float Scene_SkyFogDensityF;
 	float Scene_SkyFogSeaLevel;

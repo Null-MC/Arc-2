@@ -30,6 +30,8 @@ export function setupOptions() {
     const screen_Shadows = new Page("Shadows")
         .add(asBool("SHADOWS_ENABLED", true, true))
         .add(asInt("SHADOW_RESOLUTION", 256, 512, 1024, 2048, 4096).build(1024))
+        .add(asIntRange("SHADOW_CASCADE_COUNT", 4, 1, 6, 1, true))
+        .add(asBool("SHADOWS_SS_FALLBACK", true, true))
         .add(asBool("SHADOWS_CLOUD_ENABLED", true, true))
         .build();
 
@@ -63,6 +65,7 @@ export function setupOptions() {
         .add(new Page("Global Illumination")
             .add(asBool("LIGHTING_GI_ENABLED", true, true))
             .add(asBool("LIGHTING_GI_SKYLIGHT", false, true))
+            .add(asInt("LIGHTING_GI_SIZE", 64, 128, 256).build(64))
             .build())
         .add(EMPTY)
         .add(new Page("Reflections")

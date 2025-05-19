@@ -28,10 +28,6 @@ uniform usampler2D texDeferredTrans_Data;
 #endif
 
 
-const int SHADOW_SCREEN_STEPS = 12;
-const float ShadowScreenSlope = 0.85;
-
-
 void main() {
     ivec2 iuv = ivec2(gl_FragCoord.xy);
     //float depthOpaque = texelFetch(solidDepthTex, iuv, 0).r;
@@ -90,7 +86,7 @@ void main() {
             }
         }
 
-        #ifdef SHADOW_SCREEN
+        #ifdef SHADOWS_SS_FALLBACK
             float viewDist = length(viewPos);
             // vec3 lightViewDir = mat3(gbufferModelView) * localSkyLightDirection;
             vec3 lightViewDir = normalize(ap.celestial.pos);

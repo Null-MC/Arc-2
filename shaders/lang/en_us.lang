@@ -40,6 +40,11 @@ option.SHADOWS_ENABLED=Enabled
 option.SHADOW_RESOLUTION=Resolution
 suffix.SHADOW_RESOLUTION=px
 
+option.SHADOW_CASCADE_COUNT=Cascade Count
+
+option.SHADOWS_SS_FALLBACK=Screen-Space
+option.SHADOWS_SS_FALLBACK.comment=Enables screen-space shadow tracing. Useful for up-close contact-shadows, or a fallback for distant shadows out of range.
+
 option.SHADOWS_CLOUD_ENABLED=Cloud Shadows
 
 option.MATERIAL_FORMAT=Format
@@ -101,6 +106,9 @@ option.LIGHTING_GI_ENABLED.comment=Allows light to bounce, for more realistic am
 
 option.LIGHTING_GI_SKYLIGHT=Include Sky Lighting
 option.LIGHTING_GI_SKYLIGHT.comment=More realistic but also still buggy.
+
+option.LIGHTING_GI_SIZE=Volume Size
+suffix.LIGHTING_GI_SIZE=x³
 
 option.LIGHTING_COLOR_CANDLES=Colored Candles
 option.LIGHTING_COLOR_CANDLES.comment=Makes the lighting cast from candles match their color.

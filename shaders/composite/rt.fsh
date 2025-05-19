@@ -463,7 +463,7 @@ void main() {
                 #ifdef LIGHTING_GI_ENABLED
                     vec3 giVoxelPos = GetVoxelPosition(reflect_localPos);
                     vec3 giVoxelSamplePos = 0.5*reflect_geoNormal + giVoxelPos;
-                    reflect_skyIrradiance += sample_sh_gi_linear(giVoxelSamplePos, reflect_localTexNormal);
+                    reflect_skyIrradiance += sample_gi(giVoxelSamplePos, reflect_localTexNormal);
                 #endif
 
                 reflect_diffuse += reflect_skyIrradiance;
@@ -567,7 +567,7 @@ void main() {
                     vec3 reflect_reflectDir = reflect(reflectLocalDir, reflect_localTexNormal);
 
                     //vec3 voxelSamplePos = 0.5*localTexNormal - 0.25*localGeoNormal + voxelPos;
-                    vec3 reflect_irradiance = sample_sh_gi_linear(reflect_voxelPos, reflect_reflectDir);
+                    vec3 reflect_irradiance = sample_gi(reflect_voxelPos, reflect_reflectDir);
 
                     reflect_specular += reflect_irradiance; // * S * reflect_tint;
                 #endif

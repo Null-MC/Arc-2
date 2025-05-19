@@ -21,7 +21,7 @@ vec3 hash33_stars(in vec3 p) {
 vec3 getStarViewDir(const in vec3 localViewDir) {
     float sunAngle = mod(ap.world.time / 24000.0, 1.0);
 
-    mat3 matAngleRot = rotateX(-radians(sunPathRotation));
+    mat3 matAngleRot = rotateX(-radians(Sky_sunPathRotation));
     mat3 matTimeRot = rotateZ(TAU * sunAngle * Sky_StarSpeed);
     return matTimeRot * (matAngleRot * localViewDir);
 }

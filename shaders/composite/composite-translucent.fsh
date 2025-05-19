@@ -293,7 +293,7 @@ void main() {
                 #endif
 
                 vec3 voxelSamplePos = 0.5*localGeoNormal + voxelPos;
-                skyIrradiance += sample_sh_gi_linear(voxelSamplePos, localTexNormal);
+                skyIrradiance += sample_gi(voxelSamplePos, localTexNormal);
             }
         #endif
 

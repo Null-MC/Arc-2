@@ -1,13 +1,23 @@
 const float ParallaxSharpThreshold = (1.5/255.0);
-const float ParallaxDepthF = MATERIAL_PARALLAX_DEPTH * 0.01;
+//const float ParallaxDepthF = MATERIAL_PARALLAX_DEPTH * 0.01;
 
 
 vec2 GetParallaxCoord(const in vec2 texcoord, const in float LOD, const in vec3 tanViewDir, const in float viewDist, out float texDepth, out vec3 traceDepth) {
     // WARN: temp workaround
     vec2 atlasSize = textureSize(irisInt_NormalMap, 0);
 
+    #ifdef MATERIAL_PARALLAX_OPTIMIZE
+        vec2 atlasCoord = GetAtlasCoord(texcoord, vIn.atlasCoordMin, vIn.atlasCoordSize);
+        vec2 atlasSize1 = textureSize(irisInt_NormalMap, 2);
+        float maxTexDepth = 1.0 - texelFetch(irisInt_NormalMap, ivec2(atlasCoord * atlasSize1), 2).a;
+        maxTexDepth = sqrt(maxTexDepth);
+    #else
+        const float maxTexDepth = 1.0;
+    #endif
+
+    float ParallaxDepthF = MATERIAL_PARALLAX_DEPTH * 0.01 * maxTexDepth;
     vec2 stepCoord = tanViewDir.xy * ParallaxDepthF / (fma(tanViewDir.z, MATERIAL_PARALLAX_SAMPLES, 1.0));
-    const float stepDepth = 1.0 / MATERIAL_PARALLAX_SAMPLES;
+    float stepDepth = maxTexDepth / MATERIAL_PARALLAX_SAMPLES;
 
     #if DISPLACE_MODE == DISPLACE_POM_SMOOTH
         vec2 atlasPixelSize = 1.0 / atlasSize;
@@ -21,10 +31,10 @@ vec2 GetParallaxCoord(const in vec2 texcoord, const in float LOD, const in vec3 
     if (all(greaterThan(localSize, vec2(EPSILON))))
         stepCoord.y *= localSize.x / localSize.y;
 
-    float i;
+    int i;
     texDepth = 1.0;
     float depthDist = 1.0;
-    for (i = 0.0; i < (MATERIAL_PARALLAX_SAMPLES+0.5); i += 1.0) {
+    for (i = 0; i < MATERIAL_PARALLAX_SAMPLES; i++) {
         if (i > maxSampleCount || depthDist < (1.0/255.0)) break;
 
         #if DISPLACE_MODE == DISPLACE_POM_SMOOTH
@@ -52,8 +62,8 @@ vec2 GetParallaxCoord(const in vec2 texcoord, const in float LOD, const in vec3 
         depthDist = 1.0 - fma(i, stepDepth, texDepth);
     }
 
-    i = max(i - 1.0, 0.0);
-    float pI = max(i - 1.0, 0.0);
+    i = max(i - 1, 0);
+    float pI = max(i - 1, 0);
 
     #ifdef MATERIAL_PARALLAX_SMOOTH
         vec2 currentTraceOffset = texcoord - i * stepCoord;

@@ -102,6 +102,7 @@ in vec2 uv;
     #include "/lib/sky/common.glsl"
     #include "/lib/sky/view.glsl"
     #include "/lib/sky/sun.glsl"
+    #include "/lib/sky/irradiance.glsl"
     #include "/lib/sky/transmittance.glsl"
 
     #include "/lib/utility/blackbody.glsl"
@@ -241,12 +242,12 @@ void main() {
 
                     vec3 light_hsv = RgbToHsv(lightColor);
                     lightColor = HsvToRgb(vec3(light_hsv.xy, 1.0));
-                    float lightIntensity = 1.0 - clamp(light_hsv.z, 0.0, 0.9);// mix(1000.0, 1.0, light_hsv.z);
-                    float lightIntensity2 = 0.0;//clamp(light_hsv.z, EPSILON, 1.0);//mix(1.0, 0.1, light_hsv.z);
+//                    float lightIntensity = 1.0 - clamp(light_hsv.z, 0.0, 0.9);// mix(1000.0, 1.0, light_hsv.z);
+//                    float lightIntensity2 = 0.0;//clamp(light_hsv.z, EPSILON, 1.0);//mix(1.0, 0.1, light_hsv.z);
 
                     vec3 lightVec = light_LocalPos - localPos;
-                    float lightAtt = GetLightAttenuation(lightVec, lightRange, lightIntensity, lightIntensity2);
-                    lightAtt *= light_hsv.z;
+                    float lightAtt = GetLightAttenuation(lightVec, lightRange);
+                    //lightAtt *= light_hsv.z;
 
                     vec3 lightColorAtt = BLOCK_LUX * lightAtt * lightColor;
 
@@ -456,9 +457,7 @@ void main() {
 
                 vec3 reflect_specular = vec3(0.0);
 
-                vec2 skyIrradianceCoord = DirectionToUV(reflect_localTexNormal);
-                vec3 reflect_skyIrradiance = textureLod(texSkyIrradiance, skyIrradianceCoord, 0).rgb;
-                reflect_skyIrradiance = (SKY_AMBIENT * reflect_lmcoord.y) * reflect_skyIrradiance;
+                vec3 reflect_skyIrradiance = SampleSkyIrradiance(reflect_localTexNormal, reflect_lmcoord.y);
 
                 #ifdef LIGHTING_GI_ENABLED
                     vec3 giVoxelPos = GetVoxelPosition(reflect_localPos);

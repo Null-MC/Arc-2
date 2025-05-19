@@ -485,7 +485,7 @@ void main() {
 			vec3 tracePos = cellIndex + noise_offset;
 			vec3 traceSample = trace_GI(tracePos, noise_dir, dir, traceDist);
 
-			float sampleWeight = f / (1.0 + traceDist);
+			float sampleWeight = f / (3.0 + traceDist);
 
 			face_counter = clamp(face_counter + sampleWeight, 0.0, VOXEL_GI_MAXFRAMES);
 

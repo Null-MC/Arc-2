@@ -1,3 +1,5 @@
+screen.SKY=Sky
+
 option.SKY_SEA_LEVEL=Sea Level
 option.SKY_SEA_LEVEL.comment=The Y level of the sea for the currently loaded map. Affects vertical fog falloff.
 
@@ -23,6 +25,8 @@ option.SKY_CLOUD_COVERAGE=Coverage
 suffix.SKY_CLOUD_COVERAGE=%
 
 
+screen.WATER=Water
+
 option.WATER_WAVES_ENABLED=Waves
 
 option.WATER_WAVES_DETAIL=Wave Detail
@@ -34,6 +38,9 @@ option.WATER_TESSELLATION_ENABLED=Tessellation Enabled
 option.WATER_TESSELLATION_LEVEL=Tessellation Level
 option.WATER_TESSELLATION_LEVEL.comment=The maximum number of times to subdivide a water blocks surface.
 suffix.WATER_TESSELLATION_LEVEL=x
+
+
+screen.SHADOWS=Shadows
 
 option.SHADOWS_ENABLED=Enabled
 
@@ -47,11 +54,16 @@ option.SHADOWS_SS_FALLBACK.comment=Enables screen-space shadow tracing. Useful f
 
 option.SHADOWS_CLOUD_ENABLED=Cloud Shadows
 
+
+screen.MATERIAL=Materials
+
 option.MATERIAL_FORMAT=Format
 option.MATERIAL_FORMAT.comment=The format of the PBR resource pack currently loaded.
 value.MATERIAL_FORMAT.0=None
 value.MATERIAL_FORMAT.1=Lab-PBR
 value.MATERIAL_FORMAT.2=Old-PBR
+
+screen.MATERIAL_PARALLAX=Parallax / POM
 
 option.MATERIAL_PARALLAX_ENABLED=Enabled
 
@@ -64,8 +76,8 @@ suffix.MATERIAL_PARALLAX_DEPTH=%
 
 option.MATERIAL_PARALLAX_DEPTHWRITE=Depth-Write
 
-option.MATERIAL_NORMALS=Normals
-screen.MATERIAL_NORMALS=Material Normals
+
+screen.MATERIAL_NORMALS=Normals
 
 option.MATERIAL_NORMAL_FORMAT=Format
 value.MATERIAL_NORMAL_FORMAT.0=Default
@@ -74,13 +86,16 @@ value.MATERIAL_NORMAL_FORMAT.2=Old-PBR
 
 option.MATERIAL_NORMAL_SMOOTH=Smooth Normals
 
-option.MATERIAL_POROSITY=Porosity
-screen.MATERIAL_POROSITY=Material Porosity
+
+screen.MATERIAL_POROSITY=Porosity
 
 option.MATERIAL_POROSITY_FORMAT=Format
 value.MATERIAL_POROSITY_FORMAT.0=Default
 value.MATERIAL_POROSITY_FORMAT.1=Lab-PBR
 value.MATERIAL_POROSITY_FORMAT.2=Old-PBR
+
+
+screen.MATERIAL_EMISSION=Emission
 
 option.MATERIAL_EMISSION_BRIGHTNESS=Emission Brightness
 
@@ -90,6 +105,9 @@ option.FANCY_LAVA_RES=Lava Resolution
 value.FANCY_LAVA_RES.0=Infinite
 suffix.FANCY_LAVA_RES=x
 
+
+screen.LIGHTING=Lighting
+
 option.LIGHTING_MODE=Mode
 value.LIGHTING_MODE.0=Light Map
 value.LIGHTING_MODE.1=Flood Fill
@@ -97,6 +115,9 @@ value.LIGHTING_MODE.2=Ray Traced
 
 option.BLOCKLIGHT_TEMP=LightMap Temp
 option.BLOCKLIGHT_TEMP.comment=The color-temperature of light-map based lighting.
+
+option.LIGHTING_COLOR_CANDLES=Colored Candles
+option.LIGHTING_COLOR_CANDLES.comment=Makes the lighting cast from candles match their color.
 
 
 screen.LIGHTING_GI=Global Illumination
@@ -110,8 +131,8 @@ option.LIGHTING_GI_SKYLIGHT.comment=More realistic but also still buggy.
 option.LIGHTING_GI_SIZE=Volume Size
 suffix.LIGHTING_GI_SIZE=x³
 
-option.LIGHTING_COLOR_CANDLES=Colored Candles
-option.LIGHTING_COLOR_CANDLES.comment=Makes the lighting cast from candles match their color.
+
+screen.LIGHTING_REFLECTIONS=Reflections
 
 option.LIGHTING_REFLECT_MODE=Reflection Mode
 value.LIGHTING_REFLECT_MODE.0=Sky Only
@@ -125,6 +146,9 @@ option.LIGHTING_REFLECT_NOISE=Rough Reflections
 option.LIGHTING_REFLECT_NOISE.comment=Allows surfaces to scatter reflected lighting based on roughness. This is more realistic but may not be desired by all users.
 
 option.LIGHTING_REFLECT_MAXSTEP=WSR Max Step Count
+
+
+screen.LIGHTING_RT=Ray-Tracing
 
 option.LIGHT_TRACE_PENUMBRA=Penumbra Size
 suffix.LIGHT_TRACE_PENUMBRA=%
@@ -144,6 +168,9 @@ value.RT_MAX_SAMPLE_COUNT.0=Infinite
 option.RT_MAX_LIGHT_COUNT=Max Light Count
 option.RT_MAX_SAMPLE_COUNT.comment=The maximum number of lights that can be stored in voxel data, per-bin. Increasing this value will improve quality but reduce performance.
 
+
+screen.VOXELS=Voxels
+
 option.VOXEL_SIZE=Size
 option.VOXEL_SIZE.comment=The size of the voxel volume [in blocks].
 suffix.VOXEL_SIZE=^3
@@ -159,8 +186,11 @@ option.LPV_ENABLED=Enabled
 option.VOXEL_PROVIDED=Use Provided
 option.VOXEL_PROVIDED.comment=Allows the shader to use built-in voxel data provided by Aperture.
 
+
+screen.EFFECTS=Effects
+
 screen.EFFECT_SSAO=SSAO
-option.EFFECT_SSAO.comment=Screen-Space Ambient Occlusion
+screen.EFFECT_SSAO.comment=Screen-Space Ambient Occlusion
 
 option.EFFECT_SSAO_ENABLED=Enabled
 
@@ -169,22 +199,31 @@ suffix.EFFECT_SSAO_STRENGTH=%
 
 option.EFFECT_SSAO_SAMPLES=Sample Count
 
+screen.EFFECT_BLOOM=Bloom
+
 option.EFFECT_BLOOM_ENABLED=Enabled
 
 option.EFFECT_BLOOM_STRENGTH=Strength
 suffix.EFFECT_BLOOM_STRENGTH=%
 
+
+screen.POST=Post Processing
+
 option.EFFECT_TAA_ENABLED=TAA
 option.EFFECT_TAA_ENABLED.comment=Temporal Anti-Aliasing
+
+screen.POST_EXPOSURE=Exposure
 
 option.POST_EXPOSURE_MIN=Minimum
 
 option.POST_EXPOSURE_MAX=Maximum
 
+option.POST_EXPOSURE_RANGE=White Point
+
 option.POST_EXPOSURE_SPEED=Speed
 
 
-screen.POST_TONEMAP=Tonemapping
+screen.POST_TONEMAP=Tone Mapping
 
 option.POST_TONEMAP_CONTRAST=Contrast
 
@@ -192,6 +231,10 @@ option.POST_TONEMAP_LINEAR_START=Linear Start
 
 option.POST_TONEMAP_LINEAR_LENGTH=Linear Length
 
+option.POST_TONEMAP_BLACK=Black
+
+
+screen.DEBUG=Debug
 
 option.DEBUG_WHITE_WORLD=White-World
 option.DEBUG_WHITE_WORLD.comment=Makes all blocks in the world white, so that lighting can be visualized/debugged more easily.

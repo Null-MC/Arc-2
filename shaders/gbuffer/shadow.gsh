@@ -103,7 +103,7 @@ void main() {
                         uint blockMapId = iris_getCustomId(vIn[0].blockId);
                         if (blockMapId == BLOCK_GRASS && abs(vIn[0].localNormal.y) < 0.5 && any(lessThan(vIn[0].color.rgb, vec3(1.0)))) doVoxelize = false;
 
-                        if (doVoxelize) {
+                        if (doVoxelize && vIn[0].currentCascade == VOXEL_SHADOW_CASCADE) {
                             VoxelBlockFace blockFace;
                             blockFace.tex_id = vIn[0].textureId;
                             blockFace.data = 0u;
@@ -125,7 +125,7 @@ void main() {
                         const bool isFluid = false;
                     #endif
 
-                    if (vIn[0].currentCascade == 1 && !isFluid) {
+                    if (vIn[0].currentCascade == VOXEL_SHADOW_CASCADE && !isFluid) {
                         ivec3 quadBinPos = ivec3(floor(voxelPos / QUAD_BIN_SIZE));
                         int quadBinIndex = GetQuadBinIndex(quadBinPos);
 

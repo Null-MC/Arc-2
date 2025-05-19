@@ -1,24 +1,24 @@
 import type {} from './iris'
 
 export function setupOptions() {
-    const screen_Sky = new Page("Sky")
+    const screen_Sky = new Page("SKY")
         .add(asIntRange("SKY_SEA_LEVEL", 60, -40, 140, 2, false))
         .add(asIntRange("SKY_SUN_ANGLE", -20, -90, 90, 2, false))
         .add(EMPTY)
-        .add(new Page("Fog")
+        .add(new Page("SKY_FOG")
             .add(asIntRange("SKY_FOG_DENSITY", 8, 0, 100, 1, false))
             .add(asBool("SKY_FOG_NOISE", false, true))
             .add(EMPTY)
             .add(asBool("FOG_CAVE_ENABLED", true, true))
             .build())
         .add(EMPTY)
-        .add(new Page("Clouds")
+        .add(new Page("SKY_CLOUDS")
             .add(asBool("SKY_CLOUDS_ENABLED", true, true))
             .add(asIntRange("SKY_CLOUD_COVERAGE", 50, 0, 100, 2, false))
             .build())
         .build();
 
-    let screen_Water = new Page("Water")
+    let screen_Water = new Page("WATER")
         .add(asBool("WATER_WAVES_ENABLED", true, true))
         .add(asIntRange("WATER_WAVES_DETAIL", 14, 2, 32, 1, false))
         .add(asFloatRange("WATER_WAVES_HEIGHT", 0.8, 0.0, 1.0, 0.05, false))
@@ -27,7 +27,7 @@ export function setupOptions() {
         .add(asIntRange("WATER_TESSELLATION_LEVEL", 4, 2, 12, 1, false))
         .build();
 
-    const screen_Shadows = new Page("Shadows")
+    const screen_Shadows = new Page("SHADOWS")
         .add(asBool("SHADOWS_ENABLED", true, true))
         .add(asInt("SHADOW_RESOLUTION", 256, 512, 1024, 2048, 4096).build(1024))
         .add(asIntRange("SHADOW_CASCADE_COUNT", 4, 1, 6, 1, true))
@@ -35,10 +35,10 @@ export function setupOptions() {
         .add(asBool("SHADOWS_CLOUD_ENABLED", true, true))
         .build();
 
-    let screen_Material = new Page("Material")
+    let screen_Material = new Page("MATERIAL")
         .add(asString("MATERIAL_FORMAT", "0", "1", "2").build("1"))
         .add(EMPTY)
-        .add(new Page("Parallax")
+        .add(new Page("MATERIAL_PARALLAX")
             .add(asBool("MATERIAL_PARALLAX_ENABLED", true, true))
             .add(asIntRange("MATERIAL_PARALLAX_SAMPLES", 32, 8, 128, 8))
             .add(asBool("MATERIAL_PARALLAX_SHARP", true, true))
@@ -60,21 +60,21 @@ export function setupOptions() {
         .add(asInt("FANCY_LAVA_RES", 4, 8, 16, 32, 64, 128, 0).build(0))
         .build();
 
-    let screen_Lighting = new Page("Lighting")
+    let screen_Lighting = new Page("LIGHTING")
         .add(asString("LIGHTING_MODE", "0", "1", "2").build("1"))
-        .add(new Page("Global Illumination")
+        .add(new Page("LIGHTING_GI")
             .add(asBool("LIGHTING_GI_ENABLED", true, true))
             .add(asBool("LIGHTING_GI_SKYLIGHT", false, true))
             .add(asInt("LIGHTING_GI_SIZE", 64, 128, 256).build(64))
             .build())
         .add(EMPTY)
-        .add(new Page("Reflections")
+        .add(new Page("LIGHTING_REFLECTIONS")
             .add(asString("LIGHTING_REFLECT_MODE", '0', '1', '2').build('2'))
             .add(asBool("LIGHTING_REFLECT_TRIANGLE", false, true))
             .add(asBool("LIGHTING_REFLECT_NOISE", true, true))
             .add(asIntRange("LIGHTING_REFLECT_MAXSTEP", 16, 4, 128, 4))
             .build())
-        .add(new Page("Ray Tracing")
+        .add(new Page("LIGHTING_RT")
             .add(asInt("RT_MAX_SAMPLE_COUNT", 2, 4, 8, 12, 16, 20, 24, 28, 32, 48, 64, 0).build(16))
             .add(asIntRange("RT_MAX_LIGHT_COUNT", 64, 4, 256, 4, true))
             .add(asIntRange("LIGHT_TRACE_PENUMBRA", 100, 0, 100, 2, false))
@@ -85,33 +85,34 @@ export function setupOptions() {
         .add(asBool("LIGHTING_COLOR_CANDLES", false, true))
         .build();
 
-    let screen_Voxel = new Page("Voxels")
+    let screen_Voxel = new Page("VOXELS")
         .add(asInt("VOXEL_SIZE", 64, 128, 256).build(128))
         .add(asInt("VOXEL_FRUSTUM_OFFSET", 0, 25, 50, 75).build(0))
         .add(asBool("VOXEL_PROVIDED", false, true))
         .build();
 
-    const screen_Effects = new Page("Effects")
-        .add(new Page("SSAO")
+    const screen_Effects = new Page("EFFECTS")
+        .add(new Page("EFFECT_SSAO")
             .add(asBool("EFFECT_SSAO_ENABLED", true, true))
             .add(asIntRange("EFFECT_SSAO_STRENGTH", 400, 10, 800, 10, false))
             .add(asIntRange("EFFECT_SSAO_SAMPLES", 4, 1, 16, 1))
             .build())
-        .add(new Page("Bloom")
+        .add(new Page("EFFECT_BLOOM")
             .add(asBool("EFFECT_BLOOM_ENABLED", true, true))
             .add(asFloatRange("EFFECT_BLOOM_STRENGTH", 2.0, 0.0, 10.0, 0.05, false))
             .build())
         .build();
 
-    const screen_Post = new Page("Post")
+    const screen_Post = new Page("POST")
         .add(asBool("EFFECT_TAA_ENABLED", true, true))
-        .add(new Page("Exposure")
+        .add(new Page("POST_EXPOSURE")
             .add(asFloatRange("POST_EXPOSURE_MIN", -6.5, -12.0, -2.0, 0.5, false))
             .add(asFloatRange("POST_EXPOSURE_MAX", 22.0, 2.0, 32.0, 0.5, false))
             .add(asFloatRange("POST_EXPOSURE_RANGE", 3.2, 0.1, 10.0, 0.1, false))
             .add(asFloatRange("POST_EXPOSURE_SPEED", 1.6, 0.2, 8.0, 0.2, false))
             .build())
         .add(new Page("POST_TONEMAP")
+            //.add("Uchimura ToneMap")
             .add(asFloatRange("POST_TONEMAP_CONTRAST", 0.98, 0.02, 2.0, 0.02, false))
             .add(asFloatRange("POST_TONEMAP_LINEAR_START", 0.08, 0.02, 1.0, 0.02, false))
             .add(asFloatRange("POST_TONEMAP_LINEAR_LENGTH", 0.30, 0.02, 1.0, 0.02, false))
@@ -120,7 +121,7 @@ export function setupOptions() {
         //.add(asIntRange("POST_CONTRAST", 160,0, 300, 5, false))
         .build();
 
-    const screen_Debug = new Page("Debug")
+    const screen_Debug = new Page("DEBUG")
         .add(asString("DEBUG_VIEW", 'None', 'Material', 'Shadows', 'SSS', 'SSAO', 'Volumetric Lighting', 'Ray-Traced Lighting', 'Accumulation', 'Sky Irradiance', 'ShadowMap Color', 'ShadowMap Normal').needsReload(true).build('None'))
         .add(asString("DEBUG_MATERIAL", 'Albedo', 'Geo-Normal', 'Tex-Normal', 'Occlusion', 'Roughness', 'F0/Metal', 'Porosity', 'SSS', 'Emission', 'LightMap').needsReload(true).build('Albedo'))
         .add(asBool("DEBUG_TRANSLUCENT", false, true))

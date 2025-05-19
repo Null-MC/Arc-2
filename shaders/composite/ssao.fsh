@@ -138,6 +138,8 @@ void main() {
                         if (traceClipPos.z > traceDepth + EPSILON) sampleNoLm = 1.0;
                         traceClipPos += traceStep;
                     }
+
+                    // TODO: decrease occlusion based on sample distance to avoid shadowing distant objects
                 #else
                     float sampleNoLm = step(sampleClipDepth, sampleClipPos.z);
                 #endif

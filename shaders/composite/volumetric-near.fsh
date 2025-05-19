@@ -45,6 +45,10 @@ uniform sampler2D texSkyMultiScatter;
 #include "/lib/sky/density.glsl"
 #include "/lib/sky/clouds.glsl"
 
+#if defined(SKY_CLOUDS_ENABLED) && defined(SHADOWS_CLOUD_ENABLED)
+    #include "/lib/shadow/clouds.glsl"
+#endif
+
 #if LIGHTING_MODE == LIGHT_MODE_LPV
     #include "/lib/voxel/voxel_common.glsl"
     #include "/lib/lpv/floodfill.glsl"
@@ -206,14 +210,12 @@ void main() {
         vec3 sunSkyLight = skyLightF * SUN_LUX * sunTransmit;
         vec3 moonSkyLight = skyLightF * MOON_LUX * moonTransmit;
 
+        float cloudShadow = 1.0;
         #if defined(SKY_CLOUDS_ENABLED) && defined(SHADOWS_CLOUD_ENABLED)
             // Cloud Shadows
             if (sampleLocalPos.y+ap.camera.pos.y < cloudHeight) {
-                vec3 worldPos = sampleLocalPos + ap.camera.pos;
-                worldPos += (cloudHeight - worldPos.y) / Scene_LocalLightDir.y * Scene_LocalLightDir;
-
-                float cloudShadowDensity = SampleCloudDensity(worldPos) * 100.0;
-                shadowSample *= mix(1.0, exp(-VL_ShadowTransmit * cloudShadowDensity), cloudShadowF);
+                cloudShadow = SampleCloudShadows(sampleLocalPos);
+                shadowSample *= cloudShadow;
             }
         #endif
 

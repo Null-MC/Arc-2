@@ -151,8 +151,15 @@ option.LPV_ENABLED=Enabled
 option.VOXEL_PROVIDED=Use Provided
 option.VOXEL_PROVIDED.comment=Allows the shader to use built-in voxel data provided by Aperture.
 
-option.EFFECT_SSAO_ENABLED=SSAO
-option.EFFECT_SSAO_ENABLED.comment=Screen-Space Ambient Occlusion
+screen.EFFECT_SSAO=SSAO
+option.EFFECT_SSAO.comment=Screen-Space Ambient Occlusion
+
+option.EFFECT_SSAO_ENABLED=Enabled
+
+option.EFFECT_SSAO_STRENGTH=Strength
+suffix.EFFECT_SSAO_STRENGTH=%
+
+option.EFFECT_SSAO_SAMPLES=Sample Count
 
 option.EFFECT_BLOOM_ENABLED=Enabled
 

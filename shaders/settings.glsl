@@ -15,14 +15,6 @@
 #define VOXEL_SKIP_EMPTY
 //#define VOXEL_SKIP_SECTIONS
 
-//#ifdef LIGHTING_GI_SKYLIGHT
-//	#define VOXEL_GI_MAXSTEP 16
-//#else
-//	#define VOXEL_GI_MAXSTEP 4
-//#endif
-
-#define EFFECT_SSAO_STRENGTH 800
-
 
 const float ATMOSPHERE_MAX = 4200.0;
 
@@ -92,7 +84,8 @@ layout (std140, binding = 0) uniform SceneSettings {
 	float Material_EmissionBrightness;
 	int Lighting_BlockTemp;
 	float Lighting_PenumbraSize;
-	float Scene_EffectBloomStrength;
+	float Effect_SSAO_Strength;
+	float Effect_Bloom_Strength;
 	float Scene_PostExposureMin;
 	float Scene_PostExposureMax;
 	float Scene_PostExposureRange;

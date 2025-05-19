@@ -200,7 +200,7 @@ void main() {
 
         vec3 sunTransmit, moonTransmit;
         GetSkyLightTransmission(sampleLocalPos, sunTransmit, moonTransmit);
-        float skyLightF = smoothstep(0.0, 0.2, Scene_LocalLightDir.y);
+        float skyLightF = 1.0;//smoothstep(0.0, 0.2, Scene_LocalLightDir.y);
         vec3 sunSkyLight = skyLightF * SUN_LUX * sunTransmit;
         vec3 moonSkyLight = skyLightF * MOON_LUX * moonTransmit;
 
@@ -320,8 +320,6 @@ void main() {
         }
         else {
             ivec3 blockWorldPos = ivec3(floor(sampleLocalPos + ap.camera.pos));
-            //uint blockId = uint(iris_getBlockAtPos(blockWorldPos).x);
-            //if (!iris_hasFluid(blockId)) sampleDensity = 0.0;
             uint blockLightData = iris_getBlockAtPos(blockWorldPos).y;
             uint blockSkyLight = bitfieldExtract(blockLightData, 16, 16);
             vec3 sampleAmbient = ambientBase * (blockSkyLight/240.0);

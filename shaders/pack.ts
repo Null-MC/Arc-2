@@ -901,6 +901,7 @@ export function setupShader() {
             .vertex("shared/bufferless.vsh")
             .fragment("composite/ssao.fsh")
             .target(0, texSSAO)
+            .ubo(0, SceneSettingsBuffer)
             .build());
 
         // registerShader(Stage.POST_RENDER, new Compute("ssao-filter-opaque")
@@ -1191,7 +1192,8 @@ export function onSettingsChanged(state : WorldState) {
         .appendFloat(snapshot.Material_EmissionBrightness * 0.01)
         .appendInt(snapshot.Lighting_BlockTemp)
         .appendFloat(snapshot.Lighting_PenumbraSize * 0.01)
-        .appendFloat(snapshot.Effect_BloomStrength * 0.01)
+        .appendFloat(snapshot.Effect_SSAO_Strength * 0.01)
+        .appendFloat(snapshot.Effect_Bloom_Strength * 0.01)
         .appendFloat(snapshot.Post_ExposureMin)
         .appendFloat(snapshot.Post_ExposureMax)
         .appendFloat(snapshot.Post_ExposureRange)

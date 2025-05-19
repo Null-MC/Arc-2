@@ -153,9 +153,7 @@ void main() {
 
     //occlusion *= 2.0;
 
-    const float ssaoStrength = EFFECT_SSAO_STRENGTH * 0.01;
-
-    float ao = occlusion * ssaoStrength;
+    float ao = occlusion * Effect_SSAO_Strength;
 
 //    float ao = 1.0 - min(occlusion, 1.0);
     ao = 1.0 - ao / (ao + 1.0);

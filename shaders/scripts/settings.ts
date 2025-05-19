@@ -79,7 +79,8 @@ export class ShaderSettings {
         snapshot.Material_EmissionBrightness = getIntSetting("MATERIAL_EMISSION_BRIGHTNESS");
         snapshot.Lighting_BlockTemp = getIntSetting("BLOCKLIGHT_TEMP");
         snapshot.Lighting_PenumbraSize = getIntSetting("LIGHT_TRACE_PENUMBRA");
-        snapshot.Effect_BloomStrength = getFloatSetting("EFFECT_BLOOM_STRENGTH");
+        snapshot.Effect_SSAO_Strength = getIntSetting("EFFECT_SSAO_STRENGTH");
+        snapshot.Effect_Bloom_Strength = getFloatSetting("EFFECT_BLOOM_STRENGTH");
         snapshot.Post_ExposureMin = getFloatSetting("POST_EXPOSURE_MIN");
         snapshot.Post_ExposureMax = getFloatSetting("POST_EXPOSURE_MAX");
         snapshot.Post_ExposureRange = getFloatSetting("POST_EXPOSURE_RANGE");
@@ -216,7 +217,8 @@ export class RealTimeSettingsSnapshot {
     Material_EmissionBrightness: number;
     Lighting_BlockTemp: number;
     Lighting_PenumbraSize: number;
-    Effect_BloomStrength: number;
+    Effect_SSAO_Strength: number;
+    Effect_Bloom_Strength: number;
     Post_ExposureMin: number;
     Post_ExposureMax: number;
     Post_ExposureRange: number;

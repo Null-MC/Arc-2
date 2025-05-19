@@ -42,7 +42,7 @@ void main() {
     outColor *= 1.0 / 16.0;
 
     #if BLOOM_INDEX == 0
-        outColor *= Scene_EffectBloomStrength;
+        outColor *= Effect_Bloom_Strength;
 
         outColor += texelFetch(texFinal, ivec2(gl_FragCoord.xy), 0).rgb;
         outColor = clamp(outColor, 0.0, 65.0);

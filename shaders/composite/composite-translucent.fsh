@@ -106,6 +106,7 @@ uniform sampler2D texSkyIrradiance;
 #include "/lib/sky/view.glsl"
 #include "/lib/sky/sun.glsl"
 #include "/lib/sky/stars.glsl"
+#include "/lib/sky/irradiance.glsl"
 #include "/lib/sky/transmittance.glsl"
 
 #if LIGHTING_REFLECT_MODE == REFLECT_MODE_SSR
@@ -268,9 +269,7 @@ void main() {
         // SSS
         const float sss_G = 0.24;
 
-        vec2 sss_skyIrradianceCoord = DirectionToUV(localViewDir);
-        vec3 sss_skyIrradiance = textureLod(texSkyIrradiance, sss_skyIrradianceCoord, 0).rgb;
-        sss_skyIrradiance = (SKY_AMBIENT * lmCoord.y) * sss_skyIrradiance;
+        vec3 sss_skyIrradiance = SampleSkyIrradiance(localViewDir, lmCoord.y);
 
         float VoL_sun = dot(localViewDir, Scene_LocalSunDir);
         vec3 sss_phase_sun = max(HG(VoL_sun, sss_G), 0.0) * abs(NoL_sun) * sunLight;
@@ -284,13 +283,7 @@ void main() {
             vec3 voxelPos = GetVoxelPosition(localPosTrans);
         #endif
 
-        vec2 skyIrradianceCoord = DirectionToUV(localTexNormal);
-        vec3 skyIrradiance = textureLod(texSkyIrradiance, skyIrradianceCoord, 0).rgb;
-        skyIrradiance = (SKY_AMBIENT * lmCoord.y) * (skyIrradiance + Sky_MinLight);
-
-        #if !(defined(LIGHTING_GI_ENABLED) && defined(LIGHTING_GI_SKYLIGHT))
-            skyIrradiance *= 2.0;
-        #endif
+        vec3 skyIrradiance = SampleSkyIrradiance(localTexNormal, lmCoord.y);
 
         #ifdef LIGHTING_GI_ENABLED
             if (IsInVoxelBounds(voxelPos)) {

@@ -715,10 +715,11 @@ export function setupShader() {
     // TODO: sky-textured?
 
     registerShader(new ObjectShader("clouds", Usage.CLOUDS)
-        .vertex("gbuffer/clouds.vsh")
-        .fragment("gbuffer/clouds.fsh")
-        .target(0, texClouds)
-        .ssbo(0, sceneBuffer)
+        .vertex("shared/discard.vsh")
+        .fragment("shared/noop.fsh")
+        //.target(0, texClouds)
+        .target(0, texFinalOpaque)
+        .define("RENDER_GBUFFER", "1")
         .build());
 
     function _mainShader(name: string, usage: ProgramUsage) : ObjectShader {

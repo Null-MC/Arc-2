@@ -1,22 +1,12 @@
 const float ROUGH_MIN = 0.02;
 
-// xy: diffuse, specular
+
 float GetLightAttenuation(const in vec3 lightVec, const in float lightRange, const in float intensity, const in float R) {
     float lightDist = length(lightVec);
-//    float lightAtt = 1.0 - saturate(lightDist / lightRange);
-//    return vec2(pow(lightAtt, 5), lightAtt*lightAtt);
-
-    //return pow(saturate(1.0 - pow(lightDist/lightRange, 4)), 2) / (_pow2(lightDist) + 1.0);
-
-//    float d_r = lightDist / R;
-//    float att = A / (1.0 + _pow2(d_r));
 
     float linear = 1.0 - saturate(lightDist / lightRange);
-    //return pow(linear, 1.0 / clamp(intensity, EPSILON, 1.0));
-    float inv_sq = 10.0 / (1.0 + 1.2*_pow2(lightDist));
-
+    float inv_sq = 1.0 / (1.0 + _pow2(lightDist));
     return min(inv_sq, linear);
-//    return linear;
 }
 
 float GetLightAttenuation(const in vec3 lightVec, const in float lightRange) {

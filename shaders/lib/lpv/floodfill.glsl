@@ -8,7 +8,9 @@ vec3 sample_floodfill(const in vec3 lpvPos) {
         ? textureLod(texFloodFill_alt, texcoord, 0).rgb
         : textureLod(texFloodFill, texcoord, 0).rgb;
 
-    //color = RgbToLinear(color);
+    color = RgbToHsv(color);
+    color.z = _pow2(color.z);
+    color = HsvToRgb(color);
 
     return color * BLOCK_LUX;
 }

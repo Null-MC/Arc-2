@@ -717,7 +717,6 @@ export function setupShader() {
     registerShader(new ObjectShader("clouds", Usage.CLOUDS)
         .vertex("shared/discard.vsh")
         .fragment("shared/noop.fsh")
-        //.target(0, texClouds)
         .target(0, texFinalOpaque)
         .define("RENDER_GBUFFER", "1")
         .build());

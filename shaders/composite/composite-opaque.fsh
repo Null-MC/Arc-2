@@ -81,6 +81,7 @@ uniform sampler3D texFogNoise;
 
 #include "/lib/utility/blackbody.glsl"
 #include "/lib/utility/matrix.glsl"
+#include "/lib/utility/hsv.glsl"
 
 #include "/lib/light/sampling.glsl"
 #include "/lib/light/volumetric.glsl"

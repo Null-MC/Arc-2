@@ -33,6 +33,8 @@ uniform sampler2D texSkyMultiScatter;
 #include "/lib/noise/ign.glsl"
 #include "/lib/hg.glsl"
 
+#include "/lib/utility/hsv.glsl"
+
 #ifdef SHADOWS_ENABLED
     #include "/lib/shadow/csm.glsl"
     #include "/lib/shadow/sample.glsl"

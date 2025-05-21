@@ -74,7 +74,7 @@ uniform sampler2D texSkyIrradiance;
 #include "/lib/buffers/scene.glsl"
 
 #ifdef LIGHTING_GI_ENABLED
-    #include "/lib/buffers/sh-gi.glsl"
+    #include "/lib/buffers/wsgi.glsl"
 #endif
 
 //#if defined VOXEL_WSR_ENABLED && defined RT_TRI_ENABLED
@@ -115,11 +115,11 @@ uniform sampler2D texSkyIrradiance;
 #endif
 
 #ifdef VOXEL_ENABLED
-    #include "/lib/voxel/voxel_common.glsl"
+    #include "/lib/voxel/voxel-common.glsl"
 #endif
 
 #if LIGHTING_MODE == LIGHT_MODE_LPV
-    #include "/lib/lpv/floodfill.glsl"
+    #include "/lib/voxel/floodfill-sample.glsl"
 #endif
 
 #if defined(SKY_CLOUDS_ENABLED) && defined(SHADOWS_CLOUD_ENABLED)
@@ -128,7 +128,8 @@ uniform sampler2D texSkyIrradiance;
 #endif
 
 #ifdef LIGHTING_GI_ENABLED
-    #include "/lib/lpv/sh-gi-sample.glsl"
+    #include "/lib/voxel/wsgi-common.glsl"
+    #include "/lib/voxel/wsgi-sample.glsl"
 #endif
 
 #ifdef EFFECT_TAA_ENABLED
@@ -287,13 +288,15 @@ void main() {
         vec3 skyIrradiance = SampleSkyIrradiance(localTexNormal, lmCoord.y);
 
         #ifdef LIGHTING_GI_ENABLED
-            if (IsInVoxelBounds(voxelPos)) {
+            vec3 wsgi_bufferPos = wsgi_getBufferPosition(localPosTrans);
+            wsgi_bufferPos = 0.5*localGeoNormal + wsgi_bufferPos;
+
+            if (wsgi_isInBounds(wsgi_bufferPos)) {
                 #ifdef LIGHTING_GI_SKYLIGHT
                     skyIrradiance = vec3(0.0);
                 #endif
 
-                vec3 voxelSamplePos = 0.5*localGeoNormal + voxelPos;
-                skyIrradiance += sample_gi(voxelSamplePos, localTexNormal);
+                skyIrradiance += wsgi_sample(wsgi_bufferPos, localTexNormal);
             }
         #endif
 

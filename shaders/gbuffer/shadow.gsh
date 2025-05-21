@@ -54,7 +54,7 @@ out VertexData2 {
         #include "/lib/buffers/quad-list.glsl"
     #endif
 
-    #include "/lib/voxel/voxel_common.glsl"
+    #include "/lib/voxel/voxel-common.glsl"
 
     #ifdef VOXEL_TRI_ENABLED
         #include "/lib/voxel/quad-list.glsl"
@@ -99,7 +99,7 @@ void main() {
                     #ifdef VOXEL_BLOCK_FACE
                         // TODO: average face properties?
 
-                        bool doVoxelize = true;
+                        bool doVoxelize = vIn[0].blockId > 0u;
                         uint blockMapId = iris_getCustomId(vIn[0].blockId);
                         if (blockMapId == BLOCK_GRASS && abs(vIn[0].localNormal.y) < 0.5 && any(lessThan(vIn[0].color.rgb, vec3(1.0)))) doVoxelize = false;
 

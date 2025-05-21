@@ -155,11 +155,10 @@ void main() {
 
     //occlusion *= 2.0;
 
-    float ao = occlusion * Effect_SSAO_Strength;
+    float ao = saturate(occlusion * Effect_SSAO_Strength);
+    //ao = ao*ao;
 
-//    float ao = 1.0 - min(occlusion, 1.0);
     ao = 1.0 - ao / (ao + 1.0);
-    // ao = ao*ao;
 
     out_AO = ao;
 }

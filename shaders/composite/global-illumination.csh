@@ -31,13 +31,13 @@ uniform sampler2DArray texShadowColor;
 #include "/lib/buffers/scene.glsl"
 #include "/lib/buffers/voxel-block.glsl"
 
-#include "/lib/buffers/sh-gi.glsl"
+#include "/lib/buffers/wsgi.glsl"
 
 #if LIGHTING_MODE == LIGHT_MODE_RT
 	#include "/lib/buffers/light-list.glsl"
 #endif
 
-#include "/lib/voxel/voxel_common.glsl"
+#include "/lib/voxel/voxel-common.glsl"
 #include "/lib/voxel/voxel-sample.glsl"
 
 #include "/lib/sampling/erp.glsl"
@@ -47,15 +47,17 @@ uniform sampler2DArray texShadowColor;
 #include "/lib/noise/blue.glsl"
 
 #include "/lib/sky/common.glsl"
+#include "/lib/sky/irradiance.glsl"
 #include "/lib/sky/transmittance.glsl"
 #include "/lib/sky/view.glsl"
 
 #include "/lib/utility/blackbody.glsl"
 #include "/lib/material/material.glsl"
 #include "/lib/material/wetness.glsl"
-#include "/lib/voxel/dda.glsl"
 
-#include "/lib/lpv/sh-gi-sample.glsl"
+#include "/lib/voxel/dda.glsl"
+#include "/lib/voxel/wsgi-common.glsl"
+#include "/lib/voxel/wsgi-sample.glsl"
 
 #ifdef SHADOWS_ENABLED
 	#include "/lib/shadow/csm.glsl"
@@ -78,17 +80,17 @@ uniform sampler2DArray texShadowColor;
 
 	#include "/lib/voxel/light-list.glsl"
 	#include "/lib/voxel/light-trace.glsl"
+
+	//#include "/lib/voxel/wsgi-common.glsl"
+//	#include "/lib/voxel/wsgi-sample.glsl"
 #elif LIGHTING_MODE == LIGHT_MODE_NONE
 	#include "/lib/lightmap/sample.glsl"
 #endif
 
 
-ivec3 GetVoxelFrameOffset() {
-    vec3 viewDir = ap.camera.viewInv[2].xyz;
-    vec3 posNow = GetVoxelCenter(ap.camera.pos, viewDir);
-
-    vec3 viewDirPrev = vec3(ap.temporal.view[0].z, ap.temporal.view[1].z, ap.temporal.view[2].z);
-    vec3 posPrev = GetVoxelCenter(ap.temporal.pos, viewDirPrev);
+ivec3 wsgi_GetFrameOffset() {
+    vec3 posNow = wsgi_getBufferCenter(ap.camera.pos);
+    vec3 posPrev = wsgi_getBufferCenter(ap.temporal.pos);
 
     vec3 posLast = posNow + (ap.temporal.pos - ap.camera.pos) - (posPrev - posNow);
 
@@ -116,6 +118,53 @@ vec3 GetShadowSamplePos_LPV(const in vec3 shadowViewPos, out int cascadeIndex) {
 	return shadowPos * 0.5 + 0.5;
 }
 
+//float sphereContribution(const in vec3 normal, const in vec3 ray, const in float radius) {
+//	//vec3  offset = sph.xyz - pos;
+//	float dist   = length(ray);
+//	float nl = dot(normal, ray/dist);
+//	float h  = dist/radius;
+//	float h2 = h*h;
+//	//float k2 = 1.0 - h2*nl*nl;
+//
+//	return saturate(max(nl, 0.0) / h2);
+//}
+
+vec3 GetRandomFaceNormal(const in ivec3 cellPos, const in vec3 face_dir) {
+	float seed_pos = hash13(cellPos);
+
+//	vec2 noise_seed = cellPos.xz * vec2(71.0, 83.0) + cellPos.y * 67.0;
+//	noise_seed += ap.time.frames * vec2(71.0, 83.0);
+//	//vec3 noise_dir = sample_blueNoise(hash23(cellPos));
+//
+//	vec3 noise_dir = hash32(vec2(seed_pos * 123.45, ap.time.frames));
+//	noise_dir = normalize(noise_dir * 2.0 - 1.0);
+//
+//	float faceF = dot(face_dir, noise_dir);
+//	if (faceF < 0.0) {
+//		noise_dir = -noise_dir;
+//		faceF = -faceF;
+//	}
+//
+//	noise_dir = noise_dir + face_dir;
+//	return normalize(noise_dir);
+
+
+	vec2 random = hash22(vec2(seed_pos, ap.time.frames));
+
+	float r = sqrt(random.x);
+	float theta = 2.0 * PI * random.y;
+	vec3 diskSample = r * vec3(cos(theta), sin(theta), 0.0);
+
+	vec3 hemisphereSample = vec3(diskSample.xy, sqrt(max(1.0 - dot(diskSample.xy, diskSample.xy), 0.0)));
+
+	vec3 normal = face_dir;
+	vec3 tangent = abs(face_dir.y) > 0.5 ? vec3(0.0,0.0,1.0) : vec3(0.0,1.0,0.0);
+	vec3 bitangent = normalize(cross(normal, tangent));
+	vec3 worldSpaceSample = normal * hemisphereSample.z + tangent * hemisphereSample.x + bitangent * hemisphereSample.y;
+
+	return worldSpaceSample;
+}
+
 
 vec3 trace_GI(const in vec3 traceOrigin, const in vec3 traceDir, const in int face_dir, out float traceDist) {
 	vec3 color = vec3(0.0);
@@ -128,43 +177,57 @@ vec3 trace_GI(const in vec3 traceOrigin, const in vec3 traceDir, const in int fa
 	uint blockId = 0u;
 	vec3 stepAxis = vec3(0.0); // todo: set initial?
 	vec3 traceTint = vec3(1.0);
-	ivec3 voxelPos = ivec3(traceOrigin);
+	ivec3 bufferPos = ivec3(traceOrigin);
+	ivec3 voxelPos = bufferPos + WSGI_VoxelOffset;
 
-	for (int i = 0; i < VOXEL_GI_MAXSTEP && !hit; i++) {
+	uint pathSamples = 0u;
+	vec3 pathLight = vec3(0.0);
+	bool altFrame = ap.time.frames % 2 == 1;
+
+	int i = 0;
+	for (; i < VOXEL_GI_MAXSTEP && !hit; i++) {
 		vec3 stepAxisNext;
 		vec3 step = dda_step(stepAxisNext, nextDist, stepSizes, traceDir);
 
-		voxelPos = ivec3(floor(fma(step, vec3(0.5), tracePos)));
+		bufferPos = ivec3(floor(fma(step, vec3(0.5), tracePos)));
+		voxelPos = bufferPos + WSGI_VoxelOffset;
 
 		blockId = SampleVoxelBlock(voxelPos);
 
-		for (int t = 0; t < 8 && blockId == 0u; t++) {
-			tracePos += step;
-			stepAxis = stepAxisNext;
-
-			step = dda_step(stepAxisNext, nextDist, stepSizes, traceDir);
-
-			voxelPos = ivec3(floor(fma(step, vec3(0.5), tracePos)));
-
-			blockId = SampleVoxelBlock(voxelPos);
-		}
-
-//		vec3 stepAxisNext;
-//		vec3 step = dda_step(stepAxisNext, nextDist, stepSizes, traceDir);
+//		#ifdef LIGHTING_GI_SKYLIGHT
+//			for (int t = 0; t < 8 && blockId == 0u; t++) {
+//				tracePos += step;
+//				stepAxis = stepAxisNext;
 //
-//		voxelPos = ivec3(floor(fma(step, vec3(0.5), tracePos)));
+//				step = dda_step(stepAxisNext, nextDist, stepSizes, traceDir);
+//
+//				bufferPos = ivec3(floor(fma(step, vec3(0.5), tracePos)));
+//
+//				voxelPos = bufferPos + WSGI_VoxelOffset;
+//				blockId = SampleVoxelBlock(voxelPos);
+//			}
+//		#endif
 
-		if (!IsInVoxelBounds(voxelPos)) {
+		if (!wsgi_isInBounds(bufferPos)) {
 			//tracePos += step;
 			break;
 		}
-
-		//uint blockId = SampleVoxelBlock(voxelPos);
 
 		if (blockId > 0u && iris_isFullBlock(blockId)) {
 			hit = true;
 			break;
 		}
+
+		int sampleVoxelI = wsgi_getBufferIndex(bufferPos);
+
+		lpvShVoxel sampleVoxel;
+		if (altFrame) sampleVoxel = SH_LPV[sampleVoxelI];
+		else sampleVoxel = SH_LPV_alt[sampleVoxelI];
+
+		float face_counter;
+		//pathLight += wsgi_sample_voxel(sampleVoxel, traceDir);
+		pathLight += wsgi_sample_voxel_face(sampleVoxel.data[face_dir], shVoxel_dir[face_dir], traceDir, face_counter);
+		pathSamples++;
 
 		tracePos += step;
 		stepAxis = stepAxisNext;
@@ -174,13 +237,18 @@ vec3 trace_GI(const in vec3 traceOrigin, const in vec3 traceDir, const in int fa
 			vec3 blockColor = iris_getLightColor(blockId).rgb;
 			traceTint *= RgbToLinear(blockColor);
 
+			if (iris_hasTag(blockId, TAG_LEAVES)) traceTint *= 0.5;
+
 //				uint meta = iris_getMetadata(blockId);
 //				uint blocking = bitfieldExtract(meta, 10, 4);
 //				traceTint *= 1.0 - blocking/16.0;
 		}
 	}
 
+	pathLight = pathLight / pathSamples * 1000.0;
+
 	traceDist = distance(traceOrigin, tracePos);
+	vec3 hit_localPos = wsgi_getLocalPosition(tracePos);
 
 	if (hit) {
 		vec3 hitNormal = -sign(traceDir) * stepAxis;
@@ -224,7 +292,7 @@ vec3 trace_GI(const in vec3 traceOrigin, const in vec3 traceDir, const in int fa
 		#endif
 
 		float hit_roughL = _pow2(hit_roughness);
-		vec3 hit_localPos = GetVoxelLocalPos(tracePos);
+		//vec3 hit_localPos = GetVoxelLocalPos(tracePos);
 		float hit_NoL = dot(-traceDir, hitNormal);
 
 		float wetness = float(ap.camera.fluid == 1);
@@ -289,14 +357,26 @@ vec3 trace_GI(const in vec3 traceOrigin, const in vec3 traceDir, const in int fa
 				skyLightF *= exp(-VL_ShadowTransmit * shadowDensity);
 		#endif
 
+		float hit_NoLm = max(dot(hitNormal, Scene_LocalLightDir), 0.0);
+
 		vec3 hit_diffuse = skyLight * skyLightF * hit_shadow;
-		//hit_diffuse *= SampleLightDiffuse(hit_NoVm, hit_NoLm, hit_LoHm, hit_roughL);
+		hit_diffuse *= hit_NoLm; //SampleLightDiffuse(hit_NoVm, hit_NoLm, hit_LoHm, hit_roughL);
 
 //			vec2 skyIrradianceCoord = DirectionToUV(hitNormal);
 //			vec3 hit_skyIrradiance = textureLod(texSkyIrradiance, skyIrradianceCoord, 0).rgb;
 //			hit_diffuse += (SKY_AMBIENT * hit_lmcoord.y) * hit_skyIrradiance;
 
-		//hit_diffuse += 0.0016;
+		#ifdef LIGHTING_GI_SKYLIGHT
+			int sampleVoxelI = wsgi_getBufferIndex(bufferPos);
+
+			lpvShVoxel sampleVoxel;
+			if (altFrame) sampleVoxel = SH_LPV[sampleVoxelI];
+			else sampleVoxel = SH_LPV_alt[sampleVoxelI];
+
+			hit_diffuse += wsgi_sample_voxel(sampleVoxel, hitNormal);
+
+			//hit_diffuse += 0.0016;
+		#endif
 
 		#if LIGHTING_MODE == LIGHT_MODE_RT //&& defined(FALSE)
 			// TODO: pick a random light and sample it?
@@ -320,8 +400,8 @@ vec3 trace_GI(const in vec3 traceOrigin, const in vec3 traceDir, const in int fa
 
 			//for (int i = 0; i < maxSampleCount; i++) {
 			if (binLightCount > 0) {
-				int i = 0;
-				int i2 = (i + i_offset) % int(binLightCount);
+				int light_i = 0;
+				int i2 = (light_i + i_offset) % int(binLightCount);
 
 				uint light_voxelIndex = LightBinMap[lightBinIndex].lightList[i2];
 
@@ -374,7 +454,7 @@ vec3 trace_GI(const in vec3 traceOrigin, const in vec3 traceDir, const in int fa
 				//}
 			}
 		#elif LIGHTING_MODE == LIGHT_MODE_LPV
-			ivec3 voxelFrameOffset = GetVoxelFrameOffset();
+			ivec3 voxelFrameOffset = wsgi_GetFrameOffset();
 			vec3 lpv_sample_pos = tracePos + voxelFrameOffset + 0.5*hitNormal;
 
 			if (IsInVoxelBounds(lpv_sample_pos)) {
@@ -403,26 +483,60 @@ vec3 trace_GI(const in vec3 traceOrigin, const in vec3 traceDir, const in int fa
 
 		ApplyWetness_albedo(albedo, hit_porosity, wetness);
 
-		color = albedo * hit_diffuse;// * max(hit_NoL, 0.0);
+		color = albedo * hit_diffuse * max(hit_NoL, 0.0);
+
+		float att = 1.0 - 1.0/(1.0 + _pow2(traceDist));
+		color *= att;
+
+//		const float radius = 0.5;
+//		vec3 ray = tracePos - traceOrigin;
+//		float sampleWeight = PI * sphereContribution(hitNormal, -ray, radius);
+//		color *= sampleWeight;
+
+		color = mix(color, pathLight, saturate(float(i) / VOXEL_GI_MAXSTEP));
 	}
 	else {
-		if (IsInVoxelBounds(voxelPos)) {
-			bool altFrame = ap.time.frames % 2 == 1;
-			int i_end = GetVoxelIndex(voxelPos);
+//		color = pathLight;
+//		#ifdef LIGHTING_GI_SKYLIGHT
+//			const float lmcoord_y = 1.0;
+//			color = SampleSkyIrradiance(traceDir, lmcoord_y);
+//		#else
 
-			lpvShVoxel endVoxel;
-			if (altFrame) endVoxel = SH_LPV[i_end];
-			else endVoxel = SH_LPV_alt[i_end];
+		for (int i2 = i; i2 < 64 && !hit; i2++) {
+			vec3 stepAxisNext;
+			vec3 step = dda_step(stepAxisNext, nextDist, stepSizes, traceDir);
 
-			color = 0.5 * sample_gi_voxel(endVoxel, traceDir) * 1000.0;
+			bufferPos = ivec3(floor(fma(step, vec3(0.5), tracePos)));
+			voxelPos = bufferPos + WSGI_VoxelOffset;
+
+			blockId = SampleVoxelBlock(voxelPos);
+
+			if (!wsgi_isInBounds(bufferPos)) break;
+
+			if (blockId > 0u && iris_isFullBlock(blockId)) {
+				hit = true;
+				//break;
+			}
+
+			tracePos += step;
+			stepAxis = stepAxisNext;
 		}
-		else {
-			#ifdef LIGHTING_GI_SKYLIGHT
-				vec3 skyPos = getSkyPosition(vec3(0.0));
-				color = getValFromSkyLUT(texSkyView, skyPos, traceDir, Scene_LocalSunDir);
-				color *= max(Scene_LocalSunDir.y, 0.0);
-			#endif
-		}
+
+		if (hit) {
+				color = pathLight;
+//				bool altFrame = ap.time.frames % 2 == 1;
+//				int i_end = wsgi_getBufferIndex(bufferPos);
+//
+//				lpvShVoxel endVoxel;
+//				if (altFrame) endVoxel = SH_LPV[i_end];
+//				else endVoxel = SH_LPV_alt[i_end];
+//
+//				color = 0.5 * wsgi_sample_voxel(endVoxel, traceDir) * 1000.0;
+			}
+			else {
+				color = SampleSkyIrradiance(traceDir, 1.0);
+			}
+//		#endif
 	}
 
 	return color * traceTint;
@@ -435,8 +549,10 @@ void main() {
 
 	bool altFrame = ap.time.frames % 2 == 1;
 
-	ivec3 voxelFrameOffset = GetVoxelFrameOffset();
-	uint blockId = SampleVoxelBlock(cellIndex + 0.5);
+	ivec3 voxelFrameOffset = wsgi_GetFrameOffset();
+
+	ivec3 voxelPos = cellIndex + WSGI_VoxelOffset;
+	uint blockId = SampleVoxelBlock(voxelPos + 0.5);
 
 	bool isFullBlock = false;
 
@@ -448,35 +564,23 @@ void main() {
 
 	if (!isFullBlock) {
 		ivec3 cellIndex_prev = cellIndex + voxelFrameOffset;
-		if (IsInVoxelBounds(cellIndex_prev)) {
-			int i_prev = GetVoxelIndex(cellIndex_prev);
+		if (wsgi_isInBounds(cellIndex_prev)) {
+			int i_prev = wsgi_getBufferIndex(cellIndex_prev);
 
 			if (altFrame) voxel_gi = SH_LPV[i_prev];
 			else voxel_gi = SH_LPV_alt[i_prev];
 		}
 
-		float seed_pos = hash13(cellIndex);
+		//float seed_pos = hash13(cellIndex);
 
 		for (int dir = 0; dir < 6; dir++) {
 			vec3 face_color;
 			float face_counter;
 			decode_shVoxel_dir(voxel_gi.data[dir], face_color, face_counter);
 
-			vec2 noise_seed = cellIndex.xz * vec2(71.0, 83.0) + cellIndex.y * 67.0;
-			noise_seed += (ap.time.frames + dir) * vec2(71.0, 83.0);
-			//vec3 noise_dir = sample_blueNoise(hash23(cellIndex));
+			vec3 noise_dir = GetRandomFaceNormal(cellIndex, shVoxel_dir[dir]);
 
-			vec3 noise_dir = hash33(vec3(seed_pos * 123.45, dir * 12.34, ap.time.frames));
-			noise_dir = normalize(noise_dir * 2.0 - 1.0);
-
-			float f = dot(shVoxel_dir[dir], noise_dir);
-			if (f < 0.0) {
-				noise_dir = -noise_dir;
-				f = -f;
-			}
-
-			//noise_dir = mix(noise_dir, shVoxel_dir[dir], 0.5);
-			//noise_dir = normalize(noise_dir);
+			float faceF = dot(shVoxel_dir[dir], noise_dir);
 
 			//vec3 noise_offset = sample_blueNoise(hash23(cellIndex));
 			vec3 noise_offset = vec3(0.5);//hash32(noise_seed);
@@ -485,21 +589,23 @@ void main() {
 			vec3 tracePos = cellIndex + noise_offset;
 			vec3 traceSample = trace_GI(tracePos, noise_dir, dir, traceDist);
 
-			float sampleWeight = f / (3.0 + traceDist);
+//			const float radius = 0.5;
+//			float sampleWeight = PI * sphereContribution(shVoxel_dir[dir], noise_dir * traceDist, radius);
+			float sampleWeight = max(faceF, 0.0);// / (3.0 + traceDist);
 
 			face_counter = clamp(face_counter + sampleWeight, 0.0, VOXEL_GI_MAXFRAMES);
 
 			traceSample = clamp(traceSample * 0.001, 0.0, 65000.0);
 
 			float mixF = 1.0 / (1.0 + face_counter);
-			face_color = mix(face_color, traceSample, mixF * sampleWeight);// * max(f, 0.0);
+			face_color = mix(face_color, traceSample, mixF * sampleWeight);// * max(faceF, 0.0);
 
 			voxel_gi.data[dir] = encode_shVoxel_dir(face_color, face_counter);
 		}
 	}
 
-	int i = GetVoxelIndex(cellIndex);
+	int writeIndex = wsgi_getBufferIndex(cellIndex);
 
-	if (altFrame) SH_LPV_alt[i] = voxel_gi;
-	else SH_LPV[i] = voxel_gi;
+	if (altFrame) SH_LPV_alt[writeIndex] = voxel_gi;
+	else SH_LPV[writeIndex] = voxel_gi;
 }

@@ -38,29 +38,31 @@ export class ShaderSettings {
     get Shadow_Filter(): boolean {return true;}
     get Shadow_SS_Fallback(): boolean {return this.getCachedBoolSetting("SHADOWS_SS_FALLBACK");}
 
-    get Material_Format(): number {return this.getCachedValue<number>("MATERIAL_FORMAT", k => parseInt(getStringSetting(k)));}
+    get Material_Format(): number {return this.getCachedSetting<number>("MATERIAL_FORMAT", k => parseInt(getStringSetting(k)));}
     get Material_ParallaxEnabled(): boolean {return this.getCachedBoolSetting("MATERIAL_PARALLAX_ENABLED");}
     get Material_ParallaxDepth(): number {return this.getCachedIntSetting("MATERIAL_PARALLAX_DEPTH");}
     get Material_ParallaxStepCount(): number {return this.getCachedIntSetting("MATERIAL_PARALLAX_SAMPLES");}
     get Material_ParallaxSharp(): boolean {return this.getCachedBoolSetting("MATERIAL_PARALLAX_SHARP");}
     get Material_ParallaxDepthWrite(): boolean {return this.getCachedBoolSetting("MATERIAL_PARALLAX_DEPTHWRITE");}
-    get Material_NormalFormat(): number {return this.getCachedValue<number>("MATERIAL_NORMAL_FORMAT", k => parseInt(getStringSetting(k)));}
+    get Material_NormalFormat(): number {return this.getCachedSetting<number>("MATERIAL_NORMAL_FORMAT", k => parseInt(getStringSetting(k)));}
     get Material_NormalSmooth(): boolean {return this.getCachedBoolSetting("MATERIAL_NORMAL_SMOOTH");}
-    get Material_PorosityFormat(): number {return this.getCachedValue<number>("MATERIAL_POROSITY_FORMAT", k => parseInt(getStringSetting(k)));}
+    get Material_PorosityFormat(): number {return this.getCachedSetting<number>("MATERIAL_POROSITY_FORMAT", k => parseInt(getStringSetting(k)));}
     get Material_EmissionBrightness(): number {return this.getCachedIntSetting("MATERIAL_EMISSION_BRIGHTNESS");}
     get Material_FancyLava(): boolean {return this.getCachedBoolSetting("FANCY_LAVA");}
     get Material_FancyLavaResolution(): number {return this.getCachedIntSetting("FANCY_LAVA_RES");}
 
-    get Lighting_Mode(): number {return this.getCachedValue<number>("LIGHTING_MODE", k => parseInt(getStringSetting(k)));}
+    get Lighting_Mode(): number {return this.getCachedSetting<number>("LIGHTING_MODE", k => parseInt(getStringSetting(k)));}
     get Lighting_BlockTemp(): number {return this.getCachedIntSetting("BLOCKLIGHT_TEMP");}
     get Lighting_ColorCandles(): boolean {return this.getCachedBoolSetting("LIGHTING_COLOR_CANDLES");}
     get Lighting_GI_Enabled(): boolean {return this.getCachedBoolSetting("LIGHTING_GI_ENABLED");}
     get Lighting_GI_SkyLight(): boolean {return this.getCachedBoolSetting("LIGHTING_GI_SKYLIGHT");}
+    get Lighting_GI_MaxSteps(): number {return this.getCachedIntSetting("VOXEL_GI_MAXSTEP");}
+    get Lighting_GI_BuffserSize(): number {return this.getCachedIntSetting("LIGHTING_GI_SIZE");}
     get Lighting_PenumbraSize(): number {return this.getCachedIntSetting("LIGHT_TRACE_PENUMBRA");}
     get Lighting_TraceSampleCount(): number {return this.getCachedIntSetting("RT_MAX_SAMPLE_COUNT");}
     get Lighting_TraceLightMax(): number {return this.getCachedIntSetting("RT_MAX_LIGHT_COUNT");}
     get Lighting_TraceQuads(): boolean {return this.getCachedBoolSetting("LIGHTING_TRACE_TRIANGLE");}
-    get Lighting_ReflectionMode(): number {return this.getCachedValue<number>("LIGHTING_REFLECT_MODE", k => parseInt(getStringSetting(k)));}
+    get Lighting_ReflectionMode(): number {return this.getCachedSetting<number>("LIGHTING_REFLECT_MODE", k => parseInt(getStringSetting(k)));}
     get Lighting_ReflectionNoise(): boolean {return this.getCachedBoolSetting("LIGHTING_REFLECT_NOISE");}
     get Lighting_ReflectionQuads(): boolean {return this.getCachedBoolSetting("LIGHTING_REFLECT_TRIANGLE");}
     get Lighting_ReflectionStepCount(): number {return this.getCachedIntSetting("LIGHTING_REFLECT_MAXSTEP");}
@@ -87,8 +89,8 @@ export class ShaderSettings {
     get Post_ToneMap_LinearLength(): number {return this.getCachedFloatSetting("POST_TONEMAP_LINEAR_LENGTH");}
     get Post_ToneMap_Black(): number {return this.getCachedFloatSetting("POST_TONEMAP_BLACK");}
 
-    get Debug_View(): number {return this.getCachedValue<number>("DEBUG_VIEW", k => getStringSettingIndex(k, 0, 'None', 'Material', 'Shadows', 'SSS', 'SSAO', 'Volumetric Lighting', 'Ray-Traced Lighting', 'Accumulation', 'Sky Irradiance', 'ShadowMap Color', 'ShadowMap Normal'));}
-    get Debug_Material(): number {return this.getCachedValue<number>("DEBUG_MATERIAL", k => getStringSettingIndex(k, 0, 'Albedo', 'Geo-Normal', 'Tex-Normal', 'Occlusion', 'Roughness', 'F0/Metal', 'Porosity', 'SSS', 'Emission', 'LightMap'));}
+    get Debug_View(): number {return this.getCachedSetting<number>("DEBUG_VIEW", k => parseInt(getStringSetting(k)));}
+    get Debug_Material(): number {return this.getCachedSetting<number>("DEBUG_MATERIAL", k => parseInt(getStringSetting(k)));}
     get Debug_WhiteWorld(): boolean {return this.getCachedBoolSetting("DEBUG_WHITE_WORLD");}
     get Debug_Translucent(): boolean {return this.getCachedBoolSetting("DEBUG_TRANSLUCENT");}
     get Debug_Histogram(): boolean {return false;}
@@ -148,18 +150,18 @@ export class ShaderSettings {
     }
 
     private getCachedBoolSetting(key : string) : boolean {
-        return this.getCachedValue<boolean>(key, getBoolSetting);
+        return this.getCachedSetting<boolean>(key, getBoolSetting);
     }
 
     private getCachedIntSetting(key : string) : number {
-        return this.getCachedValue<number>(key, getIntSetting);
+        return this.getCachedSetting<number>(key, getIntSetting);
     }
 
     private getCachedFloatSetting(key : string) : number {
-        return this.getCachedValue<number>(key, getFloatSetting);
+        return this.getCachedSetting<number>(key, getFloatSetting);
     }
 
-    private getCachedValue<T extends string|number|boolean>(key : string, onUpdate : (key: string) => T) : T {
+    private getCachedSetting<T extends string|number|boolean>(key : string, onUpdate : (key: string) => T) : T {
         let value = this._cache[key] as T;
         if (!value) {
             value = onUpdate(key);

@@ -71,7 +71,7 @@ in vec2 uv;
 
 #include "/lib/material/material_fresnel.glsl"
 
-#include "/lib/voxel/voxel_common.glsl"
+#include "/lib/voxel/voxel-common.glsl"
 #include "/lib/voxel/voxel-sample.glsl"
 
 #if LIGHTING_MODE == LIGHT_MODE_RT || LIGHTING_REFLECT_MODE == REFLECT_MODE_WSR
@@ -92,7 +92,7 @@ in vec2 uv;
     #include "/lib/buffers/scene.glsl"
 
     #ifdef LIGHTING_GI_ENABLED
-        #include "/lib/buffers/sh-gi.glsl"
+        #include "/lib/buffers/wsgi.glsl"
     #endif
 
     #include "/lib/sampling/erp.glsl"
@@ -121,7 +121,7 @@ in vec2 uv;
     #endif
 
     #if LIGHTING_MODE == LIGHT_MODE_LPV
-        #include "/lib/lpv/floodfill.glsl"
+        #include "/lib/voxel/floodfill-sample.glsl"
     #endif
 
     #if defined(SKY_CLOUDS_ENABLED) && defined(SHADOWS_CLOUD_ENABLED)
@@ -132,7 +132,8 @@ in vec2 uv;
     #endif
 
     #ifdef LIGHTING_GI_ENABLED
-        #include "/lib/lpv/sh-gi-sample.glsl"
+        #include "/lib/voxel/wsgi-common.glsl"
+        #include "/lib/voxel/wsgi-sample.glsl"
     #endif
 
     #include "/lib/sampling/depth.glsl"
@@ -382,7 +383,8 @@ void main() {
 
             if (reflection.a > 0.5) {
                 #if MATERIAL_FORMAT != MAT_NONE
-                    vec4 reflect_normalData = textureLod(blockAtlasN, reflect_uv, 0);
+
+                vec4 reflect_normalData = textureLod(blockAtlasN, reflect_uv, 0);
                     vec4 reflect_specularData = textureLod(blockAtlasS, reflect_uv, 0);
                 #endif
 
@@ -460,9 +462,11 @@ void main() {
                 vec3 reflect_skyIrradiance = SampleSkyIrradiance(reflect_localTexNormal, reflect_lmcoord.y);
 
                 #ifdef LIGHTING_GI_ENABLED
-                    vec3 giVoxelPos = GetVoxelPosition(reflect_localPos);
-                    vec3 giVoxelSamplePos = 0.5*reflect_geoNormal + giVoxelPos;
-                    reflect_skyIrradiance += sample_gi(giVoxelSamplePos, reflect_localTexNormal);
+                    vec3 reflect_wsgi_bufferPos = wsgi_getBufferPosition(reflect_localPos);
+                    reflect_wsgi_bufferPos = 0.5*reflect_geoNormal + reflect_wsgi_bufferPos;
+
+                    //if (wsgi_isInBounds(reflect_wsgi_bufferPos))
+                        reflect_skyIrradiance += wsgi_sample(reflect_wsgi_bufferPos, reflect_localTexNormal);
                 #endif
 
                 reflect_diffuse += reflect_skyIrradiance;
@@ -563,12 +567,14 @@ void main() {
                 #ifdef LIGHTING_GI_ENABLED
                     // TODO: get inner reflection vector and use for SH lookup
 
-                    vec3 reflect_reflectDir = reflect(reflectLocalDir, reflect_localTexNormal);
+                    vec3 wsgi_bufferPos = reflect_voxelPos + (VoxelBufferCenter - WSGI_BufferCenter);
 
-                    //vec3 voxelSamplePos = 0.5*localTexNormal - 0.25*localGeoNormal + voxelPos;
-                    vec3 reflect_irradiance = sample_gi(reflect_voxelPos, reflect_reflectDir);
+                    if (wsgi_isInBounds(wsgi_bufferPos)) {
+                        vec3 reflect_reflectDir = reflect(reflectLocalDir, reflect_localTexNormal);
 
-                    reflect_specular += reflect_irradiance; // * S * reflect_tint;
+                        vec3 reflect_irradiance = wsgi_sample(wsgi_bufferPos, reflect_reflectDir);
+                        reflect_specular += reflect_irradiance; // * S * reflect_tint;
+                    }
                 #endif
 
                 const bool reflect_isWet = false;

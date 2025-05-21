@@ -62,7 +62,7 @@ uniform sampler3D texFogNoise;
 #include "/lib/buffers/scene.glsl"
 
 #ifdef LIGHTING_GI_ENABLED
-    #include "/lib/buffers/sh-gi.glsl"
+    #include "/lib/buffers/wsgi.glsl"
 #endif
 
 #include "/lib/sampling/erp.glsl"
@@ -100,11 +100,11 @@ uniform sampler3D texFogNoise;
 #endif
 
 #ifdef VOXEL_ENABLED
-    #include "/lib/voxel/voxel_common.glsl"
+    #include "/lib/voxel/voxel-common.glsl"
 #endif
 
 #if LIGHTING_MODE == LIGHT_MODE_LPV
-    #include "/lib/lpv/floodfill.glsl"
+    #include "/lib/voxel/floodfill-sample.glsl"
 #endif
 
 #if defined(SKY_CLOUDS_ENABLED) && defined(SHADOWS_CLOUD_ENABLED)
@@ -113,7 +113,8 @@ uniform sampler3D texFogNoise;
 #endif
 
 #ifdef LIGHTING_GI_ENABLED
-    #include "/lib/lpv/sh-gi-sample.glsl"
+    #include "/lib/voxel/wsgi-common.glsl"
+    #include "/lib/voxel/wsgi-sample.glsl"
 #endif
 
 #ifdef EFFECT_TAA_ENABLED
@@ -263,9 +264,9 @@ void main() {
             }
         #endif
 
-        vec3 skyLight_NoLm = sunLight * max(NoL_sun, 0.0) + moonLight * max(NoL_moon, 0.0);
+        vec3 skyLightFinal = sunLight * max(NoL_sun, 0.0) + moonLight * max(NoL_moon, 0.0);
 
-        vec3 skyLightDiffuse = skyLight_NoLm * shadow_sss.rgb * SampleLightDiffuse(NoVm, NoLm, LoHm, roughL);
+        vec3 skyLightDiffuse = skyLightFinal * shadow_sss.rgb * SampleLightDiffuse(NoVm, NoLm, LoHm, roughL);
 
         // SSS
         const float sss_G = 0.24;
@@ -273,27 +274,25 @@ void main() {
         vec3 sss_skyIrradiance = SampleSkyIrradiance(-localTexNormal, lmCoord.y);
 
         float VoL_sun = dot(localViewDir, Scene_LocalSunDir);
-        vec3 sss_phase_sun = max(HG(VoL_sun, sss_G), 0.0) * abs(NoL_sun) * sunLight;
+        vec3 sss_phase_sun = max(DHG(VoL_sun, -0.04, 0.96, 0.06), 0.0) * abs(NoL_sun) * sunLight;
         vec3 sss_phase_moon = max(HG(-VoL_sun, sss_G), 0.0) * abs(NoL_moon) * moonLight;
         vec3 sss_skyLight = shadow_sss.w * (sss_phase_sun + sss_phase_moon)
                           + phaseIso * sss_skyIrradiance * occlusion;
 
-        skyLightDiffuse = mix(skyLightDiffuse, sss_skyLight * PI, sss);
-
-        #ifdef VOXEL_ENABLED
-            vec3 voxelPos = GetVoxelPosition(localPos);
-        #endif
+        skyLightDiffuse = mix(skyLightDiffuse, sss_skyLight * 2.0, sss);
 
         vec3 skyIrradiance = SampleSkyIrradiance(localTexNormal, lmCoord.y);
 
         #ifdef LIGHTING_GI_ENABLED
-            if (IsInVoxelBounds(voxelPos)) {
+            vec3 wsgi_bufferPos = wsgi_getBufferPosition(localPos);
+            wsgi_bufferPos = 0.5*localGeoNormal + wsgi_bufferPos;
+
+            if (wsgi_isInBounds(wsgi_bufferPos)) {
                 #ifdef LIGHTING_GI_SKYLIGHT
                     skyIrradiance = vec3(0.0);
                 #endif
 
-                vec3 voxelSamplePos = 0.5*localGeoNormal + voxelPos;
-                skyIrradiance += sample_gi(voxelSamplePos, localTexNormal);
+                skyIrradiance += wsgi_sample(wsgi_bufferPos, localTexNormal);
             }
         #endif
 
@@ -301,6 +300,10 @@ void main() {
         skyLightDiffuse *= occlusion;
 
         vec3 blockLighting = GetVanillaBlockLight(lmCoord.x, occlusion);
+
+        #ifdef VOXEL_ENABLED
+            vec3 voxelPos = GetVoxelPosition(localPos);
+        #endif
 
         #if LIGHTING_MODE == LIGHT_MODE_RT
             if (IsInVoxelBounds(voxelPos)) {
@@ -389,7 +392,7 @@ void main() {
         vec3 view_F = material_fresnel(albedo.rgb, f0_metal, roughL, NoVm, isWet);
 
         float NoHm = max(dot(localTexNormal, H), 0.0);
-        vec3 specular = skyLight_NoLm * shadow_sss.rgb * SampleLightSpecular(NoLm, NoHm, LoHm, roughL);
+        vec3 specular = skyLightFinal * shadow_sss.rgb * SampleLightSpecular(NoLm, NoHm, LoHm, roughL);
 
         specular += skyReflectColor;
 
@@ -405,6 +408,15 @@ void main() {
 
         #ifdef DEBUG_WHITE_WORLD
             albedo.rgb = WhiteWorld_Value;
+        #endif
+
+        #if DEBUG_VIEW == DEBUG_VIEW_IRRADIANCE && defined(LIGHTING_GI_ENABLED)
+            albedo.rgb = vec3(1.0);
+
+            ivec3 wsgi_samplePos = ivec3(floor(0.5*localGeoNormal + voxelPos)) - WSGI_VoxelOffset;
+
+            if (wsgi_isInBounds(wsgi_samplePos))
+                diffuse = wsgi_sample_nearest(wsgi_samplePos, localTexNormal) * 1000.0;
         #endif
 
 //        float wetnessDarkenF = wetness*porosity;

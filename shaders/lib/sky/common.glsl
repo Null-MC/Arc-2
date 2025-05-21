@@ -1,8 +1,8 @@
 // Units are in megameters.
-const float groundRadiusMM = 6.371;
-const float atmosphereRadiusMM = groundRadiusMM + 0.006;
+const float groundRadiusMM = 12.371;
+const float atmosphereRadiusMM = groundRadiusMM + 0.2;
 
-const vec3 groundAlbedo = vec3(0.3);
+const vec3 groundAlbedo = vec3(0.6);
 
 // These are per megameter.
 const vec3 rayleighScatteringBase = vec3(6.605, 12.344, 29.412);
@@ -22,13 +22,13 @@ float safeacos(const float x) {
 
 vec3 getSkyPosition(const in vec3 localPos) {
     vec3 skyPos = localPos;
-    skyPos.y = max(ap.camera.pos.y + localPos.y - Scene_SkyFogSeaLevel, 0.0);
+    skyPos.y = ap.camera.pos.y + localPos.y - Scene_SkyFogSeaLevel;
     //skyPos /= (ATMOSPHERE_MAX - SKY_SEA_LEVEL);
     skyPos.y *= 10.0;
 
     //skyPos *= (atmosphereRadiusMM - groundRadiusMM);
     skyPos *= 0.000001;
-    skyPos.y += groundRadiusMM;
+    skyPos.y = max(skyPos.y, EPSILON) + groundRadiusMM;
 
     return skyPos;
 }

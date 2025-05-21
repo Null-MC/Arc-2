@@ -131,6 +131,8 @@ option.LIGHTING_GI_SKYLIGHT.comment=More realistic but also still buggy.
 option.LIGHTING_GI_SIZE=Volume Size
 suffix.LIGHTING_GI_SIZE=x³
 
+option.VOXEL_GI_MAXSTEP=Max Trace Steps
+
 
 screen.LIGHTING_REFLECTIONS=Reflections
 
@@ -247,13 +249,13 @@ value.DEBUG_VIEW.1=Material
 value.DEBUG_VIEW.2=Shadows
 value.DEBUG_VIEW.3=SSS
 value.DEBUG_VIEW.4=SSAO
-
-value.DEBUG_VIEW.6=VL
-value.DEBUG_VIEW.7=RT
-value.DEBUG_VIEW.8=Accumulation
-value.DEBUG_VIEW.9=Sky Irradiance
-value.DEBUG_VIEW.10=ShadowMap Color
-value.DEBUG_VIEW.11=ShadowMap Normal
+value.DEBUG_VIEW.5=Volumetric Light
+value.DEBUG_VIEW.6=Ray-Traced Light
+value.DEBUG_VIEW.7=Accumulation
+value.DEBUG_VIEW.8=Sky Irradiance
+value.DEBUG_VIEW.9=ShadowMap Color
+value.DEBUG_VIEW.10=ShadowMap Normal
+value.DEBUG_VIEW.11=Irradiance Cache
 
 option.DEBUG_MATERIAL=Material
 value.DEBUG_MATERIAL.0=Albedo

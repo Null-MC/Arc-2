@@ -63,8 +63,8 @@ uniform sampler3D texFogNoise;
 #endif
 
 #if LIGHTING_MODE == LIGHT_MODE_LPV
-    #include "/lib/voxel/voxel_common.glsl"
-    #include "/lib/lpv/floodfill.glsl"
+    #include "/lib/voxel/voxel-common.glsl"
+    #include "/lib/voxel/floodfill-sample.glsl"
 #endif
 
 

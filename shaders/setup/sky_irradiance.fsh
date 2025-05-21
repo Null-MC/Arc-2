@@ -38,11 +38,15 @@ vec3 CalculateIrradiance(const in vec3 normal) {
     float nrSamples = 0.0;
     vec3 irradiance = vec3(0.0);
 
-    for (float phi = dither1; phi < TAU; phi += sampleDelta) {
+    const ivec2 stepCount = ivec2(vec2(TAU, 0.5*PI) / sampleDelta);
+
+    float phi = dither1;
+    for (int x = 0; x < stepCount.x; x++) {
         float cos_phi = cos(phi);
         float sin_phi = sin(phi);
 
-        for (float theta = dither2; theta < 0.5*PI; theta += sampleDelta) {
+        float theta = dither2;
+        for (int y = 0; y < stepCount.y; y++) {
             // spherical to cartesian (in tangent space)
             float cos_theta = cos(theta);
             float sin_theta = sin(theta);
@@ -72,7 +76,11 @@ vec3 CalculateIrradiance(const in vec3 normal) {
 
             irradiance += skyColor * (cos_theta * sin_theta);
             nrSamples++;
+
+            theta += sampleDelta;
         }
+
+        phi += sampleDelta;
     }
 
     return irradiance / nrSamples;

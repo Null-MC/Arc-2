@@ -20,7 +20,7 @@ uniform sampler3D texFloodFill_alt;
 #include "/lib/buffers/scene.glsl"
 #include "/lib/buffers/voxel-block.glsl"
 
-#include "/lib/voxel/voxel_common.glsl"
+#include "/lib/voxel/voxel-common.glsl"
 #include "/lib/voxel/voxel-sample.glsl"
 
 #include "/lib/utility/hsv.glsl"

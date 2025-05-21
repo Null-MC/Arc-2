@@ -73,6 +73,14 @@ function applySettings(settings : ShaderSettings, internal) {
     defineGlobally("LIGHTING_MODE", settings.Lighting_Mode);
     defineGlobally("LIGHTING_VL_RES", settings.Lighting_VolumetricResolution);
 
+    if (settings.Lighting_GI_Enabled) {
+        defineGlobally1("LIGHTING_GI_ENABLED");
+        defineGlobally("VOXEL_GI_MAXSTEP", settings.Lighting_GI_MaxSteps);
+        defineGlobally("LIGHTING_GI_SIZE", settings.Lighting_GI_BuffserSize);
+        if (settings.Lighting_GI_SkyLight)
+            defineGlobally1("LIGHTING_GI_SKYLIGHT");
+    }
+
     defineGlobally("LIGHTING_REFLECT_MODE", settings.Lighting_ReflectionMode);
     defineGlobally("LIGHTING_REFLECT_MAXSTEP", settings.Lighting_ReflectionStepCount)
     if (settings.Lighting_ReflectionNoise) defineGlobally1("MATERIAL_ROUGH_REFLECT_NOISE");
@@ -110,13 +118,6 @@ function applySettings(settings : ShaderSettings, internal) {
 
         if (settings.Lighting_Mode == LightingModes.FloodFill)
             defineGlobally1("LPV_ENABLED");
-
-        if (settings.Lighting_GI_Enabled) {
-            defineGlobally1("LIGHTING_GI_ENABLED");
-
-            if (settings.Lighting_GI_SkyLight)
-                defineGlobally1("LIGHTING_GI_SKYLIGHT");
-        }
     }
 
     if (settings.Effect_SSAO_Enabled) defineGlobally1("EFFECT_SSAO_ENABLED");
@@ -145,6 +146,9 @@ export function setupShader() {
     const settings = new ShaderSettings();
     const internal = settings.BuildInternalSettings();
     applySettings(settings, internal);
+
+    addTag(0, new NamespacedId("minecraft", "leaves"))
+    defineGlobally("TAG_LEAVES", "0u");
 
     setLightColorEx("#362b21", "brown_mushroom");
     setLightColorEx("#f39849", "campfire");
@@ -529,7 +533,7 @@ export function setupShader() {
     let shLpvBuffer_alt: BuiltBuffer | null = null;
     if (settings.Lighting_GI_Enabled) {
         // f16vec4[3] * VoxelBufferSize^3
-        const bufferSize = 48 * cubed(settings.Voxel_Size);
+        const bufferSize = 48 * cubed(settings.Lighting_GI_BuffserSize);
 
         shLpvBuffer = new GPUBuffer(bufferSize)
             .clear(false)
@@ -627,8 +631,8 @@ export function setupShader() {
         .build());
 
     if (settings.Lighting_GI_Enabled) {
-        registerShader(Stage.SCREEN_SETUP, new Compute("sh-gi-clear")
-            .location("setup/sh-gi-clear.csh")
+        registerShader(Stage.SCREEN_SETUP, new Compute("wsgi-clear")
+            .location("setup/wsgi-clear.csh")
             .workGroups(8, 8, 8)
             .ssbo(1, shLpvBuffer)
             .ssbo(2, shLpvBuffer_alt)
@@ -819,11 +823,11 @@ export function setupShader() {
     }
 
     if (settings.Lighting_GI_Enabled) {
-        const groupCount = Math.ceil(settings.Voxel_Size / 8);
+        const wsgi_groupCount = Math.ceil(settings.Lighting_GI_BuffserSize / 8);
 
         const shader = new Compute("global-illumination")
             .location("composite/global-illumination.csh")
-            .workGroups(groupCount, groupCount, groupCount)
+            .workGroups(wsgi_groupCount, wsgi_groupCount, wsgi_groupCount)
             .define("RENDER_COMPUTE", "1")
             .ssbo(0, sceneBuffer)
             .ssbo(1, shLpvBuffer)

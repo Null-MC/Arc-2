@@ -66,6 +66,7 @@ export function setupOptions() {
             .add(asBool("LIGHTING_GI_ENABLED", true, true))
             .add(asBool("LIGHTING_GI_SKYLIGHT", false, true))
             .add(asInt("LIGHTING_GI_SIZE", 64, 128, 256).build(64))
+            .add(asIntRange("VOXEL_GI_MAXSTEP", 4, 2, 32, 2, true))
             .build())
         .add(EMPTY)
         .add(new Page("LIGHTING_REFLECTIONS")
@@ -122,8 +123,8 @@ export function setupOptions() {
         .build();
 
     const screen_Debug = new Page("DEBUG")
-        .add(asString("DEBUG_VIEW", 'None', 'Material', 'Shadows', 'SSS', 'SSAO', 'Volumetric Lighting', 'Ray-Traced Lighting', 'Accumulation', 'Sky Irradiance', 'ShadowMap Color', 'ShadowMap Normal').needsReload(true).build('None'))
-        .add(asString("DEBUG_MATERIAL", 'Albedo', 'Geo-Normal', 'Tex-Normal', 'Occlusion', 'Roughness', 'F0/Metal', 'Porosity', 'SSS', 'Emission', 'LightMap').needsReload(true).build('Albedo'))
+        .add(asStringRange("DEBUG_VIEW", 0, 0, 11, true))
+        .add(asStringRange("DEBUG_MATERIAL", 0, 0, 9, true))
         .add(asBool("DEBUG_TRANSLUCENT", false, true))
         .add(EMPTY)
         .add(asBool("DEBUG_WHITE_WORLD", false, true))
@@ -145,8 +146,12 @@ function asIntRange(keyName: String, defaultValue: Number, valueMin: Number, val
 
 function asFloatRange(keyName: String, defaultValue: Number, valueMin: Number, valueMax: Number, interval: Number, reload: Boolean = true) {
     const values = getValueRange(valueMin, valueMax, interval);
-
     return asFloat(keyName, ...values).needsReload(reload).build(defaultValue);
+}
+
+function asStringRange(keyName: String, defaultValue: Number, valueMin: Number, valueMax: Number, reload: Boolean = true) {
+    const values = getValueRange(valueMin, valueMax, 1);
+    return asString(keyName, ...values.map(v => v.toString())).needsReload(reload).build(defaultValue.toString());
 }
 
 function getValueRange(valueMin, valueMax, interval) {

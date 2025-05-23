@@ -35,15 +35,11 @@ int getSharedCoord(ivec3 pos) {
 }
 
 ivec3 GetVoxelFrameOffset() {
-    vec3 viewDir = ap.camera.viewInv[2].xyz;
-    vec3 posNow = GetVoxelCenter(ap.camera.pos, viewDir);
+    vec3 posNow = GetVoxelCenter(ap.camera.pos, ap.camera.viewInv[2].xyz);
+    vec3 posPrev = GetVoxelCenter(ap.temporal.pos, ap.temporal.viewInv[2].xyz);
 
-    vec3 viewDirPrev = vec3(ap.temporal.view[0].z, ap.temporal.view[1].z, ap.temporal.view[2].z);
-    vec3 posPrev = GetVoxelCenter(ap.temporal.pos, viewDirPrev);
-
-    vec3 posLast = posNow + (ap.temporal.pos - ap.camera.pos) - (posPrev - posNow);
-
-    return ivec3(posNow) - ivec3(posLast);
+    vec3 posLast = fract(posNow) + (ap.temporal.pos - posPrev) - (ap.camera.pos - posNow);
+    return ivec3(floor(posLast));
 }
 
 vec3 sample_floodfill_prev(in ivec3 texCoord) {
@@ -56,13 +52,13 @@ vec3 sample_floodfill_prev(in ivec3 texCoord) {
 		: imageLoad(imgFloodFill_alt, texCoord).rgb;
 
 	vec3 hsv = RgbToHsv(lpvSample);
-	hsv.z = pow(6.0, hsv.z * LpvBlockRange) - 1.0;
+	hsv.z = exp2(hsv.z * LpvBlockRange) - 1.0;
 	lpvSample = HsvToRgb(hsv);
 
 	return lpvSample;
 }
 
-void populateShared(const in ivec3 voxelFrameOffset) {
+void populateShared() {
 	uint i1 = uint(gl_LocalInvocationIndex) * 2u;
 	if (i1 >= 1000u) return;
 
@@ -72,11 +68,9 @@ void populateShared(const in ivec3 voxelFrameOffset) {
 	ivec3 pos1 = workGroupOffset + ivec3(i1 / flattenShared) % 10;
 	ivec3 pos2 = workGroupOffset + ivec3(i2 / flattenShared) % 10;
 
-	ivec3 lpvPos_prev1 = pos1 + voxelFrameOffset;
-	ivec3 lpvPos_prev2 = pos2 + voxelFrameOffset;
-
-	floodfillBuffer[i1] = sample_floodfill_prev(lpvPos_prev1);
-	floodfillBuffer[i2] = sample_floodfill_prev(lpvPos_prev2);
+	ivec3 voxelFrameOffset = GetVoxelFrameOffset();
+	floodfillBuffer[i1] = sample_floodfill_prev(pos1 - voxelFrameOffset);
+	floodfillBuffer[i2] = sample_floodfill_prev(pos2 - voxelFrameOffset);
 
 	uint blockId1 = 0u;
 	uint blockId2 = 0u;
@@ -131,9 +125,7 @@ void main() {
 	uvec3 chunkPos = gl_WorkGroupID * gl_WorkGroupSize;
 	if (any(greaterThanEqual(chunkPos, VoxelBufferSize))) return;
 
-	ivec3 voxelFrameOffset = GetVoxelFrameOffset();
-
-	populateShared(voxelFrameOffset);
+	populateShared();
 	barrier();
 
 	ivec3 cellIndex = ivec3(gl_GlobalInvocationID);
@@ -141,9 +133,9 @@ void main() {
 
 	bool altFrame = ap.time.frames % 2 == 1;
 
-    vec3 viewDir = ap.camera.viewInv[2].xyz;
-    vec3 voxelCenter = GetVoxelCenter(ap.camera.pos, viewDir);
-    vec3 localPos = cellIndex - voxelCenter + 0.5;
+    //vec3 viewDir = ap.camera.viewInv[2].xyz;
+    //vec3 voxelCenter = GetVoxelCenter(ap.camera.pos, viewDir);
+    vec3 localPos = GetVoxelLocalPos(cellIndex) + 0.5;
 
 	ivec3 localCellIndex = ivec3(gl_LocalInvocationID);
 	int sharedCoord = getSharedCoord(localCellIndex + 1);
@@ -184,12 +176,12 @@ void main() {
 
 	if (lightRange > 0) {
 		vec3 hsv = RgbToHsv(lightColor);
-		hsv.z = pow(6.0, (1.0/15.0) * lightRange) - 1.0;
+		hsv.z = exp2((1.0/15.0) * lightRange) - 1.0;
 		accumLight += HsvToRgb(hsv);
 	}
 
 	vec3 hsv = RgbToHsv(accumLight);
-	hsv.z = log6(hsv.z + 1.0) / LpvBlockRange;
+	hsv.z = log2(hsv.z + 1.0) / LpvBlockRange;
 	accumLight = HsvToRgb(hsv);
 
 	if (altFrame) imageStore(imgFloodFill_alt, cellIndex, vec4(accumLight, 1.0));

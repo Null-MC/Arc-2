@@ -284,16 +284,16 @@ void main() {
         vec3 skyIrradiance = SampleSkyIrradiance(localTexNormal, lmCoord.y);
 
         #ifdef LIGHTING_GI_ENABLED
-            vec3 wsgi_bufferPos = wsgi_getBufferPosition(localPos);
-            wsgi_bufferPos = 0.5*localGeoNormal + wsgi_bufferPos;
+            vec3 wsgi_localPos = 0.5*localGeoNormal + localPos;
 
-            if (wsgi_isInBounds(wsgi_bufferPos)) {
-                #ifdef LIGHTING_GI_SKYLIGHT
+            #ifdef LIGHTING_GI_SKYLIGHT
+                vec3 wsgi_bufferPos = wsgi_getBufferPosition(wsgi_localPos, WSGI_CASCADE_COUNT-1);
+
+                if (wsgi_isInBounds(wsgi_bufferPos))
                     skyIrradiance = vec3(0.0);
-                #endif
+            #endif
 
-                skyIrradiance += wsgi_sample(wsgi_bufferPos, localTexNormal);
-            }
+            skyIrradiance += wsgi_sample(wsgi_localPos, localTexNormal);
         #endif
 
         skyLightDiffuse += skyIrradiance;
@@ -413,10 +413,24 @@ void main() {
         #if DEBUG_VIEW == DEBUG_VIEW_IRRADIANCE && defined(LIGHTING_GI_ENABLED)
             albedo.rgb = vec3(1.0);
 
-            ivec3 wsgi_samplePos = ivec3(floor(0.5*localGeoNormal + voxelPos)) - WSGI_VoxelOffset;
+            {
+                int wsgi_cascade = -1;
+                ivec3 wsgi_bufferPos_n;
 
-            if (wsgi_isInBounds(wsgi_samplePos))
-                diffuse = wsgi_sample_nearest(wsgi_samplePos, localTexNormal) * 1000.0;
+                for (int i = 0; i < WSGI_CASCADE_COUNT; i++) {
+                    vec3 wsgi_localPos = 0.25*localGeoNormal + localPos;
+                    vec3 wsgi_bufferPos = wsgi_getBufferPosition(wsgi_localPos, i+WSGI_SCALE_BASE);
+                    wsgi_bufferPos_n = ivec3(floor(wsgi_bufferPos));
+
+                    if (wsgi_isInBounds(wsgi_bufferPos_n)) {
+                        wsgi_cascade = i;
+                        break;
+                    }
+                }
+
+                if (wsgi_cascade >= 0)
+                    diffuse = wsgi_sample_nearest(wsgi_bufferPos_n, localTexNormal, wsgi_cascade) * 1000.0;
+            }
         #endif
 
 //        float wetnessDarkenF = wetness*porosity;

@@ -76,9 +76,18 @@ function applySettings(settings : ShaderSettings, internal) {
     if (settings.Lighting_GI_Enabled) {
         defineGlobally1("LIGHTING_GI_ENABLED");
         defineGlobally("VOXEL_GI_MAXSTEP", settings.Lighting_GI_MaxSteps);
+        defineGlobally("WSGI_CASCADE_COUNT", settings.Lighting_GI_CascadeCount);
         defineGlobally("LIGHTING_GI_SIZE", settings.Lighting_GI_BuffserSize);
+        defineGlobally("VOXEL_GI_MAXFRAMES", settings.Lighting_GI_MaxFrames);
+
         if (settings.Lighting_GI_SkyLight)
             defineGlobally1("LIGHTING_GI_SKYLIGHT");
+
+        defineGlobally("WSGI_SCALE_BASE", settings.Lighting_GI_BaseScale);
+
+        const scaleF = Math.max(settings.Lighting_GI_BaseScale + settings.Lighting_GI_CascadeCount - 2, 0);
+        const snapScale = Math.pow(2, scaleF);
+        defineGlobally("WSGI_SNAP_SCALE", snapScale);
     }
 
     defineGlobally("LIGHTING_REFLECT_MODE", settings.Lighting_ReflectionMode);
@@ -137,6 +146,11 @@ function applySettings(settings : ShaderSettings, internal) {
     }
 }
 
+function mapTag(index: number, name: string, namespace: NamespacedId) {
+    addTag(index, namespace);
+    defineGlobally(name, index);
+}
+
 export function setupShader() {
     print("Setting up shader");
 
@@ -147,8 +161,41 @@ export function setupShader() {
     const internal = settings.BuildInternalSettings();
     applySettings(settings, internal);
 
-    addTag(0, new NamespacedId("minecraft", "leaves"))
-    defineGlobally("TAG_LEAVES", "0u");
+    mapTag(0, "TAG_LEAVES", new NamespacedId("minecraft", "leaves"))
+    mapTag(1, "TAG_GLASS", createTag(new NamespacedId("arc", "glass"),
+        new NamespacedId("tinted_glass"),
+        new NamespacedId("white_stained_glass"),
+        new NamespacedId("white_stained_glass_pane"),
+        new NamespacedId("light_gray_stained_glass"),
+        new NamespacedId("light_gray_stained_glass_pane"),
+        new NamespacedId("gray_stained_glass"),
+        new NamespacedId("gray_stained_glass_pane"),
+        new NamespacedId("black_stained_glass"),
+        new NamespacedId("black_stained_glass_pane"),
+        new NamespacedId("brown_stained_glass"),
+        new NamespacedId("brown_stained_glass_pane"),
+        new NamespacedId("red_stained_glass"),
+        new NamespacedId("red_stained_glass"),
+        new NamespacedId("orange_stained_glass"),
+        new NamespacedId("orange_stained_glass_pane"),
+        new NamespacedId("yellow_stained_glass"),
+        new NamespacedId("yellow_stained_glass_pane"),
+        new NamespacedId("lime_stained_glass"),
+        new NamespacedId("lime_stained_glass_pane"),
+        new NamespacedId("green_stained_glass"),
+        new NamespacedId("green_stained_glass_pane"),
+        new NamespacedId("cyan_stained_glass"),
+        new NamespacedId("cyan_stained_glass_pane"),
+        new NamespacedId("light_blue_stained_glass"),
+        new NamespacedId("light_blue_stained_glass_pane"),
+        new NamespacedId("blue_stained_glass"),
+        new NamespacedId("blue_stained_glass_pane"),
+        new NamespacedId("purple_stained_glass"),
+        new NamespacedId("purple_stained_glass_pane"),
+        new NamespacedId("magenta_stained_glass"),
+        new NamespacedId("magenta_stained_glass_pane"),
+        new NamespacedId("pink_stained_glass"),
+        new NamespacedId("pink_stained_glass_pane")));
 
     setLightColorEx("#362b21", "brown_mushroom");
     setLightColorEx("#f39849", "campfire");
@@ -533,7 +580,7 @@ export function setupShader() {
     let shLpvBuffer_alt: BuiltBuffer | null = null;
     if (settings.Lighting_GI_Enabled) {
         // f16vec4[3] * VoxelBufferSize^3
-        const bufferSize = 48 * cubed(settings.Lighting_GI_BuffserSize);
+        const bufferSize = 48 * cubed(settings.Lighting_GI_BuffserSize) * settings.Lighting_GI_CascadeCount;
 
         shLpvBuffer = new GPUBuffer(bufferSize)
             .clear(false)
@@ -823,25 +870,31 @@ export function setupShader() {
     }
 
     if (settings.Lighting_GI_Enabled) {
-        const wsgi_groupCount = Math.ceil(settings.Lighting_GI_BuffserSize / 8);
+        const groupCount = Math.ceil(settings.Lighting_GI_BuffserSize / 8);
 
-        const shader = new Compute("global-illumination")
-            .location("composite/global-illumination.csh")
-            .workGroups(wsgi_groupCount, wsgi_groupCount, wsgi_groupCount)
-            .define("RENDER_COMPUTE", "1")
-            .ssbo(0, sceneBuffer)
-            .ssbo(1, shLpvBuffer)
-            .ssbo(2, shLpvBuffer_alt)
-            .ssbo(5, blockFaceBuffer)
-            .ubo(0, SceneSettingsBuffer);
+        for (let i = settings.Lighting_GI_CascadeCount-1; i >= 0; i--) {
+            let shader = new Compute(`global-illumination-${i+1}`)
+                .location("composite/global-illumination.csh")
+                .workGroups(groupCount, groupCount, groupCount)
+                .define("RENDER_COMPUTE", "1")
+                .define("WSGI_VOXEL_SCALE", (i + settings.Lighting_GI_BaseScale).toString())
+                .define("WSGI_CASCADE", i.toString())
+                .ssbo(0, sceneBuffer)
+                .ssbo(1, shLpvBuffer)
+                .ssbo(2, shLpvBuffer_alt)
+                .ssbo(5, blockFaceBuffer)
+                .ubo(0, SceneSettingsBuffer);
 
-        if (settings.Lighting_Mode == LightingModes.RayTraced) {
+            if (settings.Lighting_Mode == LightingModes.RayTraced) {
+                registerBarrier(Stage.POST_RENDER, new MemoryBarrier(SSBO_BIT));
+
+                shader.ssbo(3, lightListBuffer);
+            }
+
             registerBarrier(Stage.POST_RENDER, new MemoryBarrier(SSBO_BIT));
 
-            shader.ssbo(3, lightListBuffer);
+            registerShader(Stage.POST_RENDER, shader.build());
         }
-
-        registerShader(Stage.POST_RENDER, shader.build());
     }
 
     if (settings.Shadow_Enabled) {

@@ -128,10 +128,15 @@ option.LIGHTING_GI_ENABLED.comment=Allows light to bounce, for more realistic am
 option.LIGHTING_GI_SKYLIGHT=Include Sky Lighting
 option.LIGHTING_GI_SKYLIGHT.comment=More realistic but also still buggy.
 
+option.LIGHTING_GI_CASCADES=Number of Cascades
+
 option.LIGHTING_GI_SIZE=Volume Size
 suffix.LIGHTING_GI_SIZE=x³
 
-option.VOXEL_GI_MAXSTEP=Max Trace Steps
+option.VOXEL_GI_MAXFRAMES=Frame Count
+option.VOXEL_GI_MAXFRAMES.comment=The number of frames to accumulate. Higher values will provide smoother results, but changes in lighting will take longer to apply.
+
+option.VOXEL_GI_MAXSTEP=Trace Steps
 
 
 screen.LIGHTING_REFLECTIONS=Reflections

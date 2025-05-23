@@ -58,6 +58,9 @@ export class ShaderSettings {
     get Lighting_GI_SkyLight(): boolean {return this.getCachedBoolSetting("LIGHTING_GI_SKYLIGHT");}
     get Lighting_GI_MaxSteps(): number {return this.getCachedIntSetting("VOXEL_GI_MAXSTEP");}
     get Lighting_GI_BuffserSize(): number {return this.getCachedIntSetting("LIGHTING_GI_SIZE");}
+    get Lighting_GI_CascadeCount(): number {return this.getCachedIntSetting("LIGHTING_GI_CASCADES");}
+    get Lighting_GI_MaxFrames(): number {return this.getCachedIntSetting("VOXEL_GI_MAXFRAMES");}
+    get Lighting_GI_BaseScale(): number {return 0;}
     get Lighting_PenumbraSize(): number {return this.getCachedIntSetting("LIGHT_TRACE_PENUMBRA");}
     get Lighting_TraceSampleCount(): number {return this.getCachedIntSetting("RT_MAX_SAMPLE_COUNT");}
     get Lighting_TraceLightMax(): number {return this.getCachedIntSetting("RT_MAX_LIGHT_COUNT");}

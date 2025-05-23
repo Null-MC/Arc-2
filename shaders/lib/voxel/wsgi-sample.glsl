@@ -16,10 +16,10 @@ vec3 wsgi_sample_voxel(const in lpvShVoxel voxel, const in vec3 sampleDir) {
 	return color;
 }
 
-vec3 wsgi_sample_nearest(const in ivec3 bufferPos, const in vec3 sampleDir) {
+vec3 wsgi_sample_nearest(const in ivec3 bufferPos, const in vec3 sampleDir, const in int cascade) {
 	if (!wsgi_isInBounds(bufferPos)) return vec3(0.0);
 
-	int i = wsgi_getBufferIndex(bufferPos);
+	int i = wsgi_getBufferIndex(bufferPos, cascade);
 	bool altFrame = ap.time.frames % 2 == 1;
 
 	lpvShVoxel sh_voxel;
@@ -29,23 +29,23 @@ vec3 wsgi_sample_nearest(const in ivec3 bufferPos, const in vec3 sampleDir) {
 	return wsgi_sample_voxel(sh_voxel, sampleDir);
 }
 
-vec3 wsgi_sample_linear(const in vec3 bufferPos, const in vec3 sampleDir) {
+vec3 wsgi_sample_linear(const in vec3 bufferPos, const in vec3 sampleDir, const in int cascade) {
 	ivec3 voxelPos_nn = ivec3(bufferPos - 0.5);
 	vec3 f = fract(bufferPos - 0.5);
 
-	vec3 sample_x00 = wsgi_sample_nearest(voxelPos_nn,                sampleDir);
-	vec3 sample_x01 = wsgi_sample_nearest(voxelPos_nn + ivec3(0,1,0), sampleDir);
-	vec3 sample_x10 = wsgi_sample_nearest(voxelPos_nn + ivec3(1,0,0), sampleDir);
-	vec3 sample_x11 = wsgi_sample_nearest(voxelPos_nn + ivec3(1,1,0), sampleDir);
+	vec3 sample_x00 = wsgi_sample_nearest(voxelPos_nn,                sampleDir, cascade);
+	vec3 sample_x01 = wsgi_sample_nearest(voxelPos_nn + ivec3(0,1,0), sampleDir, cascade);
+	vec3 sample_x10 = wsgi_sample_nearest(voxelPos_nn + ivec3(1,0,0), sampleDir, cascade);
+	vec3 sample_x11 = wsgi_sample_nearest(voxelPos_nn + ivec3(1,1,0), sampleDir, cascade);
 
 	vec3 sample_y0 = mix(sample_x00, sample_x01, f.y);
 	vec3 sample_y1 = mix(sample_x10, sample_x11, f.y);
 	vec3 sample_z0 = mix(sample_y0, sample_y1, f.x);
 
-	sample_x00 = wsgi_sample_nearest(voxelPos_nn + ivec3(0,0,1), sampleDir);
-	sample_x01 = wsgi_sample_nearest(voxelPos_nn + ivec3(0,1,1), sampleDir);
-	sample_x10 = wsgi_sample_nearest(voxelPos_nn + ivec3(1,0,1), sampleDir);
-	sample_x11 = wsgi_sample_nearest(voxelPos_nn + ivec3(1,1,1), sampleDir);
+	sample_x00 = wsgi_sample_nearest(voxelPos_nn + ivec3(0,0,1), sampleDir, cascade);
+	sample_x01 = wsgi_sample_nearest(voxelPos_nn + ivec3(0,1,1), sampleDir, cascade);
+	sample_x10 = wsgi_sample_nearest(voxelPos_nn + ivec3(1,0,1), sampleDir, cascade);
+	sample_x11 = wsgi_sample_nearest(voxelPos_nn + ivec3(1,1,1), sampleDir, cascade);
 
 	sample_y0 = mix(sample_x00, sample_x01, f.y);
 	sample_y1 = mix(sample_x10, sample_x11, f.y);
@@ -54,6 +54,22 @@ vec3 wsgi_sample_linear(const in vec3 bufferPos, const in vec3 sampleDir) {
 	return mix(sample_z0, sample_z1, f.z);
 }
 
-vec3 wsgi_sample(const in vec3 voxelPos, const in vec3 sampleDir) {
-	return wsgi_sample_linear(voxelPos, sampleDir) * 1000.0;
+vec3 wsgi_sample(const in vec3 localPos, const in vec3 sampleDir) {
+	int wsgi_cascade = -1;
+	vec3 wsgi_bufferPos;
+
+	for (int i = 0; i < WSGI_CASCADE_COUNT; i++) {
+		wsgi_bufferPos = wsgi_getBufferPosition(localPos, i+WSGI_SCALE_BASE);
+
+		if (wsgi_isInBounds(wsgi_bufferPos)) {
+			wsgi_cascade = i;
+			break;
+		}
+	}
+
+	vec3 color = vec3(0.0);
+	if (wsgi_cascade >= 0)
+		color = wsgi_sample_linear(wsgi_bufferPos, sampleDir, wsgi_cascade) * 1000.0;
+
+	return color;
 }

@@ -288,16 +288,16 @@ void main() {
         vec3 skyIrradiance = SampleSkyIrradiance(localTexNormal, lmCoord.y);
 
         #ifdef LIGHTING_GI_ENABLED
-            vec3 wsgi_bufferPos = wsgi_getBufferPosition(localPosTrans);
-            wsgi_bufferPos = 0.5*localGeoNormal + wsgi_bufferPos;
+            vec3 wsgi_localPos = 0.5*localGeoNormal + localPosTrans;
 
-            if (wsgi_isInBounds(wsgi_bufferPos)) {
-                #ifdef LIGHTING_GI_SKYLIGHT
+            #ifdef LIGHTING_GI_SKYLIGHT
+                vec3 wsgi_bufferPos = wsgi_getBufferPosition(wsgi_localPos, WSGI_CASCADE_COUNT-1);
+
+                if (wsgi_isInBounds(wsgi_bufferPos))
                     skyIrradiance = vec3(0.0);
-                #endif
+            #endif
 
-                skyIrradiance += wsgi_sample(wsgi_bufferPos, localTexNormal);
-            }
+            skyIrradiance += wsgi_sample(wsgi_localPos, localTexNormal);
         #endif
 
         skyLightDiffuse += skyIrradiance;

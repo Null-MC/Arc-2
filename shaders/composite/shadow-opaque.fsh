@@ -18,6 +18,7 @@ uniform usampler2D texDeferredOpaque_Data;
 
 #include "/lib/noise/ign.glsl"
 #include "/lib/sampling/depth.glsl"
+#include "/lib/light/volumetric.glsl"
 
 #include "/lib/shadow/csm.glsl"
 #include "/lib/shadow/sample.glsl"
@@ -61,6 +62,16 @@ void main() {
         
         if (saturate(shadowPos) == shadowPos) {
             shadowFinal *= SampleShadowColor_PCSS(shadowPos, shadowCascade);
+
+            float shadowRange = GetShadowRange(shadowCascade);
+            vec3 shadowCoord = vec3(shadowPos.xy, shadowCascade);
+            float depthOpaque = textureLod(solidShadowMap, shadowCoord, 0).r;
+            float depthTrans = textureLod(shadowMap, shadowCoord, 0).r;
+            float waterDepth = max(depthOpaque - depthTrans, 0.0) * shadowRange;
+
+            // TODO: apply absorption!
+            if (waterDepth > 0.0)
+                shadowFinal *= exp(-4.0 * waterDepth * VL_WaterTransmit * VL_WaterDensity);
 
             // SSS
             vec4 data_a = unpackUnorm4x8(data.g);

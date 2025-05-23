@@ -462,11 +462,16 @@ void main() {
                 vec3 reflect_skyIrradiance = SampleSkyIrradiance(reflect_localTexNormal, reflect_lmcoord.y);
 
                 #ifdef LIGHTING_GI_ENABLED
-                    vec3 reflect_wsgi_bufferPos = wsgi_getBufferPosition(reflect_localPos);
-                    reflect_wsgi_bufferPos = 0.5*reflect_geoNormal + reflect_wsgi_bufferPos;
+                    vec3 reflect_wsgi_localPos = 0.5*reflect_geoNormal + reflect_localPos;
 
-                    //if (wsgi_isInBounds(reflect_wsgi_bufferPos))
-                        reflect_skyIrradiance += wsgi_sample(reflect_wsgi_bufferPos, reflect_localTexNormal);
+                    #ifdef LIGHTING_GI_SKYLIGHT
+                        vec3 reflect_wsgi_bufferPos = wsgi_getBufferPosition(reflect_wsgi_localPos, WSGI_CASCADE_COUNT-1);
+
+                        if (wsgi_isInBounds(reflect_wsgi_bufferPos))
+                            reflect_skyIrradiance = vec3(0.0);
+                    #endif
+
+                    reflect_skyIrradiance += wsgi_sample(reflect_wsgi_localPos, reflect_localTexNormal);
                 #endif
 
                 reflect_diffuse += reflect_skyIrradiance;
@@ -567,14 +572,15 @@ void main() {
                 #ifdef LIGHTING_GI_ENABLED
                     // TODO: get inner reflection vector and use for SH lookup
 
-                    vec3 wsgi_bufferPos = reflect_voxelPos + (VoxelBufferCenter - WSGI_BufferCenter);
+                    //vec3 wsgi_bufferPos = reflect_voxelPos + (VoxelBufferCenter - WSGI_BufferCenter);
+                    vec3 wsgi_localPos = 0.25*reflect_geoNormal + reflect_localPos;
 
-                    if (wsgi_isInBounds(wsgi_bufferPos)) {
+                    //if (wsgi_isInBounds(wsgi_bufferPos)) {
                         vec3 reflect_reflectDir = reflect(reflectLocalDir, reflect_localTexNormal);
 
-                        vec3 reflect_irradiance = wsgi_sample(wsgi_bufferPos, reflect_reflectDir);
+                        vec3 reflect_irradiance = wsgi_sample(wsgi_localPos, reflect_reflectDir);
                         reflect_specular += reflect_irradiance; // * S * reflect_tint;
-                    }
+                    //}
                 #endif
 
                 const bool reflect_isWet = false;

@@ -99,21 +99,38 @@ void main() {
                     #ifdef VOXEL_BLOCK_FACE
                         // TODO: average face properties?
 
-                        bool doVoxelize = vIn[0].blockId > 0u;
-                        uint blockMapId = iris_getCustomId(vIn[0].blockId);
-                        if (blockMapId == BLOCK_GRASS && abs(vIn[0].localNormal.y) < 0.5 && any(lessThan(vIn[0].color.rgb, vec3(1.0)))) doVoxelize = false;
+                        if (vIn[0].blockId > 0u && vIn[0].currentCascade == VOXEL_SHADOW_CASCADE) {
+                            bool doVoxelize = iris_isFullBlock(vIn[0].blockId);
 
-                        if (doVoxelize && vIn[0].currentCascade == VOXEL_SHADOW_CASCADE) {
-                            VoxelBlockFace blockFace;
-                            blockFace.tex_id = vIn[0].textureId;
-                            blockFace.data = 0u;
+                            uint blockMapId = iris_getCustomId(vIn[0].blockId);
+                            if (blockMapId == BLOCK_GRASS && abs(vIn[0].localNormal.y) < 0.5 && any(lessThan(vIn[0].color.rgb, vec3(1.0))))
+                                doVoxelize = false;
 
-                            SetBlockFaceTint(blockFace.data, vIn[0].color.rgb);
-                            SetBlockFaceLightMap(blockFace.data, vIn[0].lmcoord);
+                            bool isCarpetTop = iris_hasTag(vIn[0].blockId, TAG_CARPET) && vIn[0].localNormal.y > 0.5;
+                            if (isCarpetTop) doVoxelize = true;
 
-                            int blockFaceIndex = GetVoxelBlockFaceIndex(vIn[0].localNormal);
-                            int blockFaceMapIndex = GetVoxelBlockFaceMapIndex(ivec3(voxelPos), blockFaceIndex);
-                            VoxelBlockFaceMap[blockFaceMapIndex] = blockFace;
+                            if (iris_hasTag(vIn[0].blockId, TAG_LEAVES)) doVoxelize = true;
+
+                            if (doVoxelize) {
+                                ivec3 blockPos = ivec3(voxelPos);
+
+                                VoxelBlockFace blockFace;
+                                blockFace.tex_id = vIn[0].textureId;
+                                blockFace.data = 0u;
+
+                                // TODO: if snow layer/carpet, write to voxel below
+                                if (isCarpetTop) {
+                                    //blockFace.tex_id = 0u;
+                                    blockPos.y--;
+                                }
+
+                                SetBlockFaceTint(blockFace.data, vIn[0].color.rgb);
+                                SetBlockFaceLightMap(blockFace.data, vIn[0].lmcoord);
+
+                                int blockFaceIndex = GetVoxelBlockFaceIndex(vIn[0].localNormal);
+                                int blockFaceMapIndex = GetVoxelBlockFaceMapIndex(blockPos, blockFaceIndex);
+                                VoxelBlockFaceMap[blockFaceMapIndex] = blockFace;
+                            }
                         }
                     #endif
                 #endif

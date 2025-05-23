@@ -91,7 +91,7 @@ layout (std140, binding = 0) uniform SceneSettings {
 	float Effect_Bloom_Strength;
 	float Scene_PostExposureMin;
 	float Scene_PostExposureMax;
-	float Scene_PostExposureRange;
+	float Scene_PostExposureRange; // TODO: remove
 	float Scene_PostExposureSpeed;
 	float Post_Tonemap_Contrast;
 	float Post_Tonemap_LinearStart;

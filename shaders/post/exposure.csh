@@ -50,14 +50,17 @@ void main() {
 		float weightedLogAverage = (histogramShared[0] / max(nonBlackPixelCount, 1.0)) - 1.0;
 
 		// Map from our histogram space to actual luminance
-		float weightedAvgLum = 255.0 * exp((weightedLogAverage * Exposure_logLumRange) + Scene_PostExposureMin);
+		float weightedAvgLum = exp2((weightedLogAverage/254.0 * Exposure_logLumRange) + Scene_PostExposureMin);
+		float adaptedLum = weightedAvgLum;
 
-	    float lumLastFrame = clamp(Scene_AvgExposure, Scene_PostExposureMin, Scene_PostExposureMax);
-		float Exposure_timeCoeff = min(Scene_PostExposureSpeed * ap.time.delta, 1.0);//(1.0 - exp(-ap.time.delta * Scene_PostExposureSpeed));
+		// do not mix if first rendered frame
+		if (ap.time.frames != 0) {
+			float lumLastFrame = clamp(Scene_AvgExposure, 0.0, 255.0);
+			//float Exposure_timeCoeff = min(Scene_PostExposureSpeed * ap.time.delta, 1.0);//(1.0 - exp(-ap.time.delta * Scene_PostExposureSpeed));
 
-		float adaptedLum = lumLastFrame + (weightedAvgLum - lumLastFrame) * saturate(Exposure_timeCoeff);
-
-		if (ap.time.frames == 0) adaptedLum = weightedAvgLum;
+			float timeF = 1.0 - exp(-max(Scene_PostExposureSpeed * ap.time.delta, 1.0e-12));
+			adaptedLum = lumLastFrame + (weightedAvgLum - lumLastFrame) * timeF;
+		}
 
 		Scene_AvgExposure = adaptedLum;
 	}

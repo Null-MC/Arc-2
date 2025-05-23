@@ -234,6 +234,9 @@ void main() {
 
                     sunSkyLight *= cloud_shadowSun;
                     moonSkyLight *= cloud_shadowMoon;
+
+//                    if (cloudDensity > EPSILON)
+//                        vs_shadowF *= exp(-cloudDensity);
                 }
 
 //                if (sign(sampleHeight - cloudHeight2) != sign(heightLast - cloudHeight2)) {
@@ -270,7 +273,7 @@ void main() {
                 }
 
                 if (shadowDensity > 0.0) {
-                    vs_shadowF = exp(-VL_ShadowTransmit * shadowDensity);
+                    vs_shadowF *= exp(-VL_ShadowTransmit * shadowDensity);
                     shadowSample *= vs_shadowF;
                 }
             #endif
@@ -315,7 +318,7 @@ void main() {
             sampleTransmittance = exp(-extinction * stepDist);
 
             vec3 psiMS = getValFromMultiScattLUT(texSkyMultiScatter, skyPos, Scene_LocalSunDir) + Sky_MinLight;
-            psiMS *= Scene_SkyBrightnessSmooth * vs_shadowF;
+            psiMS *= 0.2 * Scene_SkyBrightnessSmooth * vs_shadowF;
 
             //vec3 rayleighInScattering = rayleighScattering * (rayleighPhaseValue * sunSkyLight * shadowSample + psiMS + sampleLit);
             vec3 mieSkyLight = miePhase_sun * sunSkyLight + miePhase_moon * moonSkyLight;

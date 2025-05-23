@@ -161,8 +161,31 @@ export function setupShader() {
     const internal = settings.BuildInternalSettings();
     applySettings(settings, internal);
 
-    mapTag(0, "TAG_LEAVES", new NamespacedId("minecraft", "leaves"))
-    mapTag(1, "TAG_GLASS", createTag(new NamespacedId("arc", "glass"),
+    mapTag(0, "TAG_LEAVES", new NamespacedId("minecraft", "leaves"));
+
+    mapTag(1, "TAG_CARPET", createTag(new NamespacedId("arc", "carpets"),
+        //new NamespacedId("minecraft", "wool_carpets"),
+        new NamespacedId("white_carpet"),
+        new NamespacedId("light_gray_carpet"),
+        new NamespacedId("gray_carpet"),
+        new NamespacedId("black_carpet"),
+        new NamespacedId("brown_carpet"),
+        new NamespacedId("red_carpet"),
+        new NamespacedId("orange_carpet"),
+        new NamespacedId("yellow_carpet"),
+        new NamespacedId("lime_carpet"),
+        new NamespacedId("green_carpet"),
+        new NamespacedId("cyan_carpet"),
+        new NamespacedId("light_blue_carpet"),
+        new NamespacedId("blue_carpet"),
+        new NamespacedId("purple_carpet"),
+        new NamespacedId("magenta_carpet"),
+        new NamespacedId("pink_carpet"),
+        new NamespacedId("pale_moss_carpet"),
+        new NamespacedId("moss_carpet")));
+
+    mapTag(2, "TAG_TINTS_LIGHT", createTag(new NamespacedId("arc", "tints_light"),
+        new NamespacedId("minecraft", "glass_blocks"),
         new NamespacedId("tinted_glass"),
         new NamespacedId("white_stained_glass"),
         new NamespacedId("white_stained_glass_pane"),

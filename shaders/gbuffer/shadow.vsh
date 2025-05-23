@@ -31,6 +31,10 @@ out VertexData2 {
 #include "/lib/common.glsl"
 #include "/lib/buffers/scene.glsl"
 
+#ifdef VOXEL_ENABLED
+    #include "/lib/sampling/lightmap.glsl"
+#endif
+
 
 void iris_emitVertex(inout VertexData data) {
     vec3 shadowViewPos = mul3(iris_modelViewMatrix, data.modelPos.xyz);
@@ -43,6 +47,8 @@ void iris_emitVertex(inout VertexData data) {
             vOut.originPos = vOut.localPos + data.midBlock / 64.0;
         #endif
     #endif
+
+    if (iris_hasTag(data.blockId, TAG_CARPET)) data.clipPos = vec4(-10.0);
 }
 
 void iris_sendParameters(in VertexData data) {
@@ -73,7 +79,7 @@ void iris_sendParameters(in VertexData data) {
     #endif
 
     #ifdef VOXEL_ENABLED
-        vOut.lmcoord = saturate((data.light - (0.5/16.0)) / (15.0/16.0));
+        vOut.lmcoord = LightMapNorm(data.light);
 
         #if defined(VOXEL_BLOCK_FACE) && defined(RENDER_TERRAIN)
             vOut.textureId = data.textureId;

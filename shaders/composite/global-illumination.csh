@@ -231,13 +231,12 @@ vec3 trace_GI(const in vec3 traceOrigin, const in vec3 traceDir, const in int fa
 		stepAxis = stepAxisNext;
 
 		if (blockId > 0) {
-			// TODO: Is this reliable?
-			vec3 blockColor = iris_getLightColor(blockId).rgb;
-			traceTint *= RgbToLinear(blockColor);
-
 			if (iris_hasTag(blockId, TAG_LEAVES)) traceTint *= 0.5;
-
-			if (iris_hasFluid(blockId))
+			else if (iris_hasTag(blockId, TAG_TINTS_LIGHT)) {
+				vec3 blockColor = iris_getLightColor(blockId).rgb;
+				traceTint *= RgbToLinear(blockColor);
+			}
+			else if (iris_hasFluid(blockId))
 				traceTint *= exp(-VL_WaterTransmit * VL_WaterDensity);
 
 //				uint meta = iris_getMetadata(blockId);
@@ -259,6 +258,7 @@ vec3 trace_GI(const in vec3 traceOrigin, const in vec3 traceDir, const in int fa
 
 		int blockFaceIndex = GetVoxelBlockFaceIndex(hitNormal);
 		int blockFaceMapIndex = GetVoxelBlockFaceMapIndex(voxelPos, blockFaceIndex);
+		// TODO: if not set?!
 		VoxelBlockFace blockFace = VoxelBlockFaceMap[blockFaceMapIndex];
 
 		vec2 hitCoord;
@@ -275,7 +275,9 @@ vec3 trace_GI(const in vec3 traceOrigin, const in vec3 traceDir, const in int fa
 		iris_TextureInfo tex = iris_getTexture(blockFace.tex_id);
 		vec2 hit_uv = fma(hitCoord, tex.maxCoord - tex.minCoord, tex.minCoord);
 
-		vec4 hitColor = textureLod(blockAtlas, hit_uv, 0);
+		vec4 hitColor = textureLod(blockAtlas, hit_uv, 2);
+		//if (blockFace.tex_id == 0u) hitColor.rgb = vec3(1.0,0.0,0.0);
+
 		vec3 albedo = RgbToLinear(hitColor.rgb * tex_tint);
 
 		#if MATERIAL_FORMAT != MAT_NONE
@@ -383,13 +385,15 @@ vec3 trace_GI(const in vec3 traceOrigin, const in vec3 traceDir, const in int fa
 			hit_diffuse += SampleSkyIrradiance(hitNormal, hit_lmcoord.y);
 		#endif
 
+		vec3 hit_voxelPos = tracePos * voxelSize + wsgiVoxelOffset;
+
 		#if LIGHTING_MODE == LIGHT_MODE_RT //&& defined(FALSE)
 			// TODO: pick a random light and sample it?
-			ivec3 lightBinPos = ivec3(floor(voxelPos / LIGHT_BIN_SIZE));
+			ivec3 lightBinPos = ivec3(floor(hit_voxelPos / LIGHT_BIN_SIZE));
 			int lightBinIndex = GetLightBinIndex(lightBinPos);
 			uint binLightCount = LightBinMap[lightBinIndex].lightCount;
 
-			vec3 voxelPos_out = tracePos + 0.16*hitNormal;
+			vec3 voxelPos_out = hit_voxelPos + 0.16*hitNormal;
 
 			//vec3 jitter = vec3(0.0);//hash33(vec3(gl_FragCoord.xy, ap.time.frames)) - 0.5;
 
@@ -443,7 +447,7 @@ vec3 trace_GI(const in vec3 traceOrigin, const in vec3 traceDir, const in int fa
 					float NoHm = max(dot(hitNormal, H), 0.0);
 
 					const bool hit_isUnderWater = false;
-					vec3 F = material_fresnel(albedo.rgb, hit_f0_metal, hit_roughL, NoVm, hit_isUnderWater);
+					vec3 F = material_fresnel(albedo, hit_f0_metal, hit_roughL, NoVm, hit_isUnderWater);
 					float S = SampleLightSpecular(NoLm, NoHm, LoHm, hit_roughL);
 					vec3 sampleSpecular = lightAtt * S * F * lightColor;
 
@@ -459,11 +463,10 @@ vec3 trace_GI(const in vec3 traceOrigin, const in vec3 traceDir, const in int fa
 				//}
 			}
 		#elif LIGHTING_MODE == LIGHT_MODE_LPV
-			ivec3 voxelFrameOffset = wsgi_getFrameOffset();
-			vec3 lpv_sample_pos = tracePos - voxelFrameOffset + 0.5*hitNormal;
+			vec3 lpv_voxelPos = hit_voxelPos + 0.5*hitNormal;
 
-			if (IsInVoxelBounds(lpv_sample_pos)) {
-				vec3 texcoord = lpv_sample_pos / VoxelBufferSize;
+			if (IsInVoxelBounds(lpv_voxelPos)) {
+				vec3 texcoord = lpv_voxelPos / VoxelBufferSize;
 				bool altFrame = ap.time.frames % 2 == 1;
 
 				vec3 lpv_light = altFrame
@@ -480,11 +483,11 @@ vec3 trace_GI(const in vec3 traceOrigin, const in vec3 traceDir, const in int fa
 		float hit_metalness = mat_metalness(hit_f0_metal);
 		hit_diffuse *= 1.0 - hit_metalness * (1.0 - hit_roughL);
 
-		#if MATERIAL_EMISSION_POWER != 1
-			hit_diffuse += pow(hit_emission, MATERIAL_EMISSION_POWER) * Material_EmissionBrightness * BLOCK_LUX;
-		#else
-			hit_diffuse += hit_emission * Material_EmissionBrightness * BLOCK_LUX;
-		#endif
+//		#if MATERIAL_EMISSION_POWER != 1
+//			hit_diffuse += pow(hit_emission, MATERIAL_EMISSION_POWER) * Material_EmissionBrightness * BLOCK_LUX;
+//		#else
+//			hit_diffuse += hit_emission * Material_EmissionBrightness * BLOCK_LUX;
+//		#endif
 
 		ApplyWetness_albedo(albedo, hit_porosity, wetness);
 

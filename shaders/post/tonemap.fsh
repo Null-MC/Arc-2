@@ -12,19 +12,17 @@ uniform sampler2D texFinal;
 #include "/lib/exposure.glsl"
 #include "/lib/tonemap.glsl"
 
-//#include "/lib/effects/purkinje.glsl"
+#include "/lib/effects/purkinje.glsl"
 
 
 void main() {
     ivec2 iuv = ivec2(gl_FragCoord.xy);
-    vec3 color = texelFetch(texFinal, iuv, 0).rgb * 100.0;
+    vec3 color = texelFetch(texFinal, iuv, 0).rgb * 1000.0;
 
     float exposureF = clamp(Scene_AvgExposure, Scene_PostExposureMin, Scene_PostExposureMax);
     ApplyAutoExposure(color, exposureF);
 
     color = LINEAR_RGB_TO_REC2020 * color;
-
-    //color = PurkinjeShift(color, PurkinjeStrength);
 
     //color = tonemap_jodieReinhard(color);
     //color = tonemap_Lottes(color);
@@ -34,6 +32,8 @@ void main() {
     //color = tonemap_Commerce(color);
 
     //color = color / (color + 0.155) * 1.019;
+
+    color = PurkinjeShift(color, Scene_PostExposureRange);
 
     color = REC2020_TO_SRGB * color;
 

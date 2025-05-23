@@ -150,6 +150,7 @@ void main() {
         vec3 texNormalData = texelFetch(texDeferredOpaque_TexNormal, iuv, 0).rgb;
         uvec4 data = texelFetch(texDeferredOpaque_Data, iuv, 0);
         uint trans_blockId = texelFetch(texDeferredTrans_Data, iuv, 0).a;
+        uint blockId = data.a;
 
         #ifdef ACCUM_ENABLED
             bool altFrame = (ap.time.frames % 2) == 1;

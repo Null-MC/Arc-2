@@ -76,20 +76,21 @@ bool TraceReflection(const in vec3 localPos, const in vec3 localDir, out vec3 ti
             uint blockId = SampleVoxelBlock(voxelPos);
         #endif
 
-        bool isFullBlock = iris_isFullBlock(blockId);
-        if (blockId > 0u && isFullBlock) {
-            hit = true;
-            break;
+        if (blockId > 0u) {
+            if (iris_isFullBlock(blockId)) hit = true;
+            if (iris_hasTag(blockId, TAG_LEAVES)) hit = true;
+            if (hit) break;
         }
 
         currPos += step;
         stepAxis = stepAxisNext;
 
         if (blockId > 0) {
-            vec3 blockColor = iris_getLightColor(blockId).rgb;
-            tint *= RgbToLinear(blockColor);
-
-            if (iris_hasFluid(blockId))
+            if (iris_hasTag(blockId, TAG_TINTS_LIGHT)) {
+                vec3 blockTint = iris_getLightColor(blockId).rgb;
+                tint *= RgbToLinear(blockTint);
+            }
+            else if (iris_hasFluid(blockId))
                 waterDist += length(step);
         }
     }

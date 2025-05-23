@@ -335,6 +335,7 @@ void main() {
             vec2 reflect_uv, reflect_lmcoord;
             vec3 reflect_voxelPos, reflect_geoNormal;
             vec4 reflect_hitColor;
+            float reflect_lod = 0.0;
 
             if (roughL < 0.86) {
                 #ifdef LIGHTING_REFLECT_TRIANGLE
@@ -375,7 +376,9 @@ void main() {
                         iris_TextureInfo tex = iris_getTexture(blockFace.tex_id);
                         reflect_uv = fma(reflect_uv, tex.maxCoord - tex.minCoord, tex.minCoord);
 
-                        vec3 reflectColor = textureLod(blockAtlas, reflect_uv, 0).rgb;
+                        reflect_lod = textureQueryLod(blockAtlas, reflect_uv).y;
+
+                        vec3 reflectColor = textureLod(blockAtlas, reflect_uv, reflect_lod).rgb;
                         reflection = vec4(reflectColor * reflect_traceTint, 1.0);
                     }
                 #endif
@@ -383,9 +386,8 @@ void main() {
 
             if (reflection.a > 0.5) {
                 #if MATERIAL_FORMAT != MAT_NONE
-
-                vec4 reflect_normalData = textureLod(blockAtlasN, reflect_uv, 0);
-                    vec4 reflect_specularData = textureLod(blockAtlasS, reflect_uv, 0);
+                    vec4 reflect_normalData = textureLod(blockAtlasN, reflect_uv, reflect_lod);
+                    vec4 reflect_specularData = textureLod(blockAtlasS, reflect_uv, reflect_lod);
                 #endif
 
                 reflection.rgb *= reflect_tint;

@@ -8,7 +8,8 @@ const mat3 XYZ_TO_RGB = mat3(
     -1.5371385, 1.8760108,-0.2040259,
     -0.4985314, 0.0415560, 1.0572252);
 
-float Exposure_logLumRange = 1.0 / (Scene_PostExposureMax - Scene_PostExposureMin);
+float Exposure_logLumRange = Scene_PostExposureMax - Scene_PostExposureMin;
+float Exposure_logLumRangeInv = 1.0 / Exposure_logLumRange;
 //float Exposure_numPixels = ap.game.screenSize.x * ap.game.screenSize.y;
 
 
@@ -26,13 +27,19 @@ float reinhard2(const in float color, const in float L_white) {
     return (color * (1.0 + color / _pow2(L_white))) / (1.0 + color);
 }
 
+float ev_100(const in float luminance, const in float luminance_avg) {
+    return luminance / (9.6 * max(luminance_avg, 1.0e-8));
+}
+
 void ApplyAutoExposure(inout vec3 rgb, const in float avgLum) {
 	vec3 xyY = xyz_to_xyY(RGB_TO_XYZ * rgb);
 
-	float lp = xyY.z / (9.6 * avgLum + 0.0001);
+	//float lp = xyY.z / (9.6 * avgLum + 0.0001);
+    float lp = ev_100(xyY.z, avgLum);
 
-	const float whitePoint = Scene_PostExposureRange;
-    xyY.z = reinhard2(lp, whitePoint);
+	//const float whitePoint = Scene_PostExposureRange;
+    //xyY.z = reinhard2(lp, whitePoint);
+    xyY.z = lp * 0.1;
 
 	rgb = XYZ_TO_RGB * xyY_to_xyz(xyY);
 }

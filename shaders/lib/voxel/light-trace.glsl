@@ -92,7 +92,7 @@ vec3 TraceDDA(vec3 origin, const in vec3 endPos, const in float range, const in 
 
                     if (isFullBlock) hit = true;
                     else if (iris_hasTag(blockId, TAG_LEAVES)) color *= 0.5;
-                    else if (iris_hasTag(blockId, TAG_GLASS)) {
+                    else if (iris_hasTag(blockId, TAG_TINTS_LIGHT)) {
                         vec3 tintColor = iris_getLightColor(blockId).rgb;
                         color *= RgbToLinear(tintColor);
                     }

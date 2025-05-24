@@ -109,7 +109,9 @@ void main() {
                             bool isCarpetTop = iris_hasTag(vIn[0].blockId, TAG_CARPET) && vIn[0].localNormal.y > 0.5;
                             if (isCarpetTop) doVoxelize = true;
 
-                            if (iris_hasTag(vIn[0].blockId, TAG_LEAVES)) doVoxelize = true;
+                            uint blockTags = iris_blockInfo.blocks[vIn[0].blockId].z;
+                            const uint make_solid_tags = (1u << TAG_LEAVES) | (1u << TAG_STAIRS) | (1u << TAG_SLABS);
+                            if (iris_hasAnyTag(blockTags, make_solid_tags)) doVoxelize = true;
 
                             if (doVoxelize) {
                                 ivec3 blockPos = ivec3(voxelPos);

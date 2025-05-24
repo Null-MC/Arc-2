@@ -35,3 +35,10 @@ int GetVoxelIndex(ivec3 voxelPos) {
 	const ivec3 flatten = ivec3(1, VOXEL_SIZE, VOXEL_SIZE*VOXEL_SIZE);
 	return sumOf(flatten * voxelPos);
 }
+
+
+#ifdef VOXEL_ENABLED
+    bool iris_hasAnyTag(uint blockData, uint tags) {
+        return (blockData & tags) != 0u;
+    }
+#endif

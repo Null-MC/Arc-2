@@ -78,7 +78,11 @@ bool TraceReflection(const in vec3 localPos, const in vec3 localDir, out vec3 ti
 
         if (blockId > 0u) {
             if (iris_isFullBlock(blockId)) hit = true;
-            if (iris_hasTag(blockId, TAG_LEAVES)) hit = true;
+
+            uint blockTags = iris_blockInfo.blocks[blockId].z;
+            const uint make_solid_tags = (1u << TAG_LEAVES) | (1u << TAG_STAIRS) | (1u << TAG_SLABS);
+            if (iris_hasAnyTag(blockTags, make_solid_tags)) hit = true;
+
             if (hit) break;
         }
 

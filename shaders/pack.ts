@@ -162,8 +162,10 @@ export function setupShader() {
     applySettings(settings, internal);
 
     mapTag(0, "TAG_LEAVES", new NamespacedId("minecraft", "leaves"));
+    mapTag(1, "TAG_STAIRS", new NamespacedId("minecraft", "stairs"));
+    mapTag(2, "TAG_SLABS", new NamespacedId("minecraft", "slabs"));
 
-    mapTag(1, "TAG_CARPET", createTag(new NamespacedId("arc", "carpets"),
+    mapTag(3, "TAG_CARPET", createTag(new NamespacedId("arc", "carpets"),
         //new NamespacedId("minecraft", "wool_carpets"),
         new NamespacedId("white_carpet"),
         new NamespacedId("light_gray_carpet"),
@@ -184,7 +186,7 @@ export function setupShader() {
         new NamespacedId("pale_moss_carpet"),
         new NamespacedId("moss_carpet")));
 
-    mapTag(2, "TAG_TINTS_LIGHT", createTag(new NamespacedId("arc", "tints_light"),
+    mapTag(4, "TAG_TINTS_LIGHT", createTag(new NamespacedId("arc", "tints_light"),
         new NamespacedId("minecraft", "glass_blocks"),
         new NamespacedId("tinted_glass"),
         new NamespacedId("white_stained_glass"),

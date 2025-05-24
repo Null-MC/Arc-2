@@ -85,14 +85,15 @@ vec3 unproject(const in mat4 matProj, const in vec3 pos) {
     return unproject(matProj * vec4(pos, 1.0));
 }
 
-float unmix(const in float value, const in float valueMin, const in float valueMax) {
+float unmix(const in float valueMin, const in float valueMax, const in float value) {
     return (value - valueMin) / (valueMax - valueMin);
 }
 
-vec2 unmix(const in vec2 value, const in float valueMin, const in float valueMax) {
+vec2 unmix(const in float valueMin, const in float valueMax, const in vec2 value) {
     return (value - valueMin) / (valueMax - valueMin);
 }
-vec2 unmix(const in vec2 value, const in vec2 valueMin, const in vec2 valueMax) {
+
+vec2 unmix(const in vec2 valueMin, const in vec2 valueMax, const in vec2 value) {
     return (value - valueMin) / (valueMax - valueMin);
 }
 

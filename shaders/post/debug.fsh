@@ -43,7 +43,7 @@ uniform sampler2D texFinal;
     uniform usampler2D TEX_DATA;
 #endif
 
-#ifdef DEBUG_HISTOGRAM
+#ifdef DEBUG_EXPOSURE
     uniform usampler2D texHistogram_debug;
 #endif
 
@@ -168,17 +168,17 @@ void main() {
             #endif
         }
 
-        #ifdef DEBUG_HISTOGRAM
+        #ifdef DEBUG_EXPOSURE
             previewCoord = (uv - 0.01) / vec2(0.25, 0.1);
             if (saturate(previewCoord) == previewCoord) {
                 uint sampleVal = textureLod(texHistogram_debug, previewCoord, 0).r;
                 color = vec3(step(previewCoord.y*previewCoord.y, sampleVal / (ap.game.screenSize.x*ap.game.screenSize.y)));
             }
 
-            previewCoord = (uv - vec2(0.27, 0.01)) / vec2(0.04, 0.1);
-            if (saturate(previewCoord) == previewCoord) {
-                color = vec3(Scene_AvgExposure);
-            }
+//            previewCoord = (uv - vec2(0.27, 0.01)) / vec2(0.04, 0.1);
+//            if (saturate(previewCoord) == previewCoord) {
+//                color = vec3(Scene_AvgExposure);
+//            }
         #endif
 
         #ifdef DEBUG_RT
@@ -207,21 +207,33 @@ void main() {
             VoxelizationEnabled = true;
         #endif
 
-        beginText(ivec2(gl_FragCoord.xy*0.5), ivec2(8, ap.game.screenSize.y*0.5-8));
-        text.bgCol = vec4(0.0, 0.0, 0.0, 0.6);
-        text.fgCol = vec4(0.8, 0.8, 0.8, 1.0);
-        printString((_S, _e, _t, _t, _i, _n, _g, _s));
-        printLine();
-        printString((_minus, _minus, _minus, _minus, _minus, _minus, _minus, _minus));
-        printLine();
-        printString((_A, _c, _c, _u, _m, _u, _l, _a, _t, _i, _o, _n, _colon, _space));
-        printBool(AccumulationEnabled);
-        printLine();
-        printString((_V, _o, _x, _e, _l, _i, _z, _a, _t, _i, _o, _n, _colon, _space));
-        printBool(VoxelizationEnabled);
-        printLine();
-        //...
-        endText(color);
+        #ifdef DEBUG_EXPOSURE
+            beginText(ivec2(gl_FragCoord.xy*0.5), ivec2(8, ap.game.screenSize.y*0.5-8));
+            text.bgCol = vec4(0.0, 0.0, 0.0, 0.6);
+            text.fgCol = vec4(0.8, 0.8, 0.8, 1.0);
+            printString((_A, _v, _g, _space, _E, _x, _p, _o, _s, _u, _r, _e, _colon, _space));
+            printFloat(log2(Scene_AvgExposure));
+            printLine();
+            endText(color);
+        #endif
+
+        #ifdef NOTHING
+            beginText(ivec2(gl_FragCoord.xy*0.5), ivec2(8, ap.game.screenSize.y*0.5-8));
+            text.bgCol = vec4(0.0, 0.0, 0.0, 0.6);
+            text.fgCol = vec4(0.8, 0.8, 0.8, 1.0);
+            printString((_S, _e, _t, _t, _i, _n, _g, _s));
+            printLine();
+            printString((_minus, _minus, _minus, _minus, _minus, _minus, _minus, _minus));
+            printLine();
+            printString((_A, _c, _c, _u, _m, _u, _l, _a, _t, _i, _o, _n, _colon, _space));
+            printBool(AccumulationEnabled);
+            printLine();
+            printString((_V, _o, _x, _e, _l, _i, _z, _a, _t, _i, _o, _n, _colon, _space));
+            printBool(VoxelizationEnabled);
+            printLine();
+            //...
+            endText(color);
+        #endif
     }
 
 

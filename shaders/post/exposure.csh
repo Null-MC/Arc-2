@@ -7,7 +7,7 @@ layout (local_size_x = 256, local_size_y = 1, local_size_z = 1) in;
 
 layout(r32ui) uniform uimage2D imgHistogram;
 
-#ifdef DEBUG_HISTOGRAM
+#ifdef DEBUG_EXPOSURE
 	layout(r32ui) uniform uimage2D imgHistogram_debug;
 #endif
 
@@ -26,7 +26,7 @@ void main() {
 
 	barrier();
 
-	#ifdef DEBUG_HISTOGRAM
+	#ifdef DEBUG_EXPOSURE
 		imageStore(imgHistogram_debug, histogram_uv, uvec4(countForThisBin));
 	#endif
 

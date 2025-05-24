@@ -135,7 +135,7 @@ function applySettings(settings : ShaderSettings, internal) {
     if (settings.Effect_TAA_Enabled) defineGlobally1("EFFECT_TAA_ENABLED");
 
     if (settings.Debug_WhiteWorld) defineGlobally1("DEBUG_WHITE_WORLD");
-    if (settings.Debug_Histogram) defineGlobally1("DEBUG_HISTOGRAM");
+    if (settings.Debug_Exposure) defineGlobally1("DEBUG_EXPOSURE");
     if (settings.Debug_RT) defineGlobally1("DEBUG_RT");
     //if (snapshot.Debug_QuadLists) defineGlobally1("DEBUG_QUADS");
 
@@ -164,8 +164,9 @@ export function setupShader() {
     mapTag(0, "TAG_LEAVES", new NamespacedId("minecraft", "leaves"));
     mapTag(1, "TAG_STAIRS", new NamespacedId("minecraft", "stairs"));
     mapTag(2, "TAG_SLABS", new NamespacedId("minecraft", "slabs"));
+    mapTag(3, "TAG_SNOW", new NamespacedId("minecraft", "snow"));
 
-    mapTag(3, "TAG_CARPET", createTag(new NamespacedId("arc", "carpets"),
+    mapTag(4, "TAG_CARPET", createTag(new NamespacedId("arc", "carpets"),
         //new NamespacedId("minecraft", "wool_carpets"),
         new NamespacedId("white_carpet"),
         new NamespacedId("light_gray_carpet"),
@@ -186,7 +187,7 @@ export function setupShader() {
         new NamespacedId("pale_moss_carpet"),
         new NamespacedId("moss_carpet")));
 
-    mapTag(4, "TAG_TINTS_LIGHT", createTag(new NamespacedId("arc", "tints_light"),
+    mapTag(5, "TAG_TINTS_LIGHT", createTag(new NamespacedId("arc", "tints_light"),
         new NamespacedId("minecraft", "glass_blocks"),
         new NamespacedId("tinted_glass"),
         new NamespacedId("white_stained_glass"),
@@ -644,7 +645,7 @@ export function setupShader() {
         .clear(false)
         .build();
 
-    if (settings.Debug_Histogram) {
+    if (settings.Debug_Exposure) {
         const texHistogram_debug = new Texture("texHistogram_debug")
             .imageName("imgHistogram_debug")
             .format(Format.R32UI)
@@ -823,6 +824,10 @@ export function setupShader() {
     }
 
     registerShader(mainShaderOpaque("basic", Usage.BASIC).build());
+
+    registerShader(mainShaderOpaque("emissive", Usage.EMISSIVE)
+        .define("RENDER_EMISSIVE", "1")
+        .build());
 
     registerShader(mainShaderOpaque("terrain-solid", Usage.TERRAIN_SOLID)
         .define("RENDER_TERRAIN", "1")
@@ -1277,12 +1282,13 @@ export function onSettingsChanged(state : WorldState) {
         .appendFloat(settings.Effect_Bloom_Strength * 0.01)
         .appendFloat(settings.Post_ExposureMin)
         .appendFloat(settings.Post_ExposureMax)
-        .appendFloat(settings.Post_ExposureRange)
         .appendFloat(settings.Post_ExposureSpeed)
+        .appendFloat(settings.Post_ExposureOffset)
         .appendFloat(settings.Post_ToneMap_Contrast)
         .appendFloat(settings.Post_ToneMap_LinearStart)
         .appendFloat(settings.Post_ToneMap_LinearLength)
-        .appendFloat(settings.Post_ToneMap_Black);
+        .appendFloat(settings.Post_ToneMap_Black)
+        .appendFloat(settings.Post_PurkinjeStrength * 0.01);
 }
 
 export function setupFrame(state : WorldState) {

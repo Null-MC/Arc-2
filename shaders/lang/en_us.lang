@@ -225,9 +225,9 @@ option.POST_EXPOSURE_MIN=Minimum
 
 option.POST_EXPOSURE_MAX=Maximum
 
-option.POST_EXPOSURE_RANGE=White Point
-
 option.POST_EXPOSURE_SPEED=Speed
+
+option.POST_EXPOSURE_OFFSET=Offset
 
 
 screen.POST_TONEMAP=Tone Mapping
@@ -239,6 +239,10 @@ option.POST_TONEMAP_LINEAR_START=Linear Start
 option.POST_TONEMAP_LINEAR_LENGTH=Linear Length
 
 option.POST_TONEMAP_BLACK=Black
+
+
+option.POST_PURKINJE_STRENGTH=Purkinje Strength
+suffix.POST_PURKINJE_STRENGTH=%
 
 
 screen.DEBUG=Debug

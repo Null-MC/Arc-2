@@ -72,10 +72,6 @@ void main() {
             if (sss > 0.0) {
                 float NoLm = max(dot(localGeoNormal, Scene_LocalLightDir), 0.0);
 
-                const float SSS_MaxDist = 3.0;
-                const float SSS_MaxPcfSize = 1.5;
-                // vec2 sssRadius = GetPixelRadius(SSS_MaxPcfSize, shadowCascade);
-
                 float sssRadius = sss * SSS_MaxPcfSize;
 
                 shadowViewPos.z += SSS_MaxDist * sss * (dither*dither);

@@ -49,6 +49,9 @@ void iris_emitVertex(inout VertexData data) {
     #endif
 
     if (iris_hasTag(data.blockId, TAG_CARPET)) data.clipPos = vec4(-10.0);
+
+    // TODO: needs layer check
+    //if (iris_hasTag(data.blockId, TAG_SNOW)) data.clipPos = vec4(-10.0);
 }
 
 void iris_sendParameters(in VertexData data) {

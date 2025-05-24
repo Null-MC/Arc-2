@@ -24,7 +24,7 @@ uniform sampler2D solidDepthTex;
 
 
 const float g_sigmaXY = 3.0;
-const float g_sigmaV = 3.0;
+const float g_sigmaV = 0.002;
 
 void populateSharedBuffer() {
     if (gl_LocalInvocationIndex < 5)

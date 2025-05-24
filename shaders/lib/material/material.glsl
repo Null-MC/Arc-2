@@ -45,7 +45,7 @@ float mat_porosity_lab(const in float data) {
 }
 
 float mat_porosity_old(const in float roughness, const in float f0_metal) {
-    float metalInv = 1.0 - saturate(unmix(f0_metal, 0.04, (229.0/255.0)));
+    float metalInv = 1.0 - saturate(unmix(0.04, (229.0/255.0), f0_metal));
     return sqrt(roughness) * metalInv;
 }
 

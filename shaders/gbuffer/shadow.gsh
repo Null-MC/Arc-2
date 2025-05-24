@@ -106,8 +106,16 @@ void main() {
                             if (blockMapId == BLOCK_GRASS && abs(vIn[0].localNormal.y) < 0.5 && any(lessThan(vIn[0].color.rgb, vec3(1.0))))
                                 doVoxelize = false;
 
-                            bool isCarpetTop = iris_hasTag(vIn[0].blockId, TAG_CARPET) && vIn[0].localNormal.y > 0.5;
-                            if (isCarpetTop) doVoxelize = true;
+                            bool isCarpetTop = false;
+                            if (vIn[0].localNormal.y > 0.98) {
+                                isCarpetTop = iris_hasTag(vIn[0].blockId, TAG_CARPET);
+
+                                // TODO: needs layer check
+//                                if (iris_hasTag(vIn[0].blockId, TAG_SNOW))
+//                                    isCarpetTop = true;
+
+                                if (isCarpetTop) doVoxelize = true;
+                            }
 
                             uint blockTags = iris_blockInfo.blocks[vIn[0].blockId].z;
                             const uint make_solid_tags = (1u << TAG_LEAVES) | (1u << TAG_STAIRS) | (1u << TAG_SLABS);
@@ -121,10 +129,7 @@ void main() {
                                 blockFace.data = 0u;
 
                                 // TODO: if snow layer/carpet, write to voxel below
-                                if (isCarpetTop) {
-                                    //blockFace.tex_id = 0u;
-                                    blockPos.y--;
-                                }
+                                if (isCarpetTop) blockPos.y--;
 
                                 SetBlockFaceTint(blockFace.data, vIn[0].color.rgb);
                                 SetBlockFaceLightMap(blockFace.data, vIn[0].lmcoord);

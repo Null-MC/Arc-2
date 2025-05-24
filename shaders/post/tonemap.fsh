@@ -33,7 +33,12 @@ void main() {
 
     //color = color / (color + 0.155) * 1.019;
 
-    color = PurkinjeShift(color, Scene_PostExposureRange);
+    if (Post_PurkinjeStrength > EPSILON) {
+        float avg_ev = log2(max(Scene_AvgExposure, 1.0e-8));
+        float ev_norm = saturate(unmix(avg_ev, -1.0, 8.0));
+        float purkinje_strength = mix(0.5, 0.3, ev_norm);
+        color = PurkinjeShift(color, purkinje_strength); // Post_PurkinjeStrength
+    }
 
     color = REC2020_TO_SRGB * color;
 

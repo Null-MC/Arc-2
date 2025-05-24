@@ -85,18 +85,19 @@ export class ShaderSettings {
 
     get Post_ExposureMin(): number {return this.getCachedFloatSetting("POST_EXPOSURE_MIN");}
     get Post_ExposureMax(): number {return this.getCachedFloatSetting("POST_EXPOSURE_MAX");}
-    get Post_ExposureRange(): number {return this.getCachedFloatSetting("POST_EXPOSURE_RANGE");}
     get Post_ExposureSpeed(): number {return this.getCachedFloatSetting("POST_EXPOSURE_SPEED");}
+    get Post_ExposureOffset(): number {return this.getCachedFloatSetting("POST_EXPOSURE_OFFSET");}
     get Post_ToneMap_Contrast(): number {return this.getCachedFloatSetting("POST_TONEMAP_CONTRAST");}
     get Post_ToneMap_LinearStart(): number {return this.getCachedFloatSetting("POST_TONEMAP_LINEAR_START");}
     get Post_ToneMap_LinearLength(): number {return this.getCachedFloatSetting("POST_TONEMAP_LINEAR_LENGTH");}
     get Post_ToneMap_Black(): number {return this.getCachedFloatSetting("POST_TONEMAP_BLACK");}
+    get Post_PurkinjeStrength(): number {return this.getCachedIntSetting("POST_PURKINJE_STRENGTH");}
 
     get Debug_View(): number {return this.getCachedSetting<number>("DEBUG_VIEW", k => parseInt(getStringSetting(k)));}
     get Debug_Material(): number {return this.getCachedSetting<number>("DEBUG_MATERIAL", k => parseInt(getStringSetting(k)));}
     get Debug_WhiteWorld(): boolean {return this.getCachedBoolSetting("DEBUG_WHITE_WORLD");}
     get Debug_Translucent(): boolean {return this.getCachedBoolSetting("DEBUG_TRANSLUCENT");}
-    get Debug_Histogram(): boolean {return false;}
+    get Debug_Exposure(): boolean {return this.getCachedBoolSetting("DEBUG_EXPOSURE");}
     get Debug_RT(): boolean {return false;}
 
 
@@ -146,7 +147,7 @@ export class ShaderSettings {
             settings.VoxelizeBlockFaces = true;
         }
 
-        if (this.Debug_View != 0)
+        if (this.Debug_View != 0 || this.Debug_Exposure)
             settings.DebugEnabled = true;
 
         return settings;

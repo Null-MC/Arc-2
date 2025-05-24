@@ -158,10 +158,12 @@ void main() {
 
         albedo.rgb = RgbToLinear(albedo.rgb);
 
-        vec3 localTexNormal = normalize(fma(texNormalData, vec3(2.0), vec3(-1.0)));
-
         vec3 data_r = unpackUnorm4x8(data.r).rgb;
         vec3 localGeoNormal = normalize(fma(data_r, vec3(2.0), vec3(-1.0)));
+
+        vec3 localTexNormal = vec3(0.5, 0.5, 1.0);
+        bool hasTexNormal = any(greaterThan(texNormalData.xy, vec2(0.0)));
+        if (hasTexNormal) localTexNormal = normalize(fma(texNormalData, vec3(2.0), vec3(-1.0)));
 
         vec4 data_g = unpackUnorm4x8(data.g);
         float roughness = data_g.x;

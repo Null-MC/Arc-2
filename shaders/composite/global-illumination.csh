@@ -59,13 +59,14 @@ uniform sampler2DArray texShadowColor;
 #include "/lib/voxel/wsgi-common.glsl"
 #include "/lib/voxel/wsgi-sample.glsl"
 
+#include "/lib/light/volumetric.glsl"
+
 #ifdef SHADOWS_ENABLED
 	#include "/lib/shadow/csm.glsl"
 	#include "/lib/shadow/sample.glsl"
 #endif
 
 #if defined(SKY_CLOUDS_ENABLED) && defined(SHADOWS_CLOUD_ENABLED)
-	#include "/lib/light/volumetric.glsl"
 	#include "/lib/sky/density.glsl"
 	#include "/lib/sky/clouds.glsl"
 	#include "/lib/shadow/clouds.glsl"

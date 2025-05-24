@@ -23,9 +23,9 @@ vec3 xyY_to_xyz(vec3 xyY) {
     return vec3(xyY.z * xz.xy / xyY.y, xyY.z).xzy;
 }
 
-float reinhard2(const in float color, const in float L_white) {
-    return (color * (1.0 + color / _pow2(L_white))) / (1.0 + color);
-}
+//float reinhard2(const in float color, const in float L_white) {
+//    return (color * (1.0 + color / _pow2(L_white))) / (1.0 + color);
+//}
 
 float ev_100(const in float luminance, const in float luminance_avg) {
     return luminance / (9.6 * max(luminance_avg, 1.0e-8));
@@ -39,7 +39,7 @@ void ApplyAutoExposure(inout vec3 rgb, const in float avgLum) {
 
 	//const float whitePoint = Scene_PostExposureRange;
     //xyY.z = reinhard2(lp, whitePoint);
-    xyY.z = lp * 0.1;
+    xyY.z = lp * exp2(-Post_ExposureOffset);// * 0.08;
 
 	rgb = XYZ_TO_RGB * xyY_to_xyz(xyY);
 }

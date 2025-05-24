@@ -101,8 +101,8 @@ vec3 tonemap_AgX(vec3 color) {
         -0.016493938717834573, -0.016493938717834257, 1.2519364065950405);
 
     // Constants for AgX exposure range
-    const float AgxMinEv = -11.5;
-    const float AgxMaxEv = 3.6;
+    const float AgxMinEv = -4.5;
+    const float AgxMaxEv = 32.5;
 
     // Constants for agxAscCdl operation
     const vec3 SLOPE = vec3(0.998);

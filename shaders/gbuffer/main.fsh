@@ -178,6 +178,11 @@ void iris_emitFragment() {
         //emission *= lmcoord.x;
     #endif
 
+    #ifdef RENDER_EMISSIVE
+        emission = lmcoord.x * 0.06;
+        lmcoord.x = 0.0;
+    #endif
+
     #if MATERIAL_FORMAT != MAT_NONE
         #if defined RENDER_PARALLAX && defined MATERIAL_PARALLAX_SHARP
             if (!skipParallax) {

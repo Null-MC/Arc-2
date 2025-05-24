@@ -109,10 +109,10 @@ export function setupOptions() {
     const screen_Post = new Page("POST")
         .add(asBool("EFFECT_TAA_ENABLED", true, true))
         .add(new Page("POST_EXPOSURE")
-            .add(asFloatRange("POST_EXPOSURE_MIN", -2.5, -12.0, -2.0, 0.5, false))
-            .add(asFloatRange("POST_EXPOSURE_MAX", 48.0, 2.0, 48.0, 0.5, false))
-            .add(asFloatRange("POST_EXPOSURE_RANGE", 0.3, 0.0, 1.0, 0.05, false))
+            .add(asFloatRange("POST_EXPOSURE_MIN", -1.0, -8.0, 1.0, 0.5, false))
+            .add(asFloatRange("POST_EXPOSURE_MAX", 48.0, 1.0, 64.0, 0.5, false))
             .add(asFloatRange("POST_EXPOSURE_SPEED", 1.0, 0.05, 2.0, 0.05, false))
+            .add(asFloatRange("POST_EXPOSURE_OFFSET", 3.6, -8.0, 8.0, 0.2, false))
             .build())
         .add(new Page("POST_TONEMAP")
             //.add("Uchimura ToneMap")
@@ -122,6 +122,7 @@ export function setupOptions() {
             .add(asFloatRange("POST_TONEMAP_BLACK", 1.36, 0.02, 3.0, 0.02, false))
             .build())
         //.add(asIntRange("POST_CONTRAST", 160,0, 300, 5, false))
+        .add(asIntRange("POST_PURKINJE_STRENGTH", 30, 0, 100, 2, false))
         .build();
 
     const screen_Debug = new Page("DEBUG")
@@ -129,6 +130,7 @@ export function setupOptions() {
         .add(asStringRange("DEBUG_MATERIAL", 0, 0, 9, true))
         .add(asBool("DEBUG_TRANSLUCENT", false, true))
         .add(EMPTY)
+        .add(asBool("DEBUG_EXPOSURE", false, true))
         .add(asBool("DEBUG_WHITE_WORLD", false, true))
         .build();
 

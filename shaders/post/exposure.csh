@@ -55,10 +55,9 @@ void main() {
 
 		// do not mix if first rendered frame
 		if (ap.time.frames != 0) {
-			float lumLastFrame = clamp(Scene_AvgExposure, 0.0, 255.0);
-			//float Exposure_timeCoeff = min(Scene_PostExposureSpeed * ap.time.delta, 1.0);//(1.0 - exp(-ap.time.delta * Scene_PostExposureSpeed));
-
 			float timeF = 1.0 - exp(-max(Scene_PostExposureSpeed * ap.time.delta, 1.0e-12));
+
+			float lumLastFrame = clamp(Scene_AvgExposure, 0.0, 255.0);
 			adaptedLum = lumLastFrame + (weightedAvgLum - lumLastFrame) * timeF;
 		}
 

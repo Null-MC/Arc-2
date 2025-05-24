@@ -5,9 +5,9 @@
 
 layout(location = 0) out vec4 outColor;
 
-uniform sampler2D FINAL_TEX_SRC;
-
 // in vec2 uv;
+
+uniform sampler2D TEX_SRC;
 
 #include "/lib/common.glsl"
 #include "/lib/bayer.glsl"
@@ -15,7 +15,7 @@ uniform sampler2D FINAL_TEX_SRC;
 
 void main() {
     ivec2 iuv = ivec2(gl_FragCoord.xy);
-    vec3 color = texelFetch(FINAL_TEX_SRC, iuv, 0).rgb;
+    vec3 color = texelFetch(TEX_SRC, iuv, 0).rgb;
     
     color = LinearToRgb(color);
 

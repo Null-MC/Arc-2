@@ -11,10 +11,11 @@ uniform sampler2D TEX_SRC;
 in vec2 uv;
 
 #include "/lib/common.glsl"
+#include "/lib/buffers/scene.glsl"
 
-#include "/lib/noise/ign.glsl"
+//#include "/lib/noise/ign.glsl"
 //#include "/lib/noise/blue.glsl"
-#include "/lib/noise/hash.glsl"
+//#include "/lib/noise/hash.glsl"
 
 #include "/lib/sampling/depth.glsl"
 
@@ -45,8 +46,8 @@ void main() {
     //     uv_j -= jitterOffset;
     // #endif
 
-    float centerDepth = textureLod(mainDepthTex, vec2(0.5), 0).r;
-    centerDepth = linearizeDepth(centerDepth, ap.camera.near, ap.camera.far);
+//    float centerDepth = textureLod(mainDepthTex, vec2(0.5), 0).r;
+//    centerDepth = linearizeDepth(centerDepth, ap.camera.near, ap.camera.far);
 
     vec3 color = textureLod(TEX_SRC, uv, 0).rgb;
     float baseDepth = textureLod(mainDepthTex, uv, 0).r;
@@ -55,11 +56,13 @@ void main() {
     // TODO: make dynamic based on focus distance
     //float focusScale = DOF_SCALE; //clamp(0.1 * focusPoint, 1.0, 20.0); //4.0;
 
-    float centerSize = getBlurSize(baseDepth, centerDepth);
+    float centerSize = getBlurSize(baseDepth, Scene_FocusDepth);
 
     vec2 texelSize = 1.0 / ap.game.screenSize;
     float radius = DOF_STEP_SIZE;
     float tot = 1.0;
+
+    // TODO: jitter initial angle?
 
     for (float ang = 0.0; radius < DOF_MAX_SIZE; ang += GoldenAngle) {
         vec2 tc = uv + vec2(cos(ang), sin(ang)) * texelSize * radius;
@@ -68,9 +71,9 @@ void main() {
         float sampleDepth = textureLod(mainDepthTex, tc, 0).r;
         sampleDepth = linearizeDepth(sampleDepth, ap.camera.near, ap.camera.far);
 
-        float sampleSize = getBlurSize(sampleDepth, centerDepth);
+        float sampleSize = getBlurSize(sampleDepth, Scene_FocusDepth);
 
-        if (sampleDepth > centerDepth)
+        if (sampleDepth > Scene_FocusDepth)
             sampleSize = clamp(sampleSize, 0.0, centerSize*2.0);
 
         float m = smoothstep(radius-0.5, radius+0.5, sampleSize);

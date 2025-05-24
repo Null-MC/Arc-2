@@ -659,10 +659,10 @@ export function setupShader() {
             .build();
     }
 
-    let texAccumTAA: BuiltTexture|null = null;
+    let texTaaPrev: BuiltTexture|null = null;
     if (settings.Post_TAA_Enabled) {
-        texAccumTAA = new Texture("texAccumTAA")
-            .format(Format.R16F)
+        texTaaPrev = new Texture("texTaaPrev")
+            .format(Format.RGBA16F)
             .width(screenWidth)
             .height(screenHeight)
             .clear(false)
@@ -966,11 +966,6 @@ export function setupShader() {
     if (settings.Lighting_Mode == LightingModes.RayTraced || settings.Lighting_ReflectionMode == ReflectionModes.WorldSpace) {
         registerBarrier(Stage.POST_RENDER, new MemoryBarrier(SSBO_BIT));
 
-        // if (settings.Lighting_ReflectionMode == ReflectionModes.WorldSpace) {
-        //     registerShader(Stage.POST_RENDER, new GenerateMips(texFinalPrevious));
-        //     //rtOpaqueShader.generateMips(texFinalPrevious);
-        // }
-
         const rtOpaqueShader = new Composite("rt-opaque")
             .vertex("shared/bufferless.vsh")
             .fragment("composite/rt.fsh")
@@ -1064,9 +1059,6 @@ export function setupShader() {
         .define('TEX_SHADOW', texShadow_src)
         .define('TEX_SSAO', 'texSSAO_final');
 
-    // if (snapshot.Lighting_ReflectionMode == ReflectMode_SSR)
-    //     compositeOpaqueShader.generateMips(texFinalPrevious);
-
     if (settings.Lighting_GI_Enabled) {
         compositeOpaqueShader
             .ssbo(1, shLpvBuffer)
@@ -1079,11 +1071,6 @@ export function setupShader() {
 
     if (settings.Lighting_Mode == LightingModes.RayTraced || settings.Lighting_ReflectionMode == ReflectionModes.WorldSpace) {
         registerBarrier(Stage.POST_RENDER, new MemoryBarrier(SSBO_BIT));
-
-        // if (settings.Lighting_ReflectionMode == ReflectionModes.WorldSpace) {
-        //     registerShader(Stage.POST_RENDER, new GenerateMips(texFinalPrevious));
-        //     //rtTranslucentShader.generateMips(texFinalPrevious);
-        // }
 
         registerShader(Stage.POST_RENDER, new Composite('rt-translucent')
             .vertex('shared/bufferless.vsh')
@@ -1184,17 +1171,17 @@ export function setupShader() {
 
     finalFlipper.flip();
 
-    if (settings.Post_TAA_Enabled) {
-        registerShader(Stage.POST_RENDER, new Composite('TAA')
-            .vertex('shared/bufferless.vsh')
-            .fragment('post/taa.fsh')
-            .target(0, finalFlipper.getWriteTexture())
-            .target(1, texAccumTAA)
-            .define('TEX_SRC', finalFlipper.getReadName())
-            .build());
-
-        finalFlipper.flip();
-    }
+    // if (settings.Post_TAA_Enabled) {
+    //     registerShader(Stage.POST_RENDER, new Composite('TAA')
+    //         .vertex('shared/bufferless.vsh')
+    //         .fragment('post/taa.fsh')
+    //         .target(0, finalFlipper.getWriteTexture())
+    //         .target(1, texAccumTAA)
+    //         .define('TEX_SRC', finalFlipper.getReadName())
+    //         .build());
+    //
+    //     finalFlipper.flip();
+    // }
 
     registerShader(Stage.POST_RENDER, new TextureCopy(finalFlipper.getReadTexture(), texFinalPrevious)
         .size(screenWidth, screenHeight)
@@ -1217,6 +1204,7 @@ export function setupShader() {
             .fragment('composite/depth-of-field.fsh')
             .target(0, finalFlipper.getWriteTexture())
             .define('TEX_SRC', finalFlipper.getReadName())
+            .ssbo(0, sceneBuffer)
             .build());
 
         finalFlipper.flip();
@@ -1255,6 +1243,18 @@ export function setupShader() {
 
     finalFlipper.flip();
 
+    if (settings.Post_TAA_Enabled) {
+        registerShader(Stage.POST_RENDER, new Composite('TAA')
+            .vertex('shared/bufferless.vsh')
+            .fragment('post/taa.fsh')
+            .target(0, texTaaPrev)
+            .target(1, finalFlipper.getWriteTexture())
+            .define('TEX_SRC', finalFlipper.getReadName())
+            .build());
+
+        finalFlipper.flip();
+    }
+
     if (internal.DebugEnabled) {
         registerShader(Stage.POST_RENDER, new Composite('debug')
             .vertex('shared/bufferless.vsh')
@@ -1287,10 +1287,10 @@ export function setupShader() {
     }
 
     // TODO: temp workaround
-    defineGlobally('FINAL_TEX_SRC', finalFlipper.getReadName());
+    //defineGlobally('FINAL_TEX_SRC', finalFlipper.getReadName());
 
     setCombinationPass(new CombinationPass("post/final.fsh")
-        //.define('TEX_SRC', finalFlipper.getName())
+        .define('TEX_SRC', finalFlipper.getReadName())
         .build());
 
     for (let blockName in BlockMappings.mappings) {

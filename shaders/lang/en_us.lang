@@ -213,11 +213,16 @@ option.EFFECT_BLOOM_ENABLED=Enabled
 option.EFFECT_BLOOM_STRENGTH=Strength
 suffix.EFFECT_BLOOM_STRENGTH=%
 
+option.EFFECT_DOF_ENABLED=Depth-of-Field
+
 
 screen.POST=Post Processing
 
 option.EFFECT_TAA_ENABLED=TAA
 option.EFFECT_TAA_ENABLED.comment=Temporal Anti-Aliasing
+
+option.POST_PURKINJE_ENABLED=Purkinje
+
 
 screen.POST_EXPOSURE=Exposure
 
@@ -241,16 +246,14 @@ option.POST_TONEMAP_LINEAR_LENGTH=Linear Length
 option.POST_TONEMAP_BLACK=Black
 
 
-option.POST_PURKINJE_STRENGTH=Purkinje Strength
-suffix.POST_PURKINJE_STRENGTH=%
-
-
 screen.DEBUG=Debug
 
 option.DEBUG_WHITE_WORLD=White-World
 option.DEBUG_WHITE_WORLD.comment=Makes all blocks in the world white, so that lighting can be visualized/debugged more easily.
 
 option.DEBUG_TRANSLUCENT=View Translucent
+
+option.DEBUG_EXPOSURE=Exposure
 
 option.DEBUG_VIEW=View
 value.DEBUG_VIEW.0=None

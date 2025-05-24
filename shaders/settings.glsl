@@ -78,5 +78,5 @@ layout (std140, binding = 0) uniform SceneSettings {
 	float Post_Tonemap_LinearStart;
 	float Post_Tonemap_LinearLength;
 	float Post_Tonemap_Black;
-	float Post_PurkinjeStrength;
+	//float Post_PurkinjeStrength;
 };

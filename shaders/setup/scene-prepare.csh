@@ -21,6 +21,9 @@ void main() {
 	Scene_LocalSunDir = normalize(mat3(ap.camera.viewInv) * ap.celestial.sunPos);
 	Scene_LocalLightDir = normalize(mat3(ap.camera.viewInv) * ap.celestial.pos);
 
+	// TODO: smooth center-depth
+	//Scene_FocusDepth = Scene_FocusDepth;
+
 	#if LIGHTING_MODE == LIGHT_MODE_RT
 		Scene_LightCount = 0u;
 	#endif

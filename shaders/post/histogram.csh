@@ -5,8 +5,10 @@
 
 layout (local_size_x = 16, local_size_y = 16, local_size_z = 1) in;
 
-layout(rgba16f) uniform readonly image2D imgFinal;
+//layout(rgba16f) uniform readonly image2D imgFinal;
 layout(r32ui) uniform uimage2D imgHistogram;
+
+uniform sampler2D TEX_SRC;
 
 shared uint histogramShared[256];
 
@@ -28,7 +30,8 @@ void main() {
 	barrier();
 
 	if (all(lessThan(gl_GlobalInvocationID.xy, ivec2(ap.game.screenSize)))) {
-		vec3 hdrColor = imageLoad(imgFinal, ivec2(gl_GlobalInvocationID.xy)).rgb * 1000.0;
+		//vec3 hdrColor = imageLoad(imgFinal, ivec2(gl_GlobalInvocationID.xy)).rgb * 1000.0;
+		vec3 hdrColor = texelFetch(TEX_SRC, ivec2(gl_GlobalInvocationID.xy), 0).rgb * 1000.0;
 		uint binIndex = colorToBin(hdrColor, Scene_PostExposureMin, Exposure_logLumRangeInv);
 
 		atomicAdd(histogramShared[binIndex], 1u);

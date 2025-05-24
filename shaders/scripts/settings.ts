@@ -79,10 +79,11 @@ export class ShaderSettings {
     get Effect_SSAO_Enabled(): boolean {return this.getCachedBoolSetting("EFFECT_SSAO_ENABLED");}
     get Effect_SSAO_Strength(): number {return this.getCachedIntSetting("EFFECT_SSAO_STRENGTH");}
     get Effect_SSAO_StepCount(): number {return this.getCachedIntSetting("EFFECT_SSAO_SAMPLES");}
-    get Effect_BloomEnabled(): boolean {return this.getCachedBoolSetting("EFFECT_BLOOM_ENABLED");}
+    get Effect_Bloom_Enabled(): boolean {return this.getCachedBoolSetting("EFFECT_BLOOM_ENABLED");}
     get Effect_Bloom_Strength(): number {return this.getCachedFloatSetting("EFFECT_BLOOM_STRENGTH");}
-    get Effect_TAA_Enabled(): boolean {return this.getCachedBoolSetting("EFFECT_TAA_ENABLED");}
+    get Effect_DOF_Enabled(): boolean {return this.getCachedBoolSetting("EFFECT_DOF_ENABLED");}
 
+    get Post_TAA_Enabled(): boolean {return this.getCachedBoolSetting("EFFECT_TAA_ENABLED");}
     get Post_ExposureMin(): number {return this.getCachedFloatSetting("POST_EXPOSURE_MIN");}
     get Post_ExposureMax(): number {return this.getCachedFloatSetting("POST_EXPOSURE_MAX");}
     get Post_ExposureSpeed(): number {return this.getCachedFloatSetting("POST_EXPOSURE_SPEED");}
@@ -91,7 +92,8 @@ export class ShaderSettings {
     get Post_ToneMap_LinearStart(): number {return this.getCachedFloatSetting("POST_TONEMAP_LINEAR_START");}
     get Post_ToneMap_LinearLength(): number {return this.getCachedFloatSetting("POST_TONEMAP_LINEAR_LENGTH");}
     get Post_ToneMap_Black(): number {return this.getCachedFloatSetting("POST_TONEMAP_BLACK");}
-    get Post_PurkinjeStrength(): number {return this.getCachedIntSetting("POST_PURKINJE_STRENGTH");}
+    get Post_PurkinjeEnabled(): boolean {return this.getCachedBoolSetting("POST_PURKINJE_ENABLED");}
+    //get Post_PurkinjeStrength(): number {return this.getCachedIntSetting("POST_PURKINJE_STRENGTH");}
 
     get Debug_View(): number {return this.getCachedSetting<number>("DEBUG_VIEW", k => parseInt(getStringSetting(k)));}
     get Debug_Material(): number {return this.getCachedSetting<number>("DEBUG_MATERIAL", k => parseInt(getStringSetting(k)));}

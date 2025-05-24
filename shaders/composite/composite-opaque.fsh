@@ -285,6 +285,7 @@ void main() {
         skyLightDiffuse = mix(skyLightDiffuse, sss_skyLight * 2.0, sss);
 
         vec3 skyIrradiance = SampleSkyIrradiance(localTexNormal, lmCoord.y);
+        //skyIrradiance *= mix(2.0, 1.0, skyLightF);
 
         #ifdef LIGHTING_GI_ENABLED
             vec3 wsgi_localPos = 0.5*localGeoNormal + localPos;
@@ -462,7 +463,7 @@ void main() {
 
             vec3 skyTransmit = getValFromTLUT(texSkyTransmit, skyPos, localViewDir);
 
-            colorFinal += (sunLum + moonLum + starLight) * skyTransmit;
+            colorFinal += (sunLum*blackbody(5800.0) + moonLum + starLight) * skyTransmit;
         }
     }
 

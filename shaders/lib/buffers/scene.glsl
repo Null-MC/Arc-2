@@ -1,4 +1,4 @@
-layout(binding = 0) buffer sceneBuffer { // 256 +64 +64 +8
+layout(binding = 0) buffer sceneBuffer { // 256 +64 +64 +12
     mat4 shadowProjectionInv[4];    // 64*4=256
     mat4 shadowModelViewInv;        // 64
 
@@ -9,4 +9,5 @@ layout(binding = 0) buffer sceneBuffer { // 256 +64 +64 +8
 
     vec3 Scene_TrackPos;            // 16
     float Scene_SkyBrightnessSmooth; // 4
+    float Scene_FocusDepth;         // 4
 };

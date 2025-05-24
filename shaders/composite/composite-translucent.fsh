@@ -7,7 +7,7 @@ layout(location = 0) out vec4 outColor;
 
 in vec2 uv;
 
-uniform sampler2D texFinalOpaque;
+uniform sampler2D TEX_SRC;
 
 uniform sampler2D mainDepthTex;
 uniform sampler2D solidDepthTex;
@@ -141,7 +141,7 @@ uniform sampler2D texSkyIrradiance;
 
 void main() {
     ivec2 iuv = ivec2(gl_FragCoord.xy);
-    vec3 colorOpaque = texelFetch(texFinalOpaque, iuv, 0).rgb * 1000.0;
+    vec3 colorOpaque = texelFetch(TEX_SRC, iuv, 0).rgb * 1000.0;
     vec4 albedo = texelFetch(texDeferredTrans_Color, iuv, 0);
 
     vec4 finalColor = vec4(0.0);
@@ -451,7 +451,7 @@ void main() {
             refractMip = 6.0 * pow(roughness, 0.5) * min(viewDistFar * 0.2, 1.0);
         #endif
 
-        colorOpaque = textureLod(texFinalOpaque, refract_uv, refractMip).rgb * 1000.0;
+        colorOpaque = textureLod(TEX_SRC, refract_uv, refractMip).rgb * 1000.0;
 
         colorOpaque *= 1.0 - view_F;
 

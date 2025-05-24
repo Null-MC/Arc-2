@@ -8,7 +8,7 @@ layout(location = 0) out vec3 outColor;
 uniform sampler2D texBloom;
 
 #if BLOOM_INDEX == 0
-    uniform sampler2D texFinal;
+    uniform sampler2D TEX_SRC;
 #endif
 
 in vec2 uv;
@@ -44,7 +44,7 @@ void main() {
     #if BLOOM_INDEX == 0
         outColor *= Effect_Bloom_Strength;
 
-        outColor += texelFetch(texFinal, ivec2(gl_FragCoord.xy), 0).rgb;
+        outColor += texelFetch(TEX_SRC, ivec2(gl_FragCoord.xy), 0).rgb;
         outColor = clamp(outColor, 0.0, 65.0);
     #endif
 }

@@ -104,6 +104,7 @@ export function setupOptions() {
             .add(asBool("EFFECT_BLOOM_ENABLED", true, true))
             .add(asFloatRange("EFFECT_BLOOM_STRENGTH", 2.0, 0.0, 10.0, 0.05, false))
             .build())
+        .add(asBool("EFFECT_DOF_ENABLED", true, true))
         .build();
 
     const screen_Post = new Page("POST")
@@ -121,8 +122,8 @@ export function setupOptions() {
             .add(asFloatRange("POST_TONEMAP_LINEAR_LENGTH", 0.30, 0.02, 1.0, 0.02, false))
             .add(asFloatRange("POST_TONEMAP_BLACK", 1.36, 0.02, 3.0, 0.02, false))
             .build())
-        //.add(asIntRange("POST_CONTRAST", 160,0, 300, 5, false))
-        .add(asIntRange("POST_PURKINJE_STRENGTH", 30, 0, 100, 2, false))
+        .add(asBool("POST_PURKINJE_ENABLED", true, true))
+        //.add(asIntRange("POST_PURKINJE_STRENGTH", 30, 0, 100, 2, false))
         .build();
 
     const screen_Debug = new Page("DEBUG")

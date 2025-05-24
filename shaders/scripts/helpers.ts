@@ -40,3 +40,35 @@ export class StreamBufferBuilder {
         return this;
     }
 }
+
+export class BufferFlipper {
+    isAlt: boolean
+    textureA: BuiltTexture;
+    textureB: BuiltTexture;
+    nameA: string
+    nameB: string
+
+    constructor(nameA: string, textureA: BuiltTexture, nameB: string, textureB: BuiltTexture) {
+        this.nameA = nameA;
+        this.textureA = textureA;
+        this.nameB = nameB;
+        this.textureB = textureB;
+        this.isAlt = false;
+    }
+
+    flip(): void {
+        this.isAlt = !this.isAlt;
+    }
+
+    getReadName(): string {
+        return this.isAlt ? this.nameA : this.nameB;
+    }
+
+    getReadTexture(): BuiltTexture {
+        return this.isAlt ? this.textureA : this.textureB;
+    }
+
+    getWriteTexture(): BuiltTexture {
+        return this.isAlt ? this.textureB : this.textureA;
+    }
+}

@@ -1,8 +1,8 @@
 #version 430 core
 
-layout(location = 0) out vec4 outColor;
+layout(location = 0) out vec3 outColor;
 
-uniform sampler2D texFinal;
+uniform sampler2D TEX_SRC;
 
 // in vec2 uv;
 
@@ -17,7 +17,7 @@ uniform sampler2D texFinal;
 
 void main() {
     ivec2 iuv = ivec2(gl_FragCoord.xy);
-    vec3 color = texelFetch(texFinal, iuv, 0).rgb * 1000.0;
+    vec3 color = texelFetch(TEX_SRC, iuv, 0).rgb * 1000.0;
 
     float exposureF = clamp(Scene_AvgExposure, Scene_PostExposureMin, Scene_PostExposureMax);
     ApplyAutoExposure(color, exposureF);
@@ -33,14 +33,15 @@ void main() {
 
     //color = color / (color + 0.155) * 1.019;
 
-    if (Post_PurkinjeStrength > EPSILON) {
+    #ifdef POST_PURKINJE_ENABLED
         float avg_ev = log2(max(Scene_AvgExposure, 1.0e-8));
         float ev_norm = saturate(unmix(avg_ev, -1.0, 8.0));
+
         float purkinje_strength = mix(0.5, 0.3, ev_norm);
-        color = PurkinjeShift(color, purkinje_strength); // Post_PurkinjeStrength
-    }
+        color = PurkinjeShift(color, purkinje_strength);
+    #endif
 
     color = REC2020_TO_SRGB * color;
 
-    outColor = vec4(color, 1.0);
+    outColor = color;
 }

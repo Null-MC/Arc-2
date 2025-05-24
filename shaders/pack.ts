@@ -1,5 +1,5 @@
 import {BlockMap} from "./scripts/BlockMap";
-import {setLightColorEx, StreamBufferBuilder} from "./scripts/helpers";
+import {BufferFlipper, setLightColorEx, StreamBufferBuilder} from "./scripts/helpers";
 import {LightingModes, ReflectionModes, ShaderSettings} from "./scripts/settings";
 
 
@@ -132,7 +132,9 @@ function applySettings(settings : ShaderSettings, internal) {
     if (settings.Effect_SSAO_Enabled) defineGlobally1("EFFECT_SSAO_ENABLED");
     defineGlobally("EFFECT_SSAO_SAMPLES", settings.Effect_SSAO_StepCount);
 
-    if (settings.Effect_TAA_Enabled) defineGlobally1("EFFECT_TAA_ENABLED");
+    if (settings.Post_TAA_Enabled) defineGlobally1("EFFECT_TAA_ENABLED");
+
+    if (settings.Post_PurkinjeEnabled) defineGlobally1("POST_PURKINJE_ENABLED");
 
     if (settings.Debug_WhiteWorld) defineGlobally1("DEBUG_WHITE_WORLD");
     if (settings.Debug_Exposure) defineGlobally1("DEBUG_EXPOSURE");
@@ -291,8 +293,6 @@ export function setupShader() {
             "light_blue_candle", "blue_candle", "purple_candle", "magenta_candle", "pink_candle");
     }
 
-    //addTag(1, new NamespacedId("minecraft", "leaves"));
-
     const screenWidth_half = Math.ceil(screenWidth / 2.0);
     const screenHeight_half = Math.ceil(screenHeight / 2.0);
 
@@ -327,20 +327,24 @@ export function setupShader() {
         .clearColor(0.0, 0.0, 0.0, 0.0)
         .build();
 
-    const texFinal = new Texture("texFinal")
-        .imageName("imgFinal")
-        .format(Format.RGBA16F)
+    const texFinalA = new Texture("texFinalA")
+        //.imageName("imgFinalA")
+        .format(Format.RGB16F)
         .clearColor(0.0, 0.0, 0.0, 0.0)
         .build();
 
-    const texFinalOpaque = new Texture("texFinalOpaque")
-        .format(Format.RGBA16F)
+    const texFinalB = new Texture("texFinalB")
+        //.imageName("imgFinalB")
+        .format(Format.RGB16F)
         .clearColor(0.0, 0.0, 0.0, 0.0)
-        .mipmap(true)
         .build();
+
+    const finalFlipper = new BufferFlipper(
+        'texFinalA', texFinalA,
+        'texFinalB', texFinalB);
 
     const texFinalPrevious = new Texture("texFinalPrevious")
-        .format(Format.RGBA16F)
+        .format(Format.RGB16F)
         .clear(false)
         .mipmap(true)
         .build();
@@ -655,6 +659,16 @@ export function setupShader() {
             .build();
     }
 
+    let texAccumTAA: BuiltTexture|null = null;
+    if (settings.Post_TAA_Enabled) {
+        texAccumTAA = new Texture("texAccumTAA")
+            .format(Format.R16F)
+            .width(screenWidth)
+            .height(screenHeight)
+            .clear(false)
+            .build();
+    }
+
     const sceneBuffer = new GPUBuffer(1024)
         .clear(false)
         .build();
@@ -780,20 +794,23 @@ export function setupShader() {
             .build());
     }
 
-    registerShader(new ObjectShader("sky-color", Usage.SKYBOX)
-        .vertex("gbuffer/sky.vsh")
-        .fragment("gbuffer/sky.fsh")
-        .target(0, texFinalOpaque)
-        // .blendFunc(0, FUNC_ONE, FUNC_ZERO, FUNC_ONE, FUNC_ZERO)
+    function DiscardObjectShader(name: string, usage: ProgramUsage) {
+        return new ObjectShader(name, usage)
+            .vertex("shared/discard.vsh")
+            .fragment("shared/noop.fsh")
+            .define("RENDER_GBUFFER", "1");
+    }
+
+    registerShader(DiscardObjectShader("skybox", Usage.SKYBOX)
+        .target(0, texFinalA)
         .build());
 
-    // TODO: sky-textured?
+    registerShader(DiscardObjectShader("skybox", Usage.SKY_TEXTURES)
+        .target(0, texFinalA)
+        .build());
 
-    registerShader(new ObjectShader("clouds", Usage.CLOUDS)
-        .vertex("shared/discard.vsh")
-        .fragment("shared/noop.fsh")
-        .target(0, texFinalOpaque)
-        .define("RENDER_GBUFFER", "1")
+    registerShader(DiscardObjectShader("clouds", Usage.CLOUDS)
+        .target(0, texFinalA)
         .build());
 
     function _mainShader(name: string, usage: ProgramUsage) : ObjectShader {
@@ -949,10 +966,10 @@ export function setupShader() {
     if (settings.Lighting_Mode == LightingModes.RayTraced || settings.Lighting_ReflectionMode == ReflectionModes.WorldSpace) {
         registerBarrier(Stage.POST_RENDER, new MemoryBarrier(SSBO_BIT));
 
-        if (settings.Lighting_ReflectionMode == ReflectionModes.WorldSpace) {
-            registerShader(Stage.POST_RENDER, new GenerateMips(texFinalPrevious));
-            //rtOpaqueShader.generateMips(texFinalPrevious);
-        }
+        // if (settings.Lighting_ReflectionMode == ReflectionModes.WorldSpace) {
+        //     registerShader(Stage.POST_RENDER, new GenerateMips(texFinalPrevious));
+        //     //rtOpaqueShader.generateMips(texFinalPrevious);
+        // }
 
         const rtOpaqueShader = new Composite("rt-opaque")
             .vertex("shared/bufferless.vsh")
@@ -960,9 +977,6 @@ export function setupShader() {
             .target(0, texDiffuseRT)
             .target(1, texSpecularRT)
             .ssbo(0, sceneBuffer)
-            .ssbo(1, shLpvBuffer)
-            .ssbo(2, shLpvBuffer_alt)
-            .ssbo(3, lightListBuffer)
             .ssbo(4, quadListBuffer)
             .ssbo(5, blockFaceBuffer)
             .ubo(0, SceneSettingsBuffer)
@@ -972,11 +986,16 @@ export function setupShader() {
             .define("TEX_DEPTH", "solidDepthTex")
             .define("TEX_SHADOW", texShadow_src);
 
-        // if (settings.Internal.LPV) {
-        //     rtOpaqueShader
-        //         .ssbo(1, shLpvBuffer)
-        //         .ssbo(2, shLpvBuffer_alt);
-        // }
+        if (settings.Lighting_ReflectionMode == ReflectionModes.WorldSpace && settings.Lighting_GI_Enabled) {
+            rtOpaqueShader
+                .ssbo(1, shLpvBuffer)
+                .ssbo(2, shLpvBuffer_alt);
+        }
+
+        if (settings.Lighting_Mode == LightingModes.RayTraced) {
+            rtOpaqueShader
+                .ssbo(3, lightListBuffer);
+        }
 
         registerShader(Stage.POST_RENDER, rtOpaqueShader.build());
     }
@@ -1036,14 +1055,14 @@ export function setupShader() {
     registerBarrier(Stage.POST_RENDER, new MemoryBarrier(SSBO_BIT | IMAGE_BIT));
 
     const compositeOpaqueShader = new Composite("composite-opaque")
-        .vertex("shared/bufferless.vsh")
-        .fragment("composite/composite-opaque.fsh")
-        .target(0, texFinalOpaque)
+        .vertex('shared/bufferless.vsh')
+        .fragment('composite/composite-opaque.fsh')
+        .target(0, finalFlipper.getWriteTexture())
         .ssbo(0, sceneBuffer)
         .ssbo(4, quadListBuffer)
         .ubo(0, SceneSettingsBuffer)
-        .define("TEX_SHADOW", texShadow_src)
-        .define("TEX_SSAO", "texSSAO_final");
+        .define('TEX_SHADOW', texShadow_src)
+        .define('TEX_SSAO', 'texSSAO_final');
 
     // if (snapshot.Lighting_ReflectionMode == ReflectMode_SSR)
     //     compositeOpaqueShader.generateMips(texFinalPrevious);
@@ -1056,17 +1075,19 @@ export function setupShader() {
 
     registerShader(Stage.POST_RENDER, compositeOpaqueShader.build());
 
+    finalFlipper.flip();
+
     if (settings.Lighting_Mode == LightingModes.RayTraced || settings.Lighting_ReflectionMode == ReflectionModes.WorldSpace) {
         registerBarrier(Stage.POST_RENDER, new MemoryBarrier(SSBO_BIT));
 
-        if (settings.Lighting_ReflectionMode == ReflectionModes.WorldSpace) {
-            registerShader(Stage.POST_RENDER, new GenerateMips(texFinalPrevious));
-            //rtTranslucentShader.generateMips(texFinalPrevious);
-        }
+        // if (settings.Lighting_ReflectionMode == ReflectionModes.WorldSpace) {
+        //     registerShader(Stage.POST_RENDER, new GenerateMips(texFinalPrevious));
+        //     //rtTranslucentShader.generateMips(texFinalPrevious);
+        // }
 
-        registerShader(Stage.POST_RENDER, new Composite("rt-translucent")
-            .vertex("shared/bufferless.vsh")
-            .fragment("composite/rt.fsh")
+        registerShader(Stage.POST_RENDER, new Composite('rt-translucent')
+            .vertex('shared/bufferless.vsh')
+            .fragment('composite/rt.fsh')
             .target(0, texDiffuseRT)
             .target(1, texSpecularRT)
             .ssbo(0, sceneBuffer)
@@ -1076,22 +1097,22 @@ export function setupShader() {
             .ssbo(4, quadListBuffer)
             .ssbo(5, blockFaceBuffer)
             .ubo(0, SceneSettingsBuffer)
-            .define("RENDER_TRANSLUCENT", "1")
-            .define("TEX_DEFERRED_COLOR", "texDeferredTrans_Color")
-            .define("TEX_DEFERRED_DATA", "texDeferredTrans_Data")
-            .define("TEX_DEFERRED_NORMAL", "texDeferredTrans_TexNormal")
-            .define("TEX_DEPTH", "mainDepthTex")
-            .define("TEX_SHADOW", texShadow_src)
+            .define('RENDER_TRANSLUCENT', '1')
+            .define('TEX_DEFERRED_COLOR', 'texDeferredTrans_Color')
+            .define('TEX_DEFERRED_DATA', 'texDeferredTrans_Data')
+            .define('TEX_DEFERRED_NORMAL', 'texDeferredTrans_TexNormal')
+            .define('TEX_DEPTH', 'mainDepthTex')
+            .define('TEX_SHADOW', texShadow_src)
             .build());
     }
 
     if (internal.Accumulation) {
-        registerShader(Stage.POST_RENDER, new Compute("accumulation-translucent")
-            .location("composite/accumulation.csh")
+        registerShader(Stage.POST_RENDER, new Compute('accumulation-translucent')
+            .location('composite/accumulation.csh')
             .workGroups(Math.ceil(screenWidth / 16.0), Math.ceil(screenHeight / 16.0), 1)
-            .define("RENDER_TRANSLUCENT", "1")
-            .define("TEX_DEPTH", "mainDepthTex")
-            .define("TEX_SSAO", "texSSAO")
+            .define('RENDER_TRANSLUCENT', '1')
+            .define('TEX_DEPTH', 'mainDepthTex')
+            .define('TEX_SSAO', 'texSSAO')
             .define("TEX_DEFERRED_DATA", "texDeferredTrans_Data")
             .define("IMG_ACCUM_DIFFUSE", "imgAccumDiffuse_translucent")
             .define("IMG_ACCUM_SPECULAR", "imgAccumSpecular_translucent")
@@ -1112,9 +1133,9 @@ export function setupShader() {
             .build());
     }
 
-    registerShader(Stage.POST_RENDER, new Composite("volumetric-near")
-        .vertex("shared/bufferless.vsh")
-        .fragment("composite/volumetric-near.fsh")
+    registerShader(Stage.POST_RENDER, new Composite('volumetric-near')
+        .vertex('shared/bufferless.vsh')
+        .fragment('composite/volumetric-near.fsh')
         .target(0, texScatterVL)
         .target(1, texTransmitVL)
         .ssbo(0, sceneBuffer)
@@ -1124,14 +1145,14 @@ export function setupShader() {
         .build());
 
     if (settings.Lighting_VolumetricResolution > 0) {
-        registerShader(Stage.POST_RENDER, new Compute("volumetric-near-filter")
-            .location("composite/volumetric-filter.csh")
+        registerShader(Stage.POST_RENDER, new Compute('volumetric-near-filter')
+            .location('composite/volumetric-filter.csh')
             .workGroups(Math.ceil(screenWidth / 16.0), Math.ceil(screenHeight / 16.0), 1)
-            .define("TEX_DEPTH", "mainDepthTex")
+            .define('TEX_DEPTH', 'mainDepthTex')
             .build());
     }
 
-    registerShader(Stage.POST_RENDER, new GenerateMips(texFinalOpaque));
+    registerShader(Stage.POST_RENDER, new GenerateMips(finalFlipper.getReadTexture()));
 
     if (settings.Shadow_Enabled) {
         registerShader(Stage.POST_RENDER, new Composite("shadow-translucent")
@@ -1150,85 +1171,100 @@ export function setupShader() {
         // }
     }
 
-    registerShader(Stage.POST_RENDER, new Composite("composite-translucent")
-        .vertex("shared/bufferless.vsh")
-        .fragment("composite/composite-translucent.fsh")
-        .target(0, texFinal)
+    registerShader(Stage.POST_RENDER, new Composite('composite-translucent')
+        .vertex('shared/bufferless.vsh')
+        .fragment('composite/composite-translucent.fsh')
+        .target(0, finalFlipper.getWriteTexture())
         .ssbo(0, sceneBuffer)
         .ssbo(4, quadListBuffer)
         .ubo(0, SceneSettingsBuffer)
-        .define("TEX_SHADOW", "texShadow")
+        .define('TEX_SRC', finalFlipper.getReadName())
+        .define('TEX_SHADOW', 'texShadow')
         .build());
 
-    if (settings.Effect_TAA_Enabled) {
-        registerShader(Stage.POST_RENDER, new Composite("copy-TAA")
-            .vertex("shared/bufferless.vsh")
-            .fragment("shared/copy.fsh")
-            .define("TEX_SRC", "texFinal")
-            .target(0, texFinalOpaque)
+    finalFlipper.flip();
+
+    if (settings.Post_TAA_Enabled) {
+        registerShader(Stage.POST_RENDER, new Composite('TAA')
+            .vertex('shared/bufferless.vsh')
+            .fragment('post/taa.fsh')
+            .target(0, finalFlipper.getWriteTexture())
+            .target(1, texAccumTAA)
+            .define('TEX_SRC', finalFlipper.getReadName())
             .build());
 
-        registerShader(Stage.POST_RENDER, new Composite("TAA")
-            .vertex("shared/bufferless.vsh")
-            .fragment("post/taa.fsh")
-            .target(0, texFinal)
-            .target(1, texFinalPrevious)
-            .define("TEX_SRC", "texFinalOpaque")
-            .build());
+        finalFlipper.flip();
     }
-    else {
-        registerShader(Stage.POST_RENDER, new Composite("copy-prev")
-            .vertex("shared/bufferless.vsh")
-            .fragment("shared/copy.fsh")
-            .define("TEX_SRC", "texFinal")
-            .target(0, texFinalPrevious)
-            .build());
-    }
+
+    registerShader(Stage.POST_RENDER, new TextureCopy(finalFlipper.getReadTexture(), texFinalPrevious)
+        .size(screenWidth, screenHeight)
+        .build());
 
     registerShader(Stage.POST_RENDER, new GenerateMips(texFinalPrevious));
 
-    registerShader(Stage.POST_RENDER, new Composite("blur-near")
-        .vertex("shared/bufferless.vsh")
-        .fragment("post/blur-near.fsh")
-        .target(0, texFinal)
-        .define("TEX_SRC", "texFinalPrevious")
+    registerShader(Stage.POST_RENDER, new Composite('blur-near')
+        .vertex('shared/bufferless.vsh')
+        .fragment('post/blur-near.fsh')
+        .target(0, finalFlipper.getWriteTexture())
+        .define('TEX_SRC', finalFlipper.getReadName())
         .build());
 
-    registerShader(Stage.POST_RENDER, new Compute("histogram")
-        .location("post/histogram.csh")
+    finalFlipper.flip();
+
+    if (settings.Effect_DOF_Enabled) {
+        registerShader(Stage.POST_RENDER, new Composite('depth-of-field')
+            .vertex('shared/bufferless.vsh')
+            .fragment('composite/depth-of-field.fsh')
+            .target(0, finalFlipper.getWriteTexture())
+            .define('TEX_SRC', finalFlipper.getReadName())
+            .build());
+
+        finalFlipper.flip();
+    }
+
+    registerShader(Stage.POST_RENDER, new Compute('histogram')
+        .location('post/histogram.csh')
         .workGroups(Math.ceil(screenWidth / 16.0), Math.ceil(screenHeight / 16.0), 1)
         .ubo(0, SceneSettingsBuffer)
+        .define('TEX_SRC', finalFlipper.getReadName())
         .build());
 
     registerBarrier(Stage.POST_RENDER, new MemoryBarrier(IMAGE_BIT));
 
-    registerShader(Stage.POST_RENDER, new Compute("exposure")
+    registerShader(Stage.POST_RENDER, new Compute('exposure')
         .workGroups(1, 1, 1)
-        .location("post/exposure.csh")
+        .location('post/exposure.csh')
         .ssbo(0, sceneBuffer)
         .ubo(0, SceneSettingsBuffer)
         .build());
 
-    if (settings.Effect_BloomEnabled)
-        setupBloom(texFinal);
+    if (settings.Effect_Bloom_Enabled) {
+        setupBloom(finalFlipper.getReadName(), finalFlipper.getWriteTexture());
 
-    registerShader(Stage.POST_RENDER, new Composite("tonemap")
-        .vertex("shared/bufferless.vsh")
-        .fragment("post/tonemap.fsh")
+        finalFlipper.flip();
+    }
+
+    registerShader(Stage.POST_RENDER, new Composite('tone-map')
+        .vertex('shared/bufferless.vsh')
+        .fragment('post/tonemap.fsh')
         .ssbo(0, sceneBuffer)
         .ubo(0, SceneSettingsBuffer)
-        .target(0, texFinal)
+        .target(0, finalFlipper.getWriteTexture())
+        .define('TEX_SRC', finalFlipper.getReadName())
         .build());
+
+    finalFlipper.flip();
 
     if (internal.DebugEnabled) {
-        registerShader(Stage.POST_RENDER, new Composite("debug")
-            .vertex("shared/bufferless.vsh")
-            .fragment("post/debug.fsh")
-            .target(0, texFinal)
+        registerShader(Stage.POST_RENDER, new Composite('debug')
+            .vertex('shared/bufferless.vsh')
+            .fragment('post/debug.fsh')
+            .target(0, finalFlipper.getWriteTexture())
             .ssbo(0, sceneBuffer)
             .ssbo(3, lightListBuffer)
             .ssbo(4, quadListBuffer)
             .ubo(0, SceneSettingsBuffer)
+            .define('TEX_SRC', finalFlipper.getReadName())
             .define("TEX_COLOR", settings.Debug_Translucent
                 ? "texDeferredTrans_Color"
                 : "texDeferredOpaque_Color")
@@ -1246,9 +1282,16 @@ export function setupShader() {
                 ? "texAccumOcclusion_translucent"
                 : "texAccumOcclusion_opaque")
             .build());
+
+        finalFlipper.flip();
     }
 
-    setCombinationPass(new CombinationPass("post/final.fsh").build());
+    // TODO: temp workaround
+    defineGlobally('FINAL_TEX_SRC', finalFlipper.getReadName());
+
+    setCombinationPass(new CombinationPass("post/final.fsh")
+        //.define('TEX_SRC', finalFlipper.getName())
+        .build());
 
     for (let blockName in BlockMappings.mappings) {
         const meta = BlockMappings.get(blockName);
@@ -1287,8 +1330,8 @@ export function onSettingsChanged(state : WorldState) {
         .appendFloat(settings.Post_ToneMap_Contrast)
         .appendFloat(settings.Post_ToneMap_LinearStart)
         .appendFloat(settings.Post_ToneMap_LinearLength)
-        .appendFloat(settings.Post_ToneMap_Black)
-        .appendFloat(settings.Post_PurkinjeStrength * 0.01);
+        .appendFloat(settings.Post_ToneMap_Black);
+        //.appendFloat(settings.Post_PurkinjeStrength * 0.01);
 }
 
 export function setupFrame(state : WorldState) {
@@ -1366,7 +1409,7 @@ function setupSky(sceneBuffer) {
         .build())
 }
 
-function setupBloom(texFinal) {
+function setupBloom(src: string, target: BuiltTexture) {
     const screenWidth_half = Math.ceil(screenWidth / 2.0);
     const screenHeight_half = Math.ceil(screenHeight / 2.0);
 
@@ -1376,7 +1419,7 @@ function setupBloom(texFinal) {
 
     print(`Bloom enabled with ${maxLod} LODs`);
 
-    const texBloom = new Texture("texBloom")
+    const texBloom = new Texture('texBloom')
         .format(Format.RGB16F)
         .width(screenWidth_half)
         .height(screenHeight_half)
@@ -1385,32 +1428,29 @@ function setupBloom(texFinal) {
         .build();
 
     for (let i = 0; i < maxLod; i++) {
-        let texSrc = i == 0
-            ? "texFinal"
-            : "texBloom"
-
         registerShader(Stage.POST_RENDER, new Composite(`bloom-down-${i}`)
-            .vertex("shared/bufferless.vsh")
-            .fragment("post/bloom/down.fsh")
+            .vertex('shared/bufferless.vsh')
+            .fragment('post/bloom/down.fsh')
             .target(0, texBloom, i)
-            .define("TEX_SRC", texSrc)
-            .define("TEX_SCALE", Math.pow(2, i).toString())
-            .define("BLOOM_INDEX", i.toString())
-            .define("MIP_INDEX", Math.max(i-1, 0).toString())
+            .define('TEX_SRC', i == 0 ? src : 'texBloom')
+            .define('TEX_SCALE', Math.pow(2, i).toString())
+            .define('BLOOM_INDEX', i.toString())
+            .define('MIP_INDEX', Math.max(i-1, 0).toString())
             .build());
     }
 
     for (let i = maxLod-1; i >= 0; i--) {
         const shader = new Composite(`bloom-up-${i}`)
-            .vertex("shared/bufferless.vsh")
-            .fragment("post/bloom/up.fsh")
+            .vertex('shared/bufferless.vsh')
+            .fragment('post/bloom/up.fsh')
             .ubo(0, SceneSettingsBuffer)
-            .define("TEX_SCALE", Math.pow(2, i+1).toString())
-            .define("BLOOM_INDEX", i.toString())
-            .define("MIP_INDEX", i.toString());
+            .define('TEX_SRC', src)
+            .define('TEX_SCALE', Math.pow(2, i+1).toString())
+            .define('BLOOM_INDEX', i.toString())
+            .define('MIP_INDEX', i.toString());
 
         if (i == 0) {
-            shader.target(0, texFinal);
+            shader.target(0, target);
             shader.blendFunc(0, Func.ONE, Func.ZERO, Func.ONE, Func.ZERO);
         }
         else {

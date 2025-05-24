@@ -5,7 +5,7 @@
 
 layout(location = 0) out vec4 outColor;
 
-uniform sampler2D texFinal;
+uniform sampler2D TEX_SRC;
 
 #if DEBUG_VIEW == DEBUG_VIEW_SHADOWS
     uniform sampler2D TEX_SHADOW;
@@ -73,7 +73,7 @@ in vec2 uv;
 
 void main() {
     ivec2 iuv = ivec2(gl_FragCoord.xy);
-    vec3 color = texelFetch(texFinal, iuv, 0).rgb;
+    vec3 color = texelFetch(TEX_SRC, iuv, 0).rgb;
     vec2 previewCoord, previewCoord2, previewCoordSq;
     
     if (!ap.game.guiHidden) {

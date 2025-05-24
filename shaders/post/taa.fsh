@@ -1,17 +1,22 @@
 #version 430 core
 
-layout(location = 0) out vec4 outColor;
-layout(location = 1) out vec4 outColorPrev;
+#include "/lib/constants.glsl"
+#include "/settings.glsl"
+
+layout(location = 0) out vec3 outColor;
+layout(location = 1) out float outMixRate;
 
 in vec2 uv;
 
 uniform sampler2D TEX_SRC;
 uniform sampler2D texFinalPrevious;
 uniform sampler2D solidDepthTex;
+uniform sampler2D texAccumTAA;
 
 #include "/lib/common.glsl"
-#include "/lib/taa_jitter.glsl"
+
 #include "/lib/sampling/catmull-rom.glsl"
+#include "/lib/taa_jitter.glsl"
 
 
 const float TAA_MIX_MIN = 0.0;
@@ -61,10 +66,12 @@ void main() {
     // TODO: add velocity buffer
     vec3 velocity = vec3(0.0); //textureLod(BUFFER_VELOCITY, uv, 0).xyz;
     vec2 uvLast = getReprojectedClipPos(uv, depth, velocity).xy;
-    vec4 lastColor = sample_CatmullRom_RGBA(texFinalPrevious, uvLast, ap.game.screenSize);
+    // TODO: make RGB version of sampler
+    vec3 lastColor = sample_CatmullRom_RGBA(texFinalPrevious, uvLast, ap.game.screenSize).rgb;
+    float lastMixRate = textureLod(texAccumTAA, uvLast, 0).r;
 
-    vec3 antialiased = lastColor.rgb;
-    float mixRate = clamp(lastColor.a+1.0, TAA_MIX_MIN, TAA_MAX_FRAMES);
+    vec3 antialiased = lastColor;
+    float mixRate = clamp(lastMixRate+1.0, TAA_MIX_MIN, TAA_MAX_FRAMES);
 
     if (saturate(uvLast) != uvLast) mixRate = 0.0;
     
@@ -110,6 +117,6 @@ void main() {
     
     antialiased = decodePalYuv(antialiased);
     
-    outColor = vec4(antialiased, 1.0);
-    outColorPrev = vec4(antialiased, mixRate);
+    outColor = antialiased;
+    outMixRate = mixRate;
 }

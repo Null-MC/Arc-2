@@ -132,6 +132,8 @@ function applySettings(settings : ShaderSettings, internal) {
     if (settings.Effect_SSAO_Enabled) defineGlobally1("EFFECT_SSAO_ENABLED");
     defineGlobally("EFFECT_SSAO_SAMPLES", settings.Effect_SSAO_StepCount);
 
+    defineGlobally('EFFECT_DOF_SPEED', settings.Effect_DOF_Speed);
+
     if (settings.Post_TAA_Enabled) defineGlobally1("EFFECT_TAA_ENABLED");
 
     if (settings.Post_PurkinjeEnabled) defineGlobally1("POST_PURKINJE_ENABLED");
@@ -885,6 +887,22 @@ export function setupShader() {
     registerShader(mainShaderTranslucent("entity-translucent", Usage.ENTITY_TRANSLUCENT)
         .define("RENDER_ENTITY", "1")
         .build());
+
+    const particleShader = new ObjectShader("particles", Usage.PARTICLES)
+        .vertex("gbuffer/particles.vsh")
+        .fragment("gbuffer/particles.fsh")
+        .target(0, texParticles)
+        .blendOff(0)
+        .ssbo(0, sceneBuffer)
+        .ubo(0, SceneSettingsBuffer);
+
+    if (settings.Lighting_GI_Enabled) {
+        particleShader
+            .ssbo(1, shLpvBuffer)
+            .ssbo(2, shLpvBuffer_alt);
+    }
+
+    registerShader(particleShader.build());
 
     registerShader(new ObjectShader("weather", Usage.WEATHER)
         .vertex("gbuffer/weather.vsh")

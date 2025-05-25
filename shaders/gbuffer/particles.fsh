@@ -16,9 +16,6 @@ in VertexData2 {
 uniform sampler2D texSkyTransmit;
 uniform sampler2D texSkyIrradiance;
 
-uniform sampler2D texFinalPrevious;
-uniform sampler2D texBloom;
-
 uniform sampler3D texFogNoise;
 
 #ifdef SHADOWS_ENABLED
@@ -35,17 +32,26 @@ uniform sampler3D texFogNoise;
 #include "/lib/common.glsl"
 #include "/lib/buffers/scene.glsl"
 
+#ifdef LIGHTING_GI_ENABLED
+    #include "/lib/buffers/wsgi.glsl"
+#endif
+
 #include "/lib/noise/ign.glsl"
 #include "/lib/sampling/erp.glsl"
-#include "/lib/hg.glsl"
+#include "/lib/sampling/lightmap.glsl"
 
 #include "/lib/utility/blackbody.glsl"
 #include "/lib/utility/hsv.glsl"
 
 #include "/lib/sky/common.glsl"
+#include "/lib/sky/irradiance.glsl"
 #include "/lib/sky/transmittance.glsl"
 
+#include "/lib/material/material.glsl"
+
+#include "/lib/hg.glsl"
 #include "/lib/light/sky.glsl"
+#include "/lib/lightmap/sample.glsl"
 
 #ifdef SHADOWS_ENABLED
     #include "/lib/shadow/csm.glsl"
@@ -67,6 +73,11 @@ uniform sampler3D texFogNoise;
     #include "/lib/voxel/floodfill-sample.glsl"
 #endif
 
+#ifdef LIGHTING_GI_ENABLED
+    #include "/lib/voxel/wsgi-common.glsl"
+    #include "/lib/voxel/wsgi-sample.glsl"
+#endif
+
 
 void iris_emitFragment() {
     vec2 mUV = vIn.uv;
@@ -74,24 +85,52 @@ void iris_emitFragment() {
     vec4 mColor = vIn.color;
     iris_modifyBase(mUV, mColor, mLight);
 
-    vec4 albedo = iris_sampleBaseTex(mUV);
+    float mLOD = textureQueryLod(irisInt_BaseTex, mUV).y;
 
-    albedo.a *= 1.0 - smoothstep(cloudHeight - 16.0, cloudHeight + 16.0, vIn.localPos.y + ap.camera.pos.y);
-
+    vec4 albedo = iris_sampleBaseTexLod(mUV, int(mLOD));
     if (iris_discardFragment(albedo)) {discard; return;}
 
-    // albedo *= mColor;
-    // albedo.rgb = RgbToLinear(albedo.rgb);
+    vec2 lmcoord = LightMapNorm(mLight);
 
-    // #ifdef DEBUG_WHITE_WORLD
-    //     albedo.rgb = vec3(1.0);
-    // #endif
+    vec4 normalData = iris_sampleNormalMapLod(mUV, int(mLOD));
+    vec4 specularData = iris_sampleSpecularMapLod(mUV, int(mLOD));
+
+    #if MATERIAL_FORMAT != MAT_NONE
+        //vec3 localTexNormal = mat_normal(normalData.xyz);
+        float roughness = mat_roughness(specularData.r);
+        float f0_metal = specularData.g;
+        //float porosity = mat_porosity(specularData.b, roughness, f0_metal);
+    #endif
+
+    #if MATERIAL_FORMAT == MAT_LABPBR
+        float emission = mat_emission_lab(specularData.a);
+        //float sss = mat_sss_lab(specularData.b);
+        float occlusion = normalData.z;
+    #elif MATERIAL_FORMAT == MAT_OLDPBR
+        float emission = specularData.b;
+        float occlusion = 1.0;
+        //float sss = 0.0;
+    #else
+        //vec3 localTexNormal = localGeoNormal;
+        float occlusion = 1.0;
+        float roughness = 0.92;
+        float f0_metal = 0.0;
+        //float porosity = 1.0;
+        //float sss = 0.0;
+        float emission = iris_getEmission(vIn.blockId) / 15.0;
+    #endif
+
+    float roughL = _pow2(roughness);
+
+     albedo *= mColor;
+     albedo.rgb = RgbToLinear(albedo.rgb);
+
+     #ifdef DEBUG_WHITE_WORLD
+         albedo.rgb = WhiteWorld_Value;
+     #endif
 
     // // float emission = (material & 8) != 0 ? 1.0 : 0.0;
     // const float emission = 0.0;
-
-    // vec2 lmcoord = clamp((mLight - (0.5/16.0)) / (15.0/16.0), 0.0, 1.0);
-    // lmcoord = pow(lmcoord, vec2(3.0));
 
     // // vec3 _localNormal = normalize(localNormal);
 
@@ -109,6 +148,28 @@ void iris_emitFragment() {
     #if defined(SKY_CLOUDS_ENABLED) && defined(SHADOWS_CLOUD_ENABLED)
         skyLightF *= SampleCloudShadows(vIn.localPos);
     #endif
+
+    //float occlusion = 1.0;//texOcclusion;
+
+//    #ifdef EFFECT_SSAO_ENABLED
+//        #ifdef ACCUM_ENABLED
+//            float ssao_occlusion;
+//            if (altFrame) ssao_occlusion = textureLod(texAccumOcclusion_opaque_alt, uv, 0).r;
+//            else ssao_occlusion = textureLod(texAccumOcclusion_opaque, uv, 0).r;
+//        #else
+//            float ssao_occlusion = textureLod(TEX_SSAO, uv, 0).r;
+//        #endif
+//
+//        occlusion *= ssao_occlusion;
+//    #endif
+
+    vec3 sunTransmit, moonTransmit;
+    GetSkyLightTransmission(vIn.localPos, sunTransmit, moonTransmit);
+    vec3 sunLight = SUN_LUX * sunTransmit;
+    vec3 moonLight = MOON_LUX * moonTransmit;
+
+//    float NoL_sun = dot(localTexNormal, Scene_LocalSunDir);
+//    float NoL_moon = -NoL_sun;
 
     #ifdef VL_SELF_SHADOW
         #ifdef EFFECT_TAA_ENABLED
@@ -153,38 +214,66 @@ void iris_emitFragment() {
     // vec4 finalColor = albedo;
     // finalColor.rgb *= skyLighting + blockLighting + (Material_EmissionBrightness * emission) + 0.002;
 
-    vec4 finalColor = albedo;
 
-    float viewDist = length(vIn.localPos);
-    float lod = 6.0 / (viewDist*0.1 + 1.0);
-
-    vec2 uv = gl_FragCoord.xy / ap.game.screenSize;
-    finalColor.rgb = textureLod(texFinalPrevious, uv, lod).rgb * 1000.0 * 0.8;
-    finalColor.a = 1.0;
-
-    finalColor.rgb += textureLod(texBloom, uv, 0).rgb * 1000.0 * 0.02;
+    //finalColor.rgb += textureLod(texBloom, uv, 0).rgb * 1000.0 * 0.02;
 
     vec3 localViewDir = normalize(vIn.localPos);
-    float VoL_sun = dot(localViewDir, Scene_LocalSunDir);
+//    float VoL_sun = dot(localViewDir, Scene_LocalSunDir);
 
-    vec3 sunTransmit, moonTransmit;
-    GetSkyLightTransmission(vIn.localPos, sunTransmit, moonTransmit);
+//    vec3 sunTransmit, moonTransmit;
+//    GetSkyLightTransmission(vIn.localPos, sunTransmit, moonTransmit);
 
-    float sun_phase = max(HG(VoL_sun, 0.8), 0.0);
-    float moon_phase = max(HG(-VoL_sun, 0.8), 0.0);
-    vec3 sun_light = SUN_LUX * sunTransmit * sun_phase;
-    vec3 moon_light = MOON_LUX * moonTransmit * moon_phase;
+    vec3 skyLightFinal = skyLightF * (sunLight + moonLight);
 
-    finalColor.rgb += 0.02 * skyLightF * (sun_light + moon_light) * shadowSample;
+    vec3 skyLightDiffuse = skyLightFinal * shadowSample;// * SampleLightDiffuse(NoVm, NoLm, LoHm, roughL);
+
+    vec3 skyIrradiance = SampleSkyIrradiance(-localViewDir, lmcoord.y);
+    //skyIrradiance *= mix(2.0, 1.0, skyLightF);
+
+    #ifdef LIGHTING_GI_ENABLED
+        #ifdef LIGHTING_GI_SKYLIGHT
+            vec3 wsgi_bufferPos = wsgi_getBufferPosition(vIn.localPos, WSGI_CASCADE_COUNT+WSGI_SCALE_BASE-1);
+
+            if (wsgi_isInBounds(wsgi_bufferPos))
+                skyIrradiance = vec3(0.0);
+        #endif
+
+        skyIrradiance += wsgi_sample(vIn.localPos, -localViewDir);
+    #endif
+
+    skyLightDiffuse += skyIrradiance;
+    skyLightDiffuse *= occlusion;
+
+    vec3 blockLighting = GetVanillaBlockLight(lmcoord.x, occlusion);
 
     #if LIGHTING_MODE == LIGHT_MODE_LPV
         vec3 voxelPos = GetVoxelPosition(vIn.localPos);
 
         if (IsInVoxelBounds(voxelPos))
-            finalColor.rgb += 0.04 * sample_floodfill(voxelPos);
+            blockLighting = sample_floodfill(voxelPos);
     #endif
 
-    finalColor *= mColor;
+    //vec3 diffuse = skyLightF * (sun_light + moon_light) * shadowSample;
+    vec3 diffuse = skyLightDiffuse + blockLighting + 0.0016 * occlusion;
+
+//    #if LIGHTING_MODE == LIGHT_MODE_LPV
+//        vec3 voxelPos = GetVoxelPosition(vIn.localPos);
+//
+//        if (IsInVoxelBounds(voxelPos))
+//            diffuse += 0.04 * sample_floodfill(voxelPos);
+//    #endif
+
+    float metalness = mat_metalness(f0_metal);
+    diffuse *= 1.0 - metalness * (1.0 - roughL);
+
+    #if MATERIAL_EMISSION_POWER != 1
+        diffuse += pow(emission, MATERIAL_EMISSION_POWER) * Material_EmissionBrightness * BLOCK_LUX;
+    #else
+        diffuse += emission * Material_EmissionBrightness * BLOCK_LUX;
+    #endif
+
+    vec4 finalColor = albedo;
+    finalColor.rgb *= diffuse;
 
     //float viewDist = length(vIn.localPos);
     //float fogF = smoothstep(fogStart, fogEnd, viewDist);

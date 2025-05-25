@@ -13,15 +13,7 @@ in vec2 uv;
 #include "/lib/common.glsl"
 #include "/lib/buffers/scene.glsl"
 
-//#include "/lib/noise/ign.glsl"
-//#include "/lib/noise/blue.glsl"
-//#include "/lib/noise/hash.glsl"
-
 #include "/lib/sampling/depth.glsl"
-
-//#ifdef EFFECT_TAA_ENABLED
-//    #include "/lib/taa_jitter.glsl"
-//#endif
 
 
 #define DOF_SCALE 4.0 // [1.0 1.5 2.0 2.5 3.0 3.5 4.0 4.5 5.0]
@@ -37,18 +29,6 @@ float getBlurSize(const in float depth, const in float focusPoint) {
 
 
 void main() {
-    //ivec2 iuv = ivec2(uv * ap.game.screenSize);
-    //float depth = texelFetch(mainDepthTex, iuv, 0).r;
-
-    // vec2 uv_j = uv;
-    // #ifdef EFFECT_TAA_ENABLED
-    //     vec2 jitterOffset = getJitterOffset(ap.time.frames);
-    //     uv_j -= jitterOffset;
-    // #endif
-
-//    float centerDepth = textureLod(mainDepthTex, vec2(0.5), 0).r;
-//    centerDepth = linearizeDepth(centerDepth, ap.camera.near, ap.camera.far);
-
     vec3 color = textureLod(TEX_SRC, uv, 0).rgb;
     float baseDepth = textureLod(mainDepthTex, uv, 0).r;
     baseDepth = linearizeDepth(baseDepth, ap.camera.near, ap.camera.far);

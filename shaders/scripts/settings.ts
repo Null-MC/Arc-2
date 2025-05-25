@@ -60,7 +60,7 @@ export class ShaderSettings {
     get Lighting_GI_BuffserSize(): number {return this.getCachedIntSetting("LIGHTING_GI_SIZE");}
     get Lighting_GI_CascadeCount(): number {return this.getCachedIntSetting("LIGHTING_GI_CASCADES");}
     get Lighting_GI_MaxFrames(): number {return this.getCachedIntSetting("VOXEL_GI_MAXFRAMES");}
-    get Lighting_GI_BaseScale(): number {return 0;}
+    get Lighting_GI_BaseScale(): number {return this.getCachedIntSetting("WSGI_SCALE_BASE");}
     get Lighting_PenumbraSize(): number {return this.getCachedIntSetting("LIGHT_TRACE_PENUMBRA");}
     get Lighting_TraceSampleCount(): number {return this.getCachedIntSetting("RT_MAX_SAMPLE_COUNT");}
     get Lighting_TraceLightMax(): number {return this.getCachedIntSetting("RT_MAX_LIGHT_COUNT");}
@@ -82,6 +82,7 @@ export class ShaderSettings {
     get Effect_Bloom_Enabled(): boolean {return this.getCachedBoolSetting("EFFECT_BLOOM_ENABLED");}
     get Effect_Bloom_Strength(): number {return this.getCachedFloatSetting("EFFECT_BLOOM_STRENGTH");}
     get Effect_DOF_Enabled(): boolean {return this.getCachedBoolSetting("EFFECT_DOF_ENABLED");}
+    get Effect_DOF_Speed(): number {return this.getCachedIntSetting("EFFECT_DOF_SPEED");}
 
     get Post_TAA_Enabled(): boolean {return this.getCachedBoolSetting("EFFECT_TAA_ENABLED");}
     get Post_ExposureMin(): number {return this.getCachedFloatSetting("POST_EXPOSURE_MIN");}

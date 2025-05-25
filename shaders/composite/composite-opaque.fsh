@@ -279,10 +279,12 @@ void main() {
         float VoL_sun = dot(localViewDir, Scene_LocalSunDir);
         vec3 sss_phase_sun = max(DHG(VoL_sun, -0.04, 0.96, 0.06), 0.0) * abs(NoL_sun) * sunLight;
         vec3 sss_phase_moon = max(HG(-VoL_sun, sss_G), 0.0) * abs(NoL_moon) * moonLight;
-        vec3 sss_skyLight = shadow_sss.w * (sss_phase_sun + sss_phase_moon)
+        vec3 sss_skyLight = (sss_phase_sun + sss_phase_moon)
                           + phaseIso * sss_skyIrradiance * occlusion;
 
-        skyLightDiffuse = mix(skyLightDiffuse, sss_skyLight * 2.0, sss);
+        vec3 indirect_sss = max(shadow_sss.w - shadow_sss.rgb, 0.0);
+
+        skyLightDiffuse = mix(skyLightDiffuse, sss_skyLight * PI, indirect_sss * sss);
 
         vec3 skyIrradiance = SampleSkyIrradiance(localTexNormal, lmCoord.y);
         //skyIrradiance *= mix(2.0, 1.0, skyLightF);
@@ -291,7 +293,7 @@ void main() {
             vec3 wsgi_localPos = 0.5*localGeoNormal + localPos;
 
             #ifdef LIGHTING_GI_SKYLIGHT
-                vec3 wsgi_bufferPos = wsgi_getBufferPosition(wsgi_localPos, WSGI_CASCADE_COUNT-1);
+                vec3 wsgi_bufferPos = wsgi_getBufferPosition(wsgi_localPos, WSGI_CASCADE_COUNT+WSGI_SCALE_BASE-1);
 
                 if (wsgi_isInBounds(wsgi_bufferPos))
                     skyIrradiance = vec3(0.0);
@@ -338,77 +340,84 @@ void main() {
             diffuse += emission * Material_EmissionBrightness * BLOCK_LUX;
         #endif
 
-        // reflections
-        #if LIGHTING_REFLECT_MODE != REFLECT_MODE_WSR
-            vec3 viewDir = normalize(viewPos);
-            vec3 viewNormal = mat3(ap.camera.view) * localTexNormal;
-            vec3 reflectViewDir = reflect(viewDir, viewNormal);
-            vec3 reflectLocalDir = mat3(ap.camera.viewInv) * reflectViewDir;
+        vec3 view_F = vec3(0.0);
+        vec3 specular = vec3(0.0);
+        if (hasTexNormal) {
+            // reflections
+            #if LIGHTING_REFLECT_MODE != REFLECT_MODE_WSR
+                vec3 viewDir = normalize(viewPos);
+                vec3 viewNormal = mat3(ap.camera.view) * localTexNormal;
+                vec3 reflectViewDir = reflect(viewDir, viewNormal);
+                vec3 reflectLocalDir = mat3(ap.camera.viewInv) * reflectViewDir;
 
-            #ifdef MATERIAL_ROUGH_REFLECT_NOISE
-                randomize_reflection(reflectLocalDir, localTexNormal, roughness);
-            #endif
+                #ifdef MATERIAL_ROUGH_REFLECT_NOISE
+                    randomize_reflection(reflectLocalDir, localTexNormal, roughness);
+                #endif
 
-            vec3 skyPos = getSkyPosition(vec3(0.0));
-            vec3 skyReflectColor = lmCoord.y * getValFromSkyLUT(texSkyView, skyPos, reflectLocalDir, Scene_LocalSunDir);
+                vec3 skyPos = getSkyPosition(vec3(0.0));
+                vec3 skyReflectColor = lmCoord.y * getValFromSkyLUT(texSkyView, skyPos, reflectLocalDir, Scene_LocalSunDir);
 
-            vec3 reflectSun = SUN_LUMINANCE * sun(reflectLocalDir, Scene_LocalSunDir) * sunTransmit;
-            vec3 reflectMoon = MOON_LUMINANCE * moon(reflectLocalDir, -Scene_LocalSunDir) * moonTransmit;
-            skyReflectColor += shadow_sss.rgb * (reflectSun + reflectMoon);
+                vec3 reflectSun = SUN_LUMINANCE * sun(reflectLocalDir, Scene_LocalSunDir) * sunTransmit;
+                vec3 reflectMoon = MOON_LUMINANCE * moon(reflectLocalDir, -Scene_LocalSunDir) * moonTransmit;
+                skyReflectColor += shadow_sss.rgb * (reflectSun + reflectMoon);
 
-            // vec3 starViewDir = getStarViewDir(reflectLocalDir);
-            // vec3 starLight = STAR_LUMINANCE * GetStarLight(starViewDir);
-            // skyReflectColor += starLight;
-        #else
-            vec3 skyReflectColor = vec3(0.0);
-        #endif
-
-        vec4 reflection = vec4(0.0);
-
-        #if LIGHTING_REFLECT_MODE == REFLECT_MODE_SSR
-            float viewDist = length(viewPos);
-            vec3 reflectLocalPos = fma(reflectLocalDir, vec3(0.5*viewDist), localPos);
-
-            vec3 reflectViewStart = mul3(ap.temporal.view, localPos);
-            vec3 reflectViewEnd = mul3(ap.temporal.view, reflectLocalPos);
-
-            vec3 reflectNdcStart = unproject(ap.temporal.projection, reflectViewStart);
-            vec3 reflectNdcEnd = unproject(ap.temporal.projection, reflectViewEnd);
-
-            vec3 reflectRay = normalize(reflectNdcEnd - reflectNdcStart);
-
-            vec3 clipPos = fma(reflectNdcStart, vec3(0.5), vec3(0.5));
-            reflection = GetReflectionPosition(mainDepthTex, clipPos, reflectRay);
-
-            #ifdef MATERIAL_ROUGH_REFLECT_NOISE
-                float maxLod = max(log2(minOf(ap.game.screenSize)) - 2.0, 0.0);
-                float screenDist = length((reflection.xy - uv) * ap.game.screenSize);
-                float roughMip = min(roughness * min(log2(screenDist + 1.0), 6.0), maxLod);
+                // vec3 starViewDir = getStarViewDir(reflectLocalDir);
+                // vec3 starLight = STAR_LUMINANCE * GetStarLight(starViewDir);
+                // skyReflectColor += starLight;
             #else
-                const float roughMip = 0.0;
+                vec3 skyReflectColor = vec3(0.0);
             #endif
 
-            vec3 reflectColor = GetRelectColor(texFinalPrevious, reflection.xy, reflection.a, roughMip);
+            vec4 reflection = vec4(0.0);
 
-            skyReflectColor = mix(skyReflectColor, reflectColor, reflection.a);
-        #endif
+            #if LIGHTING_REFLECT_MODE == REFLECT_MODE_SSR
+                float viewDist = length(viewPos);
+                vec3 reflectLocalPos = fma(reflectLocalDir, vec3(0.5*viewDist), localPos);
 
-        vec3 view_F = material_fresnel(albedo.rgb, f0_metal, roughL, NoVm, isWet);
+                vec3 reflectViewStart = mul3(ap.temporal.view, localPos);
+                vec3 reflectViewEnd = mul3(ap.temporal.view, reflectLocalPos);
 
-        float NoHm = max(dot(localTexNormal, H), 0.0);
-        vec3 specular = skyLightFinal * shadow_sss.rgb * SampleLightSpecular(NoLm, NoHm, LoHm, roughL);
+                vec3 reflectNdcStart = unproject(ap.temporal.projection, reflectViewStart);
+                vec3 reflectNdcEnd = unproject(ap.temporal.projection, reflectViewEnd);
 
-        specular += skyReflectColor;
+                vec3 reflectRay = normalize(reflectNdcEnd - reflectNdcStart);
 
-        #ifdef ACCUM_ENABLED
-            if (altFrame) specular += textureLod(texAccumSpecular_opaque_alt, uv, 0).rgb;
-            else specular += textureLod(texAccumSpecular_opaque, uv, 0).rgb;
-        #elif LIGHTING_MODE == LIGHT_MODE_RT || LIGHTING_REFLECT_MODE == REFLECT_MODE_WSR
-            specular += textureLod(texSpecularRT, uv, 0).rgb;
-        #endif
+                vec3 clipPos = fma(reflectNdcStart, vec3(0.5), vec3(0.5));
+                reflection = GetReflectionPosition(mainDepthTex, clipPos, reflectRay);
 
-        float smoothness = 1.0 - roughness;
-        specular *= GetMetalTint(albedo.rgb, f0_metal) * _pow2(smoothness);
+                #ifdef MATERIAL_ROUGH_REFLECT_NOISE
+                    float maxLod = max(log2(minOf(ap.game.screenSize)) - 2.0, 0.0);
+                    float screenDist = length((reflection.xy - uv) * ap.game.screenSize);
+                    float roughMip = min(roughness * min(log2(screenDist + 1.0), 6.0), maxLod);
+                #else
+                    const float roughMip = 0.0;
+                #endif
+
+                vec3 reflectColor = GetRelectColor(texFinalPrevious, reflection.xy, reflection.a, roughMip);
+
+                skyReflectColor = mix(skyReflectColor, reflectColor, reflection.a);
+            #endif
+
+            if (!hasTexNormal) NoVm = 1.0;
+            view_F = material_fresnel(albedo.rgb, f0_metal, roughL, NoVm, isWet);
+
+            float NoHm = max(dot(localTexNormal, H), 0.0);
+            specular = skyLightFinal * shadow_sss.rgb * SampleLightSpecular(NoLm, NoHm, LoHm, roughL);
+
+            specular += skyReflectColor;
+
+            #ifdef ACCUM_ENABLED
+                if (altFrame) specular += textureLod(texAccumSpecular_opaque_alt, uv, 0).rgb;
+                else specular += textureLod(texAccumSpecular_opaque, uv, 0).rgb;
+            #elif LIGHTING_MODE == LIGHT_MODE_RT || LIGHTING_REFLECT_MODE == REFLECT_MODE_WSR
+                specular += textureLod(texSpecularRT, uv, 0).rgb;
+            #endif
+
+            float smoothness = 1.0 - roughness;
+            specular *= GetMetalTint(albedo.rgb, f0_metal) * _pow2(smoothness);
+        }
+
+//        if (!hasTexNormal) albedo.rgb = vec3(1.0,0.0,0.0);
 
         #ifdef DEBUG_WHITE_WORLD
             albedo.rgb = WhiteWorld_Value;

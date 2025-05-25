@@ -291,7 +291,7 @@ void main() {
             vec3 wsgi_localPos = 0.5*localGeoNormal + localPosTrans;
 
             #ifdef LIGHTING_GI_SKYLIGHT
-                vec3 wsgi_bufferPos = wsgi_getBufferPosition(wsgi_localPos, WSGI_CASCADE_COUNT-1);
+                vec3 wsgi_bufferPos = wsgi_getBufferPosition(wsgi_localPos, WSGI_CASCADE_COUNT+WSGI_SCALE_BASE-1);
 
                 if (wsgi_isInBounds(wsgi_bufferPos))
                     skyIrradiance = vec3(0.0);
@@ -502,7 +502,7 @@ void main() {
     #endif
 
     vec4 weather = textureLod(texParticles, uv, 0);
-    colorFinal = mix(colorFinal, weather.rgb, weather.a);
+    colorFinal = mix(colorFinal, weather.rgb * 1000.0, saturate(weather.a));
 
     if (ap.camera.fluid == 2)
         colorFinal = RgbToLinear(vec3(0.0));

@@ -213,7 +213,11 @@ option.EFFECT_BLOOM_ENABLED=Enabled
 option.EFFECT_BLOOM_STRENGTH=Strength
 suffix.EFFECT_BLOOM_STRENGTH=%
 
-option.EFFECT_DOF_ENABLED=Depth-of-Field
+screen.EFFECT_DOF=Depth-of-Field
+
+option.EFFECT_DOF_ENABLED=Enabled
+
+option.EFFECT_DOF_SPEED=Speed
 
 
 screen.POST=Post Processing
@@ -268,6 +272,7 @@ value.DEBUG_VIEW.8=Sky Irradiance
 value.DEBUG_VIEW.9=ShadowMap Color
 value.DEBUG_VIEW.10=ShadowMap Normal
 value.DEBUG_VIEW.11=Irradiance Cache
+value.DEBUG_VIEW.12=Particles
 
 option.DEBUG_MATERIAL=Material
 value.DEBUG_MATERIAL.0=Albedo

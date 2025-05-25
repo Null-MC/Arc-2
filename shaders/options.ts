@@ -69,6 +69,7 @@ export function setupOptions() {
             .add(asInt("LIGHTING_GI_SIZE", 32, 64, 128).build(64))
             .add(asInt("VOXEL_GI_MAXFRAMES", 4, 8, 16, 32, 64, 128, 256).build(32))
             .add(asIntRange("VOXEL_GI_MAXSTEP", 8, 2, 32, 2, true))
+            .add(asInt("WSGI_SCALE_BASE", 0, 1, 2).build(0))
             .build())
         .add(EMPTY)
         .add(new Page("LIGHTING_REFLECTIONS")
@@ -104,7 +105,10 @@ export function setupOptions() {
             .add(asBool("EFFECT_BLOOM_ENABLED", true, true))
             .add(asFloatRange("EFFECT_BLOOM_STRENGTH", 2.0, 0.0, 10.0, 0.05, false))
             .build())
-        .add(asBool("EFFECT_DOF_ENABLED", true, true))
+        .add(new Page("EFFECT_DOF")
+            .add(asBool("EFFECT_DOF_ENABLED", true, true))
+            .add(asIntRange("EFFECT_DOF_SPEED", 20, 1, 40, 1, true))
+            .build())
         .build();
 
     const screen_Post = new Page("POST")
@@ -127,7 +131,7 @@ export function setupOptions() {
         .build();
 
     const screen_Debug = new Page("DEBUG")
-        .add(asStringRange("DEBUG_VIEW", 0, 0, 11, true))
+        .add(asStringRange("DEBUG_VIEW", 0, 0, 12, true))
         .add(asStringRange("DEBUG_MATERIAL", 0, 0, 9, true))
         .add(asBool("DEBUG_TRANSLUCENT", false, true))
         .add(EMPTY)

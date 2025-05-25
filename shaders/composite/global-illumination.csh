@@ -92,7 +92,7 @@ ivec3 wsgi_getFrameOffset() {
 		- floor(ap.camera.pos / WSGI_SNAP_SCALE);
 
 	const int stepScale = int(exp2(WSGI_SNAP_SCALE - WSGI_VOXEL_SCALE));
-    return ivec3(floor(offset)) * stepScale;
+    return ivec3(offset) * stepScale;
 }
 
 ivec3 wsgi_getVoxelOffset() {
@@ -105,7 +105,7 @@ vec3 GetShadowSamplePos_LPV(const in vec3 shadowViewPos, out int cascadeIndex) {
 	cascadeIndex = -1;
 	vec3 shadowPos;
 
-	for (int i = 0; i < 4; i++) {
+	for (int i = 0; i < SHADOW_CASCADE_COUNT; i++) {
 		shadowPos = mul3(ap.celestial.projection[i], shadowViewPos).xyz;
 
 		float blockPadding = exp2(i+1);
@@ -203,10 +203,13 @@ vec3 trace_GI(const in vec3 traceOrigin, const in vec3 traceDir, const in int fa
 
 		#if WSGI_VOXEL_SCALE > 1 && false
 			// TODO: do the below bit, but for a NxN area
-			//
+			vec3 sub_tracePos = tracePos;
+
+			vec3 sub_stepSizes, sub_nextDist;
+			dda_init(sub_stepSizes, sub_nextDist, sub_tracePos, traceDir);
 		#else
 			bufferPos = ivec3(floor(fma(step, vec3(0.5), tracePos)));
-			if (!wsgi_isInBounds(bufferPos)) break;
+			//if (!wsgi_isInBounds(bufferPos)) break;
 
 			voxelPos = ivec3(bufferPos * voxelSize) + wsgiVoxelOffset;
 			blockId = SampleVoxelBlock(voxelPos);
@@ -217,16 +220,18 @@ vec3 trace_GI(const in vec3 traceOrigin, const in vec3 traceDir, const in int fa
 			}
 		#endif
 
-		int sampleVoxelI = wsgi_getBufferIndex(bufferPos, WSGI_CASCADE);
+		if (wsgi_isInBounds(bufferPos)) {
+			int sampleVoxelI = wsgi_getBufferIndex(bufferPos, WSGI_CASCADE);
 
-		lpvShVoxel sampleVoxel;
-		if (altFrame) sampleVoxel = SH_LPV[sampleVoxelI];
-		else sampleVoxel = SH_LPV_alt[sampleVoxelI];
+			lpvShVoxel sampleVoxel;
+			if (altFrame) sampleVoxel = SH_LPV[sampleVoxelI];
+			else sampleVoxel = SH_LPV_alt[sampleVoxelI];
 
-		float face_counter;
-		//pathLight += wsgi_sample_voxel(sampleVoxel, traceDir);
-		pathLight += wsgi_sample_voxel_face(sampleVoxel.data[face_dir], shVoxel_dir[face_dir], traceDir, face_counter);
-		pathSamples++;
+			float face_counter;
+			//pathLight += wsgi_sample_voxel(sampleVoxel, traceDir);
+			pathLight += wsgi_sample_voxel_face(sampleVoxel.data[face_dir], shVoxel_dir[face_dir], traceDir, face_counter);
+			pathSamples++;
+		}
 
 		tracePos += step;
 		stepAxis = stepAxisNext;
@@ -319,8 +324,8 @@ vec3 trace_GI(const in vec3 traceOrigin, const in vec3 traceDir, const in int fa
 				hit_shadow = SampleShadowColor(hit_shadowPos, hit_shadowCascade, shadowWaterDepth);
 
 			// TODO: add a water mask to shadow buffers!
-			if (shadowWaterDepth > 0.0)
-				hit_shadow *= exp(-shadowWaterDepth * VL_WaterTransmit * VL_WaterDensity);
+//			if (shadowWaterDepth > 0.0)
+//				hit_shadow *= exp(-shadowWaterDepth * VL_WaterTransmit * VL_WaterDensity);
 		#else
 			float hit_shadow = 1.0;
 		#endif
@@ -558,7 +563,7 @@ vec3 trace_GI(const in vec3 traceOrigin, const in vec3 traceDir, const in int fa
 
 void main() {
 	ivec3 cellIndex = ivec3(gl_GlobalInvocationID);
-	if (any(greaterThanEqual(cellIndex, VoxelBufferSize))) return;
+	//if (any(greaterThanEqual(cellIndex, WSGI_BufferSize))) return;
 
 	bool altFrame = ap.time.frames % 2 == 1;
 
@@ -610,7 +615,8 @@ void main() {
 			float faceF = dot(shVoxel_dir[dir], noise_dir);
 
 			//vec3 noise_offset = sample_blueNoise(hash23(cellIndex));
-			vec3 noise_offset = vec3(0.5);//hash32(noise_seed);
+			vec3 noise_offset = hash33(cellIndex + ap.time.frames);
+			noise_offset = noise_offset*0.5;
 
 			float traceDist;
 			vec3 tracePos = cellIndex + noise_offset;

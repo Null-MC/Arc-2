@@ -35,6 +35,8 @@ uniform sampler2D TEX_SRC;
     uniform sampler2DArray texShadowColor;
 #elif DEBUG_VIEW == DEBUG_VIEW_SHADOWMAP_NORMAL
     uniform sampler2DArray texShadowNormal;
+#elif DEBUG_VIEW == DEBUG_VIEW_PARTICLES
+    uniform sampler2D texParticles;
 #endif
 
 #if DEBUG_VIEW == DEBUG_VIEW_MATERIAL
@@ -104,6 +106,8 @@ void main() {
                 color = textureLod(texSkyView, previewCoord, 0).rgb * 0.001;
                 //ApplyAutoExposure(color, Scene_AvgExposure);
                 color = tonemap_jodieReinhard(color);
+            #elif DEBUG_VIEW == DEBUG_VIEW_PARTICLES
+                color = textureLod(texParticles, previewCoord, 0).rgb * 0.001;
             #endif
 
             #if DEBUG_VIEW == DEBUG_VIEW_MATERIAL
@@ -232,6 +236,16 @@ void main() {
             printBool(VoxelizationEnabled);
             printLine();
             //...
+            endText(color);
+        #endif
+
+        #ifdef DEBUG_DOF
+            beginText(ivec2(gl_FragCoord.xy*0.5), ivec2(8, ap.game.screenSize.y*0.5-8));
+            text.bgCol = vec4(0.0, 0.0, 0.0, 0.6);
+            text.fgCol = vec4(0.8, 0.8, 0.8, 1.0);
+            printString((_A, _v, _g, _space, _D, _e, _p, _t, _h, _colon, _space));
+            printFloat(Scene_FocusDepth);
+            printLine();
             endText(color);
         #endif
     }

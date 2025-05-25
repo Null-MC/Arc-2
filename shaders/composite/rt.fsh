@@ -125,7 +125,6 @@ in vec2 uv;
     #endif
 
     #if defined(SKY_CLOUDS_ENABLED) && defined(SHADOWS_CLOUD_ENABLED)
-        //#include "/lib/light/volumetric.glsl"
         #include "/lib/sky/density.glsl"
         #include "/lib/sky/clouds.glsl"
         #include "/lib/shadow/clouds.glsl"
@@ -146,9 +145,13 @@ in vec2 uv;
     #include "/lib/composite-shared.glsl"
 #endif
 
+#include "/lib/taa_jitter.glsl"
+
 
 void main() {
-    ivec2 iuv = ivec2(fma(uv, ap.game.screenSize, vec2(0.5)));
+    vec2 subpixelOffset = vec2(0.0);//getJitterOffset(ap.time.frames, vec2(0.25));
+
+    ivec2 iuv = ivec2(fma(uv, ap.game.screenSize, subpixelOffset));
     float depth = texelFetch(TEX_DEPTH, iuv, 0).r;
 
     vec3 diffuseFinal = vec3(0.0);
@@ -467,7 +470,7 @@ void main() {
                     vec3 reflect_wsgi_localPos = 0.5*reflect_geoNormal + reflect_localPos;
 
                     #ifdef LIGHTING_GI_SKYLIGHT
-                        vec3 reflect_wsgi_bufferPos = wsgi_getBufferPosition(reflect_wsgi_localPos, WSGI_CASCADE_COUNT-1);
+                        vec3 reflect_wsgi_bufferPos = wsgi_getBufferPosition(reflect_wsgi_localPos, WSGI_CASCADE_COUNT+WSGI_SCALE_BASE-1);
 
                         if (wsgi_isInBounds(reflect_wsgi_bufferPos))
                             reflect_skyIrradiance = vec3(0.0);

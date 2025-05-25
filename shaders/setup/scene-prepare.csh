@@ -25,8 +25,7 @@ void main() {
 	Scene_LocalSunDir = normalize(mat3(ap.camera.viewInv) * ap.celestial.sunPos);
 	Scene_LocalLightDir = normalize(mat3(ap.camera.viewInv) * ap.celestial.pos);
 
-	const float depthCenterSpeed = 10.0;
-	float depthTimeF = 1.0 - exp(-max(depthCenterSpeed * ap.time.delta, 1.0e-12));
+	float depthTimeF = 1.0 - exp(-max(EFFECT_DOF_SPEED * ap.time.delta, 1.0e-12));
 	float centerDepthL = textureLod(solidDepthTex, vec2(0.5), 0).r;
 	centerDepthL = linearizeDepth(centerDepthL, ap.camera.near, ap.camera.far);
 	Scene_FocusDepth += (centerDepthL - Scene_FocusDepth) * depthTimeF;

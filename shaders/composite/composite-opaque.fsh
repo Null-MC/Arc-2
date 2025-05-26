@@ -270,7 +270,7 @@ void main() {
         #endif
 
         float sss_diffuse = max((NoL_sun + sss) / (1.0 + sss), 0.0);
-        vec3 sss_shadow = mix(shadow_sss.rgb, vec3(shadow_sss.w), sss);
+        vec3 sss_shadow = mix(shadow_sss.rgb * step(0.0, dot(localGeoNormal, Scene_LocalLightDir)), vec3(shadow_sss.w), sss);
 
         vec3 skyLightFinal = sunLight * sss_diffuse + moonLight * max(NoL_moon, 0.0);
 

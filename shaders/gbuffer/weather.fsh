@@ -46,6 +46,7 @@ uniform sampler3D texFogNoise;
 #include "/lib/sky/transmittance.glsl"
 
 #include "/lib/light/sky.glsl"
+#include "/lib/light/volumetric.glsl"
 
 #ifdef SHADOWS_ENABLED
     #include "/lib/shadow/csm.glsl"
@@ -53,7 +54,6 @@ uniform sampler3D texFogNoise;
 #endif
 
 #if defined(SKY_CLOUDS_ENABLED) && defined(SHADOWS_CLOUD_ENABLED)
-    #include "/lib/light/volumetric.glsl"
     #include "/lib/sky/clouds.glsl"
     #include "/lib/shadow/clouds.glsl"
 #endif
@@ -64,6 +64,7 @@ uniform sampler3D texFogNoise;
 
 #if LIGHTING_MODE == LIGHT_MODE_LPV
     #include "/lib/voxel/voxel-common.glsl"
+    #include "/lib/voxel/floodfill-common.glsl"
     #include "/lib/voxel/floodfill-sample.glsl"
 #endif
 

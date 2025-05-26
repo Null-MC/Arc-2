@@ -196,7 +196,7 @@ void main() {
 
         float roughL = _pow2(roughness);
 
-        ApplyWetness_roughL(roughL, wetness);
+        ApplyWetness_roughL(roughL, porosity, wetness);
         roughness = sqrt(roughL);
 
         vec3 H = normalize(Scene_LocalLightDir + -localViewDir);
@@ -286,8 +286,8 @@ void main() {
             float VoL_sun = dot(localViewDir, Scene_LocalSunDir);
             vec3 sss_phase_sun = max(DHG(VoL_sun, -0.04, 0.96, 0.06), 0.0) * abs(NoL_sun) * sunLight;
             vec3 sss_phase_moon = max(HG(-VoL_sun, sss_G), 0.0) * abs(NoL_moon) * moonLight;
-            vec3 sss_skyLight = PI * sss_shadow * (sss_phase_sun + sss_phase_moon)
-                              + sss_skyIrradiance;
+            vec3 sss_skyLight = sss_shadow * (sss_phase_sun + sss_phase_moon)
+                              + sss_skyIrradiance * phaseIso;
 
             //vec3 indirect_sss = max(shadow_sss.w - shadow_sss.rgb, 0.0);
 

@@ -65,7 +65,7 @@ vec3 raymarchScattering(vec3 pos, vec3 rayDir, vec3 sunDir, float tMax, float nu
         transmittance *= sampleTransmittance;
     }
 
-    return lum;
+    return lum * PI;
 }
 
 

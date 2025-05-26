@@ -1,5 +1,5 @@
 const float CloudShadowDepth = 100.0;
-const float CloudShadowMinF = 0.1;
+const float CloudShadowMinF = 0.0;
 
 
 float SampleCloudShadows(const in vec3 localPos) {

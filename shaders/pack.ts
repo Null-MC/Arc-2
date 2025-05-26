@@ -54,9 +54,17 @@ function applySettings(settings : ShaderSettings, internal) {
     defineGlobally("SHADOW_RESOLUTION", settings.Shadow_Resolution);
     defineGlobally("SHADOW_CASCADE_COUNT", settings.Shadow_CascadeCount);
 
+    function getChannelFormat(channelFormat: number) {
+        return (channelFormat >= 0) ? channelFormat : settings.Material_Format;
+    }
+
     defineGlobally("MATERIAL_FORMAT", settings.Material_Format);
-    defineGlobally("MATERIAL_NORMAL_FORMAT", settings.Material_NormalFormat);
-    defineGlobally("MATERIAL_POROSITY_FORMAT", settings.Material_PorosityFormat);
+
+    defineGlobally("MATERIAL_NORMAL_FORMAT", getChannelFormat(settings.Material_NormalFormat));
+    if (settings.Material_NormalSmooth) defineGlobally1("MATERIAL_NORMAL_SMOOTH");
+
+    defineGlobally("MATERIAL_POROSITY_FORMAT", getChannelFormat(settings.Material_PorosityFormat));
+
     if (settings.Material_ParallaxEnabled) {
         defineGlobally1("MATERIAL_PARALLAX_ENABLED");
         defineGlobally("MATERIAL_PARALLAX_DEPTH", settings.Material_ParallaxDepth);
@@ -64,10 +72,13 @@ function applySettings(settings : ShaderSettings, internal) {
         if (settings.Material_ParallaxSharp) defineGlobally1("MATERIAL_PARALLAX_SHARP");
         if (settings.Material_ParallaxDepthWrite) defineGlobally1("MATERIAL_PARALLAX_DEPTHWRITE");
     }
-    if (settings.Material_NormalSmooth) defineGlobally1("MATERIAL_NORMAL_SMOOTH");
-    defineGlobally('MATERIAL_SSS_FORMAT', settings.Material_SSS_Format);
+
+    defineGlobally('MATERIAL_SSS_FORMAT', getChannelFormat(settings.Material_SSS_Format));
     defineGlobally('MATERIAL_SSS_DISTANCE', settings.Material_SSS_MaxDist);
     defineGlobally('MATERIAL_SSS_RADIUS', settings.Material_SSS_MaxRadius);
+
+    defineGlobally('MATERIAL_EMISSION_FORMAT', getChannelFormat(settings.Material_Emission_Format));
+
     if (settings.Material_FancyLava) {
         defineGlobally1("FANCY_LAVA");
         defineGlobally("FANCY_LAVA_RES", settings.Material_FancyLavaResolution);
@@ -1356,7 +1367,7 @@ export function onSettingsChanged(state : WorldState) {
         .appendInt(settings.Water_WaveDetail)
         .appendFloat(settings.Water_WaveHeight)
         .appendFloat(settings.Water_TessellationLevel)
-        .appendFloat(settings.Material_EmissionBrightness * 0.01)
+        .appendFloat(settings.Material_Emission_Brightness * 0.01)
         .appendInt(settings.Lighting_BlockTemp)
         .appendFloat(settings.Lighting_PenumbraSize * 0.01)
         .appendFloat(settings.Effect_SSAO_Strength * 0.01)

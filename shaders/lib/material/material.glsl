@@ -9,9 +9,9 @@ vec3 mat_normal_old(const in vec3 data) {
 }
 
 vec3 mat_normal(const in vec3 normalData) {
-    #if MATERIAL_FORMAT == MAT_LABPBR
+    #if MATERIAL_NORMAL_FORMAT == MAT_LABPBR
         return mat_normal_lab(normalData.xy);
-    #elif MATERIAL_FORMAT == MAT_OLDPBR
+    #elif MATERIAL_NORMAL_FORMAT == MAT_OLDPBR
         return mat_normal_old(normalData);
     #else
         return vec3(0.0);
@@ -31,9 +31,9 @@ float mat_emission_old(const in float data) {
 }
 
 float mat_emission(const in vec4 specularData) {
-    #if MATERIAL_FORMAT == MAT_LABPBR
+    #if MATERIAL_EMISSION_FORMAT == MAT_LABPBR
         return mat_emission_lab(specularData.a);
-    #elif MATERIAL_FORMAT == MAT_OLDPBR
+    #elif MATERIAL_EMISSION_FORMAT == MAT_OLDPBR
         return mat_emission_old(specularData.b);
     #else
         return 0.0;
@@ -50,7 +50,7 @@ float mat_porosity_old(const in float roughness, const in float f0_metal) {
 }
 
 float mat_porosity(const in float data, const in float roughness, const in float f0_metal) {
-    #if MATERIAL_POROSITY_FORMAT == MAT_LABPBR || (MATERIAL_POROSITY_FORMAT == MAT_NONE && MATERIAL_FORMAT == MAT_LABPBR)
+    #if MATERIAL_POROSITY_FORMAT == MAT_LABPBR
         return mat_porosity_lab(data);
     #else
         return mat_porosity_old(roughness, f0_metal);
@@ -59,6 +59,22 @@ float mat_porosity(const in float data, const in float roughness, const in float
 
 float mat_sss_lab(const in float data) {
     return max(data - (64.0/255.0), 0.0) * (255.0/191.0);
+}
+
+float mat_sss(const in float data) {
+    #if MATERIAL_SSS_FORMAT == MAT_LABPBR
+        return mat_sss_lab(data);
+    #else
+        return 0.0;
+    #endif
+}
+
+float mat_f0_metal(const in float data) {
+    #if MATERIAL_FORMAT != MAT_NONE
+        return data;
+    #else
+        return 0.04;
+    #endif
 }
 
 float mat_metalness_lab(const in float f0_metal) {
@@ -76,5 +92,13 @@ float mat_metalness(const in float f0_metal) {
         return mat_metalness_old(f0_metal);
     #else
         return 0.0;
+    #endif
+}
+
+float mat_occlusion(const in float data) {
+    #if MATERIAL_FORMAT == MAT_LABPBR
+        return data;
+    #else
+        return 1.0;
     #endif
 }

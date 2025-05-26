@@ -425,7 +425,7 @@ void main() {
                 float sky_wetness = smoothstep(0.9, 1.0, reflect_lmcoord.y) * ap.world.rain;
                 reflect_wetness = max(reflect_wetness, sky_wetness);
 
-                ApplyWetness_roughL(reflect_roughL, reflect_wetness);
+                ApplyWetness_roughL(reflect_roughL, reflect_porosity, reflect_wetness);
                 reflect_roughness = sqrt(reflect_roughL);
 
                 #ifdef SHADOWS_ENABLED

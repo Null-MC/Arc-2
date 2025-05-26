@@ -170,7 +170,7 @@ vec3 GetRandomFaceNormal(const in ivec3 cellPos, const in vec3 face_dir) {
 }
 
 
-vec3 trace_GI(const in vec3 traceOrigin, const in vec3 traceDir, const in int face_dir, out float traceDist) {
+vec3 trace_GI(const in vec3 traceOrigin, const in vec3 traceDir, const in int face_dir) {
 	vec3 color = vec3(0.0);
 	vec3 tracePos = traceOrigin;
 
@@ -254,7 +254,7 @@ vec3 trace_GI(const in vec3 traceOrigin, const in vec3 traceDir, const in int fa
 //
 //	pathLight *= 1000.0;
 
-	traceDist = max(distance(traceOrigin, tracePos), EPSILON);
+	float traceDist = max(distance(traceOrigin, tracePos), EPSILON);
 	vec3 hit_localPos = voxel_getLocalPosition(tracePos);
 
 	if (hit) {
@@ -500,7 +500,7 @@ vec3 trace_GI(const in vec3 traceOrigin, const in vec3 traceDir, const in int fa
 
 		color = albedo * hit_diffuse * max(hit_NoL, 0.0);
 
-		color *= 1.0 - 1.0/(1.0 + _pow2(traceDist));
+		//color *= 1.0 - 1.0/(1.0 + _pow2(traceDist));
 
 //		const float radius = 0.5;
 //		vec3 ray = tracePos - traceOrigin;
@@ -516,7 +516,7 @@ vec3 trace_GI(const in vec3 traceOrigin, const in vec3 traceDir, const in int fa
 			ivec3 wsgi_pos_n = ivec3(floor(wsgi_pos));
 
 			color = wsgi_sample_nearest(wsgi_pos_n, traceDir, WSGI_CASCADE+1) * 1000.0;
-			color *= 1.0 - 1.0/(1.0 + _pow2(traceDist));
+			//color *= 1.0 - 1.0/(1.0 + _pow2(traceDist));
 		#else
 			#ifdef LIGHTING_GI_SKYLIGHT
 				for (int i2 = i; i2 < 32 && !hit; i2++) {
@@ -620,9 +620,9 @@ void main() {
 //			vec3 noise_offset = hash33(cellIndex + ap.time.frames);
 //			noise_offset = noise_offset - 0.5;
 
-			float traceDist;
+			//float traceDist;
 			vec3 tracePos = voxelPos;// + noise_offset;
-			vec3 traceSample = trace_GI(tracePos, noise_dir, dir, traceDist);
+			vec3 traceSample = trace_GI(tracePos, noise_dir, dir);
 
 //			if (iris_hasFluid(blockId)) {
 //				traceSample *= exp(-3.0 * VL_WaterTransmit * VL_WaterDensity);
@@ -630,7 +630,7 @@ void main() {
 
 //			const float radius = 0.5;
 //			float sampleWeight = PI * sphereContribution(shVoxel_dir[dir], noise_dir * traceDist, radius);
-			float sampleWeight = PI * max(faceF, 0.0);// / (3.0 + traceDist);
+			float sampleWeight = max(faceF, 0.0);// / (3.0 + traceDist);
 
 			face_counter = clamp(face_counter + sampleWeight, 0.0, VOXEL_GI_MAXFRAMES);
 

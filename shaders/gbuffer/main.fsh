@@ -112,7 +112,7 @@ void iris_emitFragment() {
 
     vec4 albedo = iris_sampleBaseTexLod(mUV, int(mLOD));
 
-    #if MATERIAL_FORMAT != MAT_NONE
+//    #if MATERIAL_NORMAL_FORMAT != MAT_NONE
         #ifdef MATERIAL_NORMAL_SMOOTH
             vec2 atlasSize = textureSize(irisInt_NormalMap, 0);
 
@@ -144,39 +144,41 @@ void iris_emitFragment() {
         #else
             vec4 normalData = iris_sampleNormalMapLod(mUV, int(mLOD));
         #endif
+//    #else
+//        vec4 normalData = vec4(0.5, 0.5, 1.0, 1.0);
+//    #endif
 
-        vec4 specularData = iris_sampleSpecularMapLod(mUV, int(mLOD));
-    #endif
+    vec4 specularData = iris_sampleSpecularMapLod(mUV, int(mLOD));
 
     vec2 lmcoord = LightMapNorm(mLight);
     vec3 localGeoNormal = normalize(vIn.localNormal);
 
-    #if MATERIAL_FORMAT != MAT_NONE
-        vec3 localTexNormal = mat_normal(normalData.xyz);
-        float roughness = mat_roughness(specularData.r);
-        float f0_metal = specularData.g;
-        float porosity = mat_porosity(specularData.b, roughness, f0_metal);
-    #endif
+    vec3 localTexNormal = mat_normal(normalData.xyz);
+    float roughness = mat_roughness(specularData.r);
+    float f0_metal = mat_f0_metal(specularData.g);
+    float porosity = mat_porosity(specularData.b, roughness, f0_metal);
+    float sss = mat_sss(specularData.b);
+    float emission = mat_emission(specularData);
+    float occlusion = mat_occlusion(normalData.z);
 
-    #if MATERIAL_FORMAT == MAT_LABPBR
-        float emission = mat_emission_lab(specularData.a);
-        float sss = mat_sss_lab(specularData.b);
-        float occlusion = normalData.z;
-    #elif MATERIAL_FORMAT == MAT_OLDPBR
-        float emission = specularData.b;
-        float occlusion = 1.0;
-        float sss = 0.0;
-    #else
-        vec3 localTexNormal = localGeoNormal;
-        float occlusion = 1.0;
-        float roughness = 0.92;
-        float f0_metal = 0.0;
-        float porosity = 1.0;
-        float sss = 0.0;
-        float emission = iris_getEmission(vIn.blockId) / 15.0;
+//    #if MATERIAL_FORMAT == MAT_LABPBR
+//        float occlusion = normalData.z;
+//    #elif MATERIAL_FORMAT == MAT_OLDPBR
+//        float occlusion = 1.0;
+//        //float sss = 0.0;
+//    #endif
 
-        //emission *= lmcoord.x;
-    #endif
+//    #if MATERIAL_FORMAT == MAT_NONE
+//        vec3 localTexNormal = localGeoNormal;
+//        float occlusion = 1.0;
+//        float roughness = 0.92;
+//        float f0_metal = 0.0;
+//        float porosity = 1.0;
+//        float sss = 0.0;
+//        float emission = iris_getEmission(vIn.blockId) / 15.0;
+//
+//        //emission *= lmcoord.x;
+//    #endif
 
     #ifdef RENDER_EMISSIVE
         emission = lmcoord.x * 0.06;

@@ -176,8 +176,8 @@ void main() {
 
                     float extinction = mieScatteringF + mieAbsorptionF;
 
-                    cloud_shadowSun  = exp(-extinction * density_sun);
-                    cloud_shadowMoon = exp(-extinction * density_moon);
+                    cloud_shadowSun  = 4.0 * exp(-extinction * density_sun);
+                    cloud_shadowMoon = 4.0 * exp(-extinction * density_moon);
                 }
             }
         }
@@ -236,8 +236,8 @@ void main() {
                     sunSkyLight *= cloud_shadowSun;
                     moonSkyLight *= cloud_shadowMoon;
 
-                    if (cloudDensity > EPSILON)
-                        vs_shadowF *= exp(-cloudDensity);
+//                    if (cloudDensity > EPSILON)
+//                        vs_shadowF *= exp(-cloudDensity);
                 }
 
 //                if (sign(sampleHeight - cloudHeight2) != sign(heightLast - cloudHeight2)) {

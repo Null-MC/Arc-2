@@ -500,7 +500,7 @@ vec3 trace_GI(const in vec3 traceOrigin, const in vec3 traceDir, const in int fa
 
 		color = albedo * hit_diffuse * max(hit_NoL, 0.0);
 
-		//color *= 1.0 - 1.0/(1.0 + _pow2(traceDist));
+		color *= 1.0 - 1.0/(1.0 + _pow2(traceDist));
 
 //		const float radius = 0.5;
 //		vec3 ray = tracePos - traceOrigin;
@@ -516,7 +516,7 @@ vec3 trace_GI(const in vec3 traceOrigin, const in vec3 traceDir, const in int fa
 			ivec3 wsgi_pos_n = ivec3(floor(wsgi_pos));
 
 			color = wsgi_sample_nearest(wsgi_pos_n, traceDir, WSGI_CASCADE+1) * 1000.0;
-			//color *= 1.0 - 1.0/(1.0 + _pow2(traceDist));
+			color *= 1.0 - 1.0/(1.0 + _pow2(traceDist));
 		#else
 			#ifdef LIGHTING_GI_SKYLIGHT
 				for (int i2 = i; i2 < 32 && !hit; i2++) {

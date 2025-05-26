@@ -80,8 +80,9 @@ void main() {
             if (sss > 0.0) {
                 //float NoLm = max(dot(localGeoNormal, Scene_LocalLightDir), 0.0);
 
-                float sssRadius = sss * MATERIAL_SSS_RADIUS;
-                float sssDist = sss * MATERIAL_SSS_DISTANCE * pow5(dither);
+                float sss_2 = _pow3(sss);
+                float sssRadius = sss_2 * MATERIAL_SSS_RADIUS;
+                float sssDist = sss_2 * MATERIAL_SSS_DISTANCE * pow5(dither);
 
                 shadowViewPos.z += sssDist;
 

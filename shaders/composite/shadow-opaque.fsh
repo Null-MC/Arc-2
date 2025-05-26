@@ -78,15 +78,17 @@ void main() {
             float sss = data_a.a;
 
             if (sss > 0.0) {
-                float NoLm = max(dot(localGeoNormal, Scene_LocalLightDir), 0.0);
+                //float NoLm = max(dot(localGeoNormal, Scene_LocalLightDir), 0.0);
 
-                float sssRadius = sss * SSS_MaxPcfSize;
+                float sssRadius = sss * MATERIAL_SSS_RADIUS;
+                float sssDist = sss * MATERIAL_SSS_DISTANCE * pow5(dither);
 
-                shadowViewPos.z += SSS_MaxDist * sss * _pow3(dither);
+                shadowViewPos.z += sssDist;
+
                 shadowPos = GetShadowSamplePos(shadowViewPos, sssRadius, shadowCascade);
 
                 vec2 sssRadiusFinal = GetPixelRadius(sssRadius, shadowCascade);
-                sssFinal = (1.0 - NoLm) * SampleShadow_PCF(shadowPos, shadowCascade, minOf(sssRadiusFinal));
+                sssFinal = SampleShadow_PCF(shadowPos, shadowCascade, minOf(sssRadiusFinal));
             }
         }
 

@@ -51,6 +51,7 @@ uniform sampler3D texFogNoise;
 
 #include "/lib/hg.glsl"
 #include "/lib/light/sky.glsl"
+#include "/lib/light/volumetric.glsl"
 #include "/lib/lightmap/sample.glsl"
 
 #ifdef SHADOWS_ENABLED
@@ -59,7 +60,6 @@ uniform sampler3D texFogNoise;
 #endif
 
 #if defined(SKY_CLOUDS_ENABLED) && defined(SHADOWS_CLOUD_ENABLED)
-    #include "/lib/light/volumetric.glsl"
     #include "/lib/sky/clouds.glsl"
     #include "/lib/shadow/clouds.glsl"
 #endif
@@ -88,7 +88,8 @@ void iris_emitFragment() {
     float mLOD = textureQueryLod(irisInt_BaseTex, mUV).y;
 
     vec4 albedo = iris_sampleBaseTexLod(mUV, int(mLOD));
-    if (iris_discardFragment(albedo)) {discard; return;}
+    //if (iris_discardFragment(albedo)) {discard; return;}
+    if (albedo.a < 0.1) {discard; return;}
 
     vec2 lmcoord = LightMapNorm(mLight);
 

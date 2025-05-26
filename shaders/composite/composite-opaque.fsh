@@ -19,6 +19,8 @@ uniform sampler2D texSkyView;
 uniform sampler2D texSkyTransmit;
 uniform sampler2D texSkyIrradiance;
 
+uniform sampler2D texParticleOpaque;
+
 uniform sampler3D texFogNoise;
 
 #ifdef SHADOWS_ENABLED
@@ -267,24 +269,34 @@ void main() {
             }
         #endif
 
-        vec3 skyLightFinal = sunLight * max(NoL_sun, 0.0) + moonLight * max(NoL_moon, 0.0);
+        float sss_diffuse = max((NoL_sun + sss) / (1.0 + sss), 0.0);
+        vec3 sss_shadow = mix(shadow_sss.rgb, vec3(shadow_sss.w), sss);
 
-        vec3 skyLightDiffuse = skyLightFinal * shadow_sss.rgb * SampleLightDiffuse(NoVm, NoLm, LoHm, roughL);
+        vec3 skyLightFinal = sunLight * sss_diffuse + moonLight * max(NoL_moon, 0.0);
+
+        vec3 skyLightDiffuse = skyLightFinal * sss_shadow * SampleLightDiffuse(NoVm, NoLm, LoHm, roughL);
 
         // SSS
-        const float sss_G = 0.24;
+        if (sss > EPSILON) {
+            const float sss_G = 0.24;
 
-        vec3 sss_skyIrradiance = SampleSkyIrradiance(-localTexNormal, lmCoord.y);
+            vec3 sss_skyIrradiance = SampleSkyIrradiance(-localTexNormal, lmCoord.y);
 
-        float VoL_sun = dot(localViewDir, Scene_LocalSunDir);
-        vec3 sss_phase_sun = max(DHG(VoL_sun, -0.04, 0.96, 0.06), 0.0) * abs(NoL_sun) * sunLight;
-        vec3 sss_phase_moon = max(HG(-VoL_sun, sss_G), 0.0) * abs(NoL_moon) * moonLight;
-        vec3 sss_skyLight = (sss_phase_sun + sss_phase_moon)
-                          + phaseIso * sss_skyIrradiance * occlusion;
+            float VoL_sun = dot(localViewDir, Scene_LocalSunDir);
+            vec3 sss_phase_sun = max(DHG(VoL_sun, -0.04, 0.96, 0.06), 0.0) * abs(NoL_sun) * sunLight;
+            vec3 sss_phase_moon = max(HG(-VoL_sun, sss_G), 0.0) * abs(NoL_moon) * moonLight;
+            vec3 sss_skyLight = PI * sss_shadow * (sss_phase_sun + sss_phase_moon)
+                              + sss_skyIrradiance;
 
-        vec3 indirect_sss = max(shadow_sss.w - shadow_sss.rgb, 0.0);
+            //vec3 indirect_sss = max(shadow_sss.w - shadow_sss.rgb, 0.0);
 
-        skyLightDiffuse = mix(skyLightDiffuse, sss_skyLight * PI, indirect_sss * sss);
+            skyLightDiffuse += sss * sss_skyLight * saturate(1.0 - NoL_sun);// * exp(-1.0 * (1.0 - albedo.rgb));
+
+    //        float wrapF = sss;
+    //        float wrap_diffuse = max((NoL_sun + wrapF) / (1.0 + wrapF), 0.0);
+
+            //skyLightDiffuse = mix(skyLightDiffuse, sss_skyLight * PI, indirect_sss * sss);
+        }
 
         vec3 skyIrradiance = SampleSkyIrradiance(localTexNormal, lmCoord.y);
         //skyIrradiance *= mix(2.0, 1.0, skyLightF);
@@ -414,7 +426,7 @@ void main() {
             #endif
 
             float smoothness = 1.0 - roughness;
-            specular *= GetMetalTint(albedo.rgb, f0_metal) * _pow2(smoothness);
+            specular *= GetMetalTint(albedo.rgb, f0_metal) * smoothness;
         }
 
 //        if (!hasTexNormal) albedo.rgb = vec3(1.0,0.0,0.0);
@@ -481,6 +493,9 @@ void main() {
         vec3 vlTransmit = textureLod(texTransmitVL, uv, 0).rgb;
         colorFinal = fma(colorFinal, vlTransmit, vlScatter);
     #endif
+
+    vec4 particles = textureLod(texParticleOpaque, uv, 0);
+    colorFinal = mix(colorFinal, particles.rgb * 1000.0, saturate(particles.a));
 
     colorFinal = clamp(colorFinal * 0.001, 0.0, 65000.0);
 

@@ -16,7 +16,7 @@ uniform sampler2D texDeferredTrans_Color;
 uniform sampler2D texDeferredTrans_TexNormal;
 uniform usampler2D texDeferredTrans_Data;
 
-uniform sampler2D texParticles;
+uniform sampler2D texParticleTranslucent;
 uniform sampler2D texClouds;
 
 uniform sampler2D texSkyView;
@@ -501,7 +501,7 @@ void main() {
         colorFinal = colorFinal * vlTransmit + vlScatter;
     #endif
 
-    vec4 weather = textureLod(texParticles, uv, 0);
+    vec4 weather = textureLod(texParticleTranslucent, uv, 0);
     colorFinal = mix(colorFinal, weather.rgb * 1000.0, saturate(weather.a));
 
     if (ap.camera.fluid == 2)

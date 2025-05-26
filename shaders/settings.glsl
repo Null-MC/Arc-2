@@ -40,9 +40,6 @@ const float Shadow_MaxPcfSize = 0.8;
 const int SHADOW_SCREEN_STEPS = 12;
 const float ShadowScreenSlope = 0.85;
 
-const float SSS_MaxDist = 3.0;
-const float SSS_MaxPcfSize = 1.5;
-
 const float WaterTintMinDist = 1.0;
 const float shadowMapResolution = float(SHADOW_RESOLUTION);
 const float cloudHeight = 320.0;

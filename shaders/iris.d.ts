@@ -136,8 +136,8 @@ declare class BuiltPage {}
 
 declare function asInt(name: string, ...values: number[]): IntSetting;
 declare function asFloat(name: string, ...values: number[]): FloatSetting;
-declare function putTextLabel(text : string) : BuiltSetting
-declare function putTranslationLabel(text : string) : BuiltSetting
+declare function putTextLabel(id : string, text : string) : BuiltSetting
+declare function putTranslationLabel(id : string, text : string) : BuiltSetting
 declare function asString(name: string, ...values: string[]): StringSetting;
 declare function asBool(name: string, defaultValue: boolean, reload: boolean): BuiltSetting;
 
@@ -581,7 +581,9 @@ interface InternalTextureFormat {}
  * A built texture. This is the result of making an {@link Texture} or {@link ArrayTexture}.
  * This is also automatically implemented by {@link PNGTexture} and {@link RawTexture}.
  */
-interface BuiltTexture {}
+interface BuiltTexture {
+    readBack() : ArrayBuffer;
+}
 
 /**
  * A basic, non-array read/write texture.
@@ -598,6 +600,7 @@ declare class Texture {
   width(width: number): Texture;
   height(height: number): Texture;
   depth(depth: number): Texture;
+  readBack(read: boolean): Texture;
 
   build(): BuiltTexture;
 }

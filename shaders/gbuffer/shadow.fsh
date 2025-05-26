@@ -19,7 +19,7 @@ layout(location = 0) out vec4 outColor;
 
 
 void iris_emitFragment() {
-    const float alphaThreshold = 0.4;
+    const float alphaThreshold = 0.2;
 
     #if defined(RENDER_TERRAIN) && defined(RENDER_TRANSLUCENT)
         bool isFluid = iris_hasFluid(vIn.blockId);

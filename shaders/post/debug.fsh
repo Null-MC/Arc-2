@@ -36,7 +36,11 @@ uniform sampler2D TEX_SRC;
 #elif DEBUG_VIEW == DEBUG_VIEW_SHADOWMAP_NORMAL
     uniform sampler2DArray texShadowNormal;
 #elif DEBUG_VIEW == DEBUG_VIEW_PARTICLES
-    uniform sampler2D texParticles;
+    #ifdef DEBUG_TRANSLUCENT
+        uniform sampler2D texParticleTranslucent;
+    #else
+        uniform sampler2D texParticleSolid;
+    #endif
 #endif
 
 #if DEBUG_VIEW == DEBUG_VIEW_MATERIAL
@@ -107,7 +111,11 @@ void main() {
                 //ApplyAutoExposure(color, Scene_AvgExposure);
                 color = tonemap_jodieReinhard(color);
             #elif DEBUG_VIEW == DEBUG_VIEW_PARTICLES
-                color = textureLod(texParticles, previewCoord, 0).rgb * 0.001;
+                #ifdef DEBUG_TRANSLUCENT
+                    color = textureLod(texParticleTranslucent, previewCoord, 0).rgb * 0.001;
+                #else
+                    color = textureLod(texParticleSolid, previewCoord, 0).rgb * 0.001;
+                #endif
             #endif
 
             #if DEBUG_VIEW == DEBUG_VIEW_MATERIAL

@@ -48,6 +48,9 @@ export class ShaderSettings {
     get Material_NormalSmooth(): boolean {return this.getCachedBoolSetting("MATERIAL_NORMAL_SMOOTH");}
     get Material_PorosityFormat(): number {return this.getCachedSetting<number>("MATERIAL_POROSITY_FORMAT", k => parseInt(getStringSetting(k)));}
     get Material_EmissionBrightness(): number {return this.getCachedIntSetting("MATERIAL_EMISSION_BRIGHTNESS");}
+    get Material_SSS_Format(): number {return this.getCachedSetting<number>("MATERIAL_SSS_FORMAT", k => parseInt(getStringSetting(k)));}
+    get Material_SSS_MaxDist(): number {return this.getCachedFloatSetting("MATERIAL_SSS_DISTANCE");}
+    get Material_SSS_MaxRadius(): number {return this.getCachedFloatSetting("MATERIAL_SSS_RADIUS");}
     get Material_FancyLava(): boolean {return this.getCachedBoolSetting("FANCY_LAVA");}
     get Material_FancyLavaResolution(): number {return this.getCachedIntSetting("FANCY_LAVA_RES");}
 

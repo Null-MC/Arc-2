@@ -214,10 +214,15 @@ vec3 trace_GI(const in vec3 traceOrigin, const in vec3 traceDir, const in int fa
 			voxelPos = ivec3(bufferPos * voxelSize) + wsgiVoxelOffset;
 			blockId = SampleVoxelBlock(voxelPos);
 
-			if (blockId > 0u && iris_isFullBlock(blockId)) {
-				hit = true;
-				break;
+			if (blockId > 0u) {
+				if (iris_isFullBlock(blockId)) hit = true;
+
+				uint blockTags = iris_blockInfo.blocks[blockId].z;
+				const uint make_solid_tags = (1u << TAG_LEAVES) | (1u << TAG_STAIRS) | (1u << TAG_SLABS);
+				if (iris_hasAnyTag(blockTags, make_solid_tags)) hit = true;
 			}
+
+			if (hit) break;
 		#endif
 
 		if (wsgi_isInBounds(bufferPos)) {

@@ -65,6 +65,9 @@ function applySettings(settings : ShaderSettings, internal) {
         if (settings.Material_ParallaxDepthWrite) defineGlobally1("MATERIAL_PARALLAX_DEPTHWRITE");
     }
     if (settings.Material_NormalSmooth) defineGlobally1("MATERIAL_NORMAL_SMOOTH");
+    defineGlobally('MATERIAL_SSS_FORMAT', settings.Material_SSS_Format);
+    defineGlobally('MATERIAL_SSS_DISTANCE', settings.Material_SSS_MaxDist);
+    defineGlobally('MATERIAL_SSS_RADIUS', settings.Material_SSS_MaxRadius);
     if (settings.Material_FancyLava) {
         defineGlobally1("FANCY_LAVA");
         defineGlobally("FANCY_LAVA_RES", settings.Material_FancyLavaResolution);
@@ -356,7 +359,13 @@ export function setupShader() {
         .clearColor(0.0, 0.0, 0.0, 0.0)
         .build();
 
-    const texParticles = new Texture("texParticles")
+    // texParticles
+    const texParticleOpaque = new Texture("texParticleOpaque")
+        .format(Format.RGBA16F)
+        .clearColor(0.0, 0.0, 0.0, 0.0)
+        .build();
+
+    const texParticleTranslucent = new Texture("texParticleTranslucent")
         .format(Format.RGBA16F)
         .clearColor(0.0, 0.0, 0.0, 0.0)
         .build();
@@ -884,30 +893,41 @@ export function setupShader() {
         .define("RENDER_ENTITY", "1")
         .build());
 
-    registerShader(mainShaderTranslucent("entity-translucent", Usage.ENTITY_TRANSLUCENT)
-        .define("RENDER_ENTITY", "1")
+    registerShader(mainShaderTranslucent('entity-translucent', Usage.ENTITY_TRANSLUCENT)
+        .define('RENDER_ENTITY', '1')
         .build());
 
-    const particleShader = new ObjectShader("particles", Usage.PARTICLES)
-        .vertex("gbuffer/particles.vsh")
-        .fragment("gbuffer/particles.fsh")
-        .target(0, texParticles)
-        .blendOff(0)
-        .ssbo(0, sceneBuffer)
-        .ubo(0, SceneSettingsBuffer);
+    function particleShader(name: string, usage: ProgramUsage) {
+        const shader = new ObjectShader(name, usage)
+            .vertex('gbuffer/particles.vsh')
+            .fragment('gbuffer/particles.fsh')
+            .ssbo(0, sceneBuffer)
+            .ubo(0, SceneSettingsBuffer);
 
-    if (settings.Lighting_GI_Enabled) {
-        particleShader
-            .ssbo(1, shLpvBuffer)
-            .ssbo(2, shLpvBuffer_alt);
+        if (settings.Lighting_GI_Enabled) {
+            shader
+                .ssbo(1, shLpvBuffer)
+                .ssbo(2, shLpvBuffer_alt);
+        }
+
+        return shader;
     }
 
-    registerShader(particleShader.build());
+    registerShader(particleShader('particle-opaque', Usage.PARTICLES)
+        .target(0, texParticleOpaque)
+        .blendOff(0)
+        .build());
+
+    registerShader(particleShader('particle-translucent', Usage.PARTICLES_TRANSLUCENT)
+        .target(0, texParticleTranslucent)
+        .blendOff(0)
+        .define('RENDER_TRANSLUCENT', '1')
+        .build());
 
     registerShader(new ObjectShader("weather", Usage.WEATHER)
         .vertex("gbuffer/weather.vsh")
         .fragment("gbuffer/weather.fsh")
-        .target(0, texParticles)
+        .target(0, texParticleTranslucent)
         .ssbo(0, sceneBuffer)
         .build());
 

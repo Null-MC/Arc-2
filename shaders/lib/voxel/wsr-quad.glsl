@@ -1,6 +1,6 @@
 bool TraceReflection(const in vec3 localPos, const in vec3 localDir, out vec3 hitPos, out vec2 hitUV, out vec4 hitColor, out Quad hitQuad) {
     vec4 colorFinal = vec4(0.0);
-    vec3 currPos = GetVoxelPosition(localPos) / QUAD_BIN_SIZE;
+    vec3 currPos = voxel_GetBufferPosition(localPos) / QUAD_BIN_SIZE;
 
     vec3 stepSizes, nextDist, stepAxis;
     dda_init(stepSizes, nextDist, currPos, localDir);

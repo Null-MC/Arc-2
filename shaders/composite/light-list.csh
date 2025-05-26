@@ -27,7 +27,7 @@ void main() {
 			ivec3 voxelBinMin = ivec3(floor((voxelPos - lightRange) / LIGHT_BIN_SIZE));
 			ivec3 voxelBinMax = ivec3(ceil((voxelPos + lightRange) / LIGHT_BIN_SIZE));
 
-			uint voxelIndex = GetVoxelIndex(voxelPos);
+			uint voxelIndex = voxel_GetBufferIndex(voxelPos);
 
 			for (int z = voxelBinMin.z; z <= voxelBinMax.z; z++) {
 				for (int y = voxelBinMin.y; y <= voxelBinMax.y; y++) {

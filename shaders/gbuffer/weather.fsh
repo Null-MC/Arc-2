@@ -178,10 +178,10 @@ void iris_emitFragment() {
     finalColor.rgb += 0.02 * skyLightF * (sun_light + moon_light) * shadowSample;
 
     #if LIGHTING_MODE == LIGHT_MODE_LPV
-        vec3 voxelPos = GetVoxelPosition(vIn.localPos);
+        vec3 voxelPos = voxel_GetBufferPosition(vIn.localPos);
 
-        if (IsInVoxelBounds(voxelPos))
-            finalColor.rgb += 0.04 * sample_floodfill(voxelPos);
+        if (floodfill_isInBounds(voxelPos))
+            finalColor.rgb += 0.04 * floodfill_sample(voxelPos);
     #endif
 
     finalColor *= mColor;

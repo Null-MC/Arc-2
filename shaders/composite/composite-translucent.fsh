@@ -119,6 +119,7 @@ uniform sampler2D texSkyIrradiance;
 #endif
 
 #if LIGHTING_MODE == LIGHT_MODE_LPV
+    #include "/lib/voxel/floodfill-common.glsl"
     #include "/lib/voxel/floodfill-sample.glsl"
 #endif
 
@@ -282,7 +283,7 @@ void main() {
         skyLightDiffuse = mix(skyLightDiffuse, sss_skyLight * PI, sss);
 
         #ifdef VOXEL_ENABLED
-            vec3 voxelPos = GetVoxelPosition(localPosTrans);
+            vec3 voxelPos = voxel_GetBufferPosition(localPosTrans);
         #endif
 
         vec3 skyIrradiance = SampleSkyIrradiance(localTexNormal, lmCoord.y);
@@ -306,13 +307,13 @@ void main() {
         vec3 blockLighting = GetVanillaBlockLight(lmCoord.x, occlusion);
 
         #if LIGHTING_MODE == LIGHT_MODE_RT
-            if (IsInVoxelBounds(voxelPos)) {
+            if (voxel_isInBounds(voxelPos)) {
                 blockLighting = vec3(0.0);
             }
         #elif LIGHTING_MODE == LIGHT_MODE_LPV
-            if (IsInVoxelBounds(voxelPos)) {
+            if (floodfill_isInBounds(voxelPos)) {
                 vec3 voxelSamplePos = 0.5*localTexNormal - 0.25*localGeoNormal + voxelPos;
-                blockLighting = sample_floodfill(voxelSamplePos);
+                blockLighting = floodfill_sample(voxelSamplePos);
             }
         #endif
 

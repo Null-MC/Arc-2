@@ -185,7 +185,7 @@ void main() {
 
         float roughL = roughness*roughness;
 
-        vec3 voxelPos = GetVoxelPosition(localPos);
+        vec3 voxelPos = voxel_GetBufferPosition(localPos);
         vec3 voxelPos_in = voxelPos - 0.02*localGeoNormal;
 
         #if LIGHTING_REFLECT_MODE == REFLECT_MODE_WSR
@@ -196,7 +196,7 @@ void main() {
 
         float NoVm = max(dot(localTexNormal, localViewDir), 0.0);
 
-        if (IsInVoxelBounds(voxelPos_in)) {
+        if (voxel_isInBounds(voxelPos_in)) {
             #if defined EFFECT_TAA_ENABLED || defined ACCUM_ENABLED
                 float dither = InterleavedGradientNoiseTime(ivec2(gl_FragCoord.xy));
             #else
@@ -234,7 +234,7 @@ void main() {
                     vec3 light_voxelPos = GetLightVoxelPos(light_voxelIndex) + 0.5;
                     light_voxelPos += jitter;
 
-                    vec3 light_LocalPos = GetVoxelLocalPos(light_voxelPos);
+                    vec3 light_LocalPos = voxel_getLocalPosition(light_voxelPos);
 
 //                    uint blockId = imageLoad(imgVoxelBlock, ivec3(light_voxelPos)).r;
 
@@ -418,7 +418,7 @@ void main() {
 
                 float reflect_roughL = _pow2(reflect_roughness);
 
-                vec3 reflect_localPos = GetVoxelLocalPos(reflect_voxelPos);
+                vec3 reflect_localPos = voxel_getLocalPosition(reflect_voxelPos);
 
                 float reflect_wetness = float(ap.camera.fluid == 1);
 
@@ -508,7 +508,7 @@ void main() {
                         vec3 light_voxelPos = GetLightVoxelPos(light_voxelIndex) + 0.5;
                         //light_voxelPos += jitter*0.125;
 
-                        vec3 light_LocalPos = GetVoxelLocalPos(light_voxelPos);
+                        vec3 light_LocalPos = voxel_getLocalPosition(light_voxelPos);
 
                         //uint blockId = imageLoad(imgVoxelBlock, ivec3(light_voxelPos)).r;
 
@@ -554,7 +554,7 @@ void main() {
                     }
                 #elif LIGHTING_MODE == LIGHT_MODE_LPV
                     vec3 voxelSamplePos = fma(reflect_geoNormal, vec3(0.5), reflect_voxelPos);
-                    vec3 voxelLight = sample_floodfill(voxelSamplePos);
+                    vec3 voxelLight = floodfill_sample(voxelSamplePos);
 
                     // TODO: move cloud shadows to RSM sampling!!!
                     reflect_diffuse += voxelLight;// * cloudShadowF;// * SampleLightDiffuse(NoVm, 1.0, 1.0, roughL);

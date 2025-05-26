@@ -70,6 +70,7 @@ uniform sampler3D texFogNoise;
 
 #if LIGHTING_MODE == LIGHT_MODE_LPV
     #include "/lib/voxel/voxel-common.glsl"
+    #include "/lib/voxel/floodfill-common.glsl"
     #include "/lib/voxel/floodfill-sample.glsl"
 #endif
 
@@ -248,20 +249,20 @@ void iris_emitFragment() {
     vec3 blockLighting = GetVanillaBlockLight(lmcoord.x, occlusion);
 
     #if LIGHTING_MODE == LIGHT_MODE_LPV
-        vec3 voxelPos = GetVoxelPosition(vIn.localPos);
+        vec3 voxelPos = voxel_GetBufferPosition(vIn.localPos);
 
-        if (IsInVoxelBounds(voxelPos))
-            blockLighting = sample_floodfill(voxelPos);
+        if (floodfill_isInBounds(voxelPos))
+            blockLighting = floodfill_sample(voxelPos);
     #endif
 
     //vec3 diffuse = skyLightF * (sun_light + moon_light) * shadowSample;
     vec3 diffuse = skyLightDiffuse + blockLighting + 0.0016 * occlusion;
 
 //    #if LIGHTING_MODE == LIGHT_MODE_LPV
-//        vec3 voxelPos = GetVoxelPosition(vIn.localPos);
+//        vec3 voxelPos = voxel_GetBufferPosition(vIn.localPos);
 //
 //        if (IsInVoxelBounds(voxelPos))
-//            diffuse += 0.04 * sample_floodfill(voxelPos);
+//            diffuse += 0.04 * floodfill_sample(voxelPos);
 //    #endif
 
     float metalness = mat_metalness(f0_metal);

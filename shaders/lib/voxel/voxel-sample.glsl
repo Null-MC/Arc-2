@@ -24,7 +24,7 @@
 
 uint SampleVoxelBlock(const in vec3 voxelPos) {
     #ifdef VOXEL_PROVIDED
-        ivec3 blockWorldPos = ivec3(floor(GetVoxelLocalPos(voxelPos) + ap.camera.pos));
+        ivec3 blockWorldPos = ivec3(floor(voxel_getLocalPosition(voxelPos) + ap.camera.pos));
         //return uint(_iris_getBlockAtPos(blockWorldPos).x);
         return uint(iris_getBlockAtPos(blockWorldPos).x);
     #else

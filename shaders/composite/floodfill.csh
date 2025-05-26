@@ -22,6 +22,7 @@ uniform sampler3D texFloodFill_alt;
 
 #include "/lib/voxel/voxel-common.glsl"
 #include "/lib/voxel/voxel-sample.glsl"
+#include "/lib/voxel/floodfill-common.glsl"
 
 #include "/lib/utility/hsv.glsl"
 
@@ -42,8 +43,8 @@ ivec3 GetVoxelFrameOffset() {
     return ivec3(floor(posLast));
 }
 
-vec3 sample_floodfill_prev(in ivec3 texCoord) {
-	if (!IsInVoxelBounds(texCoord)) return vec3(0.0);
+vec3 floodfill_sample_prev(in ivec3 texCoord) {
+	if (!floodfill_isInBounds(texCoord)) return vec3(0.0);
 
 	bool altFrame = ap.time.frames % 2 == 1;
 
@@ -69,22 +70,22 @@ void populateShared() {
 	ivec3 pos2 = workGroupOffset + ivec3(i2 / flattenShared) % 10;
 
 	ivec3 voxelFrameOffset = GetVoxelFrameOffset();
-	floodfillBuffer[i1] = sample_floodfill_prev(pos1 - voxelFrameOffset);
-	floodfillBuffer[i2] = sample_floodfill_prev(pos2 - voxelFrameOffset);
+	floodfillBuffer[i1] = floodfill_sample_prev(pos1 - voxelFrameOffset);
+	floodfillBuffer[i2] = floodfill_sample_prev(pos2 - voxelFrameOffset);
 
 	uint blockId1 = 0u;
 	uint blockId2 = 0u;
 	uint blockMeta1 = 0u;
 	uint blockMeta2 = 0u;
 
-	if (IsInVoxelBounds(pos1)) {
+	if (voxel_isInBounds(pos1)) {
 		blockId1 = SampleVoxelBlock(pos1);
 
 		if (blockId1 > 0u)
 			blockMeta1 = iris_getMetadata(blockId1);
 	}
 
-	if (IsInVoxelBounds(pos2)) {
+	if (voxel_isInBounds(pos2)) {
 		blockId2 = SampleVoxelBlock(pos2);
 
 		if (blockId2 > 0u)
@@ -135,7 +136,7 @@ void main() {
 
     //vec3 viewDir = ap.camera.viewInv[2].xyz;
     //vec3 voxelCenter = GetVoxelCenter(ap.camera.pos, viewDir);
-    vec3 localPos = GetVoxelLocalPos(cellIndex) + 0.5;
+    vec3 localPos = voxel_getLocalPosition(cellIndex) + 0.5;
 
 	ivec3 localCellIndex = ivec3(gl_LocalInvocationID);
 	int sharedCoord = getSharedCoord(localCellIndex + 1);

@@ -106,6 +106,7 @@ uniform sampler3D texFogNoise;
 #endif
 
 #if LIGHTING_MODE == LIGHT_MODE_LPV
+    #include "/lib/voxel/floodfill-common.glsl"
     #include "/lib/voxel/floodfill-sample.glsl"
 #endif
 
@@ -320,18 +321,19 @@ void main() {
         vec3 blockLighting = GetVanillaBlockLight(lmCoord.x, occlusion);
 
         #ifdef VOXEL_ENABLED
-            vec3 voxelPos = GetVoxelPosition(localPos);
+            vec3 voxelPos = voxel_GetBufferPosition(localPos);
         #endif
 
         #if LIGHTING_MODE == LIGHT_MODE_RT
-            if (IsInVoxelBounds(voxelPos)) {
+            // TODO: replace check with light-list bounds!
+            if (voxel_isInBounds(voxelPos)) {
                 blockLighting = vec3(0.0);
             }
         #elif LIGHTING_MODE == LIGHT_MODE_LPV
-            if (IsInVoxelBounds(voxelPos)) {
-                vec3 voxelSamplePos = 0.5*localTexNormal - 0.25*localGeoNormal + voxelPos;
-                blockLighting = sample_floodfill(voxelSamplePos);
-            }
+            vec3 voxelSamplePos = 0.5*localTexNormal - 0.25*localGeoNormal + voxelPos;
+
+            if (floodfill_isInBounds(voxelPos))
+                blockLighting = floodfill_sample(voxelSamplePos);
         #endif
 
         vec3 diffuse = skyLightDiffuse + blockLighting + 0.0016 * occlusion;

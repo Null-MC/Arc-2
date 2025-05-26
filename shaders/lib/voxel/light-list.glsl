@@ -6,11 +6,6 @@ int GetLightBinIndex(const in ivec3 pos) {
 	return sumOf(pos * flatten);
 }
 
-//uint GetVoxelIndex(const in ivec3 voxelPos) {
-//	const ivec3 flatten = ivec3(1, VOXEL_SIZE, VOXEL_SIZE*VOXEL_SIZE);
-//	return uint(sumOf(voxelPos * flatten));
-//}
-
 ivec3 GetLightVoxelPos(const in uint voxelIndex) {
 	ivec3 pos;
 	pos.z = int(floor(voxelIndex / float(VOXEL_SIZE*VOXEL_SIZE)));

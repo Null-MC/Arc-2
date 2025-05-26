@@ -53,6 +53,7 @@ uniform sampler2D texSkyMultiScatter;
 
 #if LIGHTING_MODE == LIGHT_MODE_LPV
     #include "/lib/voxel/voxel-common.glsl"
+    #include "/lib/voxel/floodfill-common.glsl"
     #include "/lib/voxel/floodfill-sample.glsl"
 #endif
 
@@ -222,10 +223,10 @@ void main() {
             //vec3 sampleTransmit = exp(-sampleDensity * transmitF);
 
             #if LIGHTING_MODE == LIGHT_MODE_LPV
-                vec3 voxelPos = GetVoxelPosition(sampleLocalPos);
+                vec3 voxelPos = voxel_GetBufferPosition(sampleLocalPos);
 
-                if (IsInVoxelBounds(voxelPos)) {
-                    vec3 blockLight = sample_floodfill(voxelPos);
+                if (floodfill_isInBounds(voxelPos)) {
+                    vec3 blockLight = floodfill_sample(voxelPos);
                     sampleLit += phaseIso * blockLight;
                 }
             #endif

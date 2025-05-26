@@ -174,9 +174,6 @@ vec3 trace_GI(const in vec3 traceOrigin, const in vec3 traceDir, const in int fa
 	vec3 color = vec3(0.0);
 	vec3 tracePos = traceOrigin;
 
-	ivec3 wsgiVoxelOffset = wsgi_getVoxelOffset();
-	float voxelSize = wsgi_getVoxelSize(WSGI_VOXEL_SCALE);
-
 	vec3 stepSizes, nextDist;
 	dda_init(stepSizes, nextDist, tracePos, traceDir);
 
@@ -184,59 +181,55 @@ vec3 trace_GI(const in vec3 traceOrigin, const in vec3 traceDir, const in int fa
 	uint blockId = 0u;
 	vec3 stepAxis = vec3(0.0); // todo: set initial?
 	vec3 traceTint = vec3(1.0);
-	ivec3 bufferPos = ivec3(traceOrigin);
-	ivec3 voxelPos = ivec3(bufferPos * voxelSize) + wsgiVoxelOffset;
+	ivec3 voxelPos = ivec3(traceOrigin);
 
-	uint pathSamples = 0u;
-	vec3 pathLight = vec3(0.0);
+//	uint pathSamples = 0u;
+//	vec3 pathLight = vec3(0.0);
 	bool altFrame = ap.time.frames % 2 == 1;
 
-	vec3 stepAxisNext;
-	vec3 step = dda_step(stepAxisNext, nextDist, stepSizes, traceDir);
-	stepAxis = stepAxisNext;
-	tracePos += step;
+	// step out of initial voxel
+	#if WSGI_VOXEL_SCALE >= 0
+		// TODO: may need multiple steps for larger cascades!
+		// TODO: add a loop and initial-bounds check
+		vec3 stepAxisNext;
+		vec3 step = dda_step(stepAxisNext, nextDist, stepSizes, traceDir);
+		stepAxis = stepAxisNext;
+		tracePos += step;
+	#endif
 
 	int i = 0;
 	for (; i < VOXEL_GI_MAXSTEP && !hit; i++) {
 		vec3 stepAxisNext;
 		vec3 step = dda_step(stepAxisNext, nextDist, stepSizes, traceDir);
 
-		#if WSGI_VOXEL_SCALE > 1 && false
-			// TODO: do the below bit, but for a NxN area
-			vec3 sub_tracePos = tracePos;
+		voxelPos = ivec3(floor(fma(step, vec3(0.5), tracePos)));
+		if (!voxel_isInBounds(voxelPos)) break;
 
-			vec3 sub_stepSizes, sub_nextDist;
-			dda_init(sub_stepSizes, sub_nextDist, sub_tracePos, traceDir);
-		#else
-			bufferPos = ivec3(floor(fma(step, vec3(0.5), tracePos)));
-			//if (!wsgi_isInBounds(bufferPos)) break;
+		//voxelPos = ivec3(bufferPos * voxelSize) + wsgiVoxelOffset;
+		blockId = SampleVoxelBlock(voxelPos);
 
-			voxelPos = ivec3(bufferPos * voxelSize) + wsgiVoxelOffset;
-			blockId = SampleVoxelBlock(voxelPos);
+		if (blockId > 0u) {
+			if (iris_isFullBlock(blockId)) hit = true;
 
-			if (blockId > 0u) {
-				if (iris_isFullBlock(blockId)) hit = true;
-
-				uint blockTags = iris_blockInfo.blocks[blockId].z;
-				const uint make_solid_tags = (1u << TAG_LEAVES) | (1u << TAG_STAIRS) | (1u << TAG_SLABS);
-				if (iris_hasAnyTag(blockTags, make_solid_tags)) hit = true;
-			}
-
-			if (hit) break;
-		#endif
-
-		if (wsgi_isInBounds(bufferPos)) {
-			int sampleVoxelI = wsgi_getBufferIndex(bufferPos, WSGI_CASCADE);
-
-			lpvShVoxel sampleVoxel;
-			if (altFrame) sampleVoxel = SH_LPV[sampleVoxelI];
-			else sampleVoxel = SH_LPV_alt[sampleVoxelI];
-
-			float face_counter;
-			//pathLight += wsgi_sample_voxel(sampleVoxel, traceDir);
-			pathLight += wsgi_sample_voxel_face(sampleVoxel.data[face_dir], shVoxel_dir[face_dir], traceDir, face_counter);
-			pathSamples++;
+			uint blockTags = iris_blockInfo.blocks[blockId].z;
+			const uint make_solid_tags = (1u << TAG_LEAVES) | (1u << TAG_STAIRS) | (1u << TAG_SLABS);
+			if (iris_hasAnyTag(blockTags, make_solid_tags)) hit = true;
 		}
+
+		if (hit) break;
+
+//		if (wsgi_isInBounds(bufferPos)) {
+//			int sampleVoxelI = wsgi_getBufferIndex(bufferPos, WSGI_CASCADE);
+//
+//			lpvShVoxel sampleVoxel;
+//			if (altFrame) sampleVoxel = SH_LPV[sampleVoxelI];
+//			else sampleVoxel = SH_LPV_alt[sampleVoxelI];
+//
+//			float face_counter;
+//			//pathLight += wsgi_sample_voxel(sampleVoxel, traceDir);
+//			pathLight += wsgi_sample_voxel_face(sampleVoxel.data[face_dir], shVoxel_dir[face_dir], traceDir, face_counter);
+//			pathSamples++;
+//		}
 
 		tracePos += step;
 		stepAxis = stepAxisNext;
@@ -256,13 +249,13 @@ vec3 trace_GI(const in vec3 traceOrigin, const in vec3 traceDir, const in int fa
 		}
 	}
 
-	if (pathSamples > 0)
-		pathLight = pathLight / pathSamples;
+//	if (pathSamples > 0)
+//		pathLight = pathLight / pathSamples;
+//
+//	pathLight *= 1000.0;
 
-	pathLight *= 1000.0;
-
-	traceDist = distance(traceOrigin, tracePos) * voxelSize;
-	vec3 hit_localPos = wsgi_getLocalPosition(tracePos, WSGI_VOXEL_SCALE);
+	traceDist = max(distance(traceOrigin, tracePos), EPSILON);
+	vec3 hit_localPos = voxel_getLocalPosition(tracePos);
 
 	if (hit) {
 		vec3 hitNormal = -sign(traceDir) * stepAxis;
@@ -309,7 +302,7 @@ vec3 trace_GI(const in vec3 traceOrigin, const in vec3 traceDir, const in int fa
 		#endif
 
 		float hit_roughL = _pow2(hit_roughness);
-		//vec3 hit_localPos = GetVoxelLocalPos(tracePos);
+		//vec3 hit_localPos = voxel_getLocalPosition(tracePos);
 		float hit_NoL = dot(-traceDir, hitNormal);
 
 		float wetness = float(iris_hasFluid(blockId));
@@ -389,14 +382,17 @@ vec3 trace_GI(const in vec3 traceOrigin, const in vec3 traceDir, const in int fa
 		hit_diffuse *= hit_NoLm; //SampleLightDiffuse(hit_NoVm, hit_NoLm, hit_LoHm, hit_roughL);
 
 		#ifdef LIGHTING_GI_SKYLIGHT
-			hit_diffuse += wsgi_sample_nearest(bufferPos, hitNormal, WSGI_CASCADE);
+			vec3 hit_bufferPos = wsgi_getBufferPosition(hit_localPos, WSGI_VOXEL_SCALE);
+			ivec3 hit_bufferPos_n = ivec3(floor(hit_bufferPos));
+
+			hit_diffuse += wsgi_sample_nearest(hit_bufferPos_n, hitNormal, WSGI_CASCADE);
 
 			//hit_diffuse += 0.0016;
 		#else
 			hit_diffuse += SampleSkyIrradiance(hitNormal, hit_lmcoord.y);
 		#endif
 
-		vec3 hit_voxelPos = tracePos * voxelSize + wsgiVoxelOffset;
+		vec3 hit_voxelPos = voxelPos; //tracePos * voxelSize + wsgiVoxelOffset;
 
 		#if LIGHTING_MODE == LIGHT_MODE_RT //&& defined(FALSE)
 			// TODO: pick a random light and sample it?
@@ -428,7 +424,7 @@ vec3 trace_GI(const in vec3 traceOrigin, const in vec3 traceDir, const in int fa
 				vec3 light_voxelPos = GetLightVoxelPos(light_voxelIndex) + 0.5;
 				//light_voxelPos += jitter*0.125;
 
-				vec3 light_LocalPos = GetVoxelLocalPos(light_voxelPos);
+				vec3 light_LocalPos = voxel_getLocalPosition(light_voxelPos);
 
 				uint blockId = SampleVoxelBlock(light_voxelPos);
 
@@ -476,7 +472,7 @@ vec3 trace_GI(const in vec3 traceOrigin, const in vec3 traceDir, const in int fa
 		#elif LIGHTING_MODE == LIGHT_MODE_LPV
 			vec3 lpv_voxelPos = hit_voxelPos + 0.5*hitNormal;
 
-			if (IsInVoxelBounds(lpv_voxelPos)) {
+			if (voxel_isInBounds(lpv_voxelPos)) {
 				vec3 texcoord = lpv_voxelPos / VoxelBufferSize;
 				bool altFrame = ap.time.frames % 2 == 1;
 
@@ -515,8 +511,11 @@ vec3 trace_GI(const in vec3 traceOrigin, const in vec3 traceDir, const in int fa
 	}
 	else {
 		#if WSGI_CASCADE < (WSGI_CASCADE_COUNT-1)
-			ivec3 parentBufferPos = bufferPos/2 + WSGI_BufferSize/4;
-			color = wsgi_sample_nearest(parentBufferPos, traceDir, WSGI_CASCADE+1) * 1000.0;
+			vec3 localPos = voxel_getLocalPosition(voxelPos);
+			vec3 wsgi_pos = wsgi_getBufferPosition(localPos, WSGI_VOXEL_SCALE+1);
+			ivec3 wsgi_pos_n = ivec3(floor(wsgi_pos));
+
+			color = wsgi_sample_nearest(wsgi_pos_n, traceDir, WSGI_CASCADE+1) * 1000.0;
 			color *= 1.0 - 1.0/(1.0 + _pow2(traceDist));
 		#else
 			#ifdef LIGHTING_GI_SKYLIGHT
@@ -524,12 +523,12 @@ vec3 trace_GI(const in vec3 traceOrigin, const in vec3 traceDir, const in int fa
 					vec3 stepAxisNext;
 					vec3 step = dda_step(stepAxisNext, nextDist, stepSizes, traceDir);
 
-					bufferPos = ivec3(floor(fma(step, vec3(0.5), tracePos)));
-					voxelPos = ivec3(bufferPos * voxelSize) + wsgiVoxelOffset;
+					voxelPos = ivec3(floor(fma(step, vec3(0.5), tracePos)));
+					//voxelPos = ivec3(bufferPos * voxelSize) + wsgiVoxelOffset;
 
 					blockId = SampleVoxelBlock(voxelPos);
 
-					if (!wsgi_isInBounds(bufferPos)) break;
+					if (!voxel_isInBounds(voxelPos)) break;
 
 					if (blockId > 0u) {
 						if (iris_isFullBlock(blockId)) {
@@ -547,17 +546,15 @@ vec3 trace_GI(const in vec3 traceOrigin, const in vec3 traceDir, const in int fa
 					tracePos += step;
 					stepAxis = stepAxisNext;
 				}
-			#endif
 
-			#ifdef LIGHTING_GI_SKYLIGHT
 				if (hit) {
-					color = pathLight;
+					//color = pathLight;
 				}
 				else {
 					color = SampleSkyIrradiance(traceDir, 1.0);
 				}
 			#else
-				color = pathLight;
+				//color = pathLight;
 			#endif
 		#endif
 	}
@@ -576,8 +573,8 @@ void main() {
 	ivec3 wsgiVoxelOffset = wsgi_getVoxelOffset();
 
 	float voxelSize = wsgi_getVoxelSize(WSGI_VOXEL_SCALE);
-	ivec3 voxelPos = ivec3(cellIndex * voxelSize) + wsgiVoxelOffset;
-	uint blockId = SampleVoxelBlock(voxelPos + 0.5);
+	vec3 voxelPos = (cellIndex+0.5) * voxelSize + wsgiVoxelOffset;
+	uint blockId = SampleVoxelBlock(voxelPos);
 
 	bool isFullBlock = false;
 
@@ -598,8 +595,8 @@ void main() {
 			else voxel_gi = SH_LPV_alt[i_prev];
 		}
 		#if WSGI_CASCADE < (WSGI_CASCADE_COUNT-1)
+			// get previous value from parent if OOB
 			else {
-				// TODO: get from parent
 				ivec3 parentBufferPos = cellIndex_prev/2 + WSGI_BufferSize/4;
 				int i_prev = wsgi_getBufferIndex(parentBufferPos, WSGI_CASCADE+1);
 
@@ -620,11 +617,11 @@ void main() {
 			float faceF = dot(shVoxel_dir[dir], noise_dir);
 
 			//vec3 noise_offset = sample_blueNoise(hash23(cellIndex));
-			vec3 noise_offset = hash33(cellIndex + ap.time.frames);
-			noise_offset = noise_offset*0.5;
+//			vec3 noise_offset = hash33(cellIndex + ap.time.frames);
+//			noise_offset = noise_offset - 0.5;
 
 			float traceDist;
-			vec3 tracePos = cellIndex + noise_offset;
+			vec3 tracePos = voxelPos;// + noise_offset;
 			vec3 traceSample = trace_GI(tracePos, noise_dir, dir, traceDist);
 
 //			if (iris_hasFluid(blockId)) {
@@ -633,7 +630,7 @@ void main() {
 
 //			const float radius = 0.5;
 //			float sampleWeight = PI * sphereContribution(shVoxel_dir[dir], noise_dir * traceDist, radius);
-			float sampleWeight = max(faceF, 0.0);// / (3.0 + traceDist);
+			float sampleWeight = PI * max(faceF, 0.0);// / (3.0 + traceDist);
 
 			face_counter = clamp(face_counter + sampleWeight, 0.0, VOXEL_GI_MAXFRAMES);
 

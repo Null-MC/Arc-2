@@ -1,5 +1,5 @@
 bool TraceReflection(const in vec3 localPos, const in vec3 localDir, out vec3 tint, out vec3 hitPos, out vec3 hitNormal, out vec2 hitCoord, out VoxelBlockFace blockFace) {
-    vec3 currPos = GetVoxelPosition(localPos);
+    vec3 currPos = voxel_GetBufferPosition(localPos);
 
     vec3 stepSizes, nextDist;
     dda_init(stepSizes, nextDist, currPos, localDir);

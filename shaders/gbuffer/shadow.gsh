@@ -84,13 +84,13 @@ void main() {
     #ifdef VOXEL_ENABLED
         if (gl_PrimitiveIDIn % 2 == 0) {
             #ifdef RENDER_TERRAIN
-                vec3 voxelPos = GetVoxelPosition(vIn[0].originPos);
+                vec3 voxelPos = voxel_GetBufferPosition(vIn[0].originPos);
             #else
                 vec3 originPos = (vIn[0].localPos + vIn[1].localPos + vIn[2].localPos) / 3.0;
-                vec3 voxelPos = GetVoxelPosition(originPos);
+                vec3 voxelPos = voxel_GetBufferPosition(originPos);
             #endif
 
-            if (IsInVoxelBounds(voxelPos)) {
+            if (voxel_isInBounds(voxelPos)) {
                 #ifdef RENDER_TERRAIN
                     #ifndef VOXEL_PROVIDED
                         imageStore(imgVoxelBlock, ivec3(voxelPos), uvec4(vIn[0].blockId));
@@ -159,7 +159,7 @@ void main() {
                             //vec3 offset = ivec3(voxelPos) - quadBinPos*QUAD_BIN_SIZE;
                             //vec3 originBase = vIn[0].originPos - 0.5 - offset;
 
-                            vec3 originBase = GetVoxelLocalPos(quadBinPos*QUAD_BIN_SIZE);
+                            vec3 originBase = voxel_getLocalPosition(quadBinPos*QUAD_BIN_SIZE);
                             Quad quad;
 
                             // Reorder Vertices!

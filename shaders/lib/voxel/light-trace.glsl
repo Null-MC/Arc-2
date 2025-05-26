@@ -41,7 +41,7 @@ vec3 TraceDDA(vec3 origin, const in vec3 endPos, const in float range, const in 
         
         ivec3 voxelPos = ivec3(floor(currPos + 0.5*step));
 
-        if (IsInVoxelBounds(voxelPos)) {
+        if (voxel_isInBounds(voxelPos)) {
             #ifdef RT_TRI_ENABLED
                 ivec3 quadBinPos = voxelPos;
                 int quadBinIndex = GetQuadBinIndex(quadBinPos);

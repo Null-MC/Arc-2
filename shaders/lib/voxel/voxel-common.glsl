@@ -15,23 +15,31 @@ vec3 GetVoxelCenter(const in vec3 viewPos, const in vec3 viewDir) {
     return (VoxelBufferCenter + offset) + fract(viewPos);
 }
 
-vec3 GetVoxelPosition(const in vec3 position) {
+vec3 voxel_GetBufferPosition(const in vec3 position) {
     return position + GetVoxelCenter(ap.camera.pos, ap.camera.viewInv[2].xyz);
 }
 
-vec3 GetVoxelLocalPos(vec3 voxelPos) {
+vec3 voxel_getLocalPosition(vec3 voxelPos) {
     return voxelPos - GetVoxelCenter(ap.camera.pos, ap.camera.viewInv[2].xyz);
 }
 
-bool IsInVoxelBounds(const in ivec3 voxelPos) {
-    return clamp(voxelPos, 0, VOXEL_SIZE-1) == voxelPos;
+bool voxel_isInBounds(const in ivec3 voxelPos) {
+    #ifdef VOXEL_PROVIDED
+        return true;
+    #else
+        return clamp(voxelPos, 0, VOXEL_SIZE-1) == voxelPos;
+    #endif
 }
 
-bool IsInVoxelBounds(const in vec3 voxelPos) {
-    return clamp(voxelPos, 0.5, VOXEL_SIZE-0.5) == voxelPos;
+bool voxel_isInBounds(const in vec3 voxelPos) {
+    #ifdef VOXEL_PROVIDED
+        return true;
+    #else
+        return clamp(voxelPos, 0.5, VOXEL_SIZE-0.5) == voxelPos;
+    #endif
 }
 
-int GetVoxelIndex(ivec3 voxelPos) {
+int voxel_GetBufferIndex(ivec3 voxelPos) {
 	const ivec3 flatten = ivec3(1, VOXEL_SIZE, VOXEL_SIZE*VOXEL_SIZE);
 	return sumOf(flatten * voxelPos);
 }

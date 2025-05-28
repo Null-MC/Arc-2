@@ -67,6 +67,7 @@ layout (std140, binding = 0) uniform SceneSettings {
 	float Lighting_PenumbraSize;
 	float Effect_SSAO_Strength;
 	float Effect_Bloom_Strength;
+	float Effect_DOF_Radius;
 	float Scene_PostExposureMin;
 	float Scene_PostExposureMax;
 	float Scene_PostExposureSpeed;
@@ -75,5 +76,4 @@ layout (std140, binding = 0) uniform SceneSettings {
 	float Post_Tonemap_LinearStart;
 	float Post_Tonemap_LinearLength;
 	float Post_Tonemap_Black;
-	//float Post_PurkinjeStrength;
 };

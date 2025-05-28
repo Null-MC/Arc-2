@@ -445,7 +445,7 @@ void main() {
                 ivec3 wsgi_bufferPos_n;
 
                 for (int i = 0; i < WSGI_CASCADE_COUNT; i++) {
-                    vec3 wsgi_localPos = 0.25*localGeoNormal + localPos;
+                    vec3 wsgi_localPos = localPos + 0.1*localGeoNormal;
                     vec3 wsgi_bufferPos = wsgi_getBufferPosition(wsgi_localPos, i+WSGI_SCALE_BASE);
                     wsgi_bufferPos_n = ivec3(floor(wsgi_bufferPos));
 

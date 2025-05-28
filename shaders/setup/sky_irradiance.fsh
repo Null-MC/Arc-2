@@ -90,5 +90,5 @@ void main() {
     vec3 viewDir = DirectionFromUV(uv);
     vec3 irradiance = CalculateIrradiance(viewDir);
 
-    outColor = vec4(irradiance * PI, 0.1);
+    outColor = vec4(irradiance, 0.1);
 }

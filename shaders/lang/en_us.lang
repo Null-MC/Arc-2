@@ -239,6 +239,10 @@ screen.EFFECT_DOF=Depth-of-Field
 
 option.EFFECT_DOF_ENABLED=Enabled
 
+option.EFFECT_DOF_SAMPLES=Sample Count
+
+option.EFFECT_DOF_RADIUS=Max Radius
+
 option.EFFECT_DOF_SPEED=Speed
 
 

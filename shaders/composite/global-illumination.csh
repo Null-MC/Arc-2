@@ -86,18 +86,15 @@ uniform sampler2DArray texShadowColor;
 #endif
 
 
-ivec3 wsgi_getFrameOffset() {
-	vec3 offset = //fract(ap.camera.pos / WSGI_SNAP_SCALE)
-		+ floor(ap.temporal.pos / WSGI_SNAP_SCALE)
-		- floor(ap.camera.pos / WSGI_SNAP_SCALE);
-
-	const int stepScale = int(exp2(WSGI_SNAP_SCALE - WSGI_VOXEL_SCALE));
+ivec3 wsgi_getFrameOffset(const in float snapSize) {
+	vec3 offset = floor(ap.temporal.pos / snapSize)	- floor(ap.camera.pos / snapSize);
+	const int stepScale = 2;//int(exp2(WSGI_SNAP_SCALE - WSGI_VOXEL_SCALE));
     return ivec3(offset) * stepScale;
 }
 
 ivec3 wsgi_getVoxelOffset() {
 	float voxelSize = wsgi_getVoxelSize(WSGI_VOXEL_SCALE);
-	vec3 interval = wsgi_getStepInterval(ap.camera.pos);
+	vec3 interval = wsgi_getStepInterval(ap.camera.pos, voxelSize*2.0);
 	return VoxelBufferCenter - ivec3(WSGI_BufferCenter * voxelSize) - ivec3(floor(interval));
 }
 
@@ -153,7 +150,7 @@ vec3 GetRandomFaceNormal(const in ivec3 cellPos, const in vec3 face_dir) {
 //	return normalize(noise_dir);
 
 
-	vec2 random = hash22(vec2(seed_pos, ap.time.frames));
+	vec2 random = hash22(vec2(seed_pos * 123.456, ap.time.frames));
 
 	float r = sqrt(random.x);
 	float theta = 2.0 * PI * random.y;
@@ -188,9 +185,7 @@ vec3 trace_GI(const in vec3 traceOrigin, const in vec3 traceDir, const in int fa
 	bool altFrame = ap.time.frames % 2 == 1;
 
 	// step out of initial voxel
-	#if WSGI_VOXEL_SCALE >= 0
-		// TODO: may need multiple steps for larger cascades!
-		// TODO: add a loop and initial-bounds check
+	#if WSGI_VOXEL_SCALE <= 1
 		vec3 stepAxisNext;
 		vec3 step = dda_step(stepAxisNext, nextDist, stepSizes, traceDir);
 		stepAxis = stepAxisNext;
@@ -385,7 +380,7 @@ vec3 trace_GI(const in vec3 traceOrigin, const in vec3 traceDir, const in int fa
 			vec3 hit_bufferPos = wsgi_getBufferPosition(hit_localPos, WSGI_VOXEL_SCALE);
 			ivec3 hit_bufferPos_n = ivec3(floor(hit_bufferPos));
 
-			hit_diffuse += wsgi_sample_nearest(hit_bufferPos_n, hitNormal, WSGI_CASCADE);
+			hit_diffuse += wsgi_sample_nearest(hit_bufferPos_n, hitNormal, WSGI_CASCADE) * 1000.0;
 
 			//hit_diffuse += 0.0016;
 		#else
@@ -490,11 +485,11 @@ vec3 trace_GI(const in vec3 traceOrigin, const in vec3 traceDir, const in int fa
 		float hit_metalness = mat_metalness(hit_f0_metal);
 		hit_diffuse *= 1.0 - hit_metalness * (1.0 - hit_roughL);
 
-//		#if MATERIAL_EMISSION_POWER != 1
-//			hit_diffuse += pow(hit_emission, MATERIAL_EMISSION_POWER) * Material_EmissionBrightness * BLOCK_LUX;
-//		#else
-//			hit_diffuse += hit_emission * Material_EmissionBrightness * BLOCK_LUX;
-//		#endif
+		#if MATERIAL_EMISSION_POWER != 1
+			hit_diffuse += pow(hit_emission, MATERIAL_EMISSION_POWER) * Material_EmissionBrightness * BLOCK_LUX;
+		#else
+			hit_diffuse += hit_emission * Material_EmissionBrightness * BLOCK_LUX;
+		#endif
 
 		ApplyWetness_albedo(albedo, hit_porosity, wetness);
 
@@ -511,7 +506,7 @@ vec3 trace_GI(const in vec3 traceOrigin, const in vec3 traceDir, const in int fa
 	}
 	else {
 		#if WSGI_CASCADE < (WSGI_CASCADE_COUNT-1)
-			vec3 localPos = voxel_getLocalPosition(voxelPos);
+			vec3 localPos = voxel_getLocalPosition(tracePos);
 			vec3 wsgi_pos = wsgi_getBufferPosition(localPos, WSGI_VOXEL_SCALE+1);
 			ivec3 wsgi_pos_n = ivec3(floor(wsgi_pos));
 
@@ -524,11 +519,9 @@ vec3 trace_GI(const in vec3 traceOrigin, const in vec3 traceDir, const in int fa
 					vec3 step = dda_step(stepAxisNext, nextDist, stepSizes, traceDir);
 
 					voxelPos = ivec3(floor(fma(step, vec3(0.5), tracePos)));
-					//voxelPos = ivec3(bufferPos * voxelSize) + wsgiVoxelOffset;
+					if (!voxel_isInBounds(voxelPos)) break;
 
 					blockId = SampleVoxelBlock(voxelPos);
-
-					if (!voxel_isInBounds(voxelPos)) break;
 
 					if (blockId > 0u) {
 						if (iris_isFullBlock(blockId)) {
@@ -564,16 +557,16 @@ vec3 trace_GI(const in vec3 traceOrigin, const in vec3 traceDir, const in int fa
 
 
 void main() {
-	ivec3 cellIndex = ivec3(gl_GlobalInvocationID);
-	//if (any(greaterThanEqual(cellIndex, WSGI_BufferSize))) return;
+	ivec3 bufferPos = ivec3(gl_GlobalInvocationID);
+	//if (any(greaterThanEqual(bufferPos, WSGI_BufferSize))) return;
 
 	bool altFrame = ap.time.frames % 2 == 1;
 
-	ivec3 wsgi_bufferOffset = wsgi_getFrameOffset();
+	float voxelSize = wsgi_getVoxelSize(WSGI_VOXEL_SCALE);
+	ivec3 wsgi_bufferOffset = wsgi_getFrameOffset(voxelSize*2.0);
 	ivec3 wsgiVoxelOffset = wsgi_getVoxelOffset();
 
-	float voxelSize = wsgi_getVoxelSize(WSGI_VOXEL_SCALE);
-	vec3 voxelPos = (cellIndex+0.5) * voxelSize + wsgiVoxelOffset;
+	vec3 voxelPos = (bufferPos+0.5) * voxelSize + wsgiVoxelOffset;
 	uint blockId = SampleVoxelBlock(voxelPos);
 
 	bool isFullBlock = false;
@@ -587,7 +580,7 @@ void main() {
 	lpvShVoxel voxel_gi = voxel_empty;
 
 	if (!isFullBlock) {
-		ivec3 cellIndex_prev = cellIndex - wsgi_bufferOffset;
+		ivec3 cellIndex_prev = bufferPos - wsgi_bufferOffset;
 		if (wsgi_isInBounds(cellIndex_prev)) {
 			int i_prev = wsgi_getBufferIndex(cellIndex_prev, WSGI_CASCADE);
 
@@ -597,31 +590,52 @@ void main() {
 		#if WSGI_CASCADE < (WSGI_CASCADE_COUNT-1)
 			// get previous value from parent if OOB
 			else {
-				ivec3 parentBufferPos = cellIndex_prev/2 + WSGI_BufferSize/4;
-				int i_prev = wsgi_getBufferIndex(parentBufferPos, WSGI_CASCADE+1);
+				vec3 localPos_prev = wsgi_getLocalPosition(bufferPos + 0.5, WSGI_VOXEL_SCALE);
+				vec3 wsgi_pos_prev = wsgi_getBufferPosition(localPos_prev, WSGI_VOXEL_SCALE+1);
+				ivec3 wsgi_pos_prev_n = ivec3(floor(wsgi_pos_prev));
+
+				int i_prev = wsgi_getBufferIndex(wsgi_pos_prev_n, WSGI_CASCADE+1);
 
 				if (altFrame) voxel_gi = SH_LPV[i_prev];
 				else voxel_gi = SH_LPV_alt[i_prev];
 			}
 		#endif
 
-		//float seed_pos = hash13(cellIndex);
+		//float seed_pos = hash13(bufferPos);
 
 		for (int dir = 0; dir < 6; dir++) {
 			vec3 face_color;
 			float face_counter;
 			decode_shVoxel_dir(voxel_gi.data[dir], face_color, face_counter);
 
-			vec3 noise_dir = GetRandomFaceNormal(cellIndex, shVoxel_dir[dir]);
+			vec3 noise_dir = GetRandomFaceNormal(bufferPos, shVoxel_dir[dir]);
 
 			float faceF = dot(shVoxel_dir[dir], noise_dir);
 
-			//vec3 noise_offset = sample_blueNoise(hash23(cellIndex));
-//			vec3 noise_offset = hash33(cellIndex + ap.time.frames);
+			//vec3 noise_offset = sample_blueNoise(hash23(bufferPos));
+//			vec3 noise_offset = hash33(bufferPos + ap.time.frames);
 //			noise_offset = noise_offset - 0.5;
 
 			//float traceDist;
-			vec3 tracePos = voxelPos;// + noise_offset;
+
+			// TODO: step out of intitial wsgi voxel
+			vec3 tracePos = voxelPos;
+			#if WSGI_VOXEL_SCALE > 1
+				// TODO: may need multiple steps for larger cascades!
+				// TODO: add a loop and initial-bounds check
+				vec3 offsetBufferPos = bufferPos+0.5;// + noise_offset;
+
+				vec3 stepSizes, nextDist;
+				dda_init(stepSizes, nextDist, offsetBufferPos, noise_dir);
+
+				vec3 stepAxisNext;
+				vec3 step = dda_step(stepAxisNext, nextDist, stepSizes, noise_dir);
+				//stepAxis = stepAxisNext;
+				offsetBufferPos += step;
+
+				tracePos = offsetBufferPos * voxelSize + wsgiVoxelOffset + 0.05 * noise_dir;
+			#endif
+
 			vec3 traceSample = trace_GI(tracePos, noise_dir, dir);
 
 //			if (iris_hasFluid(blockId)) {
@@ -639,15 +653,11 @@ void main() {
 			float mixF = 1.0 / (1.0 + face_counter);
 			face_color = mix(face_color, traceSample, mixF * sampleWeight);// * max(faceF, 0.0);
 
-//			#if WSGI_CASCADE == (WSGI_CASCADE_COUNT-1)
-//				face_color = vec3(0.0);
-//			#endif
-
 			voxel_gi.data[dir] = encode_shVoxel_dir(face_color, face_counter);
 		}
 	}
 
-	int writeIndex = wsgi_getBufferIndex(cellIndex, WSGI_CASCADE);
+	int writeIndex = wsgi_getBufferIndex(bufferPos, WSGI_CASCADE);
 
 	if (altFrame) SH_LPV_alt[writeIndex] = voxel_gi;
 	else SH_LPV[writeIndex] = voxel_gi;

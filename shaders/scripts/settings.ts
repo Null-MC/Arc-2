@@ -86,6 +86,8 @@ export class ShaderSettings {
     get Effect_Bloom_Enabled(): boolean {return this.getCachedBoolSetting("EFFECT_BLOOM_ENABLED");}
     get Effect_Bloom_Strength(): number {return this.getCachedFloatSetting("EFFECT_BLOOM_STRENGTH");}
     get Effect_DOF_Enabled(): boolean {return this.getCachedBoolSetting("EFFECT_DOF_ENABLED");}
+    get Effect_DOF_SampleCount(): number {return this.getCachedIntSetting("EFFECT_DOF_SAMPLES");}
+    get Effect_DOF_Radius(): number {return this.getCachedIntSetting("EFFECT_DOF_RADIUS");}
     get Effect_DOF_Speed(): number {return this.getCachedIntSetting("EFFECT_DOF_SPEED");}
 
     get Post_TAA_Enabled(): boolean {return this.getCachedBoolSetting("EFFECT_TAA_ENABLED");}

@@ -99,9 +99,9 @@ function applySettings(settings : ShaderSettings, internal) {
 
         defineGlobally("WSGI_SCALE_BASE", settings.Lighting_GI_BaseScale);
 
-        const scaleF = Math.max(settings.Lighting_GI_BaseScale + settings.Lighting_GI_CascadeCount - 2, 0);
-        const snapScale = Math.pow(2, scaleF);
-        defineGlobally("WSGI_SNAP_SCALE", snapScale);
+        // const scaleF = Math.max(settings.Lighting_GI_BaseScale + settings.Lighting_GI_CascadeCount - 2, 0);
+        // const snapScale = Math.pow(2, scaleF);
+        // defineGlobally("WSGI_SNAP_SCALE", snapScale);
     }
 
     defineGlobally("LIGHTING_REFLECT_MODE", settings.Lighting_ReflectionMode);
@@ -146,6 +146,7 @@ function applySettings(settings : ShaderSettings, internal) {
     if (settings.Effect_SSAO_Enabled) defineGlobally1("EFFECT_SSAO_ENABLED");
     defineGlobally("EFFECT_SSAO_SAMPLES", settings.Effect_SSAO_StepCount);
 
+    defineGlobally('EFFECT_DOF_SAMPLES', settings.Effect_DOF_SampleCount);
     defineGlobally('EFFECT_DOF_SPEED', settings.Effect_DOF_Speed);
 
     if (settings.Post_TAA_Enabled) defineGlobally1("EFFECT_TAA_ENABLED");
@@ -347,12 +348,14 @@ export function setupShader() {
         //.imageName("imgFinalA")
         .format(Format.RGB16F)
         .clearColor(0.0, 0.0, 0.0, 0.0)
+        .mipmap(true)
         .build();
 
     const texFinalB = new Texture("texFinalB")
         //.imageName("imgFinalB")
         .format(Format.RGB16F)
         .clearColor(0.0, 0.0, 0.0, 0.0)
+        .mipmap(true)
         .build();
 
     const finalFlipper = new BufferFlipper(
@@ -1248,11 +1251,14 @@ export function setupShader() {
     finalFlipper.flip();
 
     if (settings.Effect_DOF_Enabled) {
+        registerShader(Stage.POST_RENDER, new GenerateMips(finalFlipper.getReadTexture()));
+
         registerShader(Stage.POST_RENDER, new Composite('depth-of-field')
             .vertex('shared/bufferless.vsh')
             .fragment('composite/depth-of-field.fsh')
             .target(0, finalFlipper.getWriteTexture())
             .define('TEX_SRC', finalFlipper.getReadName())
+            .ubo(0, SceneSettingsBuffer)
             .ssbo(0, sceneBuffer)
             .build());
 
@@ -1372,6 +1378,7 @@ export function onSettingsChanged(state : WorldState) {
         .appendFloat(settings.Lighting_PenumbraSize * 0.01)
         .appendFloat(settings.Effect_SSAO_Strength * 0.01)
         .appendFloat(settings.Effect_Bloom_Strength * 0.01)
+        .appendFloat(settings.Effect_DOF_Radius)
         .appendFloat(settings.Post_ExposureMin)
         .appendFloat(settings.Post_ExposureMax)
         .appendFloat(settings.Post_ExposureSpeed)
@@ -1380,7 +1387,6 @@ export function onSettingsChanged(state : WorldState) {
         .appendFloat(settings.Post_ToneMap_LinearStart)
         .appendFloat(settings.Post_ToneMap_LinearLength)
         .appendFloat(settings.Post_ToneMap_Black);
-        //.appendFloat(settings.Post_PurkinjeStrength * 0.01);
 }
 
 export function setupFrame(state : WorldState) {

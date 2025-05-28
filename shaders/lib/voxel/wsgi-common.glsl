@@ -6,20 +6,20 @@ float wsgi_getVoxelSize(const in int voxelScale) {
     return exp2(voxelScale) * 0.5;
 }
 
-vec3 wsgi_getStepInterval(const in vec3 cameraPos) {
-    const vec3 scale = vec3(WSGI_SNAP_SCALE);
-    return fract(cameraPos / scale) * scale;
+vec3 wsgi_getStepInterval(const in vec3 cameraPos, const in float snapSize) {
+    //const vec3 scale = vec3(WSGI_SNAP_SCALE);
+    return fract(cameraPos / snapSize) * snapSize;
 }
 
 vec3 wsgi_getBufferPosition(const in vec3 localPos, const in int voxelScale) {
     float voxelSize = wsgi_getVoxelSize(voxelScale);
-    vec3 interval = wsgi_getStepInterval(ap.camera.pos);
+    vec3 interval = wsgi_getStepInterval(ap.camera.pos, voxelSize*2.0);
     return (localPos + interval) / voxelSize + WSGI_BufferCenter;
 }
 
 vec3 wsgi_getLocalPosition(const in vec3 bufferPos, const in int voxelScale) {
     float voxelSize = wsgi_getVoxelSize(voxelScale);
-    vec3 interval = wsgi_getStepInterval(ap.camera.pos);
+    vec3 interval = wsgi_getStepInterval(ap.camera.pos, voxelSize*2.0);
     return (bufferPos - WSGI_BufferCenter) * voxelSize - interval;
 }
 

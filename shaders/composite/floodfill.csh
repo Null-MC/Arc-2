@@ -79,14 +79,14 @@ void populateShared() {
 	uint blockMeta2 = 0u;
 
 	if (voxel_isInBounds(pos1)) {
-		blockId1 = SampleVoxelBlock(pos1);
+		blockId1 = SampleVoxelBlock(pos1 + 0.5);
 
 		if (blockId1 > 0u)
 			blockMeta1 = iris_getMetadata(blockId1);
 	}
 
 	if (voxel_isInBounds(pos2)) {
-		blockId2 = SampleVoxelBlock(pos2);
+		blockId2 = SampleVoxelBlock(pos2 + 0.5);
 
 		if (blockId2 > 0u)
 			blockMeta2 = iris_getMetadata(blockId2);
@@ -149,6 +149,8 @@ void main() {
 
 	if (blockId > 0u) {
 		isFullBlock = iris_isFullBlock(blockId);
+
+		if (iris_hasTag(blockId, TAG_STAIRS)) isFullBlock = true;
 
 		lightColor = iris_getLightColor(blockId).rgb;
 		lightColor = RgbToLinear(lightColor);

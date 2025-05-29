@@ -544,7 +544,7 @@ vec3 trace_GI(const in vec3 traceOrigin, const in vec3 traceDir, const in int fa
 					//color = pathLight;
 				}
 				else {
-					color = SampleSkyIrradiance(traceDir, 1.0);
+					color = SampleSkyIrradiance(traceDir, 1.0) / PI;
 				}
 			#else
 				//color = pathLight;

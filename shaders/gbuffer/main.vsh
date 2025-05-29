@@ -36,8 +36,12 @@ out VertexData2 {
 
 #include "/lib/common.glsl"
 
-#ifdef RENDER_TRANSLUCENT
-	#include "/lib/water_waves.glsl"
+#ifdef RENDER_TERRAIN
+	#ifdef RENDER_TRANSLUCENT
+		#include "/lib/water_waves.glsl"
+	#endif
+
+	#include "/lib/wind_waves.glsl"
 #endif
 
 #ifdef RENDER_PARALLAX
@@ -54,34 +58,41 @@ void iris_emitVertex(inout VertexData data) {
 	vOut.localPos = mul3(ap.camera.viewInv, viewPos);
 	vOut.localOffset = vec3(0.0);
 
-	#if defined(RENDER_TERRAIN) && defined(RENDER_TRANSLUCENT) && defined(WATER_WAVES_ENABLED)
-		vec3 worldPos = vOut.localPos + ap.camera.pos;
+	#ifdef RENDER_TERRAIN
+		#if defined(RENDER_TRANSLUCENT) && defined(WATER_WAVES_ENABLED)
+			vec3 worldPos = vOut.localPos + ap.camera.pos;
 
-		const vec3 windDir1 = vec3(0.01,  0.01, 0.02);
-		const vec3 windDir2 = vec3(0.04, -0.01, 0.02);
+			const vec3 windDir1 = vec3(0.01,  0.01, 0.02);
+			const vec3 windDir2 = vec3(0.04, -0.01, 0.02);
 
-		vec3 uvWave = 0.004 * worldPos + windDir1 * ap.time.elapsed;
-		float waveNoise1 = 1.0 - textureLod(texFogNoise, uvWave, 0).r;
-		uvWave = 0.008 * worldPos + windDir2 * ap.time.elapsed;
-		float waveNoise2 = 1.0 - textureLod(texFogNoise, uvWave, 0).r;
-		float waveNoise = waveNoise1 * waveNoise2;
+			vec3 uvWave = 0.004 * worldPos + windDir1 * ap.time.elapsed;
+			float waveNoise1 = 1.0 - textureLod(texFogNoise, uvWave, 0).r;
+			uvWave = 0.008 * worldPos + windDir2 * ap.time.elapsed;
+			float waveNoise2 = 1.0 - textureLod(texFogNoise, uvWave, 0).r;
+			float waveNoise = waveNoise1 * waveNoise2;
 
-		vOut.waveStrength = 1.0;//waveNoise * 0.9 + 0.1;
+			vOut.waveStrength = 1.0;//waveNoise * 0.9 + 0.1;
 
-		#ifndef WATER_TESSELLATION_ENABLED
-			// bool isWater = bitfieldExtract(blockMask, 6, 1) != 0;
-			bool is_fluid = iris_hasFluid(data.blockId);
-			vOut.surfacePos = vOut.localPos;
+			#ifndef WATER_TESSELLATION_ENABLED
+				// bool isWater = bitfieldExtract(blockMask, 6, 1) != 0;
+				bool is_fluid = iris_hasFluid(data.blockId);
+				vOut.surfacePos = vOut.localPos;
 
-			if (is_fluid) {
-				const float lmcoord_y = 1.0;
+				if (is_fluid) {
+					const float lmcoord_y = 1.0;
 
-				vec3 waveOffset = GetWaveHeight(vOut.localPos + ap.camera.pos, lmcoord_y, ap.time.elapsed, WaterWaveOctaveMin);
-				vOut.localOffset.y += waveOffset.y * vOut.waveStrength;
+					vec3 waveOffset = GetWaveHeight(vOut.localPos + ap.camera.pos, lmcoord_y, ap.time.elapsed, WaterWaveOctaveMin);
+					vOut.localOffset.y += waveOffset.y * vOut.waveStrength;
 
-				vOut.localPos.y += vOut.localOffset.y;
-				viewPos = mul3(ap.camera.view, vOut.localPos);
-			}
+					vOut.localPos.y += vOut.localOffset.y;
+					viewPos = mul3(ap.camera.view, vOut.localPos);
+				}
+			#endif
+		#endif
+
+		#ifdef WIND_WAVING_ENABLED
+			ApplyWavingOffset(vOut.localPos, data.blockId);
+			viewPos = mul3(ap.camera.view, vOut.localPos);
 		#endif
 	#endif
 

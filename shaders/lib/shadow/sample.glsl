@@ -27,10 +27,14 @@ float SampleShadow(const in vec3 shadowPos, const in int shadowCascade) {
     return step(shadowPos.z, depthOpaque);
 }
 
-float SampleShadow_PCF(const in vec3 shadowPos, const in int shadowCascade, const in float pixelRadius) {
+float SampleShadow_PCF(const in vec3 shadowPos, const in int shadowCascade, const in float pixelRadius, const in float sss) {
     if (saturate(shadowPos) != shadowPos) return 1.0;
 
     float dither = GetShadowDither();
+
+    float zRange = GetShadowRange(shadowCascade);
+    float bias_scale = sss * MATERIAL_SSS_DISTANCE / zRange;
+    float seed_pos = hash13(shadowPos * 999.0); // TODO
 
     float angle = fract(dither) * TAU;
     float s = sin(angle), c = cos(angle);
@@ -43,10 +47,14 @@ float SampleShadow_PCF(const in vec3 shadowPos, const in int shadowCascade, cons
     for (int i = 0; i < SHADOW_PCF_SAMPLES; i++) {
         float r = sqrt((i + 0.5) / SHADOW_PCF_SAMPLES);
         float theta = i * GoldenAngle + PHI;
+
+        float sample_dither = hash13(vec3(seed_pos * 999.0, i, ap.time.frames));
+        float sample_bias = bias_scale * _pow3(sample_dither);
+        //shadowViewPos.z += sssDist;
         
         vec2 pcfDiskOffset = r * vec2(cos(theta), sin(theta));
         vec2 pixelOffset = (rotation * pcfDiskOffset) * pixelRadius;
-        vec3 sampleShadowPos = shadowPos + vec3(pixelOffset, 0.0);
+        vec3 sampleShadowPos = shadowPos + vec3(pixelOffset, sample_bias);
 
         shadowFinal += SampleShadow(sampleShadowPos, shadowCascade);
     }

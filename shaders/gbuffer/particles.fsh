@@ -37,6 +37,8 @@ uniform sampler3D texFogNoise;
 #endif
 
 #include "/lib/noise/ign.glsl"
+#include "/lib/noise/hash.glsl"
+
 #include "/lib/sampling/erp.glsl"
 #include "/lib/sampling/lightmap.glsl"
 

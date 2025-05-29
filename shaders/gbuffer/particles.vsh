@@ -1,5 +1,8 @@
 #version 430 core
 
+#include "/lib/constants.glsl"
+#include "/settings.glsl"
+
 out VertexData2 {
 	vec2 uv;
 	vec2 light;
@@ -8,7 +11,6 @@ out VertexData2 {
 	vec3 shadowViewPos;
 } vOut;
 
-#include "/settings.glsl"
 #include "/lib/common.glsl"
 
 #ifdef EFFECT_TAA_ENABLED

@@ -13,21 +13,21 @@ in VertexData2 {
     vec4 color;
     vec2 uv;
     vec3 localNormal;
-    flat int currentCascade;
 
     #ifdef RENDER_TERRAIN
+        flat int currentCascade;
         flat uint blockId;
-    #endif
 
-    #ifdef VOXEL_ENABLED
-        vec3 localPos;
-        vec2 lmcoord;
+        #ifdef VOXEL_ENABLED
+            vec3 localPos;
+            vec2 lmcoord;
 
-        #ifdef RENDER_TERRAIN
-            flat vec3 originPos;
+            #ifdef RENDER_TERRAIN
+                flat vec3 originPos;
 
-            #ifdef VOXEL_BLOCK_FACE
-                flat uint textureId;
+                #ifdef VOXEL_BLOCK_FACE
+                    flat uint textureId;
+                #endif
             #endif
         #endif
     #endif

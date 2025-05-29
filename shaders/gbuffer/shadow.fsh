@@ -3,7 +3,6 @@
 in VertexData2 {
     vec4 color;
     vec2 uv;
-
     vec3 localNormal;
 
     #ifdef RENDER_TERRAIN

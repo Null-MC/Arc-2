@@ -8,21 +8,23 @@ out VertexData2 {
     vec4 color;
     vec2 uv;
     vec3 localNormal;
-    flat int currentCascade;
+
+//    flat int currentCascade;
 
     #ifdef RENDER_TERRAIN
+        flat int currentCascade;
         flat uint blockId;
-    #endif
 
-    #ifdef VOXEL_ENABLED
-        vec3 localPos;
-        vec2 lmcoord;
+        #ifdef VOXEL_ENABLED
+            vec3 localPos;
+            vec2 lmcoord;
 
-        #ifdef RENDER_TERRAIN
-            flat vec3 originPos;
+            #ifdef RENDER_TERRAIN
+                flat vec3 originPos;
 
-            #ifdef VOXEL_BLOCK_FACE
-                flat uint textureId;
+                #ifdef VOXEL_BLOCK_FACE
+                    flat uint textureId;
+                #endif
             #endif
         #endif
     #endif
@@ -31,16 +33,28 @@ out VertexData2 {
 #include "/lib/common.glsl"
 #include "/lib/buffers/scene.glsl"
 
+#if defined(RENDER_TERRAIN) && defined(WIND_WAVING_ENABLED)
+    #include "/lib/wind_waves.glsl"
+#endif
+
 #ifdef VOXEL_ENABLED
     #include "/lib/sampling/lightmap.glsl"
 #endif
 
 
 void iris_emitVertex(inout VertexData data) {
-    vec3 shadowViewPos = mul3(iris_modelViewMatrix, data.modelPos.xyz);
+    #if defined(RENDER_TERRAIN) && defined(WIND_WAVING_ENABLED)
+        vec3 shadowViewPos = mul3(iris_modelViewMatrix, data.modelPos.xyz);
+        vec3 localPos = mul3(ap.celestial.viewInv, shadowViewPos);
+        ApplyWavingOffset(localPos, data.blockId);
+        shadowViewPos = mul3(ap.celestial.view, localPos);
+    #else
+        vec3 shadowViewPos = mul3(iris_modelViewMatrix, data.modelPos.xyz);
+    #endif
+
     data.clipPos = iris_projectionMatrix * vec4(shadowViewPos, 1.0);
 
-    #ifdef VOXEL_ENABLED
+    #if defined(RENDER_TERRAIN) && defined(VOXEL_ENABLED)
         vOut.localPos = mul3(shadowModelViewInv, shadowViewPos);
 
         #ifdef RENDER_TERRAIN
@@ -75,17 +89,18 @@ void iris_sendParameters(in VertexData data) {
     vec3 viewNormal = mat3(iris_modelViewMatrix) * data.normal;
     vOut.localNormal = mat3(shadowModelViewInv) * viewNormal;
 
-    vOut.currentCascade = iris_currentCascade;
+//    vOut.currentCascade = iris_currentCascade;
 
     #ifdef RENDER_TERRAIN
+        vOut.currentCascade = iris_currentCascade;
         vOut.blockId = data.blockId;
-    #endif
 
-    #ifdef VOXEL_ENABLED
-        vOut.lmcoord = LightMapNorm(data.light);
+        #ifdef VOXEL_ENABLED
+            vOut.lmcoord = LightMapNorm(data.light);
 
-        #if defined(VOXEL_BLOCK_FACE) && defined(RENDER_TERRAIN)
-            vOut.textureId = data.textureId;
+            #if defined(VOXEL_BLOCK_FACE) && defined(RENDER_TERRAIN)
+                vOut.textureId = data.textureId;
+            #endif
         #endif
     #endif
 }

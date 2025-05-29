@@ -29,6 +29,7 @@ uniform sampler2D texSkyMultiScatter;
 #include "/lib/buffers/scene.glsl"
 
 #include "/lib/noise/ign.glsl"
+#include "/lib/noise/hash.glsl"
 #include "/lib/hg.glsl"
 
 #include "/lib/utility/hsv.glsl"

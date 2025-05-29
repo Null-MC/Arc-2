@@ -180,12 +180,13 @@ export function setupShader() {
     const internal = settings.BuildInternalSettings();
     applySettings(settings, internal);
 
-    mapTag(0, "TAG_LEAVES", new NamespacedId("minecraft", "leaves"));
-    mapTag(1, "TAG_STAIRS", new NamespacedId("minecraft", "stairs"));
-    mapTag(2, "TAG_SLABS", new NamespacedId("minecraft", "slabs"));
-    mapTag(3, "TAG_SNOW", new NamespacedId("minecraft", "snow"));
+    mapTag(0, "TAG_FOLIAGE", new NamespacedId("aperture", "foliage"));
+    mapTag(1, "TAG_LEAVES", new NamespacedId("minecraft", "leaves"));
+    mapTag(2, "TAG_STAIRS", new NamespacedId("minecraft", "stairs"));
+    mapTag(3, "TAG_SLABS", new NamespacedId("minecraft", "slabs"));
+    mapTag(4, "TAG_SNOW", new NamespacedId("minecraft", "snow"));
 
-    mapTag(4, "TAG_CARPET", createTag(new NamespacedId("arc", "carpets"),
+    mapTag(5, "TAG_CARPET", createTag(new NamespacedId("arc", "carpets"),
         //new NamespacedId("minecraft", "wool_carpets"),
         new NamespacedId("white_carpet"),
         new NamespacedId("light_gray_carpet"),
@@ -206,7 +207,7 @@ export function setupShader() {
         new NamespacedId("pale_moss_carpet"),
         new NamespacedId("moss_carpet")));
 
-    mapTag(5, "TAG_TINTS_LIGHT", createTag(new NamespacedId("arc", "tints_light"),
+    mapTag(6, "TAG_TINTS_LIGHT", createTag(new NamespacedId("arc", "tints_light"),
         new NamespacedId("minecraft", "glass_blocks"),
         new NamespacedId("tinted_glass"),
         new NamespacedId("white_stained_glass"),
@@ -336,26 +337,30 @@ export function setupShader() {
 
     const texShadowColor = new ArrayTexture("texShadowColor")
         .format(Format.RGBA8)
-        .clearColor(0.0, 0.0, 0.0, 0.0)
+        //.clearColor(0.0, 0.0, 0.0, 0.0)
+        .clear(false)
         .build();
 
     const texShadowNormal = new ArrayTexture("texShadowNormal")
         .format(Format.RGB8)
-        .clearColor(0.0, 0.0, 0.0, 0.0)
+        //.clearColor(0.0, 0.0, 0.0, 0.0)
+        .clear(false)
         .build();
 
     const texFinalA = new Texture("texFinalA")
         //.imageName("imgFinalA")
         .format(Format.RGB16F)
-        .clearColor(0.0, 0.0, 0.0, 0.0)
+        //.clearColor(0.0, 0.0, 0.0, 0.0)
         .mipmap(true)
+        .clear(false)
         .build();
 
     const texFinalB = new Texture("texFinalB")
         //.imageName("imgFinalB")
         .format(Format.RGB16F)
-        .clearColor(0.0, 0.0, 0.0, 0.0)
+        //.clearColor(0.0, 0.0, 0.0, 0.0)
         .mipmap(true)
+        .clear(false)
         .build();
 
     const finalFlipper = new BufferFlipper(
@@ -364,14 +369,14 @@ export function setupShader() {
 
     const texFinalPrevious = new Texture("texFinalPrevious")
         .format(Format.RGB16F)
-        .clear(false)
         .mipmap(true)
+        .clear(false)
         .build();
 
-    const texClouds = new Texture("texClouds")
-        .format(Format.RGBA16F)
-        .clearColor(0.0, 0.0, 0.0, 0.0)
-        .build();
+    // const texClouds = new Texture("texClouds")
+    //     .format(Format.RGBA16F)
+    //     .clearColor(0.0, 0.0, 0.0, 0.0)
+    //     .build();
 
     // texParticles
     const texParticleOpaque = new Texture("texParticleOpaque")
@@ -391,12 +396,14 @@ export function setupShader() {
 
     const texDeferredOpaque_TexNormal = new Texture("texDeferredOpaque_TexNormal")
         .format(Format.RGB16)
-        .clearColor(0.0, 0.0, 0.0, 0.0)
+        //.clearColor(0.0, 0.0, 0.0, 0.0)
+        .clear(false)
         .build();
 
     const texDeferredOpaque_Data = new Texture("texDeferredOpaque_Data")
         .format(Format.RGBA32UI)
-        .clearColor(0.0, 0.0, 0.0, 0.0)
+        //.clearColor(0.0, 0.0, 0.0, 0.0)
+        .clear(false)
         .build();
 
     const texDeferredTrans_Color = new Texture("texDeferredTrans_Color")
@@ -406,12 +413,14 @@ export function setupShader() {
 
     const texDeferredTrans_TexNormal = new Texture("texDeferredTrans_TexNormal")
         .format(Format.RGB16)
-        .clearColor(0.0, 0.0, 0.0, 0.0)
+        //.clearColor(0.0, 0.0, 0.0, 0.0)
+        .clear(false)
         .build();
 
     const texDeferredTrans_Data = new Texture("texDeferredTrans_Data")
         .format(Format.RGBA32UI)
-        .clearColor(0.0, 0.0, 0.0, 0.0)
+        //.clearColor(0.0, 0.0, 0.0, 0.0)
+        .clear(false)
         .build();
 
     let texShadow: BuiltTexture | null = null;
@@ -449,6 +458,7 @@ export function setupShader() {
             // .clearColor(0.0, 0.0, 0.0, 0.0)
             .width(screenWidth_half)
             .height(screenHeight_half)
+            .clear(false)
             .build();
 
         texSpecularRT = new Texture("texSpecularRT")
@@ -457,6 +467,7 @@ export function setupShader() {
             // .clearColor(0.0, 0.0, 0.0, 0.0)
             .width(screenWidth_half)
             .height(screenHeight_half)
+            .clear(false)
             .build();
     }
 
@@ -702,20 +713,22 @@ export function setupShader() {
     let blockFaceBuffer: BuiltBuffer | null = null;
     let quadListBuffer: BuiltBuffer | null = null;
     if (internal.VoxelizeBlocks) {
-        const lightBinSize = 4 * (1 + settings.Lighting_TraceLightMax);
-        const lightListBinCount = Math.ceil(settings.Voxel_Size / LIGHT_BIN_SIZE);
-        const lightListBufferSize = lightBinSize * cubed(lightListBinCount) + 4;
-        print(`Light-List Buffer Size: ${lightListBufferSize.toLocaleString()}`);
+        if (settings.Lighting_Mode == LightingModes.RayTraced) {
+            const lightBinSize = 4 * (1 + settings.Lighting_TraceLightMax);
+            const lightListBinCount = Math.ceil(settings.Voxel_Size / LIGHT_BIN_SIZE);
+            const lightListBufferSize = lightBinSize * cubed(lightListBinCount) + 4;
+            print(`Light-List Buffer Size: ${lightListBufferSize.toLocaleString()}`);
 
-        lightListBuffer = new GPUBuffer(lightListBufferSize)
-            .clear(true) // TODO: clear with compute
-            .build();
+            lightListBuffer = new GPUBuffer(lightListBufferSize)
+                .clear(true) // TODO: clear with compute
+                .build();
+        }
 
         if (internal.VoxelizeBlockFaces) {
             const bufferSize = 6 * 8 * cubed(settings.Voxel_Size);
 
             blockFaceBuffer = new GPUBuffer(bufferSize)
-                .clear(true) // TODO: clear with compute
+                .clear(false) // TODO: clear with compute
                 .build();
         }
 
@@ -777,7 +790,6 @@ export function setupShader() {
     function shadowShader(name: string, usage: ProgramUsage) : ObjectShader {
         return new ObjectShader(name, usage)
             .vertex("gbuffer/shadow.vsh")
-            .geometry("gbuffer/shadow.gsh")
             .fragment("gbuffer/shadow.fsh")
             .ssbo(0, sceneBuffer)
             .ssbo(4, quadListBuffer)
@@ -790,6 +802,7 @@ export function setupShader() {
 
     function shadowTerrainShader(name: string, usage: ProgramUsage) : ObjectShader {
         return shadowShader(name, usage)
+            .geometry("gbuffer/shadow.gsh")
             .ssbo(3, lightListBuffer)
             //.ssbo(4, quadListBuffer)
             .ssbo(5, blockFaceBuffer)

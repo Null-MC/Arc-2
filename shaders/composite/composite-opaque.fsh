@@ -477,7 +477,8 @@ void main() {
         colorFinal = getValFromSkyLUT(texSkyView, skyPos, localViewDir, Scene_LocalSunDir);
 
         if (rayIntersectSphere(skyPos, localViewDir, groundRadiusMM) < 0.0) {
-            float sunLum = SUN_LUMINANCE * sun(localViewDir, Scene_LocalSunDir);
+            float sunF = sun(localViewDir, Scene_LocalSunDir);
+            float sunLum = SUN_LUMINANCE * sunF;
             float moonLum = MOON_LUMINANCE * moon(localViewDir, -Scene_LocalSunDir);
 
             vec3 starViewDir = getStarViewDir(localViewDir);
@@ -486,7 +487,9 @@ void main() {
 
             vec3 skyTransmit = getValFromTLUT(texSkyTransmit, skyPos, localViewDir);
 
-            colorFinal += (sunLum*blackbody(5800.0) + moonLum + starLight) * skyTransmit;
+            vec3 sunColor = blackbody(mix(2800.0, 5800.0, sunF));
+
+            colorFinal += (sunLum*sunColor + moonLum + starLight) * skyTransmit;
         }
     }
 

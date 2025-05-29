@@ -18,7 +18,10 @@ uniform usampler2D texDeferredTrans_Data;
 #include "/lib/buffers/scene.glsl"
 
 #include "/lib/noise/ign.glsl"
+#include "/lib/noise/hash.glsl"
+
 #include "/lib/sampling/depth.glsl"
+//#include "/lib/light/volumetric.glsl"
 
 #include "/lib/shadow/csm.glsl"
 #include "/lib/shadow/sample.glsl"
@@ -70,15 +73,15 @@ void main() {
             float sss = data_a.a;
 
             if (sss > 0.0) {
-                float NoLm = max(dot(localGeoNormal, Scene_LocalLightDir), 0.0);
+                //float NoLm = max(dot(localGeoNormal, Scene_LocalLightDir), 0.0);
 
-                float sssRadius = sss * MATERIAL_SSS_RADIUS;
+                float sssRadius = _pow3(sss) * MATERIAL_SSS_RADIUS;
 
-                shadowViewPos.z += MATERIAL_SSS_DISTANCE * sss * (dither*dither);
+                //shadowViewPos.z += MATERIAL_SSS_DISTANCE * sss * (dither*dither);
                 shadowPos = GetShadowSamplePos(shadowViewPos, sssRadius, shadowCascade);
 
                 vec2 sssRadiusFinal = GetPixelRadius(sssRadius, shadowCascade);
-                sssFinal = (1.0 - NoLm) * SampleShadow_PCF(shadowPos, shadowCascade, minOf(sssRadiusFinal));
+                sssFinal = SampleShadow_PCF(shadowPos, shadowCascade, minOf(sssRadiusFinal), sss);
             }
         }
 

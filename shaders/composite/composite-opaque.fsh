@@ -456,8 +456,10 @@ void main() {
                 }
 
                 if (wsgi_cascade >= 0)
-                    diffuse = wsgi_sample_nearest(wsgi_bufferPos_n, localTexNormal, wsgi_cascade) * 1000.0;
+                    diffuse = PI * wsgi_sample_nearest(wsgi_bufferPos_n, localTexNormal, wsgi_cascade) * 1000.0;
             }
+
+            //diffuse = wsgi_sample(localPos + 0.1*localGeoNormal, localTexNormal);
         #endif
 
 //        float wetnessDarkenF = wetness*porosity;

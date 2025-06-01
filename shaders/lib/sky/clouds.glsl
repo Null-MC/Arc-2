@@ -17,7 +17,7 @@ float SampleCloudDensity(const in vec3 worldPos) {
     cloud_threshold       = mix(cloud_threshold, 0.40, ap.world.thunder);
     float sample_density = smoothstep(cloud_threshold, 1.0, cloud_sample);
 
-    return pow(sample_density, 0.5) * cloud_density;
+    return pow(sample_density, 0.75) * cloud_density;
 }
 
 //float SampleCloudDensity2(const in vec3 worldPos) {

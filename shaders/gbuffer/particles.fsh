@@ -45,13 +45,14 @@ uniform sampler3D texFogNoise;
 #include "/lib/utility/blackbody.glsl"
 #include "/lib/utility/hsv.glsl"
 
+#include "/lib/hg.glsl"
+
 #include "/lib/sky/common.glsl"
 #include "/lib/sky/irradiance.glsl"
 #include "/lib/sky/transmittance.glsl"
 
 #include "/lib/material/material.glsl"
 
-#include "/lib/hg.glsl"
 #include "/lib/light/sky.glsl"
 #include "/lib/light/volumetric.glsl"
 #include "/lib/lightmap/sample.glsl"

@@ -2,6 +2,7 @@ import type {} from './iris'
 
 export function setupOptions() {
     const screen_Sky = new Page("SKY")
+        .add(asIntRange("SKY_SUN_TEMP", 5800, 2500, 9000, 100, false))
         .add(asIntRange("SKY_SEA_LEVEL", 60, -40, 140, 2, false))
         .add(asIntRange("SKY_SUN_ANGLE", -20, -90, 90, 2, false))
         .add(EMPTY)

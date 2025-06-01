@@ -23,6 +23,10 @@ in VertexData2 {
     vec4 localTangent;
     flat uint blockId;
 
+    #ifdef RENDER_ENTITY
+        vec4 overlayColor;
+    #endif
+
     #if defined(RENDER_TERRAIN) && defined(RENDER_TRANSLUCENT)
         //#ifdef WATER_TESSELLATION_ENABLED
             vec3 surfacePos;
@@ -243,6 +247,10 @@ void iris_emitFragment() {
     if (albedo.a < alphaThreshold) {discard; return;}
 
     albedo *= mColor;
+
+    #ifdef RENDER_ENTITY
+        albedo.rgb = mix(vIn.overlayColor.rgb, albedo.rgb, vIn.overlayColor.a);
+    #endif
 
     #ifndef RENDER_TRANSLUCENT
         albedo.a = 1.0;

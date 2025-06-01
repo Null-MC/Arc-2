@@ -15,6 +15,7 @@ uniform sampler2D texSkyView;
 
 #include "/lib/sampling/erp.glsl"
 #include "/lib/noise/ign.glsl"
+#include "/lib/hg.glsl"
 
 #include "/lib/sky/common.glsl"
 #include "/lib/sky/view.glsl"

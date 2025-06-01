@@ -1,6 +1,6 @@
 // Units are in megameters.
 const float groundRadiusMM = 8.371;
-const float atmosphereRadiusMM = groundRadiusMM + 0.020;
+const float atmosphereRadiusMM = 0.040 + groundRadiusMM;
 
 const vec3 groundAlbedo = vec3(0.3);
 
@@ -44,14 +44,15 @@ float getMiePhase(const in float cosTheta, const in float g) {
 }
 
 float getMiePhase(float cosTheta) {
-    const float g = 0.8;
+    //const float g = 0.8;
+    //return getMiePhase(cosTheta, g);
 
-    return getMiePhase(cosTheta, g);
+    return DHG(cosTheta, -0.5, 0.8, 0.5);
 }
 
 float getRayleighPhase(float cosTheta) {
     const float k = 3.0 / (16.0*PI);
-    return k * (1.0 + cosTheta*cosTheta);
+    return k * (1.0 + _pow2(cosTheta));
 }
 
 //void getScatteringValues(vec3 pos, float stepDist, float sampleDensity, out vec3 rayleighScattering, out float mieScattering, out vec3 extinction) {

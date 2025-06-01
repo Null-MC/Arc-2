@@ -11,6 +11,7 @@ uniform sampler2D solidDepthTex;
 #include "/lib/buffers/scene.glsl"
 
 #include "/lib/sampling/depth.glsl"
+#include "/lib/utility/blackbody.glsl"
 
 #if LIGHTING_MODE == LIGHT_MODE_RT
 	#include "/lib/buffers/light-list.glsl"
@@ -22,6 +23,8 @@ uniform sampler2D solidDepthTex;
 
 
 void main() {
+	Scene_SunColor = blackbody(Sky_SunTemp);
+
 	Scene_LocalSunDir = normalize(mat3(ap.camera.viewInv) * ap.celestial.sunPos);
 	Scene_LocalLightDir = normalize(mat3(ap.camera.viewInv) * ap.celestial.pos);
 

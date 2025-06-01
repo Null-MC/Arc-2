@@ -60,6 +60,7 @@ in vec2 uv;
 #endif
 
 #include "/lib/utility/hsv.glsl"
+#include "/lib/hg.glsl"
 
 #include "/lib/noise/ign.glsl"
 #include "/lib/noise/hash.glsl"

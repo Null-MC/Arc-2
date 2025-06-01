@@ -55,7 +55,7 @@ void iris_emitVertex(inout VertexData data) {
     data.clipPos = iris_projectionMatrix * vec4(shadowViewPos, 1.0);
 
     #if defined(RENDER_TERRAIN) && defined(VOXEL_ENABLED)
-        vOut.localPos = mul3(shadowModelViewInv, shadowViewPos);
+        vOut.localPos = mul3(ap.celestial.viewInv, shadowViewPos);
 
         #ifdef RENDER_TERRAIN
             vOut.originPos = vOut.localPos + data.midBlock / 64.0;
@@ -87,7 +87,7 @@ void iris_sendParameters(in VertexData data) {
     }
 
     vec3 viewNormal = mat3(iris_modelViewMatrix) * data.normal;
-    vOut.localNormal = mat3(shadowModelViewInv) * viewNormal;
+    vOut.localNormal = mat3(ap.celestial.view) * viewNormal;
 
 //    vOut.currentCascade = iris_currentCascade;
 

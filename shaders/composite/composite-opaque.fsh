@@ -210,7 +210,7 @@ void main() {
             shadow_sss = textureLod(TEX_SHADOW, uv, 0);
         #endif
 
-        float skyLightF = smoothstep(0.0, 0.2, Scene_LocalLightDir.y);
+        float skyLightF = smoothstep(0.0, 0.1, Scene_LocalLightDir.y);
 
         #if defined(SKY_CLOUDS_ENABLED) && defined(SHADOWS_CLOUD_ENABLED)
             skyLightF *= SampleCloudShadows(localPos);
@@ -232,7 +232,7 @@ void main() {
 
         vec3 sunTransmit, moonTransmit;
         GetSkyLightTransmission(localPos, sunTransmit, moonTransmit);
-        vec3 sunLight = skyLightF * SUN_LUX * sunTransmit;
+        vec3 sunLight = skyLightF * SUN_LUX * sunTransmit * Scene_SunColor;
         vec3 moonLight = skyLightF * MOON_LUX * moonTransmit;
 
         float NoL_sun = dot(localTexNormal, Scene_LocalSunDir);
@@ -314,6 +314,8 @@ void main() {
 
             skyIrradiance += wsgi_sample(wsgi_localPos, localTexNormal);
         #endif
+
+        //skyIrradiance *= 1.0 + (1.0 - skyLightF);
 
         skyLightDiffuse += skyIrradiance;
         skyLightDiffuse *= occlusion;
@@ -479,8 +481,7 @@ void main() {
         colorFinal = getValFromSkyLUT(texSkyView, skyPos, localViewDir, Scene_LocalSunDir);
 
         if (rayIntersectSphere(skyPos, localViewDir, groundRadiusMM) < 0.0) {
-            float sunF = sun(localViewDir, Scene_LocalSunDir);
-            float sunLum = SUN_LUMINANCE * sunF;
+            float sunLum = SUN_LUMINANCE * sun(localViewDir, Scene_LocalSunDir);
             float moonLum = MOON_LUMINANCE * moon(localViewDir, -Scene_LocalSunDir);
 
             vec3 starViewDir = getStarViewDir(localViewDir);
@@ -489,9 +490,7 @@ void main() {
 
             vec3 skyTransmit = getValFromTLUT(texSkyTransmit, skyPos, localViewDir);
 
-            vec3 sunColor = blackbody(mix(2800.0, 5800.0, sunF));
-
-            colorFinal += (sunLum*sunColor + moonLum + starLight) * skyTransmit;
+            colorFinal += (sunLum*Scene_SunColor + moonLum + starLight) * skyTransmit;
         }
     }
 

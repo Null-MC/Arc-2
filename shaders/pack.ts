@@ -770,6 +770,7 @@ export function setupShader() {
         .ssbo(0, sceneBuffer)
         .ssbo(3, lightListBuffer)
         .ssbo(4, quadListBuffer)
+        .ubo(0, SceneSettingsBuffer)
         .build());
 
     // IMAGE_BIT | SSBO_BIT | UBO_BIT | FETCH_BIT
@@ -1379,6 +1380,7 @@ export function onSettingsChanged(state : WorldState) {
     const d = settings.Fog_Density * 0.01;
 
     new StreamBufferBuilder(SceneSettingsBuffer)
+        .appendInt(settings.Sky_SunTemp)
         .appendFloat(settings.Sky_SunAngle)
         .appendFloat(settings.Sky_CloudCoverage * 0.01)
         .appendFloat(d*d)

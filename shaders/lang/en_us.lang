@@ -1,5 +1,8 @@
 screen.SKY=Sky
 
+option.SKY_SUN_TEMP=Sun Temperature
+suffix.SKY_SUN_TEMP=°k
+
 option.SKY_SEA_LEVEL=Sea Level
 option.SKY_SEA_LEVEL.comment=The Y level of the sea for the currently loaded map. Affects vertical fog falloff.
 

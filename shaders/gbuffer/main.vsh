@@ -19,6 +19,10 @@ out VertexData2 {
 	vec4 localTangent;
 	flat uint blockId;
 
+	#ifdef RENDER_ENTITY
+		vec4 overlayColor;
+	#endif
+
 	#if defined(RENDER_TERRAIN) && defined(RENDER_TRANSLUCENT)
 		#ifndef WATER_TESSELLATION_ENABLED
 			vec3 surfacePos;
@@ -108,6 +112,10 @@ void iris_sendParameters(in VertexData data) {
     vOut.light = data.light;
     vOut.color = data.color;
     vOut.blockId = data.blockId;
+
+	#ifdef RENDER_ENTITY
+		vOut.overlayColor = data.overlayColor;
+	#endif
 
 	//vOut.light = saturate(unmix(vOut.light, (0.5/16.0), (15.5/16.0)));
 

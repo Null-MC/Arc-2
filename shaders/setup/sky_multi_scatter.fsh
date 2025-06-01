@@ -1,14 +1,17 @@
 #version 430 core
 
+#include "/settings.glsl"
+#include "/lib/constants.glsl"
+
 layout(location = 0) out vec4 outColor;
 
 in vec2 uv;
 
 uniform sampler2D texSkyTransmit;
 
-#include "/settings.glsl"
 #include "/lib/common.glsl"
 
+#include "/lib/hg.glsl"
 #include "/lib/sky/common.glsl"
 
 

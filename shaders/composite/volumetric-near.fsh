@@ -57,7 +57,7 @@ uniform sampler2D texSkyMultiScatter;
 #endif
 
 
-const int VL_MaxSamples = 32;
+const int VL_MaxSamples = 16;
 
 
 void main() {
@@ -105,11 +105,11 @@ void main() {
         }
     }
 
-    float far = ap.camera.far * 0.5;
+    float far = ap.camera.far * 0.25;
 
     vec3 traceEnd = localPos;
     if (len > far)
-        traceEnd = traceEnd / len * far;
+        traceEnd = traceEnd * (far / len);
 
     vec3 stepLocal = traceEnd / (VL_MaxSamples);
     float stepDist = length(stepLocal);
@@ -186,16 +186,20 @@ void main() {
 //        cloudDensity2 = 0.0;
     #endif
 
+    const float renderDistSq = _pow2(ap.camera.renderDistance);
+
     vec3 scattering = vec3(0.0);
     vec3 transmittance = vec3(1.0);
 
     for (int i = 0; i < VL_MaxSamples; i++) {
+        float iF = min(i + dither, VL_MaxSamples);
+
         float waterDepth = EPSILON;
         vec3 shadowSample = vec3(smoothstep(0.0, 0.6, Scene_SkyBrightnessSmooth));
         #ifdef SHADOWS_ENABLED
             const float shadowRadius = 2.0*shadowPixelSize;
 
-            vec3 shadowViewPos = fma(shadowViewStep, vec3(i+dither), shadowViewStart);
+            vec3 shadowViewPos = fma(shadowViewStep, vec3(iF), shadowViewStart);
 
             int shadowCascade;
             vec3 shadowPos = GetShadowSamplePos(shadowViewPos, shadowRadius, shadowCascade);
@@ -204,12 +208,12 @@ void main() {
             waterDepth = max(waterDepth, EPSILON);
         #endif
 
-        vec3 sampleLocalPos = (i+dither) * stepLocal;
+        vec3 sampleLocalPos = iF * stepLocal;
 
         vec3 sunTransmit, moonTransmit;
         GetSkyLightTransmission(sampleLocalPos, sunTransmit, moonTransmit);
         float skyLightF = 1.0;//smoothstep(0.0, 0.2, Scene_LocalLightDir.y);
-        vec3 sunSkyLight = skyLightF * SUN_LUX * sunTransmit;
+        vec3 sunSkyLight = skyLightF * SUN_LUX * sunTransmit * Scene_SunColor;
         vec3 moonSkyLight = skyLightF * MOON_LUX * moonTransmit;
 
         float cloudShadow = 1.0;
@@ -303,11 +307,13 @@ void main() {
 
         vec3 scatteringIntegral, sampleTransmittance, inScattering, extinction;
 
-        bool isFluid;// = ap.camera.fluid == 1;
+        bool isFluid = false;// = ap.camera.fluid == 1;
 
         ivec3 blockWorldPos = ivec3(floor(sampleLocalPos + ap.camera.pos));
-        uint blockId = uint(iris_getBlockAtPos(blockWorldPos).x);
-        isFluid = iris_hasFluid(blockId) && iris_getEmission(blockId) == 0;
+        if (blockWorldPos.y > -64 && blockWorldPos.y < 320 && lengthSq(sampleLocalPos) < renderDistSq) {
+            uint blockId = uint(iris_getBlockAtPos(blockWorldPos).x);
+            isFluid = iris_hasFluid(blockId) && iris_getEmission(blockId) == 0;
+        }
 
         if (!isFluid) {
             vec3 skyPos = getSkyPosition(sampleLocalPos);
@@ -362,7 +368,7 @@ void main() {
                 vec3 sunTransmit, moonTransmit;
                 GetSkyLightTransmission(cloud_localPos, sunTransmit, moonTransmit);
 
-                vec3 sunSkyLight = SUN_LUX * sunTransmit * cloud_shadowSun;
+                vec3 sunSkyLight = SUN_LUX * sunTransmit * Scene_SunColor * cloud_shadowSun;
                 vec3 moonSkyLight = MOON_LUX * moonTransmit * cloud_shadowMoon;
 
                 vec3 skyPos = getSkyPosition(cloud_localPos);

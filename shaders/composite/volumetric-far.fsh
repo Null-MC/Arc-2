@@ -194,7 +194,7 @@ void main() {
             vec3 sunTransmit, moonTransmit;
             GetSkyLightTransmission(sampleLocalPos, sunTransmit, moonTransmit);
 //            float skyLightF = smoothstep(0.0, 0.2, Scene_LocalLightDir.y);
-            vec3 sunSkyLight = skyLightF * SUN_LUX * sunTransmit;
+            vec3 sunSkyLight = skyLightF * SUN_LUX * sunTransmit * Scene_SunColor;
             vec3 moonSkyLight = skyLightF * MOON_LUX * moonTransmit;
 
 //            #if defined(SKY_CLOUDS_ENABLED) && defined(SHADOWS_CLOUD_ENABLED)

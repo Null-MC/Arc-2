@@ -25,7 +25,7 @@ shared vec3 sharedTransmitBuffer[sharedBufferSize];
 shared float sharedDepthBuffer[sharedBufferSize];
 
 const float g_sigmaXY = 9.0;
-const float g_sigmaV = 0.1;
+const float g_sigmaV = 0.02;
 
 void populateSharedBuffer() {
     if (gl_LocalInvocationIndex < 5)
@@ -86,8 +86,11 @@ void sampleSharedBuffer(const in float depthL, out vec3 scatterFinal, out vec3 t
             vec3 sampleScatter = sharedScatterBuffer[i_shared];
             vec3 sampleTransmit = sharedTransmitBuffer[i_shared];
             float sampleDepthL = sharedDepthBuffer[i_shared];
-            
-            float fv = Gaussian(g_sigmaV, sampleDepthL - depthL);
+
+            float depthDiff = abs(sampleDepthL - depthL);
+            float fv = Gaussian(g_sigmaV, depthDiff);
+
+            //if (depthDiff > 1.0) fv = 0.0;
             
             float weight = fx*fy*fv;
             accumScatter += weight * sampleScatter;

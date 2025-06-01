@@ -16,6 +16,7 @@ export enum ReflectionModes {
 export class ShaderSettings {
     _cache: Record<string, string|number|boolean> = {};
 
+    get Sky_SunTemp(): number {return this.getCachedIntSetting("SKY_SUN_TEMP");}
     get Sky_SunAngle(): number {return this.getCachedIntSetting("SKY_SUN_ANGLE");}
     get Sky_SeaLevel(): number {return this.getCachedIntSetting("SKY_SEA_LEVEL");}
     get Sky_CloudsEnabled(): boolean {return this.getCachedBoolSetting("SKY_CLOUDS_ENABLED");}

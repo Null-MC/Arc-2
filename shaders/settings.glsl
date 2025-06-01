@@ -9,7 +9,7 @@
 
 //#define REFRACTION_SNELL
 
-#define VL_SELF_SHADOW
+//#define VL_SELF_SHADOW
 
 #define VOXEL_SHADOW_CASCADE 0
 
@@ -19,8 +19,8 @@
 
 const float ATMOSPHERE_MAX = 4200.0;
 
-const float SUN_SIZE = 2.2;
-const float SUN_LUMINANCE = 1600000;//1.6e9;
+const float SUN_SIZE = 1.8;
+const float SUN_LUMINANCE = 1000000;//1.6e9;
 const float SUN_LUX = 64000.0;
 
 const float MOON_SIZE = 3.4;
@@ -57,6 +57,7 @@ const float shadowPixelSize = 1.0 / shadowMapResolution;
 #endif
 
 layout (std140, binding = 0) uniform SceneSettings {
+	int Sky_SunTemp;
 	float Sky_sunPathRotation;
 	float Sky_CloudCoverage;
 	float Scene_SkyFogDensityF;

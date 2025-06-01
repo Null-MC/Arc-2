@@ -262,7 +262,7 @@ void main() {
 
         vec3 sunTransmit, moonTransmit;
         GetSkyLightTransmission(localPosTrans, sunTransmit, moonTransmit);
-        vec3 sunLight = skyLightF * SUN_LUX * sunTransmit;
+        vec3 sunLight = skyLightF * SUN_LUX * sunTransmit * Scene_SunColor;
         vec3 moonLight = skyLightF * MOON_LUX * moonTransmit;
 
         vec3 skyLight_NoLm = sunLight * max(NoL_sun, 0.0) + moonLight * max(NoL_moon, 0.0);

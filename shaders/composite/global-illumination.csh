@@ -46,6 +46,8 @@ uniform sampler2DArray texShadowColor;
 #include "/lib/noise/hash.glsl"
 #include "/lib/noise/blue.glsl"
 
+#include "/lib/hg.glsl"
+
 #include "/lib/sky/common.glsl"
 #include "/lib/sky/irradiance.glsl"
 #include "/lib/sky/transmittance.glsl"

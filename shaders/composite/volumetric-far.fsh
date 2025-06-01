@@ -253,16 +253,20 @@ void main() {
                 inScattering = mieInScattering;
             }
             else {
-                ivec3 blockWorldPos = ivec3(floor(sampleLocalPos + ap.camera.pos));
-                uint blockLightData = iris_getBlockAtPos(blockWorldPos).y;
-                uint blockSkyLight = bitfieldExtract(blockLightData, 16, 16);
-                vec3 sampleAmbient = ambientBase * (blockSkyLight/240.0);
+                #ifdef VOXEL_PROVIDED
+                    ivec3 blockWorldPos = ivec3(floor(sampleLocalPos + ap.camera.pos));
+                    uint blockLightData = iris_getBlockAtPos(blockWorldPos).y;
+                    uint blockSkyLight = bitfieldExtract(blockLightData, 16, 16);
+                    vec3 sampleAmbient = ambientBase * (blockSkyLight/240.0);
+                #else
+                    vec3 sampleAmbient = ambientBase * Scene_SkyBrightnessSmooth;
+                #endif
 
-                extinction = transmitF + scatterF;
+                extinction = (transmitF + scatterF) * sampleDensity;
 
-                shadowSample *= exp(-0.8*waterDepth * sampleDensity * extinction);
+                //shadowSample *= exp(-0.8*waterDepth * sampleDensity * extinction);
 
-                sampleTransmittance = exp(-stepDist * sampleDensity * extinction);
+                sampleTransmittance = exp(-stepDist * extinction);
 
                 vec3 sampleColor = (phase_sun * sunSkyLight) + (phase_moon * moonSkyLight);
                 sampleLit += fma(sampleColor, shadowSample, sampleAmbient);
@@ -279,6 +283,6 @@ void main() {
 //        scattering = vec3(10.0);
     }
 
-    outScatter = scattering;
+    outScatter = scattering * 0.001;
     outTransmit = transmittance;
 }

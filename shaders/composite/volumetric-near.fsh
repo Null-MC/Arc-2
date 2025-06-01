@@ -195,7 +195,7 @@ void main() {
         float iF = min(i + dither, VL_MaxSamples);
 
         float waterDepth = EPSILON;
-        vec3 shadowSample = vec3(smoothstep(0.0, 0.6, Scene_SkyBrightnessSmooth));
+        vec3 shadowSample = vec3(1.0);//vec3(smoothstep(0.0, 0.6, Scene_SkyBrightnessSmooth));
         #ifdef SHADOWS_ENABLED
             const float shadowRadius = 2.0*shadowPixelSize;
 
@@ -309,11 +309,15 @@ void main() {
 
         bool isFluid = false;// = ap.camera.fluid == 1;
 
-        ivec3 blockWorldPos = ivec3(floor(sampleLocalPos + ap.camera.pos));
-        if (blockWorldPos.y > -64 && blockWorldPos.y < 320 && lengthSq(sampleLocalPos) < renderDistSq) {
-            uint blockId = uint(iris_getBlockAtPos(blockWorldPos).x);
-            isFluid = iris_hasFluid(blockId) && iris_getEmission(blockId) == 0;
-        }
+        #ifdef VOXEL_PROVIDED
+            ivec3 blockWorldPos = ivec3(floor(sampleLocalPos + ap.camera.pos));
+            if (blockWorldPos.y > -64 && blockWorldPos.y < 320 && lengthSq(sampleLocalPos) < renderDistSq) {
+                uint blockId = uint(iris_getBlockAtPos(blockWorldPos).x);
+                isFluid = iris_hasFluid(blockId) && iris_getEmission(blockId) == 0;
+            }
+        #else
+            isFluid = ap.camera.fluid == 1;
+        #endif
 
         if (!isFluid) {
             vec3 skyPos = getSkyPosition(sampleLocalPos);
@@ -334,16 +338,20 @@ void main() {
             inScattering = mieInScattering;
         }
         else {
-            ivec3 blockWorldPos = ivec3(floor(sampleLocalPos + ap.camera.pos));
-            uint blockLightData = iris_getBlockAtPos(blockWorldPos).y;
-            uint blockSkyLight = bitfieldExtract(blockLightData, 16, 16);
-            vec3 sampleAmbient = ambientBase * (blockSkyLight/240.0);
+            #ifdef VOXEL_PROVIDED
+                ivec3 blockWorldPos = ivec3(floor(sampleLocalPos + ap.camera.pos));
+                uint blockLightData = iris_getBlockAtPos(blockWorldPos).y;
+                uint blockSkyLight = bitfieldExtract(blockLightData, 16, 16);
+                vec3 sampleAmbient = ambientBase * (blockSkyLight/240.0);
+            #else
+                vec3 sampleAmbient = ambientBase * Scene_SkyBrightnessSmooth;
+            #endif
 
-            extinction = transmitF + scatterF;
+            extinction = (transmitF + scatterF) * sampleDensity;
 
-            shadowSample *= exp(-0.8*waterDepth * sampleDensity * extinction);
+            //shadowSample *= exp(-0.8*waterDepth * sampleDensity * extinction);
 
-            sampleTransmittance = exp(-stepDist * sampleDensity * extinction);
+            sampleTransmittance = exp(-stepDist * extinction);
 
             vec3 sampleColor = (phase_sun * sunSkyLight) + (phase_moon * moonSkyLight);
             sampleLit += fma(sampleColor, shadowSample, sampleAmbient);
@@ -358,7 +366,7 @@ void main() {
     }
 
     #ifdef SKY_CLOUDS_ENABLED
-        if (depth == 1.0) {
+        if (depth == 1.0 && ap.camera.fluid == 0) {
             float endWorldY = traceEnd.y + ap.camera.pos.y;
             endWorldY -= (1.0-dither) * stepLocal.y;
 
@@ -424,6 +432,6 @@ void main() {
         }
     #endif
 
-    outScatter = scattering;
+    outScatter = scattering * 0.001;
     outTransmit = transmittance;
 }

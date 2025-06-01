@@ -495,7 +495,7 @@ void main() {
     }
 
     #ifdef EFFECT_VL_ENABLED
-        vec3 vlScatter = textureLod(texScatterVL, uv, 0).rgb;
+        vec3 vlScatter = textureLod(texScatterVL, uv, 0).rgb*1000.0;
         vec3 vlTransmit = textureLod(texTransmitVL, uv, 0).rgb;
         colorFinal = fma(colorFinal, vlTransmit, vlScatter);
     #endif

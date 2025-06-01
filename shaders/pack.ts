@@ -170,8 +170,8 @@ function mapTag(index: number, name: string, namespace: NamespacedId) {
     defineGlobally(name, index);
 }
 
-export function setupShader() {
-    print("Setting up shader");
+export function setupShader(dimension : NamespacedId) {
+    print(`Setting up shader [DIM: ${dimension.getPath()}]`);
 
     BlockMappings = new BlockMap();
     BlockMappings.map('grass_block', 'BLOCK_GRASS');

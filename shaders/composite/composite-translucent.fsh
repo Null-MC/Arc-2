@@ -486,9 +486,9 @@ void main() {
     //vec4 clouds = textureLod(texClouds, uv, 0);
     //colorFinal = mix(colorFinal, clouds.rgb, clouds.a);
 
-    if (ap.camera.fluid == 1) {
-        colorFinal *= exp(-WaterTintMinDist * VL_WaterTransmit);
-    }
+//    if (ap.camera.fluid == 1) {
+//        colorFinal *= exp(-WaterTintMinDist * VL_WaterTransmit);
+//    }
 
     #ifdef EFFECT_VL_ENABLED
         #if LIGHTING_VL_RES == 0
@@ -499,7 +499,7 @@ void main() {
             vec3 vlTransmit = textureLod(texTransmitFinal, uv, 0).rgb;
         #endif
 
-        colorFinal = colorFinal * vlTransmit + vlScatter;
+        colorFinal = colorFinal * vlTransmit + vlScatter*1000.0;
     #endif
 
     vec4 weather = textureLod(texParticleTranslucent, uv, 0);

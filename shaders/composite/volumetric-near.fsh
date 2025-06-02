@@ -17,6 +17,7 @@ uniform sampler2D texSkyMultiScatter;
 #ifdef SHADOWS_ENABLED
     uniform sampler2DArray shadowMap;
     uniform sampler2DArray solidShadowMap;
+    uniform sampler2DArray texShadowBlocker;
     uniform sampler2DArray texShadowColor;
 #endif
 
@@ -203,6 +204,12 @@ void main() {
 
             int shadowCascade;
             vec3 shadowPos = GetShadowSamplePos(shadowViewPos, shadowRadius, shadowCascade);
+
+            float avg_depth = textureLod(texShadowBlocker, vec3(shadowPos.xy, shadowCascade), 0).r;
+            float blockerDistance = max(shadowPos.z - avg_depth, 0.0) * GetShadowRange(shadowCascade);
+            vec2 pixelRadius = GetPixelRadius(blockerDistance / SHADOW_PENUMBRA_SCALE, shadowCascade);
+            //pixelRadius = clamp(pixelRadius, vec2(minShadowPixelRadius), maxPixelRadius);
+            shadowPos.xy += (hash23(vec3(gl_FragCoord.xy, i + ap.time.frames)) - 0.5) * pixelRadius;
 
             shadowSample *= SampleShadowColor(shadowPos, shadowCascade, waterDepth);
             waterDepth = max(waterDepth, EPSILON);

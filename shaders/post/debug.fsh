@@ -33,8 +33,8 @@ uniform sampler2D TEX_SRC;
     uniform sampler2D texSkyIrradiance;
 #elif DEBUG_VIEW == DEBUG_VIEW_SHADOWMAP_COLOR
     uniform sampler2DArray texShadowColor;
-#elif DEBUG_VIEW == DEBUG_VIEW_SHADOWMAP_NORMAL
-    uniform sampler2DArray texShadowNormal;
+//#elif DEBUG_VIEW == DEBUG_VIEW_SHADOWMAP_NORMAL
+//    uniform sampler2DArray texShadowNormal;
 #elif DEBUG_VIEW == DEBUG_VIEW_PARTICLES
     #ifdef DEBUG_TRANSLUCENT
         uniform sampler2D texParticleTranslucent;
@@ -175,8 +175,8 @@ void main() {
             #if DEBUG_VIEW == DEBUG_VIEW_SHADOWMAP_COLOR
                 vec4 shadowColor = textureLod(texShadowColor, vec3(previewCoordSq, 0), 0);
                 color = shadowColor.rgb * shadowColor.a;
-            #elif DEBUG_VIEW == DEBUG_VIEW_SHADOWMAP_NORMAL
-                color = textureLod(texShadowNormal, vec3(previewCoordSq, 0), 0).rgb;
+//            #elif DEBUG_VIEW == DEBUG_VIEW_SHADOWMAP_NORMAL
+//                color = textureLod(texShadowNormal, vec3(previewCoordSq, 0), 0).rgb;
             #endif
         }
 

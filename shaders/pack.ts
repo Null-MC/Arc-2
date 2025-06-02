@@ -337,20 +337,33 @@ export function setupShader(dimension : NamespacedId) {
 
     const texShadowColor = new ArrayTexture("texShadowColor")
         .format(Format.RGBA8)
+        .width(settings.Shadow_Resolution)
+        .height(settings.Shadow_Resolution)
         //.clearColor(0.0, 0.0, 0.0, 0.0)
         .clear(false)
         .build();
 
-    const texShadowNormal = new ArrayTexture("texShadowNormal")
-        .format(Format.RGB8)
+    const texShadowBlocker = new ArrayTexture("texShadowBlocker")
+        .imageName('imgShadowBlocker')
+        .format(Format.R16F)
+        .width(settings.Shadow_Resolution/2)
+        .height(settings.Shadow_Resolution/2)
         //.clearColor(0.0, 0.0, 0.0, 0.0)
         .clear(false)
         .build();
+
+    // const texShadowNormal = new ArrayTexture("texShadowNormal")
+    //     .format(Format.RGB8)
+    //     //.clearColor(0.0, 0.0, 0.0, 0.0)
+    //     .clear(false)
+    //     .build();
 
     const texFinalA = new Texture("texFinalA")
         //.imageName("imgFinalA")
         .format(Format.RGB16F)
         //.clearColor(0.0, 0.0, 0.0, 0.0)
+        .width(screenWidth)
+        .height(screenHeight)
         .mipmap(true)
         .clear(false)
         .build();
@@ -359,6 +372,8 @@ export function setupShader(dimension : NamespacedId) {
         //.imageName("imgFinalB")
         .format(Format.RGB16F)
         //.clearColor(0.0, 0.0, 0.0, 0.0)
+        .width(screenWidth)
+        .height(screenHeight)
         .mipmap(true)
         .clear(false)
         .build();
@@ -370,6 +385,8 @@ export function setupShader(dimension : NamespacedId) {
     const texFinalPrevious = new Texture("texFinalPrevious")
         .format(Format.RGB16F)
         .mipmap(true)
+        .width(screenWidth)
+        .height(screenHeight)
         .clear(false)
         .build();
 
@@ -382,45 +399,61 @@ export function setupShader(dimension : NamespacedId) {
     const texParticleOpaque = new Texture("texParticleOpaque")
         .format(Format.RGBA16F)
         .clearColor(0.0, 0.0, 0.0, 0.0)
+        .width(screenWidth)
+        .height(screenHeight)
         .build();
 
     const texParticleTranslucent = new Texture("texParticleTranslucent")
         .format(Format.RGBA16F)
         .clearColor(0.0, 0.0, 0.0, 0.0)
+        .width(screenWidth)
+        .height(screenHeight)
         .build();
 
     const texDeferredOpaque_Color = new Texture("texDeferredOpaque_Color")
         .format(Format.RGBA8)
         .clearColor(0.0, 0.0, 0.0, 0.0)
+        .width(screenWidth)
+        .height(screenHeight)
         .build();
 
     const texDeferredOpaque_TexNormal = new Texture("texDeferredOpaque_TexNormal")
         .format(Format.RGB16)
         //.clearColor(0.0, 0.0, 0.0, 0.0)
         .clear(false)
+        .width(screenWidth)
+        .height(screenHeight)
         .build();
 
     const texDeferredOpaque_Data = new Texture("texDeferredOpaque_Data")
         .format(Format.RGBA32UI)
         //.clearColor(0.0, 0.0, 0.0, 0.0)
         .clear(false)
+        .width(screenWidth)
+        .height(screenHeight)
         .build();
 
     const texDeferredTrans_Color = new Texture("texDeferredTrans_Color")
         .format(Format.RGBA8)
         .clearColor(0.0, 0.0, 0.0, 0.0)
+        .width(screenWidth)
+        .height(screenHeight)
         .build();
 
     const texDeferredTrans_TexNormal = new Texture("texDeferredTrans_TexNormal")
         .format(Format.RGB16)
         //.clearColor(0.0, 0.0, 0.0, 0.0)
         .clear(false)
+        .width(screenWidth)
+        .height(screenHeight)
         .build();
 
     const texDeferredTrans_Data = new Texture("texDeferredTrans_Data")
         .format(Format.RGBA32UI)
         //.clearColor(0.0, 0.0, 0.0, 0.0)
         .clear(false)
+        .width(screenWidth)
+        .height(screenHeight)
         .build();
 
     let texShadow: BuiltTexture | null = null;
@@ -429,12 +462,16 @@ export function setupShader(dimension : NamespacedId) {
         texShadow = new Texture("texShadow")
             .format(Format.RGBA16F)
             .clear(false)
+            .width(screenWidth)
+            .height(screenHeight)
             .build();
 
         texShadow_final = new Texture("texShadow_final")
             .imageName("imgShadow_final")
             .format(Format.RGBA16F)
             .clear(false)
+            .width(screenWidth)
+            .height(screenHeight)
             .build();
     }
 
@@ -796,7 +833,7 @@ export function setupShader(dimension : NamespacedId) {
             .ssbo(4, quadListBuffer)
             .target(0, texShadowColor)
             //.blendOff(0)
-            .target(1, texShadowNormal)
+            //.target(1, texShadowNormal)
             //.blendOff(1);
             .define("RENDER_SHADOW", "1");
     }
@@ -815,6 +852,15 @@ export function setupShader(dimension : NamespacedId) {
             .define("RENDER_ENTITY", "1");
     }
 
+    function shadowBlockerShader(layer: number) {
+        const blockerGroupSize = settings.Shadow_Resolution/32;
+
+        return new Compute(`shadow-blocker-${layer}`)
+            .location("composite/shadow-blocker.csh")
+            .workGroups(blockerGroupSize, blockerGroupSize, 1)
+            .define('SHADOW_LAYER', layer.toString());
+    }
+
     if (settings.Shadow_Enabled) {
         registerShader(shadowShader("shadow", Usage.SHADOW).build());
 
@@ -831,6 +877,9 @@ export function setupShader(dimension : NamespacedId) {
         registerShader(shadowEntityShader("shadow-entity-translucent", Usage.SHADOW_ENTITY_TRANSLUCENT)
             .define("RENDER_TRANSLUCENT", "1")
             .build());
+
+        for (let l = 0; l < settings.Shadow_CascadeCount; l++)
+            registerShader(Stage.POST_SHADOW, shadowBlockerShader(l).build());
     }
 
     function DiscardObjectShader(name: string, usage: ProgramUsage) {

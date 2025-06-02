@@ -156,7 +156,13 @@ float ShadowBlockerDistance(const in vec3 shadowPos, const in int shadowCascade,
 
 vec3 SampleShadowColor_PCSS(const in vec3 shadowPos, const in int shadowCascade) {
     vec2 maxPixelRadius = GetPixelRadius(Shadow_MaxPcfSize, shadowCascade);
-    float blockerDistance = ShadowBlockerDistance(shadowPos, shadowCascade, maxPixelRadius);
+
+    #ifdef SHADOW_BLOCKER_TEX
+        float avg_depth = textureLod(texShadowBlocker, vec3(shadowPos.xy, shadowCascade), 0).r;
+        float blockerDistance = max(shadowPos.z - avg_depth, 0.0) * GetShadowRange(shadowCascade);
+    #else
+        float blockerDistance = ShadowBlockerDistance(shadowPos, shadowCascade, maxPixelRadius);
+    #endif
 
     // if (blockerDistance <= 0.0) {
     //     // WARN: Is this faster or just doubling work?!

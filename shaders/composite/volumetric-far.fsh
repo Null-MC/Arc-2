@@ -19,6 +19,7 @@ uniform sampler2D texSkyMultiScatter;
 #ifdef SHADOWS_ENABLED
     uniform sampler2DArray shadowMap;
     uniform sampler2DArray solidShadowMap;
+    uniform sampler2DArray texShadowBlocker;
     uniform sampler2DArray texShadowColor;
 #endif
 

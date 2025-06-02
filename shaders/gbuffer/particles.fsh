@@ -22,6 +22,7 @@ uniform sampler3D texFogNoise;
     uniform sampler2DArray shadowMap;
     uniform sampler2DArray solidShadowMap;
     uniform sampler2DArray texShadowColor;
+    uniform sampler2DArray texShadowBlocker;
 #endif
 
 #if LIGHTING_MODE == LIGHT_MODE_LPV

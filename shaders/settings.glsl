@@ -9,6 +9,8 @@
 
 //#define REFRACTION_SNELL
 
+#define SHADOW_BLOCKER_TEX
+
 //#define VL_SELF_SHADOW
 
 #define VOXEL_SHADOW_CASCADE 0

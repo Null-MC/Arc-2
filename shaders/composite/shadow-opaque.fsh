@@ -11,6 +11,7 @@ uniform sampler2D solidDepthTex;
 uniform sampler2DArray shadowMap;
 uniform sampler2DArray solidShadowMap;
 uniform sampler2DArray texShadowColor;
+uniform sampler2DArray texShadowBlocker;
 uniform usampler2D texDeferredOpaque_Data;
 
 #include "/lib/common.glsl"

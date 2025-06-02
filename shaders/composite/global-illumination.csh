@@ -18,9 +18,12 @@ uniform sampler2D texBlueNoise;
 	uniform sampler3D texFloodFill_alt;
 #endif
 
-uniform sampler2DArray shadowMap;
-uniform sampler2DArray solidShadowMap;
-uniform sampler2DArray texShadowColor;
+#ifdef SHADOWS_ENABLED
+	uniform sampler2DArray shadowMap;
+	uniform sampler2DArray solidShadowMap;
+	uniform sampler2DArray texShadowBlocker;
+	uniform sampler2DArray texShadowColor;
+#endif
 
 #if defined(SKY_CLOUDS_ENABLED) && defined(SHADOWS_CLOUD_ENABLED)
 	uniform sampler3D texFogNoise;

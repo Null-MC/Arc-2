@@ -338,6 +338,38 @@ void main() {
                 blockLighting = floodfill_sample(voxelSamplePos);
         #endif
 
+//        if (ap.game.mainHand != 0u) {
+//            //blockLighting += vec3(1000.0, 0.0, 0.0);
+//
+//            float lightRange = iris_getEmission(ap.game.mainHand);
+//            vec3 lightColor = iris_getLightColor(ap.game.mainHand).rgb;
+////            lightColor = RgbToLinear(lightColor);
+//
+//            vec3 light_hsv = RgbToHsv(lightColor);
+//            lightColor = HsvToRgb(vec3(light_hsv.xy, 1.0));
+//
+//            // TODO: before or after HSV?
+//            lightColor = RgbToLinear(lightColor);
+//
+//            vec3 lightVec = -localPos;
+//            float lightAtt = GetLightAttenuation(lightVec, lightRange);
+//            //lightAtt *= light_hsv.z;
+//
+//            vec3 lightColorAtt = BLOCK_LUX * lightAtt * lightColor;
+//            vec3 lightDir = normalize(lightVec);
+//
+//            vec3 H = normalize(lightDir + -localViewDir);
+//
+//            float LoHm = max(dot(lightDir, H), 0.0);
+//            float NoLm = max(dot(localTexNormal, lightDir), 0.0);
+//            float NoVm = max(dot(localTexNormal, -localViewDir), 0.0);
+//
+//            if (NoLm > 0.0 && dot(localGeoNormal, lightDir) > 0.0) {
+//                float D = SampleLightDiffuse(NoVm, NoLm, LoHm, roughL);
+//                blockLighting += (NoLm * D) * lightColorAtt;
+//            }
+//        }
+
         vec3 diffuse = skyLightDiffuse + blockLighting + 0.0016 * occlusion;
 
         #ifdef ACCUM_ENABLED
@@ -345,15 +377,6 @@ void main() {
             else diffuse += textureLod(texAccumDiffuse_opaque, uv, 0).rgb;
         #elif LIGHTING_MODE == LIGHT_MODE_RT || LIGHTING_REFLECT_MODE == REFLECT_MODE_WSR
             diffuse += textureLod(texDiffuseRT, uv, 0).rgb;
-        #endif
-
-        float metalness = mat_metalness(f0_metal);
-        diffuse *= 1.0 - metalness * (1.0 - roughL);
-
-        #if MATERIAL_EMISSION_POWER != 1
-            diffuse += pow(emission, MATERIAL_EMISSION_POWER) * Material_EmissionBrightness * BLOCK_LUX;
-        #else
-            diffuse += emission * Material_EmissionBrightness * BLOCK_LUX;
         #endif
 
         vec3 view_F = vec3(0.0);
@@ -428,12 +451,24 @@ void main() {
             #elif LIGHTING_MODE == LIGHT_MODE_RT || LIGHTING_REFLECT_MODE == REFLECT_MODE_WSR
                 specular += textureLod(texSpecularRT, uv, 0).rgb;
             #endif
-
-            float smoothness = 1.0 - roughness;
-            specular *= GetMetalTint(albedo.rgb, f0_metal) * smoothness;
         }
 
-//        if (!hasTexNormal) albedo.rgb = vec3(1.0,0.0,0.0);
+        GetHandLight(diffuse, specular, ap.game.mainHand, localPos, -localViewDir, localTexNormal, localGeoNormal, albedo.rgb, f0_metal, roughL);
+        GetHandLight(diffuse, specular, ap.game.offHand,  localPos, -localViewDir, localTexNormal, localGeoNormal, albedo.rgb, f0_metal, roughL);
+
+        float metalness = mat_metalness(f0_metal);
+        diffuse *= 1.0 - metalness * (1.0 - roughL);
+
+        #if MATERIAL_EMISSION_POWER != 1
+            diffuse += pow(emission, MATERIAL_EMISSION_POWER) * Material_EmissionBrightness * BLOCK_LUX;
+        #else
+            diffuse += emission * Material_EmissionBrightness * BLOCK_LUX;
+        #endif
+
+        float smoothness = 1.0 - roughness;
+        specular *= GetMetalTint(albedo.rgb, f0_metal) * smoothness;
+
+        //        if (!hasTexNormal) albedo.rgb = vec3(1.0,0.0,0.0);
 
         #ifdef DEBUG_WHITE_WORLD
             albedo.rgb = WhiteWorld_Value;

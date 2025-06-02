@@ -327,15 +327,6 @@ void main() {
             diffuse += textureLod(texDiffuseRT, uv, 0).rgb;
         #endif
 
-        float metalness = mat_metalness(f0_metal);
-        diffuse *= 1.0 - metalness * (1.0 - roughL);
-
-        #if MATERIAL_EMISSION_POWER != 1
-            diffuse += pow(emission, MATERIAL_EMISSION_POWER) * (Material_EmissionBrightness * BLOCK_LUX);
-        #else
-            diffuse += emission * Material_EmissionBrightness * BLOCK_LUX;
-        #endif
-
         // reflections
         #if LIGHTING_REFLECT_MODE != REFLECT_MODE_WSR
             vec3 viewDir = normalize(viewPosTrans);
@@ -402,6 +393,18 @@ void main() {
             else specular += textureLod(texAccumSpecular_translucent, uv, 0).rgb;
         #elif LIGHTING_MODE == LIGHT_MODE_RT || LIGHTING_REFLECT_MODE == REFLECT_MODE_WSR
             specular += textureLod(texSpecularRT, uv, 0).rgb;
+        #endif
+
+        GetHandLight(diffuse, specular, ap.game.mainHand, localPosTrans, -localViewDir, localTexNormal, localGeoNormal, albedo.rgb, f0_metal, roughL);
+        GetHandLight(diffuse, specular, ap.game.offHand,  localPosTrans, -localViewDir, localTexNormal, localGeoNormal, albedo.rgb, f0_metal, roughL);
+
+        float metalness = mat_metalness(f0_metal);
+        diffuse *= 1.0 - metalness * (1.0 - roughL);
+
+        #if MATERIAL_EMISSION_POWER != 1
+            diffuse += pow(emission, MATERIAL_EMISSION_POWER) * (Material_EmissionBrightness * BLOCK_LUX);
+        #else
+            diffuse += emission * Material_EmissionBrightness * BLOCK_LUX;
         #endif
 
         float smoothness = 1.0 - roughness;

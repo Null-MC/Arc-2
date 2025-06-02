@@ -17,9 +17,12 @@ in vec2 uv;
 #include "/lib/sampling/depth.glsl"
 
 
+const float DOF_FocusPower = 1.8;
+
+
 float getBlurSize(const in float depth, const in float focusPoint) {
     float coc = 1.0/focusPoint - 1.0/depth;
-    return abs(coc) * Effect_DOF_Radius;
+    return pow(abs(coc), DOF_FocusPower) * Effect_DOF_Radius;
 }
 
 
@@ -62,8 +65,8 @@ void main() {
 
         float sampleSize = getBlurSize(sampleDepth, Scene_FocusDepth);
 
-        if (sampleDepth > Scene_FocusDepth)
-            sampleSize = clamp(sampleSize, 0.0, centerSize*2.0);
+//        if (sampleDepth > Scene_FocusDepth)
+//            sampleSize = clamp(sampleSize, 0.0, centerSize*2.0);
 
         float m = smoothstep(radius-0.5, radius+0.5, sampleSize);
         color += mix(color / tot, sampleColor, m);

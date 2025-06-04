@@ -13,9 +13,10 @@ void randomize_reflection(inout vec3 reflectRay, const in vec3 normal, const in 
     reflectRay = normalize(reflectRay);
 }
 
-void GetHandLight(inout vec3 diffuse, inout vec3 specular, const in uint blockId, const in vec3 localPos,
-                  const in vec3 localViewDir, const in vec3 localTexNormal, const in vec3 localGeoNormal,
+void GetHandLight(inout vec3 diffuse, inout vec3 specular, const in uint blockId, const in vec3 lightLocalPos,
+                  const in vec3 localPos, const in vec3 localViewDir, const in vec3 localTexNormal, const in vec3 localGeoNormal,
                   const in vec3 albedo, const in float f0_metal, const in float roughL) {
+//    vec3 lightLocalPos = vec3(0.2, 0.0, 0.0);
     float lightRange = iris_getEmission(blockId);
     vec3 lightColor = iris_getLightColor(blockId).rgb;
     //            lightColor = RgbToLinear(lightColor);
@@ -26,8 +27,8 @@ void GetHandLight(inout vec3 diffuse, inout vec3 specular, const in uint blockId
     // TODO: before or after HSV?
     lightColor = RgbToLinear(lightColor);
 
-    vec3 lightVec = -localPos;
-    float lightAtt = GetLightAttenuation(lightVec, lightRange);
+    vec3 lightVec = lightLocalPos - localPos;
+    float lightAtt = GetLightAttenuation_invSq(lightVec, lightRange);
     //lightAtt *= light_hsv.z;
 
     vec3 lightDir = normalize(lightVec);
@@ -36,6 +37,14 @@ void GetHandLight(inout vec3 diffuse, inout vec3 specular, const in uint blockId
 
     //vec3 diffuse = vec3(0.0);
     if (NoLm > 0.0 && dot(localGeoNormal, lightDir) > 0.0) {
+        // TODO: trace hand shadows
+        #ifdef HANDLIGHT_TRACE
+            vec3 traceStart = voxel_GetBufferPosition(lightLocalPos);
+            vec3 traceEnd = voxel_GetBufferPosition(localPos + 0.06*localGeoNormal);
+            const bool traceSelf = true;
+            lightColor *= TraceDDA(traceStart, traceEnd, lightRange, traceSelf);
+        #endif
+
         vec3 H = normalize(lightDir + localViewDir);
 
         float LoHm = max(dot(lightDir, H), 0.0);

@@ -22,13 +22,13 @@ in VertexData2 {
             vec3 localPos;
             vec2 lmcoord;
 
-            #ifdef RENDER_TERRAIN
+            //#ifdef RENDER_TERRAIN
                 flat vec3 originPos;
 
                 #ifdef VOXEL_BLOCK_FACE
                     flat uint textureId;
                 #endif
-            #endif
+            //#endif
         #endif
     #endif
 } vIn[];

@@ -1,12 +1,23 @@
 const float ROUGH_MIN = 0.02;
 
 
+float GetLightAttenuation_Linear(const in vec3 lightVec, const in float lightRange) {
+    float lightDistF = length(lightVec) / lightRange;
+    return pow5(1.0 - saturate(lightDistF));
+}
+
+float GetLightAttenuation_invSq(const in vec3 lightVec, const in float lightRange) {
+    float lightDist = length(lightVec);
+
+    return 1.0 / (_pow2(lightDist)+0.01);
+}
+
 float GetLightAttenuation(const in vec3 lightVec, const in float lightRange) {
     float lightDist = length(lightVec);
 
     float linear = 1.0 - saturate(lightDist / lightRange);
     float inv_sq = 1.0 / (_pow2(lightDist)+0.01);
-    return _pow3(linear);// min(inv_sq, linear*100.0);
+    return min(inv_sq, linear*10.0) * 10.0;
 }
 
 float SampleLightDiffuse(const in float NoV, const in float NoL, const in float LoH, const in float roughL) {

@@ -11,6 +11,8 @@
 
 #define SHADOW_BLOCKER_TEX
 
+//#define HANDLIGHT_TRACE
+
 //#define VL_SELF_SHADOW
 
 #define VOXEL_SHADOW_CASCADE 0

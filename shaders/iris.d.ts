@@ -21,21 +21,21 @@ declare class WorldSettings {
     /**
      * Default: 1024
      */
-    shadowMapResolution: number;
-    cascadeCount: number;
-    cascadeSafeZones: number[];
-    shadowMapDistance: number;
-    shadowNearPlane: number;
-    shadowFarPlane: number;
-    sunPathRotation: number;
-    ambientOcclusionLevel: number;
-    renderSun: boolean;
-    renderWaterOverlay: boolean;
-    mergedHandDepth: boolean;
-    renderMoon: boolean;
-    renderStars: boolean;
-    renderEntityShadow: boolean;
-    disableShade: boolean;
+  shadowMapResolution: number;
+  cascadeCount: number;
+  cascadeSafeZones: number[];
+  shadowMapDistance: number;
+  shadowNearPlane: number;
+  shadowFarPlane: number;
+  sunPathRotation: number;
+  ambientOcclusionLevel: number;
+  renderSun: boolean;
+  renderWaterOverlay: boolean;
+  mergedHandDepth: boolean;
+  renderMoon: boolean;
+  renderStars: boolean;
+  renderEntityShadow: boolean;
+  disableShade: boolean;
 }
 
 /**
@@ -71,29 +71,29 @@ declare class NamespacedId {
  */
 declare namespace Stage {
     /**
-     * Runs before any rendering takes place.
-     */
-    let PRE_RENDER: ProgramStage;
+    * Runs before any rendering takes place.
+    */
+  let PRE_RENDER: ProgramStage;
 
     /**
-     * Runs after the shadow pass is drawn.
-     */
-    let POST_SHADOW: ProgramStage;
+    * Runs after the shadow pass is drawn.
+    */
+  let POST_SHADOW: ProgramStage;
 
     /**
      * Runs after all main rendering takes place.
      */
-    let POST_RENDER: ProgramStage;
+  let POST_RENDER: ProgramStage;
 
     /**
      * Runs after opaque terrain is rendered, but before translucent terrain and entities.
      */
-    let PRE_TRANSLUCENT: ProgramStage;
+  let PRE_TRANSLUCENT: ProgramStage;
 
     /**
      * Runs only once; when the shader is set up (or the screen is resized).
      */
-    let SCREEN_SETUP: ProgramStage;
+  let SCREEN_SETUP: ProgramStage;
 }
 
 declare function writeMatrixToAddress(buffer : BuiltStreamingBuffer, offset : number, matrix : Matrix4f);
@@ -115,24 +115,24 @@ declare function getIntSetting(name: string): number;
 declare function getFloatSetting(name: string): number;
 
 declare class IntSetting {
-    needsReload(reload: boolean): IntSetting;
-    build(defaultValue: number): BuiltSetting;
+  needsReload(reload: boolean): IntSetting;
+  build(defaultValue: number): BuiltSetting;
 }
 declare class FloatSetting {
-    needsReload(reload: boolean): FloatSetting;
-    build(defaultValue: number): BuiltSetting;
+  needsReload(reload: boolean): FloatSetting;
+  build(defaultValue: number): BuiltSetting;
 }
 declare class StringSetting {
-    needsReload(reload: boolean): StringSetting;
-    build(defaultValue: string): BuiltSetting;
+  needsReload(reload: boolean): StringSetting;
+  build(defaultValue: string): BuiltSetting;
 }
 declare class BuiltSetting {}
 
 declare class Page {
-    constructor(name: string);
+  constructor(name: string);
 
-    add(...settings): Page;
-    build(): BuiltPage;
+  add(...settings): Page;
+  build(): BuiltPage;
 }
 declare class BuiltPage {}
 
@@ -156,11 +156,11 @@ declare var EMPTY: BuiltPage;
  * @alpha
  */
 declare function setLightColor(
-        name: NamespacedId,
-        r: number,
-        g: number,
-        b: number,
-        a: number,
+  name: NamespacedId,
+  r: number,
+  g: number,
+  b: number,
+  a: number,
 ): void;
 
 /**
@@ -207,7 +207,7 @@ declare function registerShader(stage: ProgramStage, s: PostPass): PostPass;
  * @param s Combination pass to set
  */
 declare function setCombinationPass(
-        s: BuiltCombinationPass,
+  s: BuiltCombinationPass,
 ): BuiltCombinationPass;
 
 /**
@@ -243,121 +243,119 @@ declare function registerBarrier(stage: ProgramStage, b: Barrier): Barrier;
  * A built-in pass to copy textures. Register with {@link registerShader}.
  */
 declare class TextureCopy {
-    constructor(src: BuiltTexture, dst: BuiltTexture);
+  constructor(src: BuiltTexture, dst: BuiltTexture);
 
-    /**
-     * Required. Sets the size of the texture copy.
-     * @param width The width of the texture copy
-     * @param height The height of the texture copy
-     */
-    size(width: number, height: number): TextureCopy;
+  /**
+   * Required. Sets the size of the texture copy.
+   * @param width The width of the texture copy
+   * @param height The height of the texture copy
+   */
+  size(width: number, height: number): TextureCopy;
 
-    /**
-     * Optional operation. Offsets the source texture copy position.
-     * @param x The X coordinate to start copying from
-     * @param y The Y coordinate to start copying from
-     */
-    srcPos(x: number, y: number): TextureCopy;
+  /**
+   * Optional operation. Offsets the source texture copy position.
+   * @param x The X coordinate to start copying from
+   * @param y The Y coordinate to start copying from
+   */
+  srcPos(x: number, y: number): TextureCopy;
 
-    /**
-     * Optional operation. Offsets the destination texture copy position.
-     * @param x The X coordinate to copy to
-     * @param y The Y coordinate to copy to
-     */
-    dstPos(x: number, y: number): TextureCopy;
+  /**
+   * Optional operation. Offsets the destination texture copy position.
+   * @param x The X coordinate to copy to
+   * @param y The Y coordinate to copy to
+   */
+  dstPos(x: number, y: number): TextureCopy;
 
-    /**
-     * Builds the texture copy pass.
-     */
-    build(): PostPass;
+  /**
+   * Builds the texture copy pass.
+   */
+  build(): PostPass;
 }
+
+declare function enableShadows(resolution : number, cascadeCount: number): void;
 
 /**
  * A memory barrier, to be registered with {@link registerBarrier}.
  */
 declare class MemoryBarrier implements Barrier {
-    /**
-     * The barriers to run.
-     * @param flags A bitmask of {@link SSBO_BIT}, {@link UBO_BIT}, {@link IMAGE_BIT}, and {@link FETCH_BIT} depending on usage.
-     */
-    constructor(flags: number);
+  /**
+   * The barriers to run.
+   * @param flags A bitmask of {@link SSBO_BIT}, {@link UBO_BIT}, {@link IMAGE_BIT}, and {@link FETCH_BIT} depending on usage.
+   */
+  constructor(flags: number);
 }
 
 /**
  * A texture barrier. This is <b>not</b> a memory barrier, and is only useful for specific conditions.
  */
 declare class TextureBarrier implements Barrier {
-    constructor();
+  constructor();
 }
 
 declare class ObjectShader {
-    constructor(name: string, usage: ProgramUsage);
+  constructor(name: string, usage: ProgramUsage);
 
-    vertex(loc: string): ObjectShader;
-    geometry(loc: string): ObjectShader;
-    control(loc: string): ObjectShader;
-    eval(loc: string): ObjectShader;
-    fragment(loc: string): ObjectShader;
+  vertex(loc: string): ObjectShader;
+  geometry(loc: string): ObjectShader;
+  control(loc: string): ObjectShader;
+  eval(loc: string): ObjectShader;
+  fragment(loc: string): ObjectShader;
 
-    blendFunc(
-            index: number,
-            srcRGB: BlendModeFunction,
-            dstRGB: BlendModeFunction,
-            srcA: BlendModeFunction,
-            dstA: BlendModeFunction,
+  blendFunc(
+        index: number,
+        srcRGB: BlendModeFunction,
+        dstRGB: BlendModeFunction,
+        srcA: BlendModeFunction,
+        dstA: BlendModeFunction,
     ): ObjectShader;
 
-    blendOff(index : number) : ObjectShader;
+  blendOff(index : number) : ObjectShader;
 
-    target(index: number, tex: BuiltTexture | undefined): ObjectShader;
-    ssbo(index: number, buf: BuiltBuffer | undefined): ObjectShader;
-    ubo(index: number, buf: BuiltBuffer | undefined): ObjectShader;
-    define(key: string, value: string): ObjectShader;
+  target(index: number, tex: BuiltTexture | undefined): ObjectShader;
+  ssbo(index: number, buf: BuiltBuffer | undefined): ObjectShader;
+  ubo(index: number, buf: BuiltBuffer | undefined): ObjectShader;
+  define(key: string, value: string): ObjectShader;
 
-    build(): BuiltObjectShader;
-}
-
-declare class GenerateMips implements PostPass {
-    constructor(...textures : BuiltTexture[])
-    constructor(name : string, ...textures : BuiltTexture[])
+  build(): BuiltObjectShader;
 }
 
 declare class Composite {
-    constructor(name: string);
+  constructor(name: string);
 
-    vertex(loc: string): Composite;
-    geometry(loc: string): Composite;
-    control(loc: string): Composite;
-    eval(loc: string): Composite;
-    fragment(loc: string): Composite;
+  vertex(loc: string): Composite;
+  geometry(loc: string): Composite;
+  control(loc: string): Composite;
+  eval(loc: string): Composite;
+  fragment(loc: string): Composite;
 
-    target(index: number, tex: BuiltTexture | undefined): Composite;
-    target(index: number, tex: BuiltTexture | undefined, mip: number): Composite;
-    ssbo(index: number, buf: BuiltBuffer | undefined): Composite;
-    ubo(index: number, buf: BuiltBuffer | undefined): Composite;
-    define(key: string, value: string): Composite;
+  target(index: number, tex: BuiltTexture | undefined): Composite;
+  generateMips(tex: BuiltTexture): Composite;
+  target(index: number, tex: BuiltTexture | undefined, mip: number): Composite;
+  ssbo(index: number, buf: BuiltBuffer | undefined): Composite;
+  ubo(index: number, buf: BuiltBuffer | undefined): Composite;
+  define(key: string, value: string): Composite;
 
-    blendFunc(
-            index: number,
-            srcRGB: BlendModeFunction,
-            dstRGB: BlendModeFunction,
-            srcA: BlendModeFunction,
-            dstA: BlendModeFunction,
-    ): Composite;
+  blendFunc(
+    index: number,
+    srcRGB: BlendModeFunction,
+    dstRGB: BlendModeFunction,
+    srcA: BlendModeFunction,
+    dstA: BlendModeFunction,
+  ): Composite;
 
-    build(): PostPass;
+  build(): PostPass;
 }
 
 declare class Compute {
-    constructor(name: string);
+  constructor(name: string);
 
-    location(loc: string): Compute;
-    workGroups(x: number, y: number, z: number): Compute;
-    ssbo(index: number, buf: BuiltBuffer | undefined): Composite;
-    ubo(index: number, buf: BuiltBuffer | undefined): Composite;
-    define(key: string, value: string): Composite;
+  location(loc: string): Compute;
+  workGroups(x: number, y: number, z: number): Compute;
+  ssbo(index: number, buf: BuiltBuffer | undefined): Composite;
+  ubo(index: number, buf: BuiltBuffer | undefined): Composite;
+  define(key: string, value: string): Composite;
 
-    build(): PostPass;
+  build(): PostPass;
 }
 
 /**
@@ -366,25 +364,13 @@ declare class Compute {
 interface BuiltCombinationPass {}
 
 declare class CombinationPass {
-    constructor(location: string);
-    ssbo(index: number, buf: BuiltBuffer | undefined): ObjectShader;
-    ubo(index: number, buf: BuiltBuffer | undefined): ObjectShader;
-    define(key: string, value: string): Composite;
+  constructor(location: string);
+  ssbo(index: number, buf: BuiltBuffer | undefined): ObjectShader;
+  ubo(index: number, buf: BuiltBuffer | undefined): ObjectShader;
 
-    build(): BuiltCombinationPass;
+  build(): BuiltCombinationPass;
 }
 
-declare interface BlockState {
-    getName() : string;
-    getNamespace() : string;
-
-    hasState(name: string) : boolean;
-
-    getState(name: string) : string;
-
-    hasTag(tag: string | NamespacedId) : boolean;
-
-}
 // Buffers
 
 /**
@@ -411,10 +397,10 @@ class BuiltStreamingBuffer implements BuiltBuffer {
  * A GPU buffer, to be bound as either an SSBO or UBO. Cannot be modified at all on the CPU.
  */
 declare class GPUBuffer {
-    constructor(size: number);
-    clear(c: boolean): GPUBuffer;
+  constructor(size: number);
+  clear(c: boolean): GPUBuffer;
 
-    build(): BuiltBuffer;
+  build(): BuiltBuffer;
 }
 
 declare class Vector2f {
@@ -583,9 +569,9 @@ declare class WorldState {
  * Automatically cleared
  */
 declare class StreamingBuffer {
-    constructor(size: number);
+  constructor(size: number);
 
-    build(): BuiltStreamingBuffer;
+  build(): BuiltStreamingBuffer;
 }
 
 // Textures
@@ -630,19 +616,19 @@ interface ActiveTextureReference extends BuiltTexture {
  * @see ArrayTexture
  */
 declare class Texture {
-    constructor(name: string);
+  constructor(name: string);
 
-    format(internalFormat: InternalTextureFormat): Texture;
-    clearColor(r: number, g: number, b: number, a: number): Texture;
-    clear(clear: boolean): Texture;
-    imageName(name: string): Texture;
-    mipmap(mipmap: boolean): Texture;
-    width(width: number): Texture;
-    height(height: number): Texture;
-    depth(depth: number): Texture;
-    readBack(read: boolean): Texture;
+  format(internalFormat: InternalTextureFormat): Texture;
+  clearColor(r: number, g: number, b: number, a: number): Texture;
+  clear(clear: boolean): Texture;
+  imageName(name: string): Texture;
+  mipmap(mipmap: boolean): Texture;
+  width(width: number): Texture;
+  height(height: number): Texture;
+  depth(depth: number): Texture;
+  readBack(read: boolean): Texture;
 
-    build(): BuiltTexture;
+  build(): BuiltTexture;
 }
 
 /**
@@ -655,21 +641,21 @@ interface PType {}
  * @see PNGTexture
  */
 declare class RawTexture {
-    constructor(name: string, location: string);
+  constructor(name: string, location: string);
 
-    format(internalFormat: InternalTextureFormat): RawTexture;
-    type(pixel: PType): RawTexture;
-    blur(b: boolean): RawTexture;
-    clamp(b: boolean): RawTexture;
-    clearColor(r: number, g: number, b: number, a: number): RawTexture;
-    clear(clear: boolean): RawTexture;
-    imageName(name: string): RawTexture;
-    mipmap(mipmap: boolean): RawTexture;
-    width(width: number): RawTexture;
-    height(height: number): RawTexture;
-    depth(depth: number): RawTexture;
+  format(internalFormat: InternalTextureFormat): RawTexture;
+  type(pixel: PType): RawTexture;
+  blur(b: boolean): RawTexture;
+  clamp(b: boolean): RawTexture;
+  clearColor(r: number, g: number, b: number, a: number): RawTexture;
+  clear(clear: boolean): RawTexture;
+  imageName(name: string): RawTexture;
+  mipmap(mipmap: boolean): RawTexture;
+  width(width: number): RawTexture;
+  height(height: number): RawTexture;
+  depth(depth: number): RawTexture;
 
-    build(): BuiltTexture;
+  build(): BuiltTexture;
 }
 
 /**
@@ -677,19 +663,19 @@ declare class RawTexture {
  * @see Texture
  */
 declare class ArrayTexture {
-    constructor(name: string);
+  constructor(name: string);
 
-    format(internalFormat: InternalTextureFormat): ArrayTexture;
-    clearColor(r: number, g: number, b: number, a: number): ArrayTexture;
-    clear(clear: boolean): ArrayTexture;
-    imageName(name: string): ArrayTexture;
-    mipmap(mipmap: boolean): ArrayTexture;
-    width(width: number): ArrayTexture;
-    height(height: number): ArrayTexture;
+  format(internalFormat: InternalTextureFormat): ArrayTexture;
+  clearColor(r: number, g: number, b: number, a: number): ArrayTexture;
+  clear(clear: boolean): ArrayTexture;
+  imageName(name: string): ArrayTexture;
+  mipmap(mipmap: boolean): ArrayTexture;
+  width(width: number): ArrayTexture;
+  height(height: number): ArrayTexture;
 
-    build(): BuiltTexture;
+  build(): BuiltTexture;
 
-    slices(slice: number): ArrayTexture;
+  slices(slice: number): ArrayTexture;
 }
 
 /**
@@ -697,152 +683,146 @@ declare class ArrayTexture {
  * @see RawTexture
  */
 declare class PNGTexture implements BuiltTexture {
-    constructor(name: string, loc: string, blur: boolean, clamp: boolean);
-
-    depth(): number;
-    height(): number;
-    imageName(): string;
-    name(): string;
-    readBack(): ArrayBuffer;
-    width(): number;
+  constructor(name: string, loc: string, blur: boolean, clamp: boolean);
 }
 
 // The auto-generated stuff goes here
 
 declare namespace PixelType {
-    let BYTE : PType;
-    let SHORT : PType;
-    let INT : PType;
-    let HALF_FLOAT : PType;
-    let FLOAT : PType;
-    let UNSIGNED_BYTE : PType;
-    let UNSIGNED_BYTE_3_3_2 : PType;
-    let UNSIGNED_BYTE_2_3_3_REV : PType;
-    let UNSIGNED_SHORT : PType;
-    let UNSIGNED_SHORT_5_6_5 : PType;
-    let UNSIGNED_SHORT_5_6_5_REV : PType;
-    let UNSIGNED_SHORT_4_4_4_4 : PType;
-    let UNSIGNED_SHORT_4_4_4_4_REV : PType;
-    let UNSIGNED_SHORT_5_5_5_1 : PType;
-    let UNSIGNED_SHORT_1_5_5_5_REV : PType;
-    let UNSIGNED_INT : PType;
-    let UNSIGNED_INT_8_8_8_8 : PType;
-    let UNSIGNED_INT_8_8_8_8_REV : PType;
-    let UNSIGNED_INT_10_10_10_2 : PType;
-    let UNSIGNED_INT_2_10_10_10_REV : PType;
-    let UNSIGNED_INT_10F_11F_11F_REV : PType;
-    let UNSIGNED_INT_5_9_9_9_REV : PType;
+  let BYTE: PType;
+  let SHORT: PType;
+  let INT: PType;
+  let HALF_FLOAT: PType;
+  let FLOAT: PType;
+  let UNSIGNED_BYTE: PType;
+  let UNSIGNED_BYTE_3_3_2: PType;
+  let UNSIGNED_BYTE_2_3_3_REV: PType;
+  let UNSIGNED_SHORT: PType;
+  let UNSIGNED_SHORT_5_6_5: PType;
+  let UNSIGNED_SHORT_5_6_5_REV: PType;
+  let UNSIGNED_SHORT_4_4_4_4: PType;
+  let UNSIGNED_SHORT_4_4_4_4_REV: PType;
+  let UNSIGNED_SHORT_5_5_5_1: PType;
+  let UNSIGNED_SHORT_1_5_5_5_REV: PType;
+  let UNSIGNED_INT: PType;
+  let UNSIGNED_INT_8_8_8_8: PType;
+  let UNSIGNED_INT_8_8_8_8_REV: PType;
+  let UNSIGNED_INT_10_10_10_2: PType;
+  let UNSIGNED_INT_2_10_10_10_REV: PType;
+  let UNSIGNED_INT_10F_11F_11F_REV: PType;
+  let UNSIGNED_INT_5_9_9_9_REV: PType;
 }
 
 declare namespace Func {
-    let ZERO : BlendModeFunction;
-    let ONE : BlendModeFunction;
-    let SRC_COLOR : BlendModeFunction;
-    let ONE_MINUS_SRC_COLOR : BlendModeFunction;
-    let DST_COLOR : BlendModeFunction;
-    let ONE_MINUS_DST_COLOR : BlendModeFunction;
-    let SRC_ALPHA : BlendModeFunction;
-    let ONE_MINUS_SRC_ALPHA : BlendModeFunction;
-    let DST_ALPHA : BlendModeFunction;
-    let ONE_MINUS_DST_ALPHA : BlendModeFunction;
-    let SRC_ALPHA_SATURATE : BlendModeFunction;
+  let ZERO: BlendModeFunction;
+  let ONE: BlendModeFunction;
+  let SRC_COLOR: BlendModeFunction;
+  let ONE_MINUS_SRC_COLOR: BlendModeFunction;
+  let DST_COLOR: BlendModeFunction;
+  let ONE_MINUS_DST_COLOR: BlendModeFunction;
+  let SRC_ALPHA: BlendModeFunction;
+  let ONE_MINUS_SRC_ALPHA: BlendModeFunction;
+  let DST_ALPHA: BlendModeFunction;
+  let ONE_MINUS_DST_ALPHA: BlendModeFunction;
+  let SRC_ALPHA_SATURATE: BlendModeFunction;
 }
 
 declare namespace Format {
-    let R8 : InternalTextureFormat;
-    let RG8 : InternalTextureFormat;
-    let RGB8 : InternalTextureFormat;
-    let RGBA8 : InternalTextureFormat;
-    let R8_SNORM : InternalTextureFormat;
-    let RG8_SNORM : InternalTextureFormat;
-    let RGB8_SNORM : InternalTextureFormat;
-    let RGBA8_SNORM : InternalTextureFormat;
-    let R16 : InternalTextureFormat;
-    let RG16 : InternalTextureFormat;
-    let RGB16 : InternalTextureFormat;
-    let RGBA16 : InternalTextureFormat;
-    let R16_SNORM : InternalTextureFormat;
-    let RG16_SNORM : InternalTextureFormat;
-    let RGB16_SNORM : InternalTextureFormat;
-    let RGBA16_SNORM : InternalTextureFormat;
-    let R16F : InternalTextureFormat;
-    let RG16F : InternalTextureFormat;
-    let RGB16F : InternalTextureFormat;
-    let RGBA16F : InternalTextureFormat;
-    let R32F : InternalTextureFormat;
-    let RG32F : InternalTextureFormat;
-    let RGB32F : InternalTextureFormat;
-    let RGBA32F : InternalTextureFormat;
-    let R8I : InternalTextureFormat;
-    let RG8I : InternalTextureFormat;
-    let RGB8I : InternalTextureFormat;
-    let RGBA8I : InternalTextureFormat;
-    let R8UI : InternalTextureFormat;
-    let RG8UI : InternalTextureFormat;
-    let RGB8UI : InternalTextureFormat;
-    let RGBA8UI : InternalTextureFormat;
-    let R16I : InternalTextureFormat;
-    let RG16I : InternalTextureFormat;
-    let RGB16I : InternalTextureFormat;
-    let RGBA16I : InternalTextureFormat;
-    let R16UI : InternalTextureFormat;
-    let RG16UI : InternalTextureFormat;
-    let RGB16UI : InternalTextureFormat;
-    let RGBA16UI : InternalTextureFormat;
-    let R32I : InternalTextureFormat;
-    let RG32I : InternalTextureFormat;
-    let RGB32I : InternalTextureFormat;
-    let RGBA32I : InternalTextureFormat;
-    let R32UI : InternalTextureFormat;
-    let RG32UI : InternalTextureFormat;
-    let RGB32UI : InternalTextureFormat;
-    let RGBA32UI : InternalTextureFormat;
-    let RGBA2 : InternalTextureFormat;
-    let RGBA4 : InternalTextureFormat;
-    let R3_G3_B2 : InternalTextureFormat;
-    let RGB5_A1 : InternalTextureFormat;
-    let RGB565 : InternalTextureFormat;
-    let RGB10_A2 : InternalTextureFormat;
-    let RGB10_A2UI : InternalTextureFormat;
-    let R11F_G11F_B10F : InternalTextureFormat;
-    let RGB9_E5 : InternalTextureFormat;
+  let RGBA: InternalTextureFormat;
+  let R8: InternalTextureFormat;
+  let RG8: InternalTextureFormat;
+  let RGB8: InternalTextureFormat;
+  let RGBA8: InternalTextureFormat;
+  let R8_SNORM: InternalTextureFormat;
+  let RG8_SNORM: InternalTextureFormat;
+  let RGB8_SNORM: InternalTextureFormat;
+  let RGBA8_SNORM: InternalTextureFormat;
+  let R16: InternalTextureFormat;
+  let RG16: InternalTextureFormat;
+  let RGB16: InternalTextureFormat;
+  let RGBA16: InternalTextureFormat;
+  let R16_SNORM: InternalTextureFormat;
+  let RG16_SNORM: InternalTextureFormat;
+  let RGB16_SNORM: InternalTextureFormat;
+  let RGBA16_SNORM: InternalTextureFormat;
+  let R16F: InternalTextureFormat;
+  let RG16F: InternalTextureFormat;
+  let RGB16F: InternalTextureFormat;
+  let RGBA16F: InternalTextureFormat;
+  let R32F: InternalTextureFormat;
+  let RG32F: InternalTextureFormat;
+  let RGB32F: InternalTextureFormat;
+  let RGBA32F: InternalTextureFormat;
+  let R8I: InternalTextureFormat;
+  let RG8I: InternalTextureFormat;
+  let RGB8I: InternalTextureFormat;
+  let RGBA8I: InternalTextureFormat;
+  let R8UI: InternalTextureFormat;
+  let RG8UI: InternalTextureFormat;
+  let RGB8UI: InternalTextureFormat;
+  let RGBA8UI: InternalTextureFormat;
+  let R16I: InternalTextureFormat;
+  let RG16I: InternalTextureFormat;
+  let RGB16I: InternalTextureFormat;
+  let RGBA16I: InternalTextureFormat;
+  let R16UI: InternalTextureFormat;
+  let RG16UI: InternalTextureFormat;
+  let RGB16UI: InternalTextureFormat;
+  let RGBA16UI: InternalTextureFormat;
+  let R32I: InternalTextureFormat;
+  let RG32I: InternalTextureFormat;
+  let RGB32I: InternalTextureFormat;
+  let RGBA32I: InternalTextureFormat;
+  let R32UI: InternalTextureFormat;
+  let RG32UI: InternalTextureFormat;
+  let RGB32UI: InternalTextureFormat;
+  let RGBA32UI: InternalTextureFormat;
+  let RGBA2: InternalTextureFormat;
+  let RGBA4: InternalTextureFormat;
+  let R3_G3_B2: InternalTextureFormat;
+  let RGB5_A1: InternalTextureFormat;
+  let RGB565: InternalTextureFormat;
+  let RGB10_A2: InternalTextureFormat;
+  let RGB10_A2UI: InternalTextureFormat;
+  let R11F_G11F_B10F: InternalTextureFormat;
+  let RGB9_E5: InternalTextureFormat;
 }
 
 declare namespace Usage {
-    let BASIC : ProgramUsage;
-    let TEXTURED : ProgramUsage;
-    let EMISSIVE : ProgramUsage;
-    let CLOUDS : ProgramUsage;
-    let SKYBOX : ProgramUsage;
-    let SKY_TEXTURES : ProgramUsage;
-    let TERRAIN_SOLID : ProgramUsage;
-    let TERRAIN_CUTOUT : ProgramUsage;
-    let TERRAIN_TRANSLUCENT : ProgramUsage;
-    let TEXT : ProgramUsage;
-    let ENTITY_SOLID : ProgramUsage;
-    let ENTITY_CUTOUT : ProgramUsage;
-    let ENTITY_TRANSLUCENT : ProgramUsage;
-    let LIGHTNING : ProgramUsage;
-    let ENTITY_GLINT : ProgramUsage;
-    let BLOCK_ENTITY : ProgramUsage;
-    let BLOCK_ENTITY_TRANSLUCENT : ProgramUsage;
-    let PARTICLES : ProgramUsage;
-    let PARTICLES_TRANSLUCENT : ProgramUsage;
-    let CRUMBLING : ProgramUsage;
-    let LINES : ProgramUsage;
-    let WEATHER : ProgramUsage;
-    let HAND : ProgramUsage;
-    let TRANSLUCENT_HAND : ProgramUsage;
-    let SHADOW : ProgramUsage;
-    let SHADOW_TEXTURED : ProgramUsage;
-    let SHADOW_TERRAIN_SOLID : ProgramUsage;
-    let SHADOW_TERRAIN_CUTOUT : ProgramUsage;
-    let SHADOW_TERRAIN_TRANSLUCENT : ProgramUsage;
-    let SHADOW_ENTITY_SOLID : ProgramUsage;
-    let SHADOW_ENTITY_CUTOUT : ProgramUsage;
-    let SHADOW_ENTITY_TRANSLUCENT : ProgramUsage;
-    let SHADOW_BLOCK_ENTITY : ProgramUsage;
-    let SHADOW_BLOCK_ENTITY_TRANSLUCENT : ProgramUsage;
-    let SHADOW_PARTICLES : ProgramUsage;
-    let SHADOW_PARTICLES_TRANSLUCENT : ProgramUsage;
+  let BASIC: ProgramUsage;
+  let TEXTURED: ProgramUsage;
+  let EMISSIVE: ProgramUsage;
+  let CLOUDS: ProgramUsage;
+  let SKYBOX: ProgramUsage;
+  let SKY_TEXTURES: ProgramUsage;
+  let TERRAIN_SOLID: ProgramUsage;
+  let TERRAIN_CUTOUT: ProgramUsage;
+  let TERRAIN_TRANSLUCENT: ProgramUsage;
+  let TEXT: ProgramUsage;
+  let ENTITY_SOLID: ProgramUsage;
+  let ENTITY_CUTOUT: ProgramUsage;
+  let ENTITY_TRANSLUCENT: ProgramUsage;
+  let LIGHTNING: ProgramUsage;
+  let ENTITY_GLINT: ProgramUsage;
+  let BLOCK_ENTITY: ProgramUsage;
+  let BLOCK_ENTITY_TRANSLUCENT: ProgramUsage;
+  let PARTICLES: ProgramUsage;
+  let PARTICLES_TRANSLUCENT: ProgramUsage;
+  let CRUMBLING: ProgramUsage;
+  let LINES: ProgramUsage;
+  let WEATHER: ProgramUsage;
+  let HAND: ProgramUsage;
+  let TRANSLUCENT_HAND: ProgramUsage;
+  let SHADOW: ProgramUsage;
+  let SHADOW_TEXTURED: ProgramUsage;
+  let SHADOW_TERRAIN_SOLID: ProgramUsage;
+  let SHADOW_TERRAIN_CUTOUT: ProgramUsage;
+  let SHADOW_TERRAIN_TRANSLUCENT: ProgramUsage;
+  let SHADOW_ENTITY_SOLID: ProgramUsage;
+  let SHADOW_ENTITY_CUTOUT: ProgramUsage;
+  let SHADOW_ENTITY_TRANSLUCENT: ProgramUsage;
+  let SHADOW_BLOCK_ENTITY: ProgramUsage;
+  let SHADOW_BLOCK_ENTITY_TRANSLUCENT: ProgramUsage;
+  let SHADOW_PARTICLES: ProgramUsage;
+  let SHADOW_PARTICLES_TRANSLUCENT: ProgramUsage;
 }

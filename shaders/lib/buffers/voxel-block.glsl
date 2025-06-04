@@ -42,6 +42,7 @@
     }
 
     vec3 GetBlockFaceTint(const in uint data) {
+        //return vec3(1.0);
         return unpackUnorm4x8(data).rgb;
     }
 

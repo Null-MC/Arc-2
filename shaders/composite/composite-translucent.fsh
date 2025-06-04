@@ -73,6 +73,10 @@ uniform sampler2D texSkyIrradiance;
 #include "/lib/common.glsl"
 #include "/lib/buffers/scene.glsl"
 
+#ifdef HANDLIGHT_TRACE
+    #include "/lib/buffers/voxel-block.glsl"
+#endif
+
 #ifdef LIGHTING_GI_ENABLED
     #include "/lib/buffers/wsgi.glsl"
 #endif
@@ -116,6 +120,13 @@ uniform sampler2D texSkyIrradiance;
 
 #ifdef VOXEL_ENABLED
     #include "/lib/voxel/voxel-common.glsl"
+#endif
+
+#ifdef HANDLIGHT_TRACE
+    #include "/lib/voxel/dda.glsl"
+//    #include "/lib/voxel/voxel-common.glsl"
+    #include "/lib/voxel/voxel-sample.glsl"
+    #include "/lib/voxel/light-trace.glsl"
 #endif
 
 #if LIGHTING_MODE == LIGHT_MODE_LPV
@@ -321,10 +332,14 @@ void main() {
 
         #ifdef ACCUM_ENABLED
             bool altFrame = (ap.time.frames % 2) == 1;
-            if (altFrame) diffuse += textureLod(texAccumDiffuse_translucent_alt, uv, 0).rgb;
-            else diffuse += textureLod(texAccumDiffuse_translucent, uv, 0).rgb;
+
+            vec3 accumDiffuse;
+            if (altFrame) accumDiffuse = textureLod(texAccumDiffuse_translucent_alt, uv, 0).rgb;
+            else accumDiffuse = textureLod(texAccumDiffuse_translucent, uv, 0).rgb;
+
+            diffuse += accumDiffuse * 1000.0;
         #elif LIGHTING_MODE == LIGHT_MODE_RT || LIGHTING_REFLECT_MODE == REFLECT_MODE_WSR
-            diffuse += textureLod(texDiffuseRT, uv, 0).rgb;
+            diffuse += textureLod(texDiffuseRT, uv, 0).rgb * 1000.0;
         #endif
 
         // reflections
@@ -389,14 +404,26 @@ void main() {
         specular += skyReflectColor;
 
         #ifdef ACCUM_ENABLED
-            if (altFrame) specular += textureLod(texAccumSpecular_translucent_alt, uv, 0).rgb;
-            else specular += textureLod(texAccumSpecular_translucent, uv, 0).rgb;
+            vec3 accumSpecular;
+            if (altFrame) accumSpecular = textureLod(texAccumSpecular_translucent_alt, uv, 0).rgb;
+            else accumSpecular = textureLod(texAccumSpecular_translucent, uv, 0).rgb;
+
+            specular += accumSpecular * 1000.0;
         #elif LIGHTING_MODE == LIGHT_MODE_RT || LIGHTING_REFLECT_MODE == REFLECT_MODE_WSR
-            specular += textureLod(texSpecularRT, uv, 0).rgb;
+            specular += textureLod(texSpecularRT, uv, 0).rgb * 1000.0;
         #endif
 
-        GetHandLight(diffuse, specular, ap.game.mainHand, localPosTrans, -localViewDir, localTexNormal, localGeoNormal, albedo.rgb, f0_metal, roughL);
-        GetHandLight(diffuse, specular, ap.game.offHand,  localPosTrans, -localViewDir, localTexNormal, localGeoNormal, albedo.rgb, f0_metal, roughL);
+        if (ap.game.mainHand != 0u) {
+            // TODO: rotate with camera/player
+            vec3 lightLocalPos = vec3(0.2, 0.0, 0.0);
+            GetHandLight(diffuse, specular, ap.game.mainHand, lightLocalPos, localPosTrans, -localViewDir, localTexNormal, localGeoNormal, albedo.rgb, f0_metal, roughL);
+        }
+
+        if (ap.game.offHand != 0u) {
+            // TODO: rotate with camera/player
+            vec3 lightLocalPos = vec3(-0.2, 0.0, 0.0);
+            GetHandLight(diffuse, specular, ap.game.offHand, lightLocalPos, localPosTrans, -localViewDir, localTexNormal, localGeoNormal, albedo.rgb, f0_metal, roughL);
+        }
 
         float metalness = mat_metalness(f0_metal);
         diffuse *= 1.0 - metalness * (1.0 - roughL);

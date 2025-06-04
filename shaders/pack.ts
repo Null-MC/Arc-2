@@ -14,8 +14,8 @@ let BlockMappings: BlockMap;
 function applySettings(settings : ShaderSettings, internal) {
     worldSettings.disableShade = true;
     worldSettings.ambientOcclusionLevel = 0.0;
-    worldSettings.shadowMapResolution = settings.Shadow_Resolution;
-    worldSettings.cascadeCount = settings.Shadow_CascadeCount;
+    //worldSettings.shadowMapResolution = settings.Shadow_Resolution;
+    //worldSettings.cascadeCount = settings.Shadow_CascadeCount;
     worldSettings.renderWaterOverlay = false;
     worldSettings.renderStars = false;
     worldSettings.renderMoon = false;
@@ -26,13 +26,17 @@ function applySettings(settings : ShaderSettings, internal) {
     // TODO: fix hands later, for now just unbreak them
     worldSettings.mergedHandDepth = true;
 
-    if (settings.Shadow_CascadeCount == 1) {
-        worldSettings.shadowNearPlane = -200;
-        worldSettings.shadowFarPlane = 200;
-    }
+    if (settings.Shadow_Enabled) {
+        enableShadows(settings.Shadow_Resolution, settings.Shadow_CascadeCount);
 
-    if (internal.VoxelizeBlocks)
-        worldSettings.cascadeSafeZones[0] = settings.Voxel_Size / 2;
+        if (settings.Shadow_CascadeCount == 1) {
+            worldSettings.shadowNearPlane = -200;
+            worldSettings.shadowFarPlane = 200;
+        }
+
+        if (internal.VoxelizeBlocks)
+            worldSettings.cascadeSafeZones[0] = settings.Voxel_Size / 2;
+    }
 
     defineGlobally1("EFFECT_VL_ENABLED");
     if (internal.Accumulation) defineGlobally1("ACCUM_ENABLED");
@@ -765,7 +769,7 @@ export function setupShader(dimension : NamespacedId) {
             const bufferSize = 6 * 8 * cubed(settings.Voxel_Size);
 
             blockFaceBuffer = new GPUBuffer(bufferSize)
-                .clear(false) // TODO: clear with compute
+                .clear(true) // TODO: clear with compute
                 .build();
         }
 
@@ -1170,6 +1174,7 @@ export function setupShader(dimension : NamespacedId) {
         .target(0, finalFlipper.getWriteTexture())
         .ssbo(0, sceneBuffer)
         .ssbo(4, quadListBuffer)
+        .ssbo(5, blockFaceBuffer)
         .ubo(0, SceneSettingsBuffer)
         .define('TEX_SHADOW', texShadow_src)
         .define('TEX_SSAO', 'texSSAO_final');
@@ -1279,6 +1284,7 @@ export function setupShader(dimension : NamespacedId) {
         .target(0, finalFlipper.getWriteTexture())
         .ssbo(0, sceneBuffer)
         .ssbo(4, quadListBuffer)
+        .ssbo(5, blockFaceBuffer)
         .ubo(0, SceneSettingsBuffer)
         .define('TEX_SRC', finalFlipper.getReadName())
         .define('TEX_SHADOW', 'texShadow')

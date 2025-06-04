@@ -19,13 +19,13 @@ out VertexData2 {
             vec3 localPos;
             vec2 lmcoord;
 
-            #ifdef RENDER_TERRAIN
+            //#ifdef RENDER_TERRAIN
                 flat vec3 originPos;
 
                 #ifdef VOXEL_BLOCK_FACE
                     flat uint textureId;
                 #endif
-            #endif
+            //#endif
         #endif
     #endif
 } vOut;
@@ -86,8 +86,8 @@ void iris_sendParameters(in VertexData data) {
         // viewPos = mul3(ap.camera.view, vOut.localPos);
     }
 
-    vec3 viewNormal = mat3(iris_modelViewMatrix) * data.normal;
-    vOut.localNormal = mat3(ap.celestial.view) * viewNormal;
+    vec3 shadowViewNormal = mat3(iris_modelViewMatrix) * data.normal;
+    vOut.localNormal = mat3(ap.celestial.viewInv) * shadowViewNormal;
 
 //    vOut.currentCascade = iris_currentCascade;
 
@@ -98,7 +98,7 @@ void iris_sendParameters(in VertexData data) {
         #ifdef VOXEL_ENABLED
             vOut.lmcoord = LightMapNorm(data.light);
 
-            #if defined(VOXEL_BLOCK_FACE) && defined(RENDER_TERRAIN)
+            #ifdef VOXEL_BLOCK_FACE
                 vOut.textureId = data.textureId;
             #endif
         #endif

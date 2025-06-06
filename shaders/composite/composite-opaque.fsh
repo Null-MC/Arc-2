@@ -345,8 +345,11 @@ void main() {
         #elif LIGHTING_MODE == LIGHT_MODE_LPV
             vec3 voxelSamplePos = 0.5*localTexNormal - 0.25*localGeoNormal + voxelPos;
 
-            if (floodfill_isInBounds(voxelPos))
-                blockLighting = floodfill_sample(voxelSamplePos);
+            if (floodfill_isInBounds(voxelSamplePos)) {
+                float floodfill_FadeF = floodfill_getFade(voxelPos);
+                vec3 floodfill_light = floodfill_sample(voxelSamplePos);
+                blockLighting = mix(blockLighting, floodfill_light, floodfill_FadeF);
+            }
         #endif
 
         vec3 diffuse = skyLightDiffuse + blockLighting + 0.0016 * occlusion;

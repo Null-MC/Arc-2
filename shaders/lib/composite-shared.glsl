@@ -28,10 +28,10 @@ void GetHandLight(inout vec3 diffuse, inout vec3 specular, const in uint blockId
     lightColor = RgbToLinear(lightColor);
 
     vec3 lightVec = lightLocalPos - localPos;
-    float lightAtt = GetLightAttenuation_invSq(lightVec, lightRange);
-    //lightAtt *= light_hsv.z;
+    float lightDist = length(lightVec);
+    vec3 lightDir = lightVec / lightDist;
 
-    vec3 lightDir = normalize(lightVec);
+    float lightAtt = GetLightAttenuation_invSq(lightDist);
 
     float NoLm = max(dot(localTexNormal, lightDir), 0.0);
 

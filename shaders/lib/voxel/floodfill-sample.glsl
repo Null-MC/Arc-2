@@ -1,3 +1,14 @@
+float floodfill_getFade(const in vec3 bufferPos) {
+    const float LPV_PADDING = 8.0;
+
+    const vec3 lpvSizeInner = VoxelBufferCenter - LPV_PADDING;
+
+    vec3 viewDir = ap.camera.viewInv[2].xyz;
+    vec3 lpvDist = abs(bufferPos - VoxelBufferCenter);
+    vec3 lpvDistF = max(lpvDist - lpvSizeInner, vec3(0.0));
+    return saturate(1.0 - maxOf((lpvDistF / LPV_PADDING)));
+}
+
 vec3 floodfill_sample(const in vec3 lpvPos) {
     if (!voxel_isInBounds(lpvPos)) return vec3(0.0);
 

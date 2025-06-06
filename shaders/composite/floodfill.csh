@@ -28,8 +28,8 @@ uniform sampler3D texFloodFill_alt;
 
 
 const float LpvFalloff = 0.998;
-const float LpvBlockRange = 0.1;
 const ivec3 flattenShared = ivec3(1, 10, 100);
+const float LpvBlockRange = 0.2;
 
 int getSharedCoord(ivec3 pos) {
 	return sumOf(pos * flattenShared);

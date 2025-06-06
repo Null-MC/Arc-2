@@ -367,6 +367,7 @@ declare class CombinationPass {
   constructor(location: string);
   ssbo(index: number, buf: BuiltBuffer | undefined): ObjectShader;
   ubo(index: number, buf: BuiltBuffer | undefined): ObjectShader;
+  define(key: string, value: string): ObjectShader;
 
   build(): BuiltCombinationPass;
 }
@@ -825,4 +826,9 @@ declare namespace Usage {
   let SHADOW_BLOCK_ENTITY_TRANSLUCENT: ProgramUsage;
   let SHADOW_PARTICLES: ProgramUsage;
   let SHADOW_PARTICLES_TRANSLUCENT: ProgramUsage;
+}
+
+
+declare class GenerateMips extends PostPass {
+    constructor(texture: BuiltTexture);
 }

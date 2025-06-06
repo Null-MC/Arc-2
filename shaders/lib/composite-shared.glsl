@@ -22,7 +22,7 @@ void GetHandLight(inout vec3 diffuse, inout vec3 specular, const in uint blockId
     //            lightColor = RgbToLinear(lightColor);
 
     vec3 light_hsv = RgbToHsv(lightColor);
-    lightColor = HsvToRgb(vec3(light_hsv.xy, 1.0));
+    lightColor = HsvToRgb(vec3(light_hsv.xy, lightRange/15.0));
 
     // TODO: before or after HSV?
     lightColor = RgbToLinear(lightColor);

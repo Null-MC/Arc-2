@@ -26,7 +26,7 @@ const float g_sigmaXY = 9.0;
 
 void populateSharedBuffer() {
     if (gl_LocalInvocationIndex < 5)
-        gaussianBuffer[gl_LocalInvocationIndex] = 1.0;//Gaussian(g_sigmaXY, abs(gl_LocalInvocationIndex - 2));
+        gaussianBuffer[gl_LocalInvocationIndex] = Gaussian(g_sigmaXY, abs(gl_LocalInvocationIndex - 2));
     
     uint i_base = uint(gl_LocalInvocationIndex) * 2u;
     if (i_base >= sharedBufferSize) return;
@@ -42,7 +42,7 @@ void populateSharedBuffer() {
             i_shared / sharedBufferRes
         );
 
-	    vec2 uv = (uv_base + uv_i)*2.0 + 0.5;
+	    vec2 uv = (uv_base + uv_i)*2.0 + 0.0;
 
         float depthL = 1.0;
         //vec4 shadow = vec4(1.0);

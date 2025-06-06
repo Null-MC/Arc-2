@@ -33,7 +33,8 @@ out VertexData2 {
 #include "/lib/common.glsl"
 #include "/lib/buffers/scene.glsl"
 
-#if defined(RENDER_TERRAIN) && defined(WIND_WAVING_ENABLED)
+#if defined(RENDER_TERRAIN) && defined(SKY_WIND_ENABLED)
+    #include "/lib/noise/hash.glsl"
     #include "/lib/wind_waves.glsl"
 #endif
 
@@ -43,24 +44,25 @@ out VertexData2 {
 
 
 void iris_emitVertex(inout VertexData data) {
-    #if defined(RENDER_TERRAIN) && defined(WIND_WAVING_ENABLED)
-        vec3 shadowViewPos = mul3(iris_modelViewMatrix, data.modelPos.xyz);
+    vec3 shadowViewPos = mul3(iris_modelViewMatrix, data.modelPos.xyz);
+
+    #ifdef RENDER_TERRAIN
         vec3 localPos = mul3(ap.celestial.viewInv, shadowViewPos);
-        ApplyWavingOffset(localPos, data.blockId);
-        shadowViewPos = mul3(ap.celestial.view, localPos);
-    #else
-        vec3 shadowViewPos = mul3(iris_modelViewMatrix, data.modelPos.xyz);
+        vec3 originPos = localPos + data.midBlock / 64.0;
+
+        #ifdef SKY_WIND_ENABLED
+            ApplyWavingOffset(localPos, originPos, data.blockId);
+            shadowViewPos = mul3(ap.celestial.view, localPos);
+        #endif
+
+        vOut.localPos = localPos;
+
+        #ifdef VOXEL_ENABLED
+            vOut.originPos = originPos;
+        #endif
     #endif
 
     data.clipPos = iris_projectionMatrix * vec4(shadowViewPos, 1.0);
-
-    #if defined(RENDER_TERRAIN) && defined(VOXEL_ENABLED)
-        vOut.localPos = mul3(ap.celestial.viewInv, shadowViewPos);
-
-        #ifdef RENDER_TERRAIN
-            vOut.originPos = vOut.localPos + data.midBlock / 64.0;
-        #endif
-    #endif
 
     if (iris_hasTag(data.blockId, TAG_CARPET)) data.clipPos = vec4(-10.0);
 

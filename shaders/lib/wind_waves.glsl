@@ -1,7 +1,9 @@
-const float wavingScale = 8.0;
+const float wavingScale = 16.0;
+//const float wavingStrength = 2.0;
 const float wavingHeight = 0.6;
+const float Wind_Variation = 0.05 * TAU;
 
-vec3 waving_fbm(const in vec3 worldPos) {
+vec3 waving_fbm(const in vec3 worldPos, const in float time_dither) {
     vec2 position = worldPos.xz / wavingScale;
 
     float iter = 0.0;
@@ -11,35 +13,40 @@ vec3 waving_fbm(const in vec3 worldPos) {
     float height = 0.0;
     float waveSum = 0.0;
 
-    float time = ap.time.elapsed / 3.6;
+    float time = ap.time.elapsed / 3.6 * 3.0;
+    time += Wind_Variation * time_dither;
     
     for (int i = 0; i < 8; i++) {
         vec2 direction = vec2(sin(iter), cos(iter));
         float x = dot(direction, position) * frequency + time * speed;
+        x = mod(x, TAU);
+
         float wave = exp(sin(x) - 1.0);
         float result = wave * cos(x);
         vec2 force = result * weight * direction;
         
-        position -= force * 0.03;
+        position -= force * 0.24;
         height += wave * weight;
-        iter += 12.0;
+        iter += 1.20;
         waveSum += weight;
         weight *= 0.8;
         frequency *= 1.1;
         speed *= 1.3;
     }
 
-    position = (position * wavingScale) - worldPos.xz;
-    return vec3(position.x, height / waveSum * wavingHeight - 0.5 * wavingHeight, position.y);
+    position = ((position * wavingScale) - worldPos.xz) / wavingScale;
+    vec3 offset = vec3(position.x, 0.0, position.y);
+//    offset = normalize(offset);
+    return -offset;
 }
 
-void ApplyWavingOffset(inout vec3 localPos, const in uint blockId) {
-    uint attachment = 0u;
-    float range = 0.0;//GetWavingRange(blockId, attachment);
-
-    if (iris_hasTag(blockId, TAG_FOLIAGE)) range = 1.0;
-
-    if (range < EPSILON) return;
+void ApplyWavingOffset(inout vec3 localPos, const in vec3 originPos, const in uint blockId) {
+//    uint attachment = 2u;
+//    float range = 0.0;//GetWavingRange(blockId, attachment);
+//
+//    if (iris_hasTag(blockId, TAG_FOLIAGE)) range = 1.0;
+//
+//    if (range < EPSILON) return;
 
 //    #if defined RENDER_SHADOW
 //    vec3 localPos = (shadowModelViewInverse * (gl_ModelViewMatrix * gl_Vertex)).xyz;
@@ -50,23 +57,33 @@ void ApplyWavingOffset(inout vec3 localPos, const in uint blockId) {
 //    #endif
 
     vec3 worldPos = localPos + ap.camera.pos;
+    vec3 worldOriginPos = floor(originPos + ap.camera.pos);
+    float time_dither = hash13(worldOriginPos);
 
-    vec3 offset = waving_fbm(worldPos);
+    float waving_strength = 0.4;
+    waving_strength = mix(waving_strength, 1.8, ap.world.rain);
+    waving_strength = mix(waving_strength, 3.2, ap.world.thunder);
 
-//    if (attachment != 0u) {
-//        float attachOffset = 0.0;
-//        switch (attachment) {
-//            case 1u:
-//            attachOffset = 0.5;
-//            break;
-//            case 2u:
-//            attachOffset = -0.5;
-//            break;
-//        }
-//
-//        float baseOffset = -at_midBlock.y / 64.0 + attachOffset;
-//        offset *= clamp(baseOffset, 0.0, 1.0);
-//    }
+    vec3 offset_new = waving_fbm(worldOriginPos, time_dither) * waving_strength;
+    vec3 offsetFinal = vec3(0.0);
 
-    localPos += offset;// * range * strength;
+    if (iris_hasTag(blockId, TAG_WAVING_FULL)) {
+        // no attach
+        offsetFinal = offset_new;
+    }
+    else if (iris_hasTag(blockId, TAG_FOLIAGE_GROUND)) {
+        // ground attach
+        float attach_dist = localPos.y - (originPos.y - 0.5);
+
+        if (attach_dist > 0.0) {
+            vec3 new_pos = vec3(offset_new.x, attach_dist, offset_new.z);
+
+            new_pos *= attach_dist / length(new_pos);
+            new_pos.y -= attach_dist;
+
+            offsetFinal = new_pos;
+        }
+    }
+
+    localPos += offsetFinal;
 }

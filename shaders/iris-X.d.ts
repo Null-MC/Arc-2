@@ -782,3 +782,16 @@ declare namespace Usage {
   let SHADOW_PARTICLES: ProgramUsage;
   let SHADOW_PARTICLES_TRANSLUCENT: ProgramUsage;
 }
+
+
+
+// TODO: MISSING SHIT
+
+declare class CombinationPass {
+  ...
+  define(key: string, value: string): ObjectShader;
+}
+
+declare class GenerateMips extends PostPass {
+    constructor(texture: BuiltTexture);
+}

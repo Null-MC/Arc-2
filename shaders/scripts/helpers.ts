@@ -72,3 +72,17 @@ export class BufferFlipper {
         return this.isAlt ? this.textureB : this.textureA;
     }
 }
+
+export class TagBuilder {
+    index: number = 0;
+
+    map(name: string, namespace: NamespacedId): TagBuilder {
+        if (this.index >= 32) throw new RangeError('Limit of 32 tags has been exceeded!');
+
+        addTag(this.index, namespace);
+        defineGlobally(name, this.index);
+        this.index++;
+
+        return this;
+    }
+}

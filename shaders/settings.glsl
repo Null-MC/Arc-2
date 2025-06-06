@@ -1,7 +1,5 @@
 #define FOG_CAVE_DENSITY 0.8
 
-#define WIND_WAVING_ENABLED
-
 #define MATERIAL_EMISSION_POWER 1
 #define MATERIAL_ROUGH_REFRACT
 #define MATERIAL_PARALLAX_MAXDIST 48
@@ -34,14 +32,14 @@ const float MOON_LUX = 12.0;
 const float STAR_LUMINANCE = 32.00;
 
 const float BLOCKLIGHT_LUMINANCE = 32000.0;
-const float BLOCK_LUX = 8000.0;
+const float BLOCK_LUX = 12000.0;
 
 const float SKY_AMBIENT = 1.0;
 
 const int SHADOW_PCF_SAMPLES = 8;
 const int SHADOW_PCSS_SAMPLES = 6;
 const float SHADOW_PENUMBRA_SCALE = 64.0;
-const float Shadow_MaxPcfSize = 0.8;
+const float Shadow_MaxPcfSize = 0.6;
 
 const int SHADOW_SCREEN_STEPS = 12;
 const float ShadowScreenSlope = 0.85;

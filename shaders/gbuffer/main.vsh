@@ -45,7 +45,10 @@ out VertexData2 {
 		#include "/lib/water_waves.glsl"
 	#endif
 
-	#include "/lib/wind_waves.glsl"
+	#ifdef SKY_WIND_ENABLED
+		#include "/lib/noise/hash.glsl"
+		#include "/lib/wind_waves.glsl"
+	#endif
 #endif
 
 #ifdef RENDER_PARALLAX
@@ -94,8 +97,9 @@ void iris_emitVertex(inout VertexData data) {
 			#endif
 		#endif
 
-		#ifdef WIND_WAVING_ENABLED
-			ApplyWavingOffset(vOut.localPos, data.blockId);
+		#ifdef SKY_WIND_ENABLED
+			vec3 originPos = vOut.localPos + data.midBlock / 64.0;
+			ApplyWavingOffset(vOut.localPos, originPos, data.blockId);
 			viewPos = mul3(ap.camera.view, vOut.localPos);
 		#endif
 	#endif

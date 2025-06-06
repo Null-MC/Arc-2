@@ -10,6 +10,11 @@ option.SKY_SUN_ANGLE=Sun Angle
 suffix.SKY_SUN_ANGLE=°
 
 
+screen.SKY_WIND=Wind
+
+option.SKY_WIND_ENABLED=Enabled
+
+
 screen.SKY_FOG=Fog
 
 option.SKY_FOG_DENSITY=Density

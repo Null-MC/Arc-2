@@ -17,7 +17,7 @@ float GetLightAttenuation(const in vec3 lightVec, const in float lightRange) {
 
     float linear = 1.0 - saturate(lightDist / lightRange);
     float inv_sq = 1.0 / (_pow2(lightDist)+0.01);
-    return min(inv_sq, linear*10.0) * 10.0;
+    return min(inv_sq, linear*10.0) * 3.0;
 }
 
 float SampleLightDiffuse(const in float NoV, const in float NoL, const in float LoH, const in float roughL) {

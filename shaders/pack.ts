@@ -1,5 +1,5 @@
 import {BlockMap} from "./scripts/BlockMap";
-import {BufferFlipper, setLightColorEx, StreamBufferBuilder} from "./scripts/helpers";
+import {TagBuilder, BufferFlipper, setLightColorEx, StreamBufferBuilder} from "./scripts/helpers";
 import {LightingModes, ReflectionModes, ShaderSettings} from "./scripts/settings";
 
 
@@ -39,17 +39,18 @@ function applySettings(settings : ShaderSettings, internal) {
     }
 
     defineGlobally1("EFFECT_VL_ENABLED");
-    if (internal.Accumulation) defineGlobally1("ACCUM_ENABLED");
+    if (internal.Accumulation) defineGlobally1('ACCUM_ENABLED');
 
-    if (settings.Sky_CloudsEnabled) defineGlobally1("SKY_CLOUDS_ENABLED");
-    if (settings.Fog_NoiseEnabled) defineGlobally1("SKY_FOG_NOISE");
-    if (settings.Fog_CaveEnabled) defineGlobally1("FOG_CAVE_ENABLED");
+    if (settings.Sky_Wind_Enabled) defineGlobally1('SKY_WIND_ENABLED')
+    if (settings.Sky_CloudsEnabled) defineGlobally1('SKY_CLOUDS_ENABLED');
+    if (settings.Fog_NoiseEnabled) defineGlobally1('SKY_FOG_NOISE');
+    if (settings.Fog_CaveEnabled) defineGlobally1('FOG_CAVE_ENABLED');
 
     if (settings.Water_WaveEnabled) {
-        defineGlobally1("WATER_WAVES_ENABLED");
+        defineGlobally1('WATER_WAVES_ENABLED');
 
         if (settings.Water_TessellationEnabled)
-            defineGlobally1("WATER_TESSELLATION_ENABLED");
+            defineGlobally1('WATER_TESSELLATION_ENABLED');
     }
 
     if (settings.Shadow_Enabled) defineGlobally1("SHADOWS_ENABLED");
@@ -95,7 +96,7 @@ function applySettings(settings : ShaderSettings, internal) {
         defineGlobally1("LIGHTING_GI_ENABLED");
         defineGlobally("VOXEL_GI_MAXSTEP", settings.Lighting_GI_MaxSteps);
         defineGlobally("WSGI_CASCADE_COUNT", settings.Lighting_GI_CascadeCount);
-        defineGlobally("LIGHTING_GI_SIZE", settings.Lighting_GI_BuffserSize);
+        defineGlobally("LIGHTING_GI_SIZE", settings.Lighting_GI_BufferSize);
         defineGlobally("VOXEL_GI_MAXFRAMES", settings.Lighting_GI_MaxFrames);
 
         if (settings.Lighting_GI_SkyLight)
@@ -169,10 +170,10 @@ function applySettings(settings : ShaderSettings, internal) {
     }
 }
 
-function mapTag(index: number, name: string, namespace: NamespacedId) {
-    addTag(index, namespace);
-    defineGlobally(name, index);
-}
+// function mapTag(index: number, name: string, namespace: NamespacedId) {
+//     addTag(index, namespace);
+//     defineGlobally(name, index);
+// }
 
 export function setupShader(dimension : NamespacedId) {
     print(`Setting up shader [DIM: ${dimension.getPath()}]`);
@@ -184,13 +185,76 @@ export function setupShader(dimension : NamespacedId) {
     const internal = settings.BuildInternalSettings();
     applySettings(settings, internal);
 
-    mapTag(0, "TAG_FOLIAGE", new NamespacedId("aperture", "foliage"));
-    mapTag(1, "TAG_LEAVES", new NamespacedId("minecraft", "leaves"));
-    mapTag(2, "TAG_STAIRS", new NamespacedId("minecraft", "stairs"));
-    mapTag(3, "TAG_SLABS", new NamespacedId("minecraft", "slabs"));
-    mapTag(4, "TAG_SNOW", new NamespacedId("minecraft", "snow"));
+    const blockTags = new TagBuilder()
+        //.map("TAG_FOLIAGE", new NamespacedId("aperture", "foliage"))
+        .map("TAG_LEAVES", new NamespacedId("minecraft", "leaves"))
+        .map("TAG_STAIRS", new NamespacedId("minecraft", "stairs"))
+        .map("TAG_SLABS", new NamespacedId("minecraft", "slabs"))
+        .map("TAG_SNOW", new NamespacedId("minecraft", "snow"));
 
-    mapTag(5, "TAG_CARPET", createTag(new NamespacedId("arc", "carpets"),
+    blockTags.map('TAG_FOLIAGE_GROUND', createTag(new NamespacedId('arc', 'foliage_ground'),
+        new NamespacedId('acacia_sapling'),
+        new NamespacedId('birch_sapling'),
+        new NamespacedId('cherry_sapling'),
+        new NamespacedId('jungle_sapling'),
+        new NamespacedId('oak_sapling'),
+        new NamespacedId('dark_oak_sapling'),
+        new NamespacedId('pale_oak_sapling'),
+        new NamespacedId('spruce_sapling'),
+        new NamespacedId('allium'),
+        new NamespacedId('azalea'),
+        new NamespacedId('flowering_azalea'),
+        new NamespacedId('azure_bluet'),
+        new NamespacedId('beetroots'),
+        new NamespacedId('blue_orchid'),
+        new NamespacedId('bush'),
+        new NamespacedId('cactus_flower'),
+        new NamespacedId('carrots'),
+        new NamespacedId('cornflower'),
+        new NamespacedId('crimson_roots'),
+        new NamespacedId('dead_bush'),
+        new NamespacedId('dandelion'),
+        new NamespacedId('open_eyeblossom'),
+        new NamespacedId('closed_eyeblossom'),
+        new NamespacedId('short_dry_grass'),
+        new NamespacedId('tall_dry_grass'),
+        new NamespacedId('fern'),
+        new NamespacedId('firefly_bush'),
+        new NamespacedId('grass'),
+        new NamespacedId('short_grass'),
+        new NamespacedId('lily_of_the_valley'),
+        new NamespacedId('mangrove_propagule'),
+        new NamespacedId('nether_sprouts'),
+        new NamespacedId('orange_tulip'),
+        new NamespacedId('oxeye_daisy'),
+        new NamespacedId('pink_petals'),
+        new NamespacedId('pink_tulip'),
+        new NamespacedId('poppy'),
+        new NamespacedId('potatoes'),
+        new NamespacedId('red_tulip'),
+        new NamespacedId('sweet_berry_bush'),
+        new NamespacedId('torchflower'),
+        new NamespacedId('torchflower_crop'),
+        new NamespacedId('warped_roots'),
+        new NamespacedId('wheat'),
+        new NamespacedId('white_tulip'),
+        new NamespacedId('wildflowers'),
+        new NamespacedId('wither_rose')));
+
+    // blockTags.map('TAG_WAVING_TOP', createTag(new NamespacedId('arc', 'waving_top'),
+    //     new NamespacedId('lantern')));
+
+    blockTags.map('TAG_WAVING_FULL', createTag(new NamespacedId('arc', 'waving_full'),
+        new NamespacedId('birch_leaves'),
+        new NamespacedId('cherry_leaves'),
+        new NamespacedId('jungle_leaves'),
+        new NamespacedId('mangrove_leaves'),
+        new NamespacedId('oak_leaves'),
+        new NamespacedId('dark_oak_leaves'),
+        new NamespacedId('pale_oak_leaves'),
+        new NamespacedId('spruce_leaves')));
+
+    blockTags.map("TAG_CARPET", createTag(new NamespacedId("arc", "carpets"),
         //new NamespacedId("minecraft", "wool_carpets"),
         new NamespacedId("white_carpet"),
         new NamespacedId("light_gray_carpet"),
@@ -211,7 +275,7 @@ export function setupShader(dimension : NamespacedId) {
         new NamespacedId("pale_moss_carpet"),
         new NamespacedId("moss_carpet")));
 
-    mapTag(6, "TAG_TINTS_LIGHT", createTag(new NamespacedId("arc", "tints_light"),
+    blockTags.map("TAG_TINTS_LIGHT", createTag(new NamespacedId("arc", "tints_light"),
         new NamespacedId("minecraft", "glass_blocks"),
         new NamespacedId("tinted_glass"),
         new NamespacedId("white_stained_glass"),
@@ -687,7 +751,7 @@ export function setupShader(dimension : NamespacedId) {
     let shLpvBuffer_alt: BuiltBuffer | null = null;
     if (settings.Lighting_GI_Enabled) {
         // f16vec4[3] * VoxelBufferSize^3
-        const bufferSize = 48 * cubed(settings.Lighting_GI_BuffserSize) * settings.Lighting_GI_CascadeCount;
+        const bufferSize = 48 * cubed(settings.Lighting_GI_BufferSize) * settings.Lighting_GI_CascadeCount;
 
         shLpvBuffer = new GPUBuffer(bufferSize)
             .clear(false)
@@ -769,7 +833,7 @@ export function setupShader(dimension : NamespacedId) {
             const bufferSize = 6 * 8 * cubed(settings.Voxel_Size);
 
             blockFaceBuffer = new GPUBuffer(bufferSize)
-                .clear(true) // TODO: clear with compute
+                .clear(false) // TODO: clear with compute
                 .build();
         }
 
@@ -1036,7 +1100,7 @@ export function setupShader(dimension : NamespacedId) {
     }
 
     if (settings.Lighting_GI_Enabled) {
-        const groupCount = Math.ceil(settings.Lighting_GI_BuffserSize / 8);
+        const groupCount = Math.ceil(settings.Lighting_GI_BufferSize / 8);
 
         for (let i = settings.Lighting_GI_CascadeCount-1; i >= 0; i--) {
             let shader = new Compute(`global-illumination-${i+1}`)

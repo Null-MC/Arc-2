@@ -126,5 +126,5 @@ vec3 getValFromMultiScattLUT(sampler2D tex, vec3 pos, vec3 sunDir) {
     uv.y = (height - groundRadiusMM) / (atmosphereRadiusMM - groundRadiusMM);
     uv = saturate(uv);
 
-    return textureLod(tex, uv, 0).rgb;
+    return textureLod(tex, uv, 0).rgb * 1000.0;
 }

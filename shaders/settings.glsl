@@ -18,6 +18,8 @@
 #define VOXEL_SKIP_EMPTY
 //#define VOXEL_SKIP_SECTIONS
 
+#define TRANSLUCENT_DEPTH_TEST_FIX
+
 
 const float ATMOSPHERE_MAX = 4200.0;
 

@@ -159,6 +159,14 @@ void main() {
     vec4 finalColor = vec4(0.0);
     bool is_fluid = false;
 
+//    float depthOpaque = texelFetch(solidDepthTex, iuv, 0).r;
+//    float depthTrans = texelFetch(mainDepthTex, iuv, 0).r;
+//    #ifdef TRANSLUCENT_DEPTH_TEST_FIX
+//        // TODO: manual depth-test
+//        //float depthOpaque = texelFetch(solidDepthTex, ivec2(gl_FragCoord.xy), 0).r;
+//        if (depthOpaque > depthTrans) albedo.a = 0.0;
+//    #endif
+
     if (albedo.a > EPSILON) {
         vec3 texNormalData = texelFetch(texDeferredTrans_TexNormal, iuv, 0).rgb;
         uvec4 data = texelFetch(texDeferredTrans_Data, iuv, 0);

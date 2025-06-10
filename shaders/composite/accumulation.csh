@@ -57,82 +57,12 @@ uniform sampler2D TEX_ACCUM_POSITION_ALT;
 const float g_sigmaXY = 1.0;
 const float g_sigmaV = 0.002;
 
-//void populateSharedBuffer() {
-//    if (gl_LocalInvocationIndex < 5)
-//        gaussianBuffer[gl_LocalInvocationIndex] = Gaussian(g_sigmaXY, abs(gl_LocalInvocationIndex - 2));
-//
-//    uint i_base = uint(gl_LocalInvocationIndex) * 2u;
-//    if (i_base >= sharedBufferSize) return;
-//
-//    ivec2 uv_base = ivec2(gl_WorkGroupID.xy * gl_WorkGroupSize.xy) - 2;
-//
-//    for (uint i = 0u; i < 2u; i++) {
-//        uint i_shared = i_base + i;
-//        if (i_shared >= sharedBufferSize) break;
-//
-//        ivec2 uv_i = ivec2(
-//            i_shared % sharedBufferRes,
-//            i_shared / sharedBufferRes
-//        );
-//
-//        ivec2 uv = uv_base + uv_i;
-//
-//        float depthL = ap.camera.far;
-//        if (all(greaterThanEqual(uv, ivec2(0))) && all(lessThan(uv, ivec2(ap.game.screenSize + 0.5)))) {
-//            float depth = texelFetch(TEX_DEPTH, uv/2*2+1, 0).r;
-//            depthL = linearizeDepth(depth, ap.camera.near, ap.camera.far);
-//        }
-//
-//        sharedDepthBuffer[i_shared] = depthL;
-//    }
-//}
-
-//vec3 sampleSharedBuffer(const in float depthL) {
-//    ivec2 uv_base = ivec2(gl_LocalInvocationID.xy) + 2;
-//
-//    float total = 0.0;
-//    vec3 accum = vec3(0.0);
-//
-//    for (int iy = 0; iy < 5; iy++) {
-//        float fy = gaussianBuffer[iy];
-//
-//        for (int ix = 0; ix < 5; ix++) {
-//            float fx = gaussianBuffer[ix];
-//
-//            ivec2 uv_shared = uv_base + ivec2(ix, iy) - 2;
-//            int i_shared = uv_shared.y * sharedBufferRes + uv_shared.x;
-//
-//            vec3 sampleValue = sharedOcclusionBuffer[i_shared];
-//            float sampleDepthL = sharedDepthBuffer[i_shared];
-//
-//            float depthDiff = abs(sampleDepthL - depthL);// * 1000.0;
-//            float fv = Gaussian(g_sigmaV, depthDiff);
-//
-//            float weight = fx*fy*fv;
-//            accum += weight * sampleValue;
-//            total += weight;
-//        }
-//    }
-//
-//    if (total <= EPSILON) return vec3(0.0);
-//    return accum / total;
-//}
 
 void main() {
     ivec2 iuv = ivec2(gl_GlobalInvocationID.xy);
     vec2 uv = (iuv + 0.5) / ap.game.screenSize;
 
-//    #ifdef EFFECT_SSGI_ENABLED
-//        populateSharedBuffer();
-//        barrier();
-//    #endif
-
     if (any(greaterThanEqual(iuv, ivec2(ap.game.screenSize)))) return;
-
-    //ivec2 uv_shared = ivec2(gl_LocalInvocationID.xy) + 2;
-    //int i_shared = uv_shared.y * sharedBufferRes + uv_shared.x;
-    // float depthL = sharedDepthBuffer[i_shared];
-
 
     // vec2 uv2 = uv;
     // uv2 += getJitterOffset(ap.time.frames);
@@ -205,7 +135,7 @@ void main() {
         diffuse = textureLod(texDiffuseRT, uv, 0).rgb;
         specular = textureLod(texSpecularRT, uv, 0).rgb;
 
-        if (uv.x > 0.5) {
+        //if (uv.x > 0.5) {
             vec2 rtPixelSize = 1.0 / rtBufferSize;
 
             vec3 a = textureLod(texDiffuseRT, fma(rtPixelSize, vec2(-2.0, +2.0), uv), 0).rgb;
@@ -231,7 +161,7 @@ void main() {
             blurColor     += (j+k+l+m) * 0.125;
 
             diffuse = mix(diffuse, blurColor, 1.0 / counter);
-        }
+        //}
     #endif
 
 //    #ifdef EFFECT_SSGI_ENABLED

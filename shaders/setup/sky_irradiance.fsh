@@ -84,12 +84,12 @@ vec3 CalculateIrradiance(const in vec3 normal) {
         phi += sampleDelta;
     }
 
-    return irradiance / nrSamples;
+    return irradiance / nrSamples; // * PI
 }
 
 void main() {
     vec3 viewDir = DirectionFromUV(uv);
     vec3 irradiance = CalculateIrradiance(viewDir);
 
-    outColor = vec4(irradiance * PI, 0.1);
+    outColor = vec4(irradiance * 0.001, 0.1);
 }

@@ -95,15 +95,15 @@ void getMulScattValues(vec3 pos, vec3 sunDir, out vec3 lumTotal, out vec3 fms) {
                 // Integrated scattering within path segment.
                 vec3 scatteringIntegral = (inScattering - inScattering * sampleTransmittance) / extinction;
 
-                lum += scatteringIntegral*transmittance;
+                lum += scatteringIntegral * transmittance;
                 transmittance *= sampleTransmittance;
             }
 
             if (groundDist > 0.0) {
                 vec3 hitPos = pos + groundDist*rayDir;
                 if (dot(pos, sunDir) > 0.0) {
-                    hitPos = normalize(hitPos)*groundRadiusMM;
-                    lum += transmittance*groundAlbedo*getValFromTLUT(texSkyTransmit, hitPos, sunDir);
+                    hitPos = normalize(hitPos) * groundRadiusMM;
+                    lum += transmittance * groundAlbedo * getValFromTLUT(texSkyTransmit, hitPos, sunDir);
                 }
             }
 
@@ -126,5 +126,5 @@ void main() {
     getMulScattValues(pos, sunDir, lum, f_ms);
 
     vec3 psi = lum  / (1.0 - f_ms); 
-    outColor = vec4(psi, 1.0);
+    outColor = vec4(psi * 0.001, 1.0);
 }

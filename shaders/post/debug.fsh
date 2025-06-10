@@ -107,7 +107,7 @@ void main() {
                     color = textureLod(texAccumDiffuse_opaque, previewCoord, 0).rgb;
                 #endif
             #elif DEBUG_VIEW == DEBUG_VIEW_SKY_IRRADIANCE
-                color = textureLod(texSkyView, previewCoord, 0).rgb * 0.001;
+                color = textureLod(texSkyView, previewCoord, 0).rgb;
                 //ApplyAutoExposure(color, Scene_AvgExposure);
                 color = tonemap_jodieReinhard(color);
             #elif DEBUG_VIEW == DEBUG_VIEW_PARTICLES
@@ -165,7 +165,7 @@ void main() {
                     color = textureLod(texAccumSpecular_opaque, previewCoord2, 0).rgb;
                 #endif
             #elif DEBUG_VIEW == DEBUG_VIEW_SKY_IRRADIANCE
-                color = textureLod(texSkyIrradiance, previewCoord2, 0).rgb * 0.001;
+                color = textureLod(texSkyIrradiance, previewCoord2, 0).rgb;
                 //ApplyAutoExposure(color, Scene_AvgExposure);
                 color = tonemap_jodieReinhard(color);
             #endif

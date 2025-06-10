@@ -311,26 +311,26 @@ export function setupShader(dimension : NamespacedId) {
         new NamespacedId("pink_stained_glass"),
         new NamespacedId("pink_stained_glass_pane")));
 
-    setLightColorEx("#362b21", "brown_mushroom");
-    setLightColorEx("#f39849", "campfire");
-    setLightColorEx("#935b2c", "cave_vines", "cave_vines_plant");
-    setLightColorEx("#7f17a8", "crying_obsidian");
-    setLightColorEx("#371559", "enchanting_table");
-    setLightColorEx("#bea935", "firefly_bush");
-    setLightColorEx("#5f9889", "glow_lichen");
-    setLightColorEx("#d3b178", "glowstone");
-    setLightColorEx("#f39e49", "lantern");
-    setLightColorEx("#b8491c", "lava");
-    setLightColorEx("#650a5e", "nether_portal");
-    setLightColorEx("#dfac47", "ochre_froglight");
-    setLightColorEx("#e075e8", "pearlescent_froglight");
-    setLightColorEx("#f9321c", "redstone_torch", "redstone_wall_torch");
-    setLightColorEx("#e0ba42", "redstone_lamp");
-    setLightColorEx("#f9321c", "redstone_ore");
-    setLightColorEx("#8bdff8", "sea_lantern");
-    setLightColorEx("#28aaeb", "soul_torch", "soul_wall_torch", "soul_campfire");
-    setLightColorEx("#f3b549", "torch", "wall_torch");
-    setLightColorEx("#63e53c", "verdant_froglight");
+    setLightColorEx('#362b21', 'brown_mushroom');
+    setLightColorEx('#f39849', 'campfire');
+    setLightColorEx('#935b2c', 'cave_vines', "cave_vines_plant");
+    setLightColorEx('#7f17a8', "crying_obsidian");
+    setLightColorEx('#371559', "enchanting_table");
+    setLightColorEx('#bea935', "firefly_bush");
+    setLightColorEx('#5f9889', "glow_lichen");
+    setLightColorEx('#d3b178', "glowstone");
+    setLightColorEx('#f39e49', "lantern");
+    setLightColorEx('#b8491c', "lava");
+    setLightColorEx('#650a5e', "nether_portal");
+    setLightColorEx('#dfac47', "ochre_froglight");
+    setLightColorEx('#e075e8', 'pearlescent_froglight');
+    setLightColorEx('#f9321c', 'redstone_torch', 'redstone_wall_torch');
+    setLightColorEx('#e0ba42', 'redstone_lamp');
+    setLightColorEx('#f9321c', 'redstone_ore', 'deepslate_redstone_ore');
+    setLightColorEx('#8bdff8', 'sea_lantern');
+    setLightColorEx('#28aaeb', 'soul_torch', 'soul_wall_torch', 'soul_campfire');
+    setLightColorEx('#f3b549', 'torch', 'wall_torch');
+    setLightColorEx('#63e53c', 'verdant_froglight');
 
     // setLightColorEx("#ff0000", "redstone_wall_torch");
     // setLightColorEx("#330000", "soul_wall_torch");

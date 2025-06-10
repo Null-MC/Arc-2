@@ -13,6 +13,10 @@ layout(location = 2) out uvec4 outData;
 
 uniform sampler3D texFogNoise;
 
+#if defined(RENDER_ENTITY) && defined(RENDER_TRANSLUCENT) && defined(TRANSLUCENT_DEPTH_TEST_FIX)
+    uniform sampler2D solidDepthTex;
+#endif
+
 in VertexData2 {
     vec2 uv;
     vec2 light;
@@ -241,6 +245,12 @@ void iris_emitFragment() {
         #endif
     #else
         const float alphaThreshold = 0.1;
+    #endif
+
+    #if defined(RENDER_ENTITY) && defined(RENDER_TRANSLUCENT) && defined(TRANSLUCENT_DEPTH_TEST_FIX)
+        // TODO: manual depth-test
+        float depthOpaque = texelFetch(solidDepthTex, ivec2(gl_FragCoord.xy), 0).r;
+        if (depthOpaque < gl_FragCoord.z - 1.0e-8) albedo.a = 0.0;
     #endif
 
     //if (iris_discardFragment(albedo)) {discard; return;}

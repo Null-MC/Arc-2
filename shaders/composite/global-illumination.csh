@@ -187,17 +187,17 @@ vec3 trace_GI(const in vec3 traceOrigin, const in vec3 traceDir, const in int fa
 	vec3 traceTint = vec3(1.0);
 	ivec3 voxelPos = ivec3(traceOrigin);
 
-//	uint pathSamples = 0u;
-//	vec3 pathLight = vec3(0.0);
+	uint pathSamples = 0u;
+	vec3 pathLight = vec3(0.0);
 	bool altFrame = ap.time.frames % 2 == 1;
 
 	// step out of initial voxel
-	#if WSGI_VOXEL_SCALE <= 1
-		vec3 stepAxisNext;
-		vec3 step = dda_step(stepAxisNext, nextDist, stepSizes, traceDir);
-		stepAxis = stepAxisNext;
-		tracePos += step;
-	#endif
+//	#if WSGI_VOXEL_SCALE <= 1
+//		vec3 stepAxisNext;
+//		vec3 step = dda_step(stepAxisNext, nextDist, stepSizes, traceDir);
+//		stepAxis = stepAxisNext;
+//		tracePos += step;
+//	#endif
 
 	int i = 0;
 	for (; i < VOXEL_GI_MAXSTEP && !hit; i++) {
@@ -220,7 +220,14 @@ vec3 trace_GI(const in vec3 traceOrigin, const in vec3 traceDir, const in int fa
 
 		if (hit) break;
 
-//		if (wsgi_isInBounds(bufferPos)) {
+		vec3 localPos = voxel_getLocalPosition(voxelPos);
+		vec3 bufferPos = wsgi_getBufferPosition(localPos, WSGI_CASCADE);
+		//wsgi_bufferPos_n = ivec3(floor(wsgi_bufferPos)) + face_dir;
+		if (wsgi_isInBounds(bufferPos)) {
+			ivec3 wsgi_pos_n = ivec3(floor(bufferPos));
+			pathLight = wsgi_sample_nearest(wsgi_pos_n, traceDir, WSGI_CASCADE);
+
+
 //			int sampleVoxelI = wsgi_getBufferIndex(bufferPos, WSGI_CASCADE);
 //
 //			lpvShVoxel sampleVoxel;
@@ -228,10 +235,9 @@ vec3 trace_GI(const in vec3 traceOrigin, const in vec3 traceDir, const in int fa
 //			else sampleVoxel = SH_LPV_alt[sampleVoxelI];
 //
 //			float face_counter;
-//			//pathLight += wsgi_sample_voxel(sampleVoxel, traceDir);
 //			pathLight += wsgi_sample_voxel_face(sampleVoxel.data[face_dir], shVoxel_dir[face_dir], traceDir, face_counter);
-//			pathSamples++;
-//		}
+			pathSamples++;
+		}
 
 		tracePos += step;
 		stepAxis = stepAxisNext;
@@ -251,10 +257,10 @@ vec3 trace_GI(const in vec3 traceOrigin, const in vec3 traceDir, const in int fa
 		}
 	}
 
-//	if (pathSamples > 0)
-//		pathLight = pathLight / pathSamples;
-//
-//	pathLight *= 1000.0;
+	if (pathSamples > 0)
+		pathLight = pathLight / pathSamples;
+
+	pathLight *= 1000.0;
 
 	float traceDist = max(distance(traceOrigin, tracePos), EPSILON);
 	vec3 hit_localPos = voxel_getLocalPosition(tracePos);
@@ -467,7 +473,7 @@ vec3 trace_GI(const in vec3 traceOrigin, const in vec3 traceDir, const in int fa
 
 					vec3 shadow_color = TraceDDA(traceStart, traceEnd, traceRange, traceSelf);
 
-					hit_diffuse += sampleDiffuse * shadow_color * bright_scale;
+					hit_diffuse += sampleDiffuse * shadow_color * bright_scale * 3.0;
 					//hit_specular += sampleSpecular * shadow_color * bright_scale;
 				//}
 			}
@@ -551,13 +557,13 @@ vec3 trace_GI(const in vec3 traceOrigin, const in vec3 traceDir, const in int fa
 				}
 
 				if (hit) {
-					//color = pathLight;
+					color = pathLight;
 				}
 				else {
-					color = SampleSkyIrradiance(traceDir, 1.0) / PI;
+					color = SampleSkyIrradiance(traceDir, 1.0);
 				}
 			#else
-				//color = pathLight;
+				color = pathLight;
 			#endif
 		#endif
 	}
@@ -631,8 +637,6 @@ void main() {
 			// TODO: step out of intitial wsgi voxel
 			vec3 tracePos = voxelPos;
 			#if WSGI_VOXEL_SCALE > 1
-				// TODO: may need multiple steps for larger cascades!
-				// TODO: add a loop and initial-bounds check
 				vec3 offsetBufferPos = bufferPos+0.5;// + noise_offset;
 
 				vec3 stepSizes, nextDist;
@@ -643,7 +647,11 @@ void main() {
 				//stepAxis = stepAxisNext;
 				offsetBufferPos += step;
 
-				tracePos = offsetBufferPos * voxelSize + wsgiVoxelOffset + 0.05 * noise_dir;
+				vec3 traceLocalPos = wsgi_getLocalPosition(offsetBufferPos, WSGI_CASCADE);
+				tracePos = voxel_GetBufferPosition(traceLocalPos);
+
+				tracePos += 0.05 * noise_dir;
+				//tracePos = offsetBufferPos * voxelSize + wsgiVoxelOffset + 0.05 * noise_dir;
 			#endif
 
 			vec3 traceSample = trace_GI(tracePos, noise_dir, dir);

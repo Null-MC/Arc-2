@@ -244,10 +244,12 @@ void main() {
 
                     float lightRange = iris_getEmission(blockId);
                     vec3 lightColor = iris_getLightColor(blockId).rgb;
+                    vec3 light_hsv = RgbToHsv(lightColor);
+                    lightColor = HsvToRgb(vec3(light_hsv.xy, lightRange/15.0));
                     lightColor = RgbToLinear(lightColor);
 
-                    vec3 light_hsv = RgbToHsv(lightColor);
-                    lightColor = HsvToRgb(vec3(light_hsv.xy, 1.0));
+//                    vec3 light_hsv = RgbToHsv(lightColor);
+//                    lightColor = HsvToRgb(vec3(light_hsv.xy, 1.0));
 //                    float lightIntensity = 1.0 - clamp(light_hsv.z, 0.0, 0.9);// mix(1000.0, 1.0, light_hsv.z);
 //                    float lightIntensity2 = 0.0;//clamp(light_hsv.z, EPSILON, 1.0);//mix(1.0, 0.1, light_hsv.z);
 
@@ -267,7 +269,7 @@ void main() {
 
                     if (NoLm == 0.0 || dot(localGeoNormal, lightDir) <= 0.0) continue;
                     float D = SampleLightDiffuse(NoVm, NoLm, LoHm, roughL);
-                    vec3 sampleDiffuse = (NoLm * D) * lightColorAtt;
+                    vec3 sampleDiffuse = (NoLm * D) * lightColorAtt * 3.0;
 
                     float NoHm = max(dot(localTexNormal, H), 0.0);
 
@@ -518,9 +520,12 @@ void main() {
 
                         float lightRange = iris_getEmission(blockId);
                         vec3 lightColor = iris_getLightColor(blockId).rgb;
+                        vec3 light_hsv = RgbToHsv(lightColor);
+                        lightColor = HsvToRgb(vec3(light_hsv.xy, lightRange/15.0));
                         lightColor = RgbToLinear(lightColor);
 
-                        lightColor *= (lightRange/15.0) * BLOCK_LUX;
+                        //float intensity = saturate(lightRange/15.0);
+                        lightColor *= BLOCK_LUX;
 
                         vec3 lightVec = light_LocalPos - reflect_localPos;
                         float lightAtt = GetLightAttenuation(lightVec, lightRange);

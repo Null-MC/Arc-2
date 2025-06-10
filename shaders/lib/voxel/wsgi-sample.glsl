@@ -32,6 +32,7 @@ vec3 wsgi_sample_nearest(const in ivec3 bufferPos, const in vec3 sampleDir, cons
 vec3 wsgi_sample_linear(const in vec3 bufferPos, const in vec3 sampleDir, const in int cascade) {
 	ivec3 voxelPos_nn = ivec3(bufferPos - 0.5);
 	vec3 f = fract(bufferPos - 0.5);
+	f = f*f * (3.0 - 2.0*f);
 
 	vec3 sample_x00 = wsgi_sample_nearest(voxelPos_nn,                sampleDir, cascade);
 	vec3 sample_x01 = wsgi_sample_nearest(voxelPos_nn + ivec3(0,1,0), sampleDir, cascade);
@@ -58,8 +59,17 @@ vec3 wsgi_sample(const in vec3 localPos, const in vec3 sampleDir) {
 	int wsgi_cascade = -1;
 	vec3 wsgi_bufferPos;
 
+	vec3 face_dir;
+	if      (sampleDir.x >  0.5) face_dir = vec3( 1, 0, 0);
+	else if (sampleDir.x < -0.5) face_dir = vec3(-1, 0, 0);
+	else if (sampleDir.z >  0.5) face_dir = vec3( 0, 0, 1);
+	else if (sampleDir.z < -0.5) face_dir = vec3( 0, 0,-1);
+	else if (sampleDir.y >  0.5) face_dir = vec3( 0, 1, 0);
+	else                         face_dir = vec3( 0,-1, 0);
+
 	for (int i = 0; i < WSGI_CASCADE_COUNT; i++) {
 		wsgi_bufferPos = wsgi_getBufferPosition(localPos, i+WSGI_SCALE_BASE);
+		wsgi_bufferPos += face_dir;
 
 		if (wsgi_isInBounds(wsgi_bufferPos)) {
 			wsgi_cascade = i;

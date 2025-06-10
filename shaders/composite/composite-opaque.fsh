@@ -478,10 +478,19 @@ void main() {
                 int wsgi_cascade = -1;
                 ivec3 wsgi_bufferPos_n;
 
+                ivec3 face_dir;
+                if      (localGeoNormal.x >  0.5) face_dir = ivec3( 1, 0, 0);
+                else if (localGeoNormal.x < -0.5) face_dir = ivec3(-1, 0, 0);
+                else if (localGeoNormal.z >  0.5) face_dir = ivec3( 0, 0, 1);
+                else if (localGeoNormal.z < -0.5) face_dir = ivec3( 0, 0,-1);
+                else if (localGeoNormal.y >  0.5) face_dir = ivec3( 0, 1, 0);
+                else                              face_dir = ivec3( 0,-1, 0);
+
+                vec3 wsgi_localPos = localPos - 0.02*localGeoNormal;
+
                 for (int i = 0; i < WSGI_CASCADE_COUNT; i++) {
-                    vec3 wsgi_localPos = localPos + 0.1*localGeoNormal;
                     vec3 wsgi_bufferPos = wsgi_getBufferPosition(wsgi_localPos, i+WSGI_SCALE_BASE);
-                    wsgi_bufferPos_n = ivec3(floor(wsgi_bufferPos));
+                    wsgi_bufferPos_n = ivec3(floor(wsgi_bufferPos)) + face_dir;
 
                     if (wsgi_isInBounds(wsgi_bufferPos_n)) {
                         wsgi_cascade = i;
@@ -490,7 +499,7 @@ void main() {
                 }
 
                 if (wsgi_cascade >= 0)
-                    diffuse = PI * wsgi_sample_nearest(wsgi_bufferPos_n, localTexNormal, wsgi_cascade) * 1000.0;
+                    diffuse = wsgi_sample_nearest(wsgi_bufferPos_n, localTexNormal, wsgi_cascade) * 1000.0;
             }
 
             //diffuse = wsgi_sample(localPos + 0.1*localGeoNormal, localTexNormal);

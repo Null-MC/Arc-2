@@ -34,10 +34,11 @@ void main() {
 	if (all(lessThan(uv, ivec2(ap.game.screenSize)))) {
 		vec3 hdrColor = texelFetch(TEX_SRC, ivec2(gl_GlobalInvocationID.xy), 0).rgb * 1000.0;
 
-		// TODO: ignore if hand pixel?
-		float depthPreHand = textureLod(handDepth, uv, 0).r;
-		float depthPostHand = textureLod(mainDepthTex, uv, 0).r;
-		if (depthPostHand < depthPreHand) hdrColor = vec3(0.0);
+		// ignore if hand pixel
+		// TODO: FIX THIS LATER! false-positive in water
+//		float depthPreHand = textureLod(handDepth, uv, 0).r;
+//		float depthPostHand = textureLod(mainDepthTex, uv, 0).r;
+//		if (depthPostHand < depthPreHand) hdrColor = vec3(0.0);
 
 		uint binIndex = colorToBin(hdrColor, Scene_PostExposureMin, Exposure_logLumRangeInv);
 

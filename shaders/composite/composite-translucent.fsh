@@ -527,9 +527,8 @@ void main() {
     //vec4 clouds = textureLod(texClouds, uv, 0);
     //colorFinal = mix(colorFinal, clouds.rgb, clouds.a);
 
-//    if (ap.camera.fluid == 1) {
-//        colorFinal *= exp(-WaterTintMinDist * VL_WaterTransmit);
-//    }
+    if (ap.camera.fluid == 1)
+        colorFinal *= exp(-WaterTintMinDist * VL_WaterTransmit);
 
     #ifdef EFFECT_VL_ENABLED
         #if LIGHTING_VL_RES == 0

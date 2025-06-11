@@ -23,9 +23,15 @@ uniform sampler2D texSkyView;
 
 
 vec3 CalculateIrradiance(const in vec3 normal) {
-    const float sampleDelta = 0.2; //0.025;
+    const vec2 sampleDelta = vec2(0.2, 0.1); //0.025;
 
     vec3 up    = vec3(0.0, 1.0, 0.0);
+//    vec3 T = cross(normal, up);
+//    T = mix(cross(normal, vec3(1.0, 0.0, 0.0)), T, step(EPSILON, dot(T, T)));
+//    T = normalize(T);
+//    vec3 S = normalize(cross(normal, T));
+//    mat3 tbn = mat3(S, T, normal);
+
     vec3 right = normalize(cross(up, normal));
     up         = normalize(cross(normal, right));
 
@@ -33,13 +39,13 @@ vec3 CalculateIrradiance(const in vec3 normal) {
 
     vec3 skyPos = getSkyPosition(vec3(0.0));
 
-    float dither1 = InterleavedGradientNoise(gl_FragCoord.xy + ap.time.frames) / (TAU / sampleDelta);
-    float dither2 = InterleavedGradientNoise(gl_FragCoord.xy + ap.time.frames+2) / (0.5*PI / sampleDelta);
+    const ivec2 stepCount = ivec2(PI * vec2(2.0, 0.5) / sampleDelta);
+
+    float dither1 = InterleavedGradientNoise(gl_FragCoord.xy + ap.time.frames*123.4) * sampleDelta.x;
+    float dither2 = InterleavedGradientNoise(gl_FragCoord.xy+7.0 + ap.time.frames*234.5) * sampleDelta.y;
 
     float nrSamples = 0.0;
     vec3 irradiance = vec3(0.0);
-
-    const ivec2 stepCount = ivec2(vec2(TAU, 0.5*PI) / sampleDelta);
 
     float phi = dither1;
     for (int x = 0; x < stepCount.x; x++) {
@@ -78,13 +84,13 @@ vec3 CalculateIrradiance(const in vec3 normal) {
             irradiance += skyColor * (cos_theta * sin_theta);
             nrSamples++;
 
-            theta += sampleDelta;
+            theta += sampleDelta.y;
         }
 
-        phi += sampleDelta;
+        phi += sampleDelta.x;
     }
 
-    return irradiance / nrSamples; // * PI
+    return irradiance / nrSamples * 2.0;
 }
 
 void main() {

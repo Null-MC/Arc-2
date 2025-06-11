@@ -20,7 +20,7 @@ vec3 floodfill_sample(const in vec3 lpvPos) {
         : textureLod(texFloodFill, texcoord, 0).rgb;
 
 //    color = RgbToHsv(color);
-//    color.z = pow(color.z, 1.25) * 1.0;
+//    //if (color.z < 1.0) color.z = pow5(color.z);
 //    color = HsvToRgb(color);
 
     return color * BLOCK_LUX;

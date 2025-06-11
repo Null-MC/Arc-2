@@ -397,7 +397,7 @@ vec3 trace_GI(const in vec3 traceOrigin, const in vec3 traceDir, const in int fa
 
 			//hit_diffuse += 0.0016;
 		#else
-			hit_diffuse += SampleSkyIrradiance(hitNormal, hit_lmcoord.y);
+			//hit_diffuse += SampleSkyIrradiance(hitNormal, hit_lmcoord.y);
 		#endif
 
 		vec3 hit_voxelPos = voxelPos; //tracePos * voxelSize + wsgiVoxelOffset;

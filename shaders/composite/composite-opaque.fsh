@@ -295,9 +295,9 @@ void main() {
             vec3 sss_skyIrradiance = SampleSkyIrradiance(localTexNormal, lmCoord.y);
 
             float VoL_sun = dot(localViewDir, Scene_LocalSunDir);
-            vec3 sss_phase_sun = max(DHG(VoL_sun, -0.04, 0.96, 0.06), 0.0) * abs(NoL_sun) * sunLight;
+            vec3 sss_phase_sun = max(HG(VoL_sun, sss_G), 0.0) * abs(NoL_sun) * sunLight;
             vec3 sss_phase_moon = max(HG(-VoL_sun, sss_G), 0.0) * abs(NoL_moon) * moonLight;
-            vec3 sss_skyLight = 2.0 * sss_shadow * (sss_phase_sun + sss_phase_moon)
+            vec3 sss_skyLight = (2.0*PI) * sss_shadow * (sss_phase_sun + sss_phase_moon)
                               + sss_skyIrradiance * phaseIso;
 
             //vec3 indirect_sss = max(shadow_sss.w - shadow_sss.rgb, 0.0);
@@ -443,13 +443,15 @@ void main() {
 
         if (ap.game.mainHand != 0u) {
             // TODO: rotate with camera/player
-            vec3 lightLocalPos = vec3(0.2, 0.0, 0.0);
+//            vec3 lightLocalPos = vec3(0.2, -0.4, -0.2);
+            vec3 lightLocalPos = GetHandLightPos(0.2);
             GetHandLight(diffuse, specular, ap.game.mainHand, lightLocalPos, localPos, -localViewDir, localTexNormal, localGeoNormal, albedo.rgb, f0_metal, roughL);
         }
 
         if (ap.game.offHand != 0u) {
             // TODO: rotate with camera/player
-            vec3 lightLocalPos = vec3(-0.2, 0.0, 0.0);
+//            vec3 lightLocalPos = vec3(-0.2, -0.4, -0.2);
+            vec3 lightLocalPos = GetHandLightPos(-0.2);
             GetHandLight(diffuse, specular, ap.game.offHand, lightLocalPos, localPos, -localViewDir, localTexNormal, localGeoNormal, albedo.rgb, f0_metal, roughL);
         }
 

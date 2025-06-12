@@ -87,6 +87,9 @@ in vec2 uv;
 
 #if LIGHTING_MODE == LIGHT_MODE_RT
     #include "/lib/voxel/light-list.glsl"
+#endif
+
+#if LIGHTING_MODE == LIGHT_MODE_RT || defined(HANDLIGHT_TRACE)
     #include "/lib/voxel/light-trace.glsl"
 #endif
 

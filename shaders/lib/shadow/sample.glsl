@@ -33,7 +33,7 @@ float SampleShadow_PCF(const in vec3 shadowPos, const in int shadowCascade, cons
     float dither = GetShadowDither();
 
     float zRange = GetShadowRange(shadowCascade);
-    float bias_scale = sss * MATERIAL_SSS_DISTANCE / zRange;
+    float bias_scale = MATERIAL_SSS_DISTANCE / zRange;
     float seed_pos = hash13(shadowPos * 999.0); // TODO
 
     float angle = fract(dither) * TAU;
@@ -48,7 +48,7 @@ float SampleShadow_PCF(const in vec3 shadowPos, const in int shadowCascade, cons
         float r = sqrt((i + 0.5) / SHADOW_PCF_SAMPLES);
         float theta = i * GoldenAngle + PHI;
 
-        float sample_dither = hash13(vec3(seed_pos * 999.0, i, ap.time.frames));
+        float sample_dither = sss * hash13(vec3(seed_pos * 999.0, i, ap.time.frames));
         float sample_bias = bias_scale * _pow3(sample_dither);
         //shadowViewPos.z += sssDist;
         

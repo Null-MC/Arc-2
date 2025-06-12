@@ -1,3 +1,7 @@
+const vec3 mainHandViewPos = vec3( 0.2, -0.4, 0.2);
+const vec3 altHandViewPos  = vec3(-0.2, -0.4, 0.2);
+
+
 void randomize_reflection(inout vec3 reflectRay, const in vec3 normal, const in float roughL) {
     #ifdef EFFECT_TAA_ENABLED
         vec3 seed = vec3(gl_FragCoord.xy, 1.0 + ap.time.frames);
@@ -11,6 +15,13 @@ void randomize_reflection(inout vec3 reflectRay, const in vec3 normal, const in 
     float roughScatterF = 0.25 * (roughL*roughL);
     reflectRay = mix(reflectRay, randomVec, roughScatterF);
     reflectRay = normalize(reflectRay);
+}
+
+vec3 GetHandLightPos(const in float offsetX) {
+    vec3 pos = vec3(offsetX, 0.0, -0.2);
+    pos = mul3(ap.camera.viewInv, pos);
+    pos.y -= 0.4;
+    return pos;
 }
 
 void GetHandLight(inout vec3 diffuse, inout vec3 specular, const in uint blockId, const in vec3 lightLocalPos,

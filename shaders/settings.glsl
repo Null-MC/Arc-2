@@ -9,7 +9,7 @@
 
 #define SHADOW_BLOCKER_TEX
 
-//#define HANDLIGHT_TRACE
+#define HANDLIGHT_TRACE
 
 //#define VL_SELF_SHADOW
 

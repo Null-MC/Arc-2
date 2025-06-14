@@ -5,6 +5,7 @@ export enum LightingModes {
     LightMap,
     FloodFill,
     RayTraced,
+    ShadowMaps,
 }
 
 export enum ReflectionModes {

@@ -895,8 +895,8 @@ export function setupShader(dimension : NamespacedId) {
 
     function shadowShader(name: string, usage: ProgramUsage) : ObjectShader {
         return new ObjectShader(name, usage)
-            .vertex("gbuffer/shadow.vsh")
-            .fragment("gbuffer/shadow.fsh")
+            .vertex("gbuffer/shadow-celestial.vsh")
+            .fragment("gbuffer/shadow-celestial.fsh")
             .ssbo(0, sceneBuffer)
             .ssbo(4, quadListBuffer)
             .target(0, texShadowColor)
@@ -908,7 +908,7 @@ export function setupShader(dimension : NamespacedId) {
 
     function shadowTerrainShader(name: string, usage: ProgramUsage) : ObjectShader {
         return shadowShader(name, usage)
-            .geometry("gbuffer/shadow.gsh")
+            .geometry("gbuffer/shadow-celestial.gsh")
             .ssbo(3, lightListBuffer)
             //.ssbo(4, quadListBuffer)
             .ssbo(5, blockFaceBuffer)
@@ -948,6 +948,16 @@ export function setupShader(dimension : NamespacedId) {
 
         for (let l = 0; l < settings.Shadow_CascadeCount; l++)
             registerShader(Stage.POST_SHADOW, shadowBlockerShader(l).build());
+    }
+
+    if (settings.Lighting_Mode == LightingModes.ShadowMaps) {
+        registerShader(new ObjectShader('block-shadow', Usage.POINT)
+            .vertex("gbuffer/shadow-point.vsh")
+            .fragment("gbuffer/shadow-point.fsh")
+            // .ssbo(0, sceneBuffer)
+            //.target(0, texShadowColor)
+            //.define("RENDER_BLOCK_SHADOW", "1")
+            .build());
     }
 
     function DiscardObjectShader(name: string, usage: ProgramUsage) {

@@ -69,9 +69,9 @@ export function setupOptions() {
         .add(asInt("FANCY_LAVA_RES", 4, 8, 16, 32, 64, 128, 0).build(0))
         .build();
 
-    let screen_Lighting = new Page("LIGHTING")
-        .add(asString("LIGHTING_MODE", "0", "1", "2").build("1"))
-        .add(new Page("LIGHTING_GI")
+    let screen_Lighting = new Page('LIGHTING')
+        .add(asString('LIGHTING_MODE', '0', '1', '2', '3').build('1'))
+        .add(new Page('LIGHTING_GI')
             .add(asBool("LIGHTING_GI_ENABLED", true, true))
             .add(asBool("LIGHTING_GI_SKYLIGHT", true, true))
             .add(asInt("LIGHTING_GI_CASCADES", 1, 2, 3, 4).build(3))

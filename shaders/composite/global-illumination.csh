@@ -490,7 +490,7 @@ vec3 trace_GI(const in vec3 traceOrigin, const in vec3 traceDir, const in int fa
 
 				hit_diffuse += lpv_light * BLOCK_LUX;
 			}
-		#else
+		#elif LIGHTING_MODE == LIGHT_MODE_VANILLA
 			const float occlusion = 1.0;
 			hit_diffuse += GetVanillaBlockLight(hit_lmcoord.x, occlusion);
 		#endif

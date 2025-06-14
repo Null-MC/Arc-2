@@ -55,7 +55,9 @@ uniform sampler3D texFogNoise;
     uniform sampler2D texSpecularRT;
 #endif
 
-#if LIGHTING_MODE == LIGHT_MODE_LPV
+#if LIGHTING_MODE == LIGHT_MODE_SHADOWS
+    uniform samplerCubeArray pointLight;
+#elif LIGHTING_MODE == LIGHT_MODE_LPV
     uniform sampler3D texFloodFill;
     uniform sampler3D texFloodFill_alt;
 #endif
@@ -116,7 +118,9 @@ uniform sampler3D texFogNoise;
     #include "/lib/voxel/light-trace.glsl"
 #endif
 
-#if LIGHTING_MODE == LIGHT_MODE_LPV
+#if LIGHTING_MODE == LIGHT_MODE_SHADOWS
+    #include "/lib/light/point-light-sample.glsl"
+#elif LIGHTING_MODE == LIGHT_MODE_LPV
     #include "/lib/voxel/floodfill-common.glsl"
     #include "/lib/voxel/floodfill-sample.glsl"
 #endif
@@ -337,7 +341,18 @@ void main() {
             vec3 voxelPos = voxel_GetBufferPosition(localPos);
         #endif
 
-        #if LIGHTING_MODE == LIGHT_MODE_RT
+        #if LIGHTING_MODE == LIGHT_MODE_SHADOWS
+            blockLighting = vec3(0.0);
+
+            for (int i = 0; i < 8; i++) {
+                uint blockId = ap.point.block[i];
+                float lightRange = iris_getEmission(blockId);
+                vec3 lightColor = iris_getLightColor(blockId).rgb;
+                lightColor = RgbToLinear(lightColor) * BLOCK_LUX;
+
+                blockLighting += lightColor * sample_PointLight(localPos, lightRange, i);
+            }
+        #elif LIGHTING_MODE == LIGHT_MODE_RT
             // TODO: replace check with light-list bounds!
             if (voxel_isInBounds(voxelPos)) {
                 blockLighting = vec3(0.0);

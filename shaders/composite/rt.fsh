@@ -568,7 +568,7 @@ void main() {
 
                     // TODO: move cloud shadows to RSM sampling!!!
                     reflect_diffuse += voxelLight;// * cloudShadowF;// * SampleLightDiffuse(NoVm, 1.0, 1.0, roughL);
-                #else
+                #elif LIGHTING_MODE == LIGHT_MODE_VANILLA
                     const float occlusion = 1.0;
                     reflect_diffuse += GetVanillaBlockLight(reflect_lmcoord.x, occlusion);
                 #endif

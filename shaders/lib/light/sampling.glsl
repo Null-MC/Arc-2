@@ -1,9 +1,13 @@
 const float ROUGH_MIN = 0.02;
 
 
-float GetLightAttenuation_Linear(const in vec3 lightVec, const in float lightRange) {
-    float lightDistF = length(lightVec) / lightRange;
+float GetLightAttenuation_Linear(const in float lightDist, const in float lightRange) {
+    float lightDistF = lightDist / lightRange;
     return pow5(1.0 - saturate(lightDistF));
+}
+
+float GetLightAttenuation_Linear(const in vec3 lightVec, const in float lightRange) {
+    return GetLightAttenuation_Linear(length(lightVec), lightRange);
 }
 
 float GetLightAttenuation_invSq(const in float lightDist) {

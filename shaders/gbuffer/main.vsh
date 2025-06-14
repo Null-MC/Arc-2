@@ -98,8 +98,9 @@ void iris_emitVertex(inout VertexData data) {
 		#endif
 
 		#ifdef SKY_WIND_ENABLED
-			vec3 originPos = vOut.localPos + data.midBlock / 64.0;
-			ApplyWavingOffset(vOut.localPos, originPos, data.blockId);
+			vec3 midPos = data.midBlock / 64.0;
+			vec3 originPos = vOut.localPos + midPos;
+			vOut.localPos += GetWavingOffset(originPos, midPos, data.blockId);
 			viewPos = mul3(ap.camera.view, vOut.localPos);
 		#endif
 	#endif

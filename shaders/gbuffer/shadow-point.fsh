@@ -1,6 +1,8 @@
 #version 430 core
 
 in VertexData2 {
+    //vec3 localPos;
+    //bool isFull;
     vec2 uv;
 } vIn;
 

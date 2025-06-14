@@ -48,10 +48,12 @@ void iris_emitVertex(inout VertexData data) {
 
     #ifdef RENDER_TERRAIN
         vec3 localPos = mul3(ap.celestial.viewInv, shadowViewPos);
-        vec3 originPos = localPos + data.midBlock / 64.0;
+
+        vec3 midPos = data.midBlock / 64.0;
+        vec3 originPos = localPos + midPos;
 
         #ifdef SKY_WIND_ENABLED
-            ApplyWavingOffset(localPos, originPos, data.blockId);
+            localPos += GetWavingOffset(originPos, midPos, data.blockId);
             shadowViewPos = mul3(ap.celestial.view, localPos);
         #endif
 

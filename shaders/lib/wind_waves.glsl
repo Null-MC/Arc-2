@@ -40,7 +40,7 @@ vec3 waving_fbm(const in vec3 worldPos, const in float time_dither) {
     return -offset;
 }
 
-void ApplyWavingOffset(inout vec3 localPos, const in vec3 originPos, const in uint blockId) {
+vec3 GetWavingOffset(const in vec3 originPos, const in vec3 midPos, const in uint blockId) {
 //    uint attachment = 2u;
 //    float range = 0.0;//GetWavingRange(blockId, attachment);
 //
@@ -56,7 +56,7 @@ void ApplyWavingOffset(inout vec3 localPos, const in vec3 originPos, const in ui
 //    vec3 worldPos = localPos + cameraPosition;
 //    #endif
 
-    vec3 worldPos = localPos + ap.camera.pos;
+    //vec3 worldPos = localPos + ap.camera.pos;
     vec3 worldOriginPos = floor(originPos + ap.camera.pos);
     float time_dither = hash13(worldOriginPos);
 
@@ -73,7 +73,7 @@ void ApplyWavingOffset(inout vec3 localPos, const in vec3 originPos, const in ui
     }
     else if (iris_hasTag(blockId, TAG_FOLIAGE_GROUND)) {
         // ground attach
-        float attach_dist = localPos.y - (originPos.y - 0.5);
+        float attach_dist = 0.5 - midPos.y;
 
         if (attach_dist > 0.0) {
             vec3 new_pos = vec3(offset_new.x, attach_dist, offset_new.z);
@@ -85,5 +85,5 @@ void ApplyWavingOffset(inout vec3 localPos, const in vec3 originPos, const in ui
         }
     }
 
-    localPos += offsetFinal;
+    return offsetFinal;
 }

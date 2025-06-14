@@ -11,9 +11,24 @@ out VertexData2 {
 #include "/lib/common.glsl"
 //#include "/lib/buffers/scene.glsl"
 
+#ifdef SKY_WIND_ENABLED
+    #include "/lib/noise/hash.glsl"
+    #include "/lib/wind_waves.glsl"
+#endif
+
 
 void iris_emitVertex(inout VertexData data) {
     vec3 shadowViewPos = mul3(iris_modelViewMatrix, data.modelPos.xyz);
+
+    #ifdef SKY_WIND_ENABLED
+        // TODO: this is wrong but no other option rn!
+        vec3 localPos = data.modelPos.xyz;
+
+        vec3 originPos = localPos + data.midBlock / 64.0;
+        ApplyWavingOffset(localPos, originPos, data.blockId);
+        shadowViewPos = mul3(iris_modelViewMatrix, localPos);
+    #endif
+
     data.clipPos = iris_projectionMatrix * vec4(shadowViewPos, 1.0);
 }
 

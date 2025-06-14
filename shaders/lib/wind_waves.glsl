@@ -1,5 +1,4 @@
 const float wavingScale = 16.0;
-//const float wavingStrength = 2.0;
 const float wavingHeight = 0.6;
 const float Wind_Variation = 0.05 * TAU;
 
@@ -36,27 +35,10 @@ vec3 waving_fbm(const in vec3 worldPos, const in float time_dither) {
 
     position = ((position * wavingScale) - worldPos.xz) / wavingScale;
     vec3 offset = vec3(position.x, 0.0, position.y);
-//    offset = normalize(offset);
     return -offset;
 }
 
 vec3 GetWavingOffset(const in vec3 originPos, const in vec3 midPos, const in uint blockId) {
-//    uint attachment = 2u;
-//    float range = 0.0;//GetWavingRange(blockId, attachment);
-//
-//    if (iris_hasTag(blockId, TAG_FOLIAGE)) range = 1.0;
-//
-//    if (range < EPSILON) return;
-
-//    #if defined RENDER_SHADOW
-//    vec3 localPos = (shadowModelViewInverse * (gl_ModelViewMatrix * gl_Vertex)).xyz;
-//    vec3 worldPos = localPos + cameraPosition;
-//    #else
-//    vec3 localPos = (gbufferModelViewInverse * (gl_ModelViewMatrix * gl_Vertex)).xyz;
-//    vec3 worldPos = localPos + cameraPosition;
-//    #endif
-
-    //vec3 worldPos = localPos + ap.camera.pos;
     vec3 worldOriginPos = floor(originPos + ap.camera.pos);
     float time_dither = hash13(worldOriginPos);
 

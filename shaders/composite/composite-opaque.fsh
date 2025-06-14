@@ -342,23 +342,7 @@ void main() {
         #endif
 
         #if LIGHTING_MODE == LIGHT_MODE_SHADOWS
-            blockLighting = vec3(0.0);
-
-            for (int i = 0; i < 8; i++) {
-                uint blockId = ap.point.block[i];
-                float lightRange = iris_getEmission(blockId);
-                vec3 lightColor = iris_getLightColor(blockId).rgb;
-                lightColor = RgbToLinear(lightColor);
-
-                vec3 fragToLight = ap.point.pos[i].xyz - localPos;
-                float sampleDist = length(fragToLight);
-                vec3 sampleDir = fragToLight / sampleDist;
-
-                float light_NoL = max(dot(localTexNormal, sampleDir), 0.0);
-                float lightShadow = light_NoL * sample_PointLight(localPos, lightRange, i);
-
-                blockLighting += BLOCK_LUX * lightShadow * lightColor;
-            }
+            blockLighting = sample_AllPointLights(localPos, localGeoNormal);
         #elif LIGHTING_MODE == LIGHT_MODE_RT
             // TODO: replace check with light-list bounds!
             if (voxel_isInBounds(voxelPos)) {

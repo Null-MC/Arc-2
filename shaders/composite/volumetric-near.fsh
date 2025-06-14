@@ -21,7 +21,9 @@ uniform sampler2D texSkyMultiScatter;
     uniform sampler2DArray texShadowColor;
 #endif
 
-#if LIGHTING_MODE == LIGHT_MODE_LPV
+#if LIGHTING_MODE == LIGHT_MODE_SHADOWS
+    uniform samplerCubeArray pointLight;
+#elif LIGHTING_MODE == LIGHT_MODE_LPV
     uniform sampler3D texFloodFill;
     uniform sampler3D texFloodFill_alt;
 #endif
@@ -51,7 +53,11 @@ uniform sampler2D texSkyMultiScatter;
     #include "/lib/shadow/clouds.glsl"
 #endif
 
-#if LIGHTING_MODE == LIGHT_MODE_LPV
+#if LIGHTING_MODE == LIGHT_MODE_SHADOWS
+    #include "/lib/light/fresnel.glsl"
+    #include "/lib/light/sampling.glsl"
+    #include "/lib/light/point-light-sample.glsl"
+#elif LIGHTING_MODE == LIGHT_MODE_LPV
     #include "/lib/voxel/voxel-common.glsl"
     #include "/lib/voxel/floodfill-common.glsl"
     #include "/lib/voxel/floodfill-sample.glsl"
@@ -299,7 +305,10 @@ void main() {
 
         vec3 sampleLit = vec3(0.0);
 
-        #if LIGHTING_MODE == LIGHT_MODE_LPV
+        #if LIGHTING_MODE == LIGHT_MODE_SHADOWS
+            vec3 blockLight = sample_AllPointLights(sampleLocalPos);
+            sampleLit += phaseIso * blockLight * 1000.0;
+        #elif LIGHTING_MODE == LIGHT_MODE_LPV
             vec3 voxelPos = voxel_GetBufferPosition(sampleLocalPos);
 
             if (floodfill_isInBounds(voxelPos)) {

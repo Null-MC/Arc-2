@@ -199,7 +199,7 @@ void main() {
     vec3 transmittance = vec3(1.0);
 
     for (int i = 0; i < VL_MaxSamples; i++) {
-        float iF = min(i + dither, VL_MaxSamples);
+        float iF = min(i + dither, VL_MaxSamples-1);
 
         float waterDepth = EPSILON;
         vec3 shadowSample = vec3(1.0);//vec3(smoothstep(0.0, 0.6, Scene_SkyBrightnessSmooth));
@@ -306,8 +306,8 @@ void main() {
         vec3 sampleLit = vec3(0.0);
 
         #if LIGHTING_MODE == LIGHT_MODE_SHADOWS
-            vec3 blockLight = sample_AllPointLights(sampleLocalPos);
-            sampleLit += phaseIso * blockLight * 1000.0;
+            vec3 blockLight = sample_AllPointLights_VL(sampleLocalPos);
+            sampleLit += blockLight * 100.0;
         #elif LIGHTING_MODE == LIGHT_MODE_LPV
             vec3 voxelPos = voxel_GetBufferPosition(sampleLocalPos);
 

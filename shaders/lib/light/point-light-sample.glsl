@@ -48,7 +48,8 @@ vec3 sample_AllPointLights(const in vec3 localPos, const in vec3 localGeoNormal)
     return blockLighting;
 }
 
-vec3 sample_AllPointLights(const in vec3 localPos) {
+vec3 sample_AllPointLights_VL(const in vec3 localPos) {
+    vec3 viewDir = normalize(localPos);
     vec3 blockLighting = vec3(0.0);
 
     for (int i = 0; i < 8; i++) {
@@ -63,7 +64,10 @@ vec3 sample_AllPointLights(const in vec3 localPos) {
 
         float lightShadow = sample_PointLight(localPos, lightRange, i);
 
-        blockLighting += BLOCK_LUX * lightShadow * lightColor;
+        float VoL = dot(viewDir, sampleDir);
+        float phase = saturate(HG(VoL, 0.8));
+
+        blockLighting += BLOCK_LUX * lightShadow * phase * lightColor;
     }
 
     return blockLighting;

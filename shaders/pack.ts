@@ -1110,7 +1110,7 @@ export function setupShader(dimension : NamespacedId) {
         const voxelGroupCount = Math.ceil(settings.Voxel_Size / 8);
 
         registerShader(Stage.POST_RENDER, new Compute("light-list-point")
-            .location("composite/light-list-point.csh")
+            .location("composite/light-list-shadow.csh")
             .workGroups(pointGroupCount, pointGroupCount, pointGroupCount)
             .ssbo(3, lightListBuffer)
             .build());
@@ -1118,7 +1118,7 @@ export function setupShader(dimension : NamespacedId) {
         registerBarrier(Stage.POST_RENDER, new MemoryBarrier(SSBO_BIT));
 
         registerShader(Stage.POST_RENDER, new Compute("light-list-neighbors")
-            .location("composite/light-list-point-neighbors.csh")
+            .location("composite/light-list-shadow-neighbors.csh")
             .workGroups(voxelGroupCount, voxelGroupCount, voxelGroupCount)
             .ssbo(3, lightListBuffer)
             .build());
@@ -1131,14 +1131,13 @@ export function setupShader(dimension : NamespacedId) {
             .ssbo(3, lightListBuffer)
             .build());
 
-        // TODO: propagate non-shadow neighbors
-        // registerBarrier(Stage.POST_RENDER, new MemoryBarrier(SSBO_BIT));
-        //
-        // registerShader(Stage.POST_RENDER, new Compute("light-list-voxel-neighbors")
-        //     .location("composite/light-list-voxel-neighbors.csh")
-        //     .workGroups(voxelGroupCount, voxelGroupCount, voxelGroupCount)
-        //     .ssbo(3, lightListBuffer)
-        //     .build());
+        registerBarrier(Stage.POST_RENDER, new MemoryBarrier(SSBO_BIT));
+
+        registerShader(Stage.POST_RENDER, new Compute("light-list-voxel-neighbors")
+            .location("composite/light-list-voxel-neighbors.csh")
+            .workGroups(voxelGroupCount, voxelGroupCount, voxelGroupCount)
+            .ssbo(3, lightListBuffer)
+            .build());
     }
     else if (settings.Lighting_Mode == LightingModes.RayTraced) {
         const groupCount = Math.ceil(settings.Voxel_Size / 8);

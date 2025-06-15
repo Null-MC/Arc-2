@@ -30,7 +30,7 @@ vec3 sample_AllPointLights(const in vec3 localPos, const in vec3 localGeoNormal)
     vec3 blockLighting = vec3(0.0);
 
     #ifdef SHADOW_LIGHT_LISTS
-        vec3 voxelPos = voxel_GetBufferPosition(localPos);
+        vec3 voxelPos = voxel_GetBufferPosition(0.02 * localGeoNormal + localPos);
         ivec3 lightBinPos = ivec3(floor(voxelPos / LIGHT_BIN_SIZE));
         int lightBinIndex = GetLightBinIndex(lightBinPos);
 

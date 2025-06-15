@@ -13,7 +13,9 @@ uniform sampler2D texSkyTransmit;
 uniform sampler2D texSkyView;
 uniform sampler2D texBlueNoise;
 
-#if LIGHTING_MODE == LIGHT_MODE_LPV
+#if LIGHTING_MODE == LIGHT_MODE_SHADOWS
+	uniform samplerCubeArray pointLight;
+#elif LIGHTING_MODE == LIGHT_MODE_LPV
 	uniform sampler3D texFloodFill;
 	uniform sampler3D texFloodFill_alt;
 #endif
@@ -79,7 +81,9 @@ uniform sampler2D texBlueNoise;
 	#include "/lib/shadow/clouds.glsl"
 #endif
 
-#if LIGHTING_MODE == LIGHT_MODE_RT
+#if LIGHTING_MODE == LIGHT_MODE_SHADOWS
+	#include "/lib/light/point-light-sample.glsl"
+#elif LIGHTING_MODE == LIGHT_MODE_RT
 	#include "/lib/light/hcm.glsl"
 //	#include "/lib/light/fresnel.glsl"
 //	#include "/lib/light/sampling.glsl"
@@ -402,7 +406,9 @@ vec3 trace_GI(const in vec3 traceOrigin, const in vec3 traceDir, const in int fa
 
 		vec3 hit_voxelPos = voxelPos; //tracePos * voxelSize + wsgiVoxelOffset;
 
-		#if LIGHTING_MODE == LIGHT_MODE_RT //&& defined(FALSE)
+		#if LIGHTING_MODE == LIGHT_MODE_SHADOWS
+			hit_diffuse += sample_AllPointLights(hit_localPos, hitNormal);
+		#elif LIGHTING_MODE == LIGHT_MODE_RT //&& defined(FALSE)
 			// TODO: pick a random light and sample it?
 			ivec3 lightBinPos = ivec3(floor(hit_voxelPos / LIGHT_BIN_SIZE));
 			int lightBinIndex = GetLightBinIndex(lightBinPos);

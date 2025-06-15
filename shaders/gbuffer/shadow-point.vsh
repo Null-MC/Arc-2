@@ -1,5 +1,4 @@
 #version 430 core
-//#extension GL_ARB_shader_viewport_layer_array: enable
 
 #include "/lib/constants.glsl"
 #include "/settings.glsl"
@@ -25,7 +24,6 @@ void iris_emitVertex(inout VertexData data) {
     vOut.modelPos = data.modelPos.xyz;
 
     #ifdef SKY_WIND_ENABLED
-        //vec3 modelPos = data.modelPos.xyz;
         vec3 localPos = vOut.modelPos + ap.point.pos[iris_currentPointLight].xyz;
 
         vec3 midPos = data.midBlock / 64.0;

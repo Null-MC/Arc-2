@@ -3,7 +3,7 @@ import {TagBuilder, BufferFlipper, setLightColorEx, StreamBufferBuilder} from ".
 import {LightingModes, ReflectionModes, ShaderSettings} from "./scripts/settings";
 
 
-const LIGHT_BIN_SIZE = 4;
+const LIGHT_BIN_SIZE = 8;
 const QUAD_BIN_SIZE = 2;
 
 const SceneSettingsBufferSize = 128;
@@ -123,15 +123,17 @@ function applySettings(settings : ShaderSettings, internal) {
         defineGlobally("VOXEL_SIZE", settings.Voxel_Size);
         defineGlobally("VOXEL_FRUSTUM_OFFSET", settings.Voxel_Offset);
 
+        defineGlobally("LIGHT_BIN_SIZE", LIGHT_BIN_SIZE);
+        defineGlobally("RT_MAX_LIGHT_COUNT", settings.Lighting_TraceLightMax);
+
         if (settings.Voxel_UseProvided)
             defineGlobally1("VOXEL_PROVIDED");
 
         if (settings.Lighting_Mode == LightingModes.RayTraced) {
             defineGlobally1("RT_ENABLED");
             defineGlobally("RT_MAX_SAMPLE_COUNT", `${settings.Lighting_TraceSampleCount}u`);
-            defineGlobally("RT_MAX_LIGHT_COUNT", settings.Lighting_TraceLightMax)
+            // defineGlobally("RT_MAX_LIGHT_COUNT", settings.Lighting_TraceLightMax);
             //defineGlobally("LIGHT_BIN_MAX", snapshot.Voxel_MaxLightCount);
-            defineGlobally("LIGHT_BIN_SIZE", LIGHT_BIN_SIZE);
 
             if (settings.Lighting_TraceQuads) defineGlobally1("RT_TRI_ENABLED");
         }
@@ -820,14 +822,17 @@ export function setupShader(dimension : NamespacedId) {
     let blockFaceBuffer: BuiltBuffer | null = null;
     let quadListBuffer: BuiltBuffer | null = null;
     if (internal.VoxelizeBlocks) {
-        if (settings.Lighting_Mode == LightingModes.RayTraced) {
-            const lightBinSize = 4 * (1 + settings.Lighting_TraceLightMax);
+        if (settings.Lighting_Mode == LightingModes.RayTraced || settings.Lighting_Mode == LightingModes.ShadowMaps) {
+            const counterSize = settings.Lighting_Mode == LightingModes.ShadowMaps ? 2 : 1;
+            const lightSize = settings.Lighting_Mode == LightingModes.ShadowMaps ? 2 : 1;
+
+            const lightBinSize = 4 * (counterSize + settings.Lighting_TraceLightMax*lightSize);
             const lightListBinCount = Math.ceil(settings.Voxel_Size / LIGHT_BIN_SIZE);
             const lightListBufferSize = lightBinSize * cubed(lightListBinCount) + 4;
             print(`Light-List Buffer Size: ${lightListBufferSize.toLocaleString()}`);
 
             lightListBuffer = new GPUBuffer(lightListBufferSize)
-                .clear(true) // TODO: clear with compute
+                .clear(false)
                 .build();
         }
 
@@ -868,6 +873,17 @@ export function setupShader(dimension : NamespacedId) {
             .workGroups(8, 8, 8)
             .ssbo(1, shLpvBuffer)
             .ssbo(2, shLpvBuffer_alt)
+            .build());
+    }
+
+    if (settings.Lighting_Mode == LightingModes.RayTraced || settings.Lighting_Mode == LightingModes.ShadowMaps) {
+        const binCount = Math.ceil(settings.Voxel_Size / LIGHT_BIN_SIZE);
+        const size = Math.ceil(binCount / 8);
+
+        registerShader(Stage.PRE_RENDER, new Compute("light-list-clear")
+            .location("setup/light-list-clear.csh")
+            .workGroups(size, size, size)
+            .ssbo(3, lightListBuffer)
             .build());
     }
 
@@ -1088,7 +1104,43 @@ export function setupShader(dimension : NamespacedId) {
         .ssbo(0, sceneBuffer)
         .build());
 
-    if (settings.Lighting_Mode == LightingModes.RayTraced) {
+    if (settings.Lighting_Mode == LightingModes.ShadowMaps) {
+        const MaxLightCount = 64;
+        const pointGroupCount = Math.ceil(MaxLightCount / (8*8*8));
+        const voxelGroupCount = Math.ceil(settings.Voxel_Size / 8);
+
+        registerShader(Stage.POST_RENDER, new Compute("light-list-point")
+            .location("composite/light-list-point.csh")
+            .workGroups(pointGroupCount, pointGroupCount, pointGroupCount)
+            .ssbo(3, lightListBuffer)
+            .build());
+
+        registerBarrier(Stage.POST_RENDER, new MemoryBarrier(SSBO_BIT));
+
+        registerShader(Stage.POST_RENDER, new Compute("light-list-neighbors")
+            .location("composite/light-list-point-neighbors.csh")
+            .workGroups(voxelGroupCount, voxelGroupCount, voxelGroupCount)
+            .ssbo(3, lightListBuffer)
+            .build());
+
+        registerBarrier(Stage.POST_RENDER, new MemoryBarrier(SSBO_BIT));
+
+        registerShader(Stage.POST_RENDER, new Compute("light-list-voxel")
+            .location("composite/light-list-voxel.csh")
+            .workGroups(voxelGroupCount, voxelGroupCount, voxelGroupCount)
+            .ssbo(3, lightListBuffer)
+            .build());
+
+        // TODO: propagate non-shadow neighbors
+        // registerBarrier(Stage.POST_RENDER, new MemoryBarrier(SSBO_BIT));
+        //
+        // registerShader(Stage.POST_RENDER, new Compute("light-list-voxel-neighbors")
+        //     .location("composite/light-list-voxel-neighbors.csh")
+        //     .workGroups(voxelGroupCount, voxelGroupCount, voxelGroupCount)
+        //     .ssbo(3, lightListBuffer)
+        //     .build());
+    }
+    else if (settings.Lighting_Mode == LightingModes.RayTraced) {
         const groupCount = Math.ceil(settings.Voxel_Size / 8);
 
         registerShader(Stage.POST_RENDER, new Compute("light-list")
@@ -1255,6 +1307,9 @@ export function setupShader(dimension : NamespacedId) {
         .define('TEX_SHADOW', texShadow_src)
         .define('TEX_SSAO', 'texSSAO_final');
 
+    if (settings.Lighting_Mode == LightingModes.ShadowMaps)
+        compositeOpaqueShader.ssbo(3, lightListBuffer);
+
     if (settings.Lighting_GI_Enabled) {
         compositeOpaqueShader
             .ssbo(1, shLpvBuffer)
@@ -1316,7 +1371,7 @@ export function setupShader(dimension : NamespacedId) {
             .build());
     }
 
-    registerShader(Stage.POST_RENDER, new Composite('volumetric-near')
+    const vlNearShader = new Composite('volumetric-near')
         .vertex('shared/bufferless.vsh')
         .fragment('composite/volumetric-near.fsh')
         .target(0, texScatterVL)
@@ -1324,8 +1379,12 @@ export function setupShader(dimension : NamespacedId) {
         .ssbo(0, sceneBuffer)
         // .ssbo(1, shLpvBuffer)
         // .ssbo(2, shLpvBuffer_alt)
-        .ubo(0, SceneSettingsBuffer)
-        .build());
+        .ubo(0, SceneSettingsBuffer);
+
+    if (settings.Lighting_Mode == LightingModes.ShadowMaps)
+        vlNearShader.ssbo(3, lightListBuffer);
+
+    registerShader(Stage.POST_RENDER, vlNearShader.build());
 
     if (settings.Lighting_VolumetricResolution > 0) {
         registerShader(Stage.POST_RENDER, new Compute('volumetric-near-filter')

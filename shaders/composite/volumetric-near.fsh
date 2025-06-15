@@ -31,6 +31,10 @@ uniform sampler2D texSkyMultiScatter;
 #include "/lib/common.glsl"
 #include "/lib/buffers/scene.glsl"
 
+#if LIGHTING_MODE == LIGHT_MODE_SHADOWS && defined(SHADOW_LIGHT_LISTS)
+    #include "/lib/buffers/light-list.glsl"
+#endif
+
 #include "/lib/noise/ign.glsl"
 #include "/lib/noise/hash.glsl"
 #include "/lib/hg.glsl"
@@ -51,6 +55,12 @@ uniform sampler2D texSkyMultiScatter;
 
 #if defined(SKY_CLOUDS_ENABLED) && defined(SHADOWS_CLOUD_ENABLED)
     #include "/lib/shadow/clouds.glsl"
+#endif
+
+#if LIGHTING_MODE == LIGHT_MODE_SHADOWS && defined(SHADOW_LIGHT_LISTS)
+    #include "/lib/voxel/voxel-common.glsl"
+    #include "/lib/voxel/voxel-sample.glsl"
+    #include "/lib/voxel/light-list.glsl"
 #endif
 
 #if LIGHTING_MODE == LIGHT_MODE_SHADOWS

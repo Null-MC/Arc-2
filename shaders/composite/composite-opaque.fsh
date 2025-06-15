@@ -69,6 +69,10 @@ uniform sampler3D texFogNoise;
     #include "/lib/buffers/voxel-block.glsl"
 #endif
 
+#if LIGHTING_MODE == LIGHT_MODE_SHADOWS && defined(SHADOW_LIGHT_LISTS)
+    #include "/lib/buffers/light-list.glsl"
+#endif
+
 #ifdef LIGHTING_GI_ENABLED
     #include "/lib/buffers/wsgi.glsl"
 #endif
@@ -109,6 +113,10 @@ uniform sampler3D texFogNoise;
 
 #ifdef VOXEL_ENABLED
     #include "/lib/voxel/voxel-common.glsl"
+#endif
+
+#if LIGHTING_MODE == LIGHT_MODE_SHADOWS && defined(SHADOW_LIGHT_LISTS)
+    #include "/lib/voxel/light-list.glsl"
 #endif
 
 #ifdef HANDLIGHT_TRACE

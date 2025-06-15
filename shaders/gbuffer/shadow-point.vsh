@@ -5,8 +5,8 @@
 #include "/settings.glsl"
 
 out VertexData2 {
-    //vec3 localPos;
-    //bool isFull;
+    vec3 modelPos;
+    flat bool isFull;
     vec2 uv;
 } vOut;
 
@@ -22,16 +22,18 @@ out VertexData2 {
 void iris_emitVertex(inout VertexData data) {
     vec3 shadowViewPos = mul3(iris_modelViewMatrix, data.modelPos.xyz);
 
+    vOut.modelPos = data.modelPos.xyz;
+
     #ifdef SKY_WIND_ENABLED
-        vec3 modelPos = data.modelPos.xyz;
-        vec3 localPos = modelPos + ap.point.pos[iris_currentPointLight].xyz;
+        //vec3 modelPos = data.modelPos.xyz;
+        vec3 localPos = vOut.modelPos + ap.point.pos[iris_currentPointLight].xyz;
 
         vec3 midPos = data.midBlock / 64.0;
         vec3 originPos = localPos + midPos;
         vec3 wavingOffset = GetWavingOffset(originPos, midPos, data.blockId);
 
-        modelPos += wavingOffset;
-        shadowViewPos = mul3(iris_modelViewMatrix, modelPos);
+        vOut.modelPos += wavingOffset;
+        shadowViewPos = mul3(iris_modelViewMatrix, vOut.modelPos);
     #endif
 
     data.clipPos = iris_projectionMatrix * vec4(shadowViewPos, 1.0);
@@ -40,6 +42,6 @@ void iris_emitVertex(inout VertexData data) {
 void iris_sendParameters(in VertexData data) {
     vOut.uv = data.uv;
 
-//    uint blockId = ap.point.block[iris_currentPointLight];
-//    vOut.isFull = iris_isFullBlock(blockId);
+    uint blockId = ap.point.block[iris_currentPointLight];
+    vOut.isFull = iris_isFullBlock(blockId);
 }

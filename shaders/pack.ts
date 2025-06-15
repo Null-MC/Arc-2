@@ -16,6 +16,8 @@ function applySettings(settings : ShaderSettings, internal) {
     worldSettings.ambientOcclusionLevel = 0.0;
     //worldSettings.shadowMapResolution = settings.Shadow_Resolution;
     //worldSettings.cascadeCount = settings.Shadow_CascadeCount;
+    worldSettings.pointNearPlane = 0.05;
+    worldSettings.pointFarPlane = 16.0;
     worldSettings.renderWaterOverlay = false;
     worldSettings.renderStars = false;
     worldSettings.renderMoon = false;

@@ -13,6 +13,8 @@
 
 //#define VL_SELF_SHADOW
 
+#define POINT_LIGHT_MAX 64
+
 #define VOXEL_SHADOW_CASCADE 0
 
 #define VOXEL_SKIP_EMPTY

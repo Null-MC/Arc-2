@@ -1,6 +1,6 @@
 float sample_PointLightShadow(const in vec3 sampleDir, const in float sampleDist, const in float range, const in int index) {
-    const float near_plane = 0.6;
-    const float far_plane = 52.0;
+    const float near_plane = 0.05;
+    const float far_plane = 16.0;
     const float bias = 0.02;
 
     if (sampleDist >= range) return 1.0;
@@ -29,7 +29,7 @@ float sample_PointLight(const in vec3 localPos, const in float range, const in i
 vec3 sample_AllPointLights(const in vec3 localPos, const in vec3 localGeoNormal) {
     vec3 blockLighting = vec3(0.0);
 
-    for (int i = 0; i < 8; i++) {
+    for (int i = 0; i < POINT_LIGHT_MAX; i++) {
         uint blockId = ap.point.block[i];
         float lightRange = iris_getEmission(blockId);
         vec3 lightColor = iris_getLightColor(blockId).rgb;
@@ -52,7 +52,7 @@ vec3 sample_AllPointLights_VL(const in vec3 localPos) {
     vec3 viewDir = normalize(localPos);
     vec3 blockLighting = vec3(0.0);
 
-    for (int i = 0; i < 8; i++) {
+    for (int i = 0; i < POINT_LIGHT_MAX; i++) {
         uint blockId = ap.point.block[i];
         float lightRange = iris_getEmission(blockId);
         vec3 lightColor = iris_getLightColor(blockId).rgb;
@@ -65,7 +65,7 @@ vec3 sample_AllPointLights_VL(const in vec3 localPos) {
         float lightShadow = sample_PointLight(localPos, lightRange, i);
 
         float VoL = dot(viewDir, sampleDir);
-        float phase = saturate(HG(VoL, 0.8));
+        float phase = saturate(getMiePhase(VoL));
 
         blockLighting += BLOCK_LUX * lightShadow * phase * lightColor;
     }

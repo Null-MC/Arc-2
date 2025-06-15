@@ -1,0 +1,99 @@
+void sample_AllPointLights(inout vec3 diffuse, inout vec3 specular, const in vec3 localPos, const in vec3 localGeoNormal, const in vec3 localTexNormal, const in vec3 albedo, const in float f0_metal, const in float roughL) {
+    //vec3 blockLighting = vec3(0.0);
+    vec3 localViewDir = -normalize(localPos);
+    float NoVm = max(dot(localTexNormal, localViewDir), 0.0);
+
+    #ifdef SHADOW_LIGHT_LISTS
+        vec3 voxelPos = voxel_GetBufferPosition(0.02 * localGeoNormal + localPos);
+        ivec3 lightBinPos = ivec3(floor(voxelPos / LIGHT_BIN_SIZE));
+        int lightBinIndex = GetLightBinIndex(lightBinPos);
+
+        uint maxLightCount = min(LightBinMap[lightBinIndex].shadowLightCount, RT_MAX_LIGHT_COUNT);
+    #else
+        const uint maxLightCount = POINT_LIGHT_MAX;
+    #endif
+
+    for (uint i = 0u; i < maxLightCount; i++) {
+        #ifdef SHADOW_LIGHT_LISTS
+            uint lightIndex = LightBinMap[lightBinIndex].lightList[i].shadowIndex;
+        #else
+            uint lightIndex = i;
+        #endif
+
+        uint blockId = ap.point.block[lightIndex];
+        float lightRange = iris_getEmission(blockId);
+        vec3 lightColor = iris_getLightColor(blockId).rgb;
+        lightColor = RgbToLinear(lightColor);
+
+        vec3 fragToLight = ap.point.pos[lightIndex].xyz - localPos;
+        float sampleDist = length(fragToLight);
+        vec3 sampleDir = fragToLight / sampleDist;
+        vec3 lightDir = sampleDir;
+
+        float geo_facing = step(0.0, dot(localGeoNormal, sampleDir));
+        float lightShadow = geo_facing * sample_PointLight(localPos, lightRange, lightIndex);
+
+
+
+        vec3 H = normalize(lightDir + localViewDir);
+
+        float LoHm = max(dot(lightDir, H), 0.0);
+        float NoLm = max(dot(localTexNormal, lightDir), 0.0);
+
+        float D = NoLm * SampleLightDiffuse(NoVm, NoLm, LoHm, roughL);
+
+        float NoHm = max(dot(localTexNormal, H), 0.0);
+
+        const bool isUnderWater = false;
+        vec3 F = material_fresnel(albedo, f0_metal, roughL, NoLm, isUnderWater);
+        float S = SampleLightSpecular(NoLm, NoHm, LoHm, roughL);
+
+
+        diffuse  += BLOCK_LUX * D * lightShadow * (1.0 - F) * lightColor;
+        specular += BLOCK_LUX * S * lightShadow * F * lightColor;
+    }
+
+    #ifdef SHADOW_LIGHT_LISTS
+        // sample non-shadow lights
+        uint offset = maxLightCount;
+        maxLightCount = min(offset + LightBinMap[lightBinIndex].lightCount, RT_MAX_LIGHT_COUNT);
+        for (uint i = offset; i < maxLightCount; i++) {
+            vec3 voxelPos = GetLightVoxelPos(LightBinMap[lightBinIndex].lightList[i].voxelIndex) + 0.5;
+            uint blockId = SampleVoxelBlock(voxelPos);
+            float lightRange = iris_getEmission(blockId);
+            vec3 lightColor = iris_getLightColor(blockId).rgb;
+            lightColor = RgbToLinear(lightColor);
+
+            vec3 lightLocalPos = voxel_getLocalPosition(voxelPos);
+            vec3 fragToLight = lightLocalPos - localPos;
+            float sampleDist = length(fragToLight);
+            vec3 sampleDir = fragToLight / sampleDist;
+            vec3 lightDir = sampleDir;
+
+            float geo_facing = step(0.0, dot(localGeoNormal, sampleDir));
+            float light_att = GetLightAttenuation_Linear(sampleDist, lightRange);
+            float lightShadow = geo_facing * light_att;
+
+
+
+            vec3 H = normalize(lightDir + localViewDir);
+
+            float LoHm = max(dot(lightDir, H), 0.0);
+            float NoLm = max(dot(localTexNormal, lightDir), 0.0);
+
+            float D = NoLm * SampleLightDiffuse(NoVm, NoLm, LoHm, roughL);
+
+            float NoHm = max(dot(localTexNormal, H), 0.0);
+
+            const bool isUnderWater = false;
+            vec3 F = material_fresnel(albedo, f0_metal, roughL, NoLm, isUnderWater);
+            float S = SampleLightSpecular(NoLm, NoHm, LoHm, roughL);
+
+
+            diffuse  += BLOCK_LUX * D * lightShadow * (1.0 - F) * lightColor;
+            specular += BLOCK_LUX * S * lightShadow * F * lightColor;
+        }
+    #endif
+
+    //return blockLighting;
+}

@@ -64,9 +64,13 @@ uniform sampler2D texSkyMultiScatter;
 #endif
 
 #if LIGHTING_MODE == LIGHT_MODE_SHADOWS
+//    #include "/lib/light/hcm.glsl"
+//    #include "/lib/material/material_fresnel.glsl"
+
     #include "/lib/light/fresnel.glsl"
     #include "/lib/light/sampling.glsl"
-    #include "/lib/light/point-light-sample.glsl"
+    #include "/lib/light/point-light-sample-common.glsl"
+    #include "/lib/light/point-light-sample-vl.glsl"
 #elif LIGHTING_MODE == LIGHT_MODE_LPV
     #include "/lib/voxel/voxel-common.glsl"
     #include "/lib/voxel/floodfill-common.glsl"

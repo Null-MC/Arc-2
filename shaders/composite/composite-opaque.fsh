@@ -127,7 +127,8 @@ uniform sampler3D texFogNoise;
 #endif
 
 #if LIGHTING_MODE == LIGHT_MODE_SHADOWS
-    #include "/lib/light/point-light-sample.glsl"
+    #include "/lib/light/point-light-sample-common.glsl"
+    #include "/lib/light/point-light-sample-geo.glsl"
 #elif LIGHTING_MODE == LIGHT_MODE_LPV
     #include "/lib/voxel/floodfill-common.glsl"
     #include "/lib/voxel/floodfill-sample.glsl"
@@ -350,7 +351,8 @@ void main() {
         #endif
 
         #if LIGHTING_MODE == LIGHT_MODE_SHADOWS
-            blockLighting = sample_AllPointLights(localPos, localGeoNormal);
+            // TODO: add fade?
+            blockLighting = vec3(0.0);
         #elif LIGHTING_MODE == LIGHT_MODE_RT
             // TODO: replace check with light-list bounds!
             if (voxel_isInBounds(voxelPos)) {
@@ -380,6 +382,11 @@ void main() {
 
         vec3 view_F = vec3(0.0);
         vec3 specular = vec3(0.0);
+
+        #if LIGHTING_MODE == LIGHT_MODE_SHADOWS
+            sample_AllPointLights(diffuse, specular, localPos, localGeoNormal, localTexNormal, albedo.rgb, f0_metal, roughL);
+        #endif
+
         if (hasTexNormal) {
             // reflections
             #if LIGHTING_REFLECT_MODE != REFLECT_MODE_WSR
@@ -440,7 +447,7 @@ void main() {
             view_F = material_fresnel(albedo.rgb, f0_metal, roughL, NoVm, isWet);
 
             float NoHm = max(dot(localTexNormal, H), 0.0);
-            specular = skyLightFinal * shadow_sss.rgb * SampleLightSpecular(NoLm, NoHm, LoHm, roughL);
+            specular += skyLightFinal * shadow_sss.rgb * SampleLightSpecular(NoLm, NoHm, LoHm, roughL);
 
             specular += skyReflectColor;
 

@@ -206,6 +206,12 @@ value.RT_MAX_SAMPLE_COUNT.0=Infinite
 option.RT_MAX_LIGHT_COUNT=Max Light Count
 option.RT_MAX_SAMPLE_COUNT.comment=The maximum number of lights that can be stored in voxel data, per-bin. Increasing this value will improve quality but reduce performance.
 
+screen.LIGHTING_SHADOWS=Shadow Maps
+
+option.LIGHTING_SHADOW_BIN_ENABLED=Bin Lists
+
+option.LIGHTING_SHADOW_MAX_COUNT=Bin Max Count
+
 
 screen.VOXELS=Voxels
 

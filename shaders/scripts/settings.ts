@@ -80,6 +80,7 @@ export class ShaderSettings {
     get Lighting_ReflectionStepCount(): number {return this.getCachedIntSetting("LIGHTING_REFLECT_MAXSTEP");}
     get Lighting_VolumetricResolution(): number {return this.getCachedIntSetting("LIGHTING_VL_RES");}
 
+    get Lighting_Shadow_EmissionMask(): boolean {return this.getCachedBoolSetting("LIGHTING_SHADOW_EMISSION_MASK");}
     get Lighting_Shadow_BinsEnabled(): boolean {return this.getCachedBoolSetting("LIGHTING_SHADOW_BIN_ENABLED");}
     get Lighting_Shadow_BinMaxCount(): number {return this.getCachedIntSetting('LIGHTING_SHADOW_MAX_COUNT');}
 
@@ -164,7 +165,7 @@ export class ShaderSettings {
             settings.VoxelizeBlockFaces = true;
         }
 
-        if (this.Debug_View != 0 || this.Debug_Exposure)
+        if (this.Debug_View != 0 || this.Debug_Exposure || this.Debug_RT)
             settings.DebugEnabled = true;
 
         return settings;

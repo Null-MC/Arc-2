@@ -12,7 +12,9 @@ vec3 sample_AllPointLights_VL(const in vec3 localPos) {
         const uint maxLightCount = POINT_LIGHT_MAX;
     #endif
 
-    for (uint i = 0; i < maxLightCount; i++) {
+    for (uint i = 0; i < LIGHTING_SHADOW_MAX_COUNT; i++) {
+        if (i >= maxLightCount) break;
+
         #ifdef LIGHTING_SHADOW_BIN_ENABLED
             uint lightIndex = LightBinMap[lightBinIndex].lightList[i].shadowIndex;
         #else
@@ -28,7 +30,8 @@ vec3 sample_AllPointLights_VL(const in vec3 localPos) {
         float sampleDist = length(fragToLight);
         vec3 sampleDir = fragToLight / sampleDist;
 
-        float lightShadow = sample_PointLight(localPos, lightRange, lightIndex);
+        const float bias = 0.0;
+        float lightShadow = sample_PointLight(localPos, lightRange, bias, lightIndex);
 
         float VoL = dot(viewDir, sampleDir);
         float phase = saturate(getMiePhase(VoL));
@@ -40,7 +43,9 @@ vec3 sample_AllPointLights_VL(const in vec3 localPos) {
         // sample non-shadow lights
         uint offset = maxLightCount;
         maxLightCount = min(offset + LightBinMap[lightBinIndex].lightCount, LIGHTING_SHADOW_MAX_COUNT);
-        for (uint i = offset; i < maxLightCount; i++) {
+        for (uint i = offset; i < LIGHTING_SHADOW_MAX_COUNT; i++) {
+            if (i >= maxLightCount) break;
+
             vec3 voxelPos = GetLightVoxelPos(LightBinMap[lightBinIndex].lightList[i].voxelIndex) + 0.5;
             uint blockId = SampleVoxelBlock(voxelPos);
             float lightRange = iris_getEmission(blockId);

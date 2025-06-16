@@ -1,12 +1,4 @@
-struct PointLight {
-    uint voxelIndex;
-    #ifdef LIGHTING_MODE == LIGHT_MODE_SHADOWS
-        uint shadowIndex;
-    #endif
-};
-
-
-#if LIGHTING_MODE == LIGHT_MODE_SHADOWS
+#if LIGHTING_MODE == LIGHT_MODE_SHADOWS && defined(LIGHTING_SHADOW_BIN_ENABLED)
     #define LIGHT_LIST_MAX LIGHTING_SHADOW_MAX_COUNT
 #elif LIGHTING_MODE == LIGHT_MODE_RT
     #define LIGHT_LIST_MAX RT_MAX_LIGHT_COUNT
@@ -14,9 +6,17 @@ struct PointLight {
     #error "invalid state!"
 #endif
 
+
+struct PointLight {
+    uint voxelIndex;
+    #if LIGHTING_MODE == LIGHT_MODE_SHADOWS && defined(LIGHTING_SHADOW_BIN_ENABLED)
+        uint shadowIndex;
+    #endif
+};
+
 struct LightBin {
     uint lightCount;                     // 4
-    #ifdef LIGHTING_MODE == LIGHT_MODE_SHADOWS
+    #if LIGHTING_MODE == LIGHT_MODE_SHADOWS && defined(LIGHTING_SHADOW_BIN_ENABLED)
         uint shadowLightCount;           // 4
     #endif
     PointLight lightList[LIGHT_LIST_MAX];  // [4|8]*N

@@ -8,12 +8,14 @@ void sample_AllPointLights(inout vec3 diffuse, inout vec3 specular, const in vec
         ivec3 lightBinPos = ivec3(floor(voxelPos / LIGHT_BIN_SIZE));
         int lightBinIndex = GetLightBinIndex(lightBinPos);
 
-        uint maxLightCount = min(LightBinMap[lightBinIndex].shadowLightCount, LIGHTING_SHADOW_MAX_COUNT);
+        uint maxLightCount = LightBinMap[lightBinIndex].shadowLightCount;
     #else
         const uint maxLightCount = POINT_LIGHT_MAX;
     #endif
 
-    for (uint i = 0u; i < maxLightCount; i++) {
+    for (uint i = 0u; i < LIGHTING_SHADOW_MAX_COUNT; i++) {
+        if (i >= maxLightCount) break;
+
         #ifdef LIGHTING_SHADOW_BIN_ENABLED
             uint lightIndex = LightBinMap[lightBinIndex].lightList[i].shadowIndex;
         #else
@@ -30,8 +32,9 @@ void sample_AllPointLights(inout vec3 diffuse, inout vec3 specular, const in vec
         vec3 sampleDir = fragToLight / sampleDist;
         vec3 lightDir = sampleDir;
 
+        const float bias = 0.08;
         float geo_facing = step(0.0, dot(localGeoNormal, sampleDir));
-        float lightShadow = geo_facing * sample_PointLight(localPos, lightRange, lightIndex);
+        float lightShadow = geo_facing * sample_PointLight(localPos, lightRange, bias, lightIndex);
 
 
 
@@ -56,8 +59,10 @@ void sample_AllPointLights(inout vec3 diffuse, inout vec3 specular, const in vec
     #ifdef LIGHTING_SHADOW_BIN_ENABLED
         // sample non-shadow lights
         uint offset = maxLightCount;
-        maxLightCount = min(offset + LightBinMap[lightBinIndex].lightCount, LIGHTING_SHADOW_MAX_COUNT);
-        for (uint i = offset; i < maxLightCount; i++) {
+        maxLightCount = offset + LightBinMap[lightBinIndex].lightCount;
+        for (uint i = offset; i < LIGHTING_SHADOW_MAX_COUNT; i++) {
+            if (i >= maxLightCount) break;
+
             vec3 voxelPos = GetLightVoxelPos(LightBinMap[lightBinIndex].lightList[i].voxelIndex) + 0.5;
             uint blockId = SampleVoxelBlock(voxelPos);
             float lightRange = iris_getEmission(blockId);

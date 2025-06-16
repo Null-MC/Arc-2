@@ -14,12 +14,12 @@ layout (local_size_x = 8, local_size_y = 8, local_size_z = 8) in;
 void main() {
     ivec3 binPos = ivec3(gl_GlobalInvocationID);
 
-    if (all(lessThan(gl_GlobalInvocationID, uvec3(LightBinGridSize)))) {
+    if (all(lessThan(binPos, ivec3(LightBinGridSize)))) {
         int binIndex = GetLightBinIndex(binPos);
 
         LightBinMap[binIndex].lightCount = 0u;
 
-        #if LIGHTING_MODE == LIGHT_MODE_SHADOWS
+        #if LIGHTING_MODE == LIGHT_MODE_SHADOWS && defined(LIGHTING_SHADOW_BIN_ENABLED)
             LightBinMap[binIndex].shadowLightCount = 0u;
         #endif
     }

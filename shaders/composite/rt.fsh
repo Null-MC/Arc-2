@@ -307,7 +307,9 @@ void main() {
                     diffuseFinal += sampleDiffuse * shadow_color * bright_scale;
                     specularFinal += sampleSpecular * shadow_color * bright_scale;
                 }
+
             #endif
+            //diffuseFinal = vec3(100.0,0.0,0.0);
         }
 
         //diffuseFinal = vec3(10.0,0.0,0.0);

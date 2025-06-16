@@ -96,6 +96,8 @@ function applySettings(settings : ShaderSettings, internal) {
 
     if (settings.Lighting_Mode == LightingModes.ShadowMaps) {
         defineGlobally("LIGHTING_SHADOW_MAX_COUNT", settings.Lighting_Shadow_BinMaxCount);
+        if (settings.Lighting_Shadow_EmissionMask)
+            defineGlobally1('LIGHTING_SHADOW_EMISSION_MASK');
         if (settings.Lighting_Shadow_BinsEnabled)
             defineGlobally1("LIGHTING_SHADOW_BIN_ENABLED");
     }
@@ -174,6 +176,8 @@ function applySettings(settings : ShaderSettings, internal) {
     //if (snapshot.Debug_QuadLists) defineGlobally1("DEBUG_QUADS");
 
     if (internal.DebugEnabled) {
+        print('Shader Debug view enabled!')
+
         defineGlobally("DEBUG_VIEW", settings.Debug_View);
         defineGlobally("DEBUG_MATERIAL", settings.Debug_Material);
         if (settings.Debug_Translucent) defineGlobally1("DEBUG_TRANSLUCENT");
@@ -888,11 +892,13 @@ export function setupShader(dimension : NamespacedId) {
 
     if (settings.Lighting_Mode == LightingModes.RayTraced || settings.Lighting_Mode == LightingModes.ShadowMaps) {
         const binCount = Math.ceil(settings.Voxel_Size / LIGHT_BIN_SIZE);
-        const size = Math.ceil(binCount / 8);
+        const groupCount = Math.ceil(binCount / 8);
+
+        print(`light list clear bounds: [${groupCount}]^3`);
 
         registerShader(Stage.PRE_RENDER, new Compute("light-list-clear")
             .location("setup/light-list-clear.csh")
-            .workGroups(size, size, size)
+            .workGroups(groupCount, groupCount, groupCount)
             .ssbo(3, lightListBuffer)
             .build());
     }
@@ -982,9 +988,6 @@ export function setupShader(dimension : NamespacedId) {
         registerShader(new ObjectShader('block-shadow', Usage.POINT)
             .vertex("gbuffer/shadow-point.vsh")
             .fragment("gbuffer/shadow-point.fsh")
-            // .ssbo(0, sceneBuffer)
-            //.target(0, texShadowColor)
-            //.define("RENDER_BLOCK_SHADOW", "1")
             .build());
     }
 
@@ -1150,11 +1153,11 @@ export function setupShader(dimension : NamespacedId) {
             .build());
     }
     else if (settings.Lighting_Mode == LightingModes.RayTraced) {
-        const groupCount = Math.ceil(settings.Voxel_Size / 8);
+        const voxelGroupCount = Math.ceil(settings.Voxel_Size / 8);
 
         registerShader(Stage.POST_RENDER, new Compute("light-list")
             .location("composite/light-list.csh")
-            .workGroups(groupCount, groupCount, groupCount)
+            .workGroups(voxelGroupCount, voxelGroupCount, voxelGroupCount)
             .ssbo(0, sceneBuffer)
             .ssbo(3, lightListBuffer)
             .build());

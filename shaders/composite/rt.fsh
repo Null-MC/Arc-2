@@ -234,7 +234,7 @@ void main() {
                 for (int i = 0; i < maxSampleCount; i++) {
                     int i2 = (i + i_offset) % int(binLightCount);
 
-                    uint light_voxelIndex = LightBinMap[lightBinIndex].lightList[i2];
+                    uint light_voxelIndex = LightBinMap[lightBinIndex].lightList[i2].voxelIndex;
 
                     vec3 light_voxelPos = GetLightVoxelPos(light_voxelIndex) + 0.5;
                     light_voxelPos += jitter;
@@ -510,7 +510,7 @@ void main() {
                     for (int i = 0; i < maxSampleCount; i++) {
                         int i2 = (i + i_offset) % int(binLightCount);
 
-                        uint light_voxelIndex = LightBinMap[lightBinIndex].lightList[i2];
+                        uint light_voxelIndex = LightBinMap[lightBinIndex].lightList[i2].voxelIndex;
 
                         vec3 light_voxelPos = GetLightVoxelPos(light_voxelIndex) + 0.5;
                         //light_voxelPos += jitter*0.125;

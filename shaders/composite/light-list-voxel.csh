@@ -1,8 +1,10 @@
 #version 430 core
 
+#include "/settings.glsl"
+#include "/lib/constants.glsl"
+
 layout (local_size_x = 8, local_size_y = 8, local_size_z = 8) in;
 
-#include "/settings.glsl"
 #include "/lib/common.glsl"
 
 #ifndef VOXEL_PROVIDED
@@ -40,7 +42,7 @@ void main() {
 		if (lightRange > 0) {
 			uint lightIndex = atomicAdd(LightBinMap[voxelBinIndex].lightCount, 1u) + shadowLightCount;
 
-			if (lightIndex < RT_MAX_LIGHT_COUNT) {
+			if (lightIndex < LIGHTING_SHADOW_MAX_COUNT) {
 				LightBinMap[voxelBinIndex].lightList[lightIndex].voxelIndex = voxelIndex;
 			}
 		}

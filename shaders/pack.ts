@@ -94,6 +94,12 @@ function applySettings(settings : ShaderSettings, internal) {
     defineGlobally("LIGHTING_MODE", settings.Lighting_Mode);
     defineGlobally("LIGHTING_VL_RES", settings.Lighting_VolumetricResolution);
 
+    if (settings.Lighting_Mode == LightingModes.ShadowMaps) {
+        defineGlobally("LIGHTING_SHADOW_MAX_COUNT", settings.Lighting_Shadow_BinMaxCount);
+        if (settings.Lighting_Shadow_BinsEnabled)
+            defineGlobally1("LIGHTING_SHADOW_BIN_ENABLED");
+    }
+
     if (settings.Lighting_GI_Enabled) {
         defineGlobally1("LIGHTING_GI_ENABLED");
         defineGlobally("VOXEL_GI_MAXSTEP", settings.Lighting_GI_MaxSteps);
@@ -826,7 +832,11 @@ export function setupShader(dimension : NamespacedId) {
             const counterSize = settings.Lighting_Mode == LightingModes.ShadowMaps ? 2 : 1;
             const lightSize = settings.Lighting_Mode == LightingModes.ShadowMaps ? 2 : 1;
 
-            const lightBinSize = 4 * (counterSize + settings.Lighting_TraceLightMax*lightSize);
+            const maxCount = settings.Lighting_Mode == LightingModes.ShadowMaps
+                ? settings.Lighting_Shadow_BinMaxCount
+                : settings.Lighting_TraceLightMax;
+
+            const lightBinSize = 4 * (counterSize + maxCount*lightSize);
             const lightListBinCount = Math.ceil(settings.Voxel_Size / LIGHT_BIN_SIZE);
             const lightListBufferSize = lightBinSize * cubed(lightListBinCount) + 4;
             print(`Light-List Buffer Size: ${lightListBufferSize.toLocaleString()}`);
@@ -1104,7 +1114,7 @@ export function setupShader(dimension : NamespacedId) {
         .ssbo(0, sceneBuffer)
         .build());
 
-    if (settings.Lighting_Mode == LightingModes.ShadowMaps) {
+    if (settings.Lighting_Mode == LightingModes.ShadowMaps && settings.Lighting_Shadow_BinsEnabled) {
         const MaxLightCount = 64;
         const pointGroupCount = Math.ceil(MaxLightCount / (8*8*8));
         const voxelGroupCount = Math.ceil(settings.Voxel_Size / 8);

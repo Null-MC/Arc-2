@@ -80,6 +80,9 @@ export class ShaderSettings {
     get Lighting_ReflectionStepCount(): number {return this.getCachedIntSetting("LIGHTING_REFLECT_MAXSTEP");}
     get Lighting_VolumetricResolution(): number {return this.getCachedIntSetting("LIGHTING_VL_RES");}
 
+    get Lighting_Shadow_BinsEnabled(): boolean {return this.getCachedBoolSetting("LIGHTING_SHADOW_BIN_ENABLED");}
+    get Lighting_Shadow_BinMaxCount(): number {return this.getCachedIntSetting('LIGHTING_SHADOW_MAX_COUNT');}
+
     get Voxel_Size(): number {return this.getCachedIntSetting("VOXEL_SIZE");}
     get Voxel_Offset(): number {return this.getCachedIntSetting("VOXEL_FRUSTUM_OFFSET");}
     get Voxel_MaxQuadCount(): number {return 64;}

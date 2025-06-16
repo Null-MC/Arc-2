@@ -56,7 +56,7 @@ uniform sampler3D texFogNoise;
 #endif
 
 #if LIGHTING_MODE == LIGHT_MODE_SHADOWS
-    uniform samplerCubeArray pointLight;
+    uniform samplerCubeArrayShadow pointLightFiltered;
 #elif LIGHTING_MODE == LIGHT_MODE_LPV
     uniform sampler3D texFloodFill;
     uniform sampler3D texFloodFill_alt;
@@ -69,7 +69,7 @@ uniform sampler3D texFogNoise;
     #include "/lib/buffers/voxel-block.glsl"
 #endif
 
-#if LIGHTING_MODE == LIGHT_MODE_SHADOWS && defined(SHADOW_LIGHT_LISTS)
+#if LIGHTING_MODE == LIGHT_MODE_SHADOWS && defined(LIGHTING_SHADOW_BIN_ENABLED)
     #include "/lib/buffers/light-list.glsl"
 #endif
 
@@ -115,7 +115,7 @@ uniform sampler3D texFogNoise;
     #include "/lib/voxel/voxel-common.glsl"
 #endif
 
-#if LIGHTING_MODE == LIGHT_MODE_SHADOWS && defined(SHADOW_LIGHT_LISTS)
+#if LIGHTING_MODE == LIGHT_MODE_SHADOWS && defined(LIGHTING_SHADOW_BIN_ENABLED)
     #include "/lib/voxel/light-list.glsl"
 #endif
 

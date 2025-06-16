@@ -1,14 +1,18 @@
 float sample_PointLightShadow(const in vec3 sampleDir, const in float sampleDist, const in float range, const in uint index) {
     const float near_plane = 0.05;
     const float far_plane = 16.0;
-    const float bias = 0.02;
+    const float bias = 0.08;
 
     if (sampleDist >= range) return 1.0;
 
-    float sampledReversedZ = texture(pointLight, vec4(sampleDir, index)).r;
-    float closestDepth = far_plane * near_plane / (sampledReversedZ * (far_plane - near_plane) + near_plane);
+    float linearDepth = sampleDist - bias;
+    float ndcDepth = (far_plane + near_plane - 2.0 * near_plane * far_plane / linearDepth) / (far_plane - near_plane);
+    float depth = ndcDepth * 0.5 + 0.5;
 
-    return step(sampleDist - bias, closestDepth);
+    return texture(pointLightFiltered, vec4(sampleDir, index), depth).r;
+//    float closestDepth = far_plane * near_plane / (sampledReversedZ * (far_plane - near_plane) + near_plane);
+//
+//    return step(sampleDist - bias, closestDepth);
 }
 
 float sample_PointLight(const in vec3 localPos, const in float range, const in uint index) {

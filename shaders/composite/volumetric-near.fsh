@@ -22,7 +22,7 @@ uniform sampler2D texSkyMultiScatter;
 #endif
 
 #if LIGHTING_MODE == LIGHT_MODE_SHADOWS
-    uniform samplerCubeArray pointLight;
+    uniform samplerCubeArrayShadow pointLightFiltered;
 #elif LIGHTING_MODE == LIGHT_MODE_LPV
     uniform sampler3D texFloodFill;
     uniform sampler3D texFloodFill_alt;
@@ -31,7 +31,7 @@ uniform sampler2D texSkyMultiScatter;
 #include "/lib/common.glsl"
 #include "/lib/buffers/scene.glsl"
 
-#if LIGHTING_MODE == LIGHT_MODE_SHADOWS && defined(SHADOW_LIGHT_LISTS)
+#if LIGHTING_MODE == LIGHT_MODE_SHADOWS && defined(LIGHTING_SHADOW_BIN_ENABLED)
     #include "/lib/buffers/light-list.glsl"
 #endif
 
@@ -57,7 +57,7 @@ uniform sampler2D texSkyMultiScatter;
     #include "/lib/shadow/clouds.glsl"
 #endif
 
-#if LIGHTING_MODE == LIGHT_MODE_SHADOWS && defined(SHADOW_LIGHT_LISTS)
+#if LIGHTING_MODE == LIGHT_MODE_SHADOWS && defined(LIGHTING_SHADOW_BIN_ENABLED)
     #include "/lib/voxel/voxel-common.glsl"
     #include "/lib/voxel/voxel-sample.glsl"
     #include "/lib/voxel/light-list.glsl"

@@ -1,8 +1,10 @@
 #version 430 core
 
+#include "/settings.glsl"
+#include "/lib/constants.glsl"
+
 layout (local_size_x = 8, local_size_y = 8, local_size_z = 8) in;
 
-#include "/settings.glsl"
 #include "/lib/common.glsl"
 
 #include "/lib/buffers/light-list.glsl"
@@ -18,7 +20,7 @@ void main() {
 	int lightBinIndex = GetLightBinIndex(lightBinPos);
 	uint shadowLightCount = LightBinMap[lightBinIndex].shadowLightCount;
 
-	for (uint i = 0u; i < min(shadowLightCount, RT_MAX_LIGHT_COUNT); i++) {
+	for (uint i = 0u; i < min(shadowLightCount, LIGHTING_SHADOW_MAX_COUNT); i++) {
 		uint lightIndex = LightBinMap[lightBinIndex].lightList[i].shadowIndex;
 		uint lightBlockId = ap.point.block[lightIndex];
 		float lightRange = iris_getEmission(lightBlockId);
@@ -42,7 +44,7 @@ void main() {
 						int neighborBinIndex = GetLightBinIndex(neighborBinPos);
 						uint neighborLightIndex = atomicAdd(LightBinMap[neighborBinIndex].shadowLightCount, 1u);
 
-						if (neighborLightIndex < RT_MAX_LIGHT_COUNT) {
+						if (neighborLightIndex < LIGHTING_SHADOW_MAX_COUNT) {
 							LightBinMap[neighborBinIndex].lightList[neighborLightIndex].voxelIndex = LightBinMap[lightBinIndex].lightList[i].voxelIndex;
 							LightBinMap[neighborBinIndex].lightList[neighborLightIndex].shadowIndex = lightIndex;
 						}

@@ -14,7 +14,7 @@ uniform sampler2D texSkyView;
 uniform sampler2D texBlueNoise;
 
 #if LIGHTING_MODE == LIGHT_MODE_SHADOWS
-	uniform samplerCubeArray pointLight;
+	uniform samplerCubeArrayShadow pointLightFiltered;
 #elif LIGHTING_MODE == LIGHT_MODE_LPV
 	uniform sampler3D texFloodFill;
 	uniform sampler3D texFloodFill_alt;

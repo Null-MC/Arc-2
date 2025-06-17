@@ -31,6 +31,10 @@ uniform sampler2D texSkyMultiScatter;
 #include "/lib/common.glsl"
 #include "/lib/buffers/scene.glsl"
 
+#if !defined(VOXEL_PROVIDED)
+    #include "/lib/buffers/voxel-block.glsl"
+#endif
+
 #if LIGHTING_MODE == LIGHT_MODE_RT || (LIGHTING_MODE == LIGHT_MODE_SHADOWS && defined(LIGHTING_SHADOW_BIN_ENABLED))
     #include "/lib/buffers/light-list.glsl"
 #endif

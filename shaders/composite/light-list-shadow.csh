@@ -24,17 +24,19 @@ void main() {
 
 		// get light bin index
 		vec3 voxelPos = voxel_GetBufferPosition(lightLocalPos);
-		ivec3 lightBinPos = ivec3(floor(voxelPos / LIGHT_BIN_SIZE));
-		int lightBinIndex = GetLightBinIndex(lightBinPos);
+		if (voxel_isInBounds(voxelPos) && ap.point.block[shadowIndex] > 0) {
+			ivec3 lightBinPos = ivec3(floor(voxelPos / LIGHT_BIN_SIZE));
+			int lightBinIndex = GetLightBinIndex(lightBinPos);
 
-		// add light to bin
-		uint lightIndex = atomicAdd(LightBinMap[lightBinIndex].shadowLightCount, 1u);
+			// add light to bin
+			uint lightIndex = atomicAdd(LightBinMap[lightBinIndex].shadowLightCount, 1u);
 
-		if (lightIndex < LIGHTING_SHADOW_MAX_COUNT) {
-			uint voxelIndex = voxel_GetBufferIndex(ivec3(floor(voxelPos)));
+			if (lightIndex < LIGHTING_SHADOW_MAX_COUNT) {
+				uint voxelIndex = voxel_GetBufferIndex(ivec3(floor(voxelPos)));
 
-			LightBinMap[lightBinIndex].lightList[lightIndex].voxelIndex = voxelIndex;
-			LightBinMap[lightBinIndex].lightList[lightIndex].shadowIndex = shadowIndex;
+				LightBinMap[lightBinIndex].lightList[lightIndex].voxelIndex = voxelIndex;
+				LightBinMap[lightBinIndex].lightList[lightIndex].shadowIndex = shadowIndex;
+			}
 		}
 	}
 }

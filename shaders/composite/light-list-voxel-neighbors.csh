@@ -9,6 +9,10 @@ layout (local_size_x = 8, local_size_y = 8, local_size_z = 8) in;
 
 #include "/lib/buffers/light-list.glsl"
 
+#ifndef VOXEL_PROVIDED
+	#include "/lib/buffers/voxel-block.glsl"
+#endif
+
 #include "/lib/voxel/voxel-common.glsl"
 #include "/lib/voxel/voxel-sample.glsl"
 #include "/lib/voxel/light-list.glsl"

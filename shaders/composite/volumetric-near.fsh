@@ -31,7 +31,7 @@ uniform sampler2D texSkyMultiScatter;
 #include "/lib/common.glsl"
 #include "/lib/buffers/scene.glsl"
 
-#if LIGHTING_MODE == LIGHT_MODE_SHADOWS && defined(LIGHTING_SHADOW_BIN_ENABLED)
+#if LIGHTING_MODE == LIGHT_MODE_RT || (LIGHTING_MODE == LIGHT_MODE_SHADOWS && defined(LIGHTING_SHADOW_BIN_ENABLED))
     #include "/lib/buffers/light-list.glsl"
 #endif
 
@@ -57,20 +57,21 @@ uniform sampler2D texSkyMultiScatter;
     #include "/lib/shadow/clouds.glsl"
 #endif
 
-#if LIGHTING_MODE == LIGHT_MODE_SHADOWS && defined(LIGHTING_SHADOW_BIN_ENABLED)
+#if LIGHTING_MODE == LIGHT_MODE_RT || (LIGHTING_MODE == LIGHT_MODE_SHADOWS && defined(LIGHTING_SHADOW_BIN_ENABLED))
     #include "/lib/voxel/voxel-common.glsl"
     #include "/lib/voxel/voxel-sample.glsl"
     #include "/lib/voxel/light-list.glsl"
-#endif
-
-#if LIGHTING_MODE == LIGHT_MODE_SHADOWS
-//    #include "/lib/light/hcm.glsl"
-//    #include "/lib/material/material_fresnel.glsl"
 
     #include "/lib/light/fresnel.glsl"
     #include "/lib/light/sampling.glsl"
+#endif
+
+#if LIGHTING_MODE == LIGHT_MODE_SHADOWS
     #include "/lib/light/point-light-sample-common.glsl"
     #include "/lib/light/point-light-sample-vl.glsl"
+#elif LIGHTING_MODE == LIGHT_MODE_RT
+    #include "/lib/voxel/dda.glsl"
+    #include "/lib/voxel/light-trace.glsl"
 #elif LIGHTING_MODE == LIGHT_MODE_LPV
     #include "/lib/voxel/voxel-common.glsl"
     #include "/lib/voxel/floodfill-common.glsl"
@@ -319,10 +320,72 @@ void main() {
 
         vec3 sampleLit = vec3(0.0);
 
-        #if LIGHTING_MODE == LIGHT_MODE_SHADOWS
-            vec3 blockLight = sample_AllPointLights_VL(sampleLocalPos);
-            sampleLit += blockLight * 100.0;
-        #elif LIGHTING_MODE == LIGHT_MODE_LPV
+        #ifdef LIGHTING_VL_SHADOWS
+            #if LIGHTING_MODE == LIGHT_MODE_SHADOWS
+                vec3 blockLight = sample_AllPointLights_VL(sampleLocalPos);
+                sampleLit += blockLight * 100.0;
+            #elif LIGHTING_MODE == LIGHT_MODE_RT
+                vec3 voxelPos = voxel_GetBufferPosition(sampleLocalPos);
+                ivec3 lightBinPos = ivec3(floor(voxelPos / LIGHT_BIN_SIZE));
+                int lightBinIndex = GetLightBinIndex(lightBinPos);
+                uint binLightCount = LightBinMap[lightBinIndex].lightCount;
+
+                vec3 jitter = hash33(vec3(gl_FragCoord.xy, ap.time.frames)) - 0.5;
+                //vec3 jitter = sample_blueNoise(gl_FragCoord.xy) * 0.5;
+                jitter *= Lighting_PenumbraSize;
+
+                #if RT_MAX_SAMPLE_COUNT > 0
+                    uint maxSampleCount = min(binLightCount, RT_MAX_SAMPLE_COUNT);
+                    float bright_scale = binLightCount / float(RT_MAX_SAMPLE_COUNT);
+                #else
+                    uint maxSampleCount = binLightCount;
+                    const float bright_scale = 1.0;
+                #endif
+
+                int i_offset = int(binLightCount * hash13(vec3(gl_FragCoord.xy, ap.time.frames)));
+
+                for (int i = 0; i < maxSampleCount; i++) {
+                    int i2 = (i + i_offset) % int(binLightCount);
+
+                    uint light_voxelIndex = LightBinMap[lightBinIndex].lightList[i2].voxelIndex;
+
+                    vec3 light_voxelPos = GetLightVoxelPos(light_voxelIndex) + 0.5;
+                    light_voxelPos += jitter;
+
+                    vec3 light_LocalPos = voxel_getLocalPosition(light_voxelPos);
+
+                    uint blockId = SampleVoxelBlock(light_voxelPos);
+
+                    float lightRange = iris_getEmission(blockId);
+                    vec3 lightColor = iris_getLightColor(blockId).rgb;
+                    vec3 light_hsv = RgbToHsv(lightColor);
+                    lightColor = HsvToRgb(vec3(light_hsv.xy, lightRange/15.0));
+                    lightColor = RgbToLinear(lightColor);
+
+                    vec3 lightVec = light_LocalPos - sampleLocalPos;
+                    float lightAtt = GetLightAttenuation(lightVec, lightRange);
+                    //lightAtt *= light_hsv.z;
+
+                    vec3 lightColorAtt = BLOCK_LUX * lightAtt * lightColor;
+
+                    vec3 lightDir = normalize(lightVec);
+
+                    float VoL = dot(localViewDir, lightDir);
+                    float phase = saturate(getMiePhase(VoL));
+
+                    vec3 traceStart = light_voxelPos;
+                    vec3 traceEnd = voxelPos;
+                    float traceRange = lightRange;
+                    bool traceSelf = !iris_isFullBlock(blockId);
+
+                    vec3 shadow_color = TraceDDA(traceStart, traceEnd, traceRange, traceSelf);
+
+                    sampleLit += phase * shadow_color * lightColorAtt * bright_scale * 100.0;
+                }
+            #endif
+        #endif
+
+        #if LIGHTING_MODE == LIGHT_MODE_LPV
             vec3 voxelPos = voxel_GetBufferPosition(sampleLocalPos);
 
             if (floodfill_isInBounds(voxelPos)) {

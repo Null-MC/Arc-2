@@ -119,6 +119,9 @@ function applySettings(settings : ShaderSettings, internal) {
         // defineGlobally("WSGI_SNAP_SCALE", snapScale);
     }
 
+    if (settings.Lighting_Volumetric_ShadowsEnabled)
+        defineGlobally1('LIGHTING_VL_SHADOWS');
+
     defineGlobally("LIGHTING_REFLECT_MODE", settings.Lighting_ReflectionMode);
     defineGlobally("LIGHTING_REFLECT_MAXSTEP", settings.Lighting_ReflectionStepCount)
     if (settings.Lighting_ReflectionNoise) defineGlobally1("MATERIAL_ROUGH_REFLECT_NOISE");
@@ -333,7 +336,8 @@ export function setupShader(dimension : NamespacedId) {
     setLightColorEx('#bea935', "firefly_bush");
     setLightColorEx('#5f9889', "glow_lichen");
     setLightColorEx('#d3b178', "glowstone");
-    setLightColorEx('#f39e49', "lantern");
+    setLightColorEx('#c2985a', 'jack_o_lantern');
+    setLightColorEx('#f39e49', 'lantern');
     setLightColorEx('#b8491c', "lava");
     setLightColorEx('#650a5e', "nether_portal");
     setLightColorEx('#dfac47', "ochre_froglight");
@@ -1393,7 +1397,7 @@ export function setupShader(dimension : NamespacedId) {
         // .ssbo(2, shLpvBuffer_alt)
         .ubo(0, SceneSettingsBuffer);
 
-    if (settings.Lighting_Mode == LightingModes.ShadowMaps)
+    if (settings.Lighting_Mode == LightingModes.RayTraced || settings.Lighting_Mode == LightingModes.ShadowMaps)
         vlNearShader.ssbo(3, lightListBuffer);
 
     registerShader(Stage.POST_RENDER, vlNearShader.build());

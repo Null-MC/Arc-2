@@ -75,19 +75,21 @@ export class ShaderSettings {
     get Lighting_TraceLightMax(): number {return this.getCachedIntSetting('RT_MAX_LIGHT_COUNT');}
     get Lighting_TraceQuads(): boolean {return this.getCachedBoolSetting('LIGHTING_TRACE_TRIANGLE');}
     get Lighting_ReflectionMode(): number {return this.getCachedSetting<number>('LIGHTING_REFLECT_MODE', k => parseInt(getStringSetting(k)));}
-    get Lighting_ReflectionNoise(): boolean {return this.getCachedBoolSetting("LIGHTING_REFLECT_NOISE");}
-    get Lighting_ReflectionQuads(): boolean {return this.getCachedBoolSetting("LIGHTING_REFLECT_TRIANGLE");}
-    get Lighting_ReflectionStepCount(): number {return this.getCachedIntSetting("LIGHTING_REFLECT_MAXSTEP");}
-    get Lighting_VolumetricResolution(): number {return this.getCachedIntSetting("LIGHTING_VL_RES");}
+    get Lighting_ReflectionNoise(): boolean {return this.getCachedBoolSetting('LIGHTING_REFLECT_NOISE');}
+    get Lighting_ReflectionQuads(): boolean {return this.getCachedBoolSetting('LIGHTING_REFLECT_TRIANGLE');}
+    get Lighting_ReflectionStepCount(): number {return this.getCachedIntSetting('LIGHTING_REFLECT_MAXSTEP');}
 
-    get Lighting_Shadow_EmissionMask(): boolean {return this.getCachedBoolSetting("LIGHTING_SHADOW_EMISSION_MASK");}
-    get Lighting_Shadow_BinsEnabled(): boolean {return this.getCachedBoolSetting("LIGHTING_SHADOW_BIN_ENABLED");}
+    get Lighting_VolumetricResolution(): number {return this.getCachedIntSetting('LIGHTING_VL_RES');}
+    get Lighting_Volumetric_ShadowsEnabled(): boolean {return this.getCachedBoolSetting('LIGHTING_VL_SHADOWS');}
+
+    get Lighting_Shadow_EmissionMask(): boolean {return this.getCachedBoolSetting('LIGHTING_SHADOW_EMISSION_MASK');}
+    get Lighting_Shadow_BinsEnabled(): boolean {return this.getCachedBoolSetting('LIGHTING_SHADOW_BIN_ENABLED');}
     get Lighting_Shadow_BinMaxCount(): number {return this.getCachedIntSetting('LIGHTING_SHADOW_MAX_COUNT');}
 
-    get Voxel_Size(): number {return this.getCachedIntSetting("VOXEL_SIZE");}
-    get Voxel_Offset(): number {return this.getCachedIntSetting("VOXEL_FRUSTUM_OFFSET");}
+    get Voxel_Size(): number {return this.getCachedIntSetting('VOXEL_SIZE');}
+    get Voxel_Offset(): number {return this.getCachedIntSetting('VOXEL_FRUSTUM_OFFSET');}
     get Voxel_MaxQuadCount(): number {return 64;}
-    get Voxel_UseProvided(): boolean {return this.getCachedBoolSetting("VOXEL_PROVIDED");}
+    get Voxel_UseProvided(): boolean {return this.getCachedBoolSetting('VOXEL_PROVIDED');}
 
     get Effect_SSAO_Enabled(): boolean {return this.getCachedBoolSetting("EFFECT_SSAO_ENABLED");}
     get Effect_SSAO_Strength(): number {return this.getCachedIntSetting("EFFECT_SSAO_STRENGTH");}

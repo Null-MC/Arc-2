@@ -3,6 +3,10 @@ void sample_AllPointLights(inout vec3 diffuse, inout vec3 specular, const in vec
     vec3 localViewDir = -normalize(localPos);
     float NoVm = max(dot(localTexNormal, localViewDir), 0.0);
 
+    const float offsetBias = 0.02;
+    const float normalBias = 0.02;
+    vec3 localSamplePos = normalBias * localGeoNormal + localPos;
+
     #ifdef LIGHTING_SHADOW_BIN_ENABLED
         vec3 voxelPos = voxel_GetBufferPosition(0.02 * localGeoNormal + localPos);
         ivec3 lightBinPos = ivec3(floor(voxelPos / LIGHT_BIN_SIZE));
@@ -27,14 +31,13 @@ void sample_AllPointLights(inout vec3 diffuse, inout vec3 specular, const in vec
         vec3 lightColor = iris_getLightColor(blockId).rgb;
         lightColor = RgbToLinear(lightColor);
 
-        vec3 fragToLight = ap.point.pos[lightIndex].xyz - localPos;
+        vec3 fragToLight = ap.point.pos[lightIndex].xyz - localSamplePos;
         float sampleDist = length(fragToLight);
         vec3 sampleDir = fragToLight / sampleDist;
         vec3 lightDir = sampleDir;
 
-        const float bias = 0.08;
         float geo_facing = step(0.0, dot(localGeoNormal, sampleDir));
-        float lightShadow = geo_facing * sample_PointLight(localPos, lightRange, bias, lightIndex);
+        float lightShadow = geo_facing * sample_PointLight(localSamplePos, lightRange, offsetBias, lightIndex);
 
 
 
@@ -70,7 +73,7 @@ void sample_AllPointLights(inout vec3 diffuse, inout vec3 specular, const in vec
             lightColor = RgbToLinear(lightColor);
 
             vec3 lightLocalPos = voxel_getLocalPosition(voxelPos);
-            vec3 fragToLight = lightLocalPos - localPos;
+            vec3 fragToLight = lightLocalPos - localSamplePos;
             float sampleDist = length(fragToLight);
             vec3 sampleDir = fragToLight / sampleDist;
             vec3 lightDir = sampleDir;

@@ -124,6 +124,7 @@ export class ShaderSettings {
     BuildInternalSettings() {
         const settings = {
             Accumulation: false,
+            LightListsEnabled: false,
             VoxelizeBlocks: false,
             VoxelizeBlockFaces: false,
             VoxelizeTriangles: false,
@@ -133,11 +134,16 @@ export class ShaderSettings {
         if (this.Effect_SSAO_Enabled) settings.Accumulation = true;
 
         switch (this.Lighting_Mode) {
+            case LightingModes.ShadowMaps:
+                if (this.Lighting_Shadow_BinsEnabled)
+                    settings.LightListsEnabled = true;
+                break;
             case LightingModes.FloodFill:
                 settings.VoxelizeBlocks = true;
                 break;
             case LightingModes.RayTraced:
                 settings.VoxelizeBlocks = true;
+                settings.LightListsEnabled = true;
                 settings.Accumulation = true;
 
                 if (this.Lighting_TraceQuads)

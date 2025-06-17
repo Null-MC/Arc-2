@@ -197,6 +197,7 @@ export function setupShader(dimension : NamespacedId) {
 
     BlockMappings = new BlockMap();
     BlockMappings.map('grass_block', 'BLOCK_GRASS');
+    BlockMappings.map('lava', 'BLOCK_LAVA');
 
     const settings = new ShaderSettings();
     const internal = settings.BuildInternalSettings();
@@ -395,6 +396,12 @@ export function setupShader(dimension : NamespacedId) {
         setLightColorEx("#c07047", "candle", "white_candle", "light_gray_candle", "gray_candle", "black_candle",
             "brown_candle", "red_candle", "orange_candle", "yellow_candle", "lime_candle", "green_candle", "cyan_candle",
             "light_blue_candle", "blue_candle", "purple_candle", "magenta_candle", "pink_candle");
+    }
+
+    for (let blockName in BlockMappings.mappings) {
+        const meta = BlockMappings.get(blockName);
+        defineGlobally(meta.define, meta.index.toString());
+        //print(`Mapped block '${meta.block}' to '${meta.index}:${meta.define}'`)
     }
 
     const screenWidth_half = Math.ceil(screenWidth / 2.0);
@@ -833,27 +840,27 @@ export function setupShader(dimension : NamespacedId) {
         .build();
 
     let lightListBuffer: BuiltBuffer | null = null;
+    if (internal.LightListsEnabled) {
+        const counterSize = settings.Lighting_Mode == LightingModes.ShadowMaps ? 2 : 1;
+        const lightSize = settings.Lighting_Mode == LightingModes.ShadowMaps ? 2 : 1;
+
+        const maxCount = settings.Lighting_Mode == LightingModes.ShadowMaps
+            ? settings.Lighting_Shadow_BinMaxCount
+            : settings.Lighting_TraceLightMax;
+
+        const lightBinSize = 4 * (counterSize + maxCount*lightSize);
+        const lightListBinCount = Math.ceil(settings.Voxel_Size / LIGHT_BIN_SIZE);
+        const lightListBufferSize = lightBinSize * cubed(lightListBinCount) + 4;
+        print(`Light-List Buffer Size: ${lightListBufferSize.toLocaleString()}`);
+
+        lightListBuffer = new GPUBuffer(lightListBufferSize)
+            .clear(false)
+            .build();
+    }
+
     let blockFaceBuffer: BuiltBuffer | null = null;
     let quadListBuffer: BuiltBuffer | null = null;
     if (internal.VoxelizeBlocks) {
-        if (settings.Lighting_Mode == LightingModes.RayTraced || settings.Lighting_Mode == LightingModes.ShadowMaps) {
-            const counterSize = settings.Lighting_Mode == LightingModes.ShadowMaps ? 2 : 1;
-            const lightSize = settings.Lighting_Mode == LightingModes.ShadowMaps ? 2 : 1;
-
-            const maxCount = settings.Lighting_Mode == LightingModes.ShadowMaps
-                ? settings.Lighting_Shadow_BinMaxCount
-                : settings.Lighting_TraceLightMax;
-
-            const lightBinSize = 4 * (counterSize + maxCount*lightSize);
-            const lightListBinCount = Math.ceil(settings.Voxel_Size / LIGHT_BIN_SIZE);
-            const lightListBufferSize = lightBinSize * cubed(lightListBinCount) + 4;
-            print(`Light-List Buffer Size: ${lightListBufferSize.toLocaleString()}`);
-
-            lightListBuffer = new GPUBuffer(lightListBufferSize)
-                .clear(false)
-                .build();
-        }
-
         if (internal.VoxelizeBlockFaces) {
             const bufferSize = 6 * 8 * cubed(settings.Voxel_Size);
 
@@ -894,7 +901,7 @@ export function setupShader(dimension : NamespacedId) {
             .build());
     }
 
-    if (settings.Lighting_Mode == LightingModes.RayTraced || settings.Lighting_Mode == LightingModes.ShadowMaps) {
+    if (internal.LightListsEnabled) {
         const binCount = Math.ceil(settings.Voxel_Size / LIGHT_BIN_SIZE);
         const groupCount = Math.ceil(binCount / 8);
 
@@ -1195,7 +1202,7 @@ export function setupShader(dimension : NamespacedId) {
                 .ssbo(5, blockFaceBuffer)
                 .ubo(0, SceneSettingsBuffer);
 
-            if (settings.Lighting_Mode == LightingModes.RayTraced) {
+            if (internal.LightListsEnabled) {
                 registerBarrier(Stage.POST_RENDER, new MemoryBarrier(SSBO_BIT));
 
                 shader.ssbo(3, lightListBuffer);
@@ -1397,7 +1404,7 @@ export function setupShader(dimension : NamespacedId) {
         // .ssbo(2, shLpvBuffer_alt)
         .ubo(0, SceneSettingsBuffer);
 
-    if (settings.Lighting_Mode == LightingModes.RayTraced || settings.Lighting_Mode == LightingModes.ShadowMaps)
+    if (internal.LightListsEnabled)
         vlNearShader.ssbo(3, lightListBuffer);
 
     registerShader(Stage.POST_RENDER, vlNearShader.build());
@@ -1567,12 +1574,6 @@ export function setupShader(dimension : NamespacedId) {
     setCombinationPass(new CombinationPass("post/final.fsh")
         .define('TEX_SRC', finalFlipper.getReadName())
         .build());
-
-    for (let blockName in BlockMappings.mappings) {
-        const meta = BlockMappings.get(blockName);
-        defineGlobally(meta.define, meta.index.toString());
-        //print(`Mapped block '${meta.block}' to '${meta.index}:${meta.define}'`)
-    }
 
     onSettingsChanged(null);
     //setupFrame(null);

@@ -37,6 +37,7 @@ void sample_AllPointLights(inout vec3 diffuse, inout vec3 specular, const in vec
         vec3 lightDir = sampleDir;
 
         float geo_facing = step(0.0, dot(localGeoNormal, sampleDir));
+
         float lightShadow = geo_facing * sample_PointLight(localSamplePos, lightRange, offsetBias, lightIndex);
 
 

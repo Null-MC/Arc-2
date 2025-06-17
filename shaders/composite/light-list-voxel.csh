@@ -38,6 +38,9 @@ void main() {
 
 	if (blockId > 0u && !exists) {
 		int lightRange = iris_getEmission(blockId);
+
+		uint blockMapId = iris_getCustomId(blockId);
+		if (blockMapId == BLOCK_LAVA) lightRange = 0;
 		
 		if (lightRange > 0) {
 			uint lightIndex = atomicAdd(LightBinMap[voxelBinIndex].lightCount, 1u) + shadowLightCount;

@@ -38,7 +38,7 @@ uniform sampler2D texBlueNoise;
 
 #include "/lib/buffers/wsgi.glsl"
 
-#if LIGHTING_MODE == LIGHT_MODE_RT
+#if LIGHTING_MODE == LIGHT_MODE_RT || (LIGHTING_MODE == LIGHT_MODE_SHADOWS && defined(LIGHTING_SHADOW_BIN_ENABLED))
 	#include "/lib/buffers/light-list.glsl"
 #endif
 
@@ -81,16 +81,29 @@ uniform sampler2D texBlueNoise;
 	#include "/lib/shadow/clouds.glsl"
 #endif
 
-#if LIGHTING_MODE == LIGHT_MODE_SHADOWS
-	#include "/lib/light/point-light-sample.glsl"
-#elif LIGHTING_MODE == LIGHT_MODE_RT
+#if LIGHTING_MODE == LIGHT_MODE_RT || (LIGHTING_MODE == LIGHT_MODE_SHADOWS && defined(LIGHTING_SHADOW_BIN_ENABLED))
 	#include "/lib/light/hcm.glsl"
+	#include "/lib/material/material_fresnel.glsl"
+
+	//#include "/lib/voxel/voxel-common.glsl"
+	//#include "/lib/voxel/voxel-sample.glsl"
+	#include "/lib/voxel/light-list.glsl"
+
+//	#include "/lib/light/fresnel.glsl"
+//	#include "/lib/light/sampling.glsl"
+#endif
+
+#if LIGHTING_MODE == LIGHT_MODE_SHADOWS
+	#include "/lib/light/point-light-sample-common.glsl"
+	#include "/lib/light/point-light-sample-geo.glsl"
+#elif LIGHTING_MODE == LIGHT_MODE_RT
+	//#include "/lib/light/hcm.glsl"
 //	#include "/lib/light/fresnel.glsl"
 //	#include "/lib/light/sampling.glsl"
 
-	#include "/lib/material/material_fresnel.glsl"
+	//#include "/lib/material/material_fresnel.glsl"
 
-	#include "/lib/voxel/light-list.glsl"
+	//#include "/lib/voxel/light-list.glsl"
 	#include "/lib/voxel/light-trace.glsl"
 #elif LIGHTING_MODE == LIGHT_MODE_NONE
 	#include "/lib/lightmap/sample.glsl"
@@ -407,7 +420,8 @@ vec3 trace_GI(const in vec3 traceOrigin, const in vec3 traceDir, const in int fa
 		vec3 hit_voxelPos = voxelPos; //tracePos * voxelSize + wsgiVoxelOffset;
 
 		#if LIGHTING_MODE == LIGHT_MODE_SHADOWS
-			hit_diffuse += sample_AllPointLights(hit_localPos, hitNormal);
+			vec3 specular;
+			sample_AllPointLights(hit_diffuse, specular, hit_localPos, hitNormal, hitNormal, albedo, hit_f0_metal, hit_roughL);
 		#elif LIGHTING_MODE == LIGHT_MODE_RT //&& defined(FALSE)
 			// TODO: pick a random light and sample it?
 			ivec3 lightBinPos = ivec3(floor(hit_voxelPos / LIGHT_BIN_SIZE));

@@ -24,7 +24,7 @@ void iris_emitFragment() {
             if (emission > 0.0) alpha = 0.0;
         }
     #else
-        if (vIn.isFull) {
+        if (vIn.isFull || true) {
             if (clamp(vIn.modelPos, -0.5, 0.5) == vIn.modelPos) alpha = 0.0;
         }
         else {

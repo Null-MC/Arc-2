@@ -447,7 +447,7 @@ vec3 trace_GI(const in vec3 traceOrigin, const in vec3 traceDir, const in int fa
 				int light_i = 0;
 				int i2 = (light_i + i_offset) % int(binLightCount);
 
-				uint light_voxelIndex = LightBinMap[lightBinIndex].lightList[i2];
+				uint light_voxelIndex = LightBinMap[lightBinIndex].lightList[i2].voxelIndex;
 
 				vec3 light_voxelPos = GetLightVoxelPos(light_voxelIndex) + 0.5;
 				//light_voxelPos += jitter*0.125;

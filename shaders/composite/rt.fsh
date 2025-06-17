@@ -257,7 +257,7 @@ void main() {
 //                    float lightIntensity2 = 0.0;//clamp(light_hsv.z, EPSILON, 1.0);//mix(1.0, 0.1, light_hsv.z);
 
                     vec3 lightVec = light_LocalPos - localPos;
-                    float lightAtt = GetLightAttenuation(lightVec, lightRange);
+                    float lightAtt = GetLightAttenuation_Linear(lightVec, lightRange);
                     //lightAtt *= light_hsv.z;
 
                     vec3 lightColorAtt = BLOCK_LUX * lightAtt * lightColor;

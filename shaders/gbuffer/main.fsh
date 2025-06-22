@@ -102,6 +102,8 @@ void iris_emitFragment() {
                 float pomDist = (1.0 - traceCoordDepth.z) / max(-tanViewDir.z, 0.00001);
 
                 if (pomDist > 0.0) {
+                    const float ParallaxDepthF = MATERIAL_PARALLAX_DEPTH * 0.01;
+
                     vec3 viewPos = mul3(ap.camera.view, vIn.localPos);
                     float depth = -viewPos.z + pomDist * ParallaxDepthF;
                     gl_FragDepth = 0.5 * (-ap.camera.projection[2].z*depth + ap.camera.projection[3].z) / depth + 0.5;

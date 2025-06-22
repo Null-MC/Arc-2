@@ -215,6 +215,9 @@ option.LIGHTING_SHADOW_BIN_ENABLED=Bin Lists
 
 option.LIGHTING_SHADOW_MAX_COUNT=Bin Max Count
 
+option.LIGHTING_SHADOW_REALTIME=Real-Time Count
+option.LIGHTING_SHADOW_REALTIME.comment=The maximum number of real-time lights that can be active.
+
 
 screen.VOXELS=Voxels
 

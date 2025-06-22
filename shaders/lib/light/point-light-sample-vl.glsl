@@ -22,6 +22,9 @@ vec3 sample_AllPointLights_VL(const in vec3 localPos) {
         #endif
 
         uint blockId = ap.point.block[lightIndex];
+        #ifndef LIGHTING_SHADOW_BIN_ENABLED
+            if (blockId == uint(-1)) continue;
+        #endif
         float lightRange = iris_getEmission(blockId);
         vec3 lightColor = iris_getLightColor(blockId).rgb;
         lightColor = RgbToLinear(lightColor);

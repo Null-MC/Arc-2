@@ -3,7 +3,8 @@
 #elif LIGHTING_MODE == LIGHT_MODE_RT
     #define LIGHT_LIST_MAX RT_MAX_LIGHT_COUNT
 #else
-    #error "invalid state!"
+    //#error "invalid state!"
+    #define LIGHT_LIST_MAX 1
 #endif
 
 

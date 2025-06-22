@@ -85,6 +85,8 @@ export class ShaderSettings {
     get Lighting_Shadow_EmissionMask(): boolean {return this.getCachedBoolSetting('LIGHTING_SHADOW_EMISSION_MASK');}
     get Lighting_Shadow_BinsEnabled(): boolean {return this.getCachedBoolSetting('LIGHTING_SHADOW_BIN_ENABLED');}
     get Lighting_Shadow_BinMaxCount(): number {return this.getCachedIntSetting('LIGHTING_SHADOW_MAX_COUNT');}
+    get Lighting_Shadow_RealtimeCount(): number {return this.getCachedIntSetting('LIGHTING_SHADOW_REALTIME');}
+    get Lighting_Shadow_VoxelFill(): boolean {return false;}
 
     get Voxel_Size(): number {return this.getCachedIntSetting('VOXEL_SIZE');}
     get Voxel_Offset(): number {return this.getCachedIntSetting('VOXEL_FRUSTUM_OFFSET');}
@@ -118,6 +120,7 @@ export class ShaderSettings {
     get Debug_WhiteWorld(): boolean {return this.getCachedBoolSetting("DEBUG_WHITE_WORLD");}
     get Debug_Translucent(): boolean {return this.getCachedBoolSetting("DEBUG_TRANSLUCENT");}
     get Debug_Exposure(): boolean {return this.getCachedBoolSetting("DEBUG_EXPOSURE");}
+    get Debug_LightCount(): boolean {return true;}
     get Debug_RT(): boolean {return false;}
 
 
@@ -173,7 +176,7 @@ export class ShaderSettings {
             settings.VoxelizeBlockFaces = true;
         }
 
-        if (this.Debug_View != 0 || this.Debug_Exposure || this.Debug_RT)
+        if (this.Debug_View != 0 || this.Debug_Exposure || this.Debug_RT || this.Debug_LightCount)
             settings.DebugEnabled = true;
 
         return settings;

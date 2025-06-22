@@ -18,6 +18,9 @@ function applySettings(settings : ShaderSettings, internal) {
     //worldSettings.cascadeCount = settings.Shadow_CascadeCount;
     worldSettings.pointNearPlane = 0.05;
     worldSettings.pointFarPlane = 16.0;
+    worldSettings.pointResolution = 256;
+    worldSettings.pointMaxUpdates = 8;
+    worldSettings.pointRealTime = settings.Lighting_Shadow_RealtimeCount;
     worldSettings.renderWaterOverlay = false;
     worldSettings.renderStars = false;
     worldSettings.renderMoon = false;
@@ -163,19 +166,20 @@ function applySettings(settings : ShaderSettings, internal) {
             defineGlobally1("LPV_ENABLED");
     }
 
-    if (settings.Effect_SSAO_Enabled) defineGlobally1("EFFECT_SSAO_ENABLED");
+    if (settings.Effect_SSAO_Enabled) defineGlobally1('EFFECT_SSAO_ENABLED');
     defineGlobally("EFFECT_SSAO_SAMPLES", settings.Effect_SSAO_StepCount);
 
     defineGlobally('EFFECT_DOF_SAMPLES', settings.Effect_DOF_SampleCount);
     defineGlobally('EFFECT_DOF_SPEED', settings.Effect_DOF_Speed);
 
-    if (settings.Post_TAA_Enabled) defineGlobally1("EFFECT_TAA_ENABLED");
+    if (settings.Post_TAA_Enabled) defineGlobally1('EFFECT_TAA_ENABLED');
 
-    if (settings.Post_PurkinjeEnabled) defineGlobally1("POST_PURKINJE_ENABLED");
+    if (settings.Post_PurkinjeEnabled) defineGlobally1('POST_PURKINJE_ENABLED');
 
-    if (settings.Debug_WhiteWorld) defineGlobally1("DEBUG_WHITE_WORLD");
-    if (settings.Debug_Exposure) defineGlobally1("DEBUG_EXPOSURE");
-    if (settings.Debug_RT) defineGlobally1("DEBUG_RT");
+    if (settings.Debug_WhiteWorld) defineGlobally1('DEBUG_WHITE_WORLD');
+    if (settings.Debug_Exposure) defineGlobally1('DEBUG_EXPOSURE');
+    if (settings.Debug_LightCount) defineGlobally1('DEBUG_LIGHT_COUNT')
+    if (settings.Debug_RT) defineGlobally1('DEBUG_RT');
     //if (snapshot.Debug_QuadLists) defineGlobally1("DEBUG_QUADS");
 
     if (internal.DebugEnabled) {
@@ -1147,21 +1151,23 @@ export function setupShader(dimension : NamespacedId) {
             .ssbo(3, lightListBuffer)
             .build());
 
-        registerBarrier(Stage.POST_RENDER, new MemoryBarrier(SSBO_BIT));
+        if (settings.Lighting_Shadow_VoxelFill) {
+            registerBarrier(Stage.POST_RENDER, new MemoryBarrier(SSBO_BIT));
 
-        registerShader(Stage.POST_RENDER, new Compute("light-list-voxel")
-            .location("composite/light-list-voxel.csh")
-            .workGroups(voxelGroupCount, voxelGroupCount, voxelGroupCount)
-            .ssbo(3, lightListBuffer)
-            .build());
+            registerShader(Stage.POST_RENDER, new Compute("light-list-voxel")
+                .location("composite/light-list-voxel.csh")
+                .workGroups(voxelGroupCount, voxelGroupCount, voxelGroupCount)
+                .ssbo(3, lightListBuffer)
+                .build());
 
-        registerBarrier(Stage.POST_RENDER, new MemoryBarrier(SSBO_BIT));
+            registerBarrier(Stage.POST_RENDER, new MemoryBarrier(SSBO_BIT));
 
-        registerShader(Stage.POST_RENDER, new Compute("light-list-voxel-neighbors")
-            .location("composite/light-list-voxel-neighbors.csh")
-            .workGroups(voxelGroupCount, voxelGroupCount, voxelGroupCount)
-            .ssbo(3, lightListBuffer)
-            .build());
+            registerShader(Stage.POST_RENDER, new Compute("light-list-voxel-neighbors")
+                .location("composite/light-list-voxel-neighbors.csh")
+                .workGroups(voxelGroupCount, voxelGroupCount, voxelGroupCount)
+                .ssbo(3, lightListBuffer)
+                .build());
+        }
     }
     else if (settings.Lighting_Mode == LightingModes.RayTraced) {
         const voxelGroupCount = Math.ceil(settings.Voxel_Size / 8);

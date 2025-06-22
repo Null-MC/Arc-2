@@ -65,7 +65,9 @@ uniform sampler2D texSkyMultiScatter;
     #include "/lib/voxel/voxel-common.glsl"
     #include "/lib/voxel/voxel-sample.glsl"
     #include "/lib/voxel/light-list.glsl"
+#endif
 
+#if LIGHTING_MODE == LIGHT_MODE_RT || LIGHTING_MODE == LIGHT_MODE_SHADOWS
     #include "/lib/light/fresnel.glsl"
     #include "/lib/light/sampling.glsl"
 #endif
@@ -137,8 +139,8 @@ void main() {
     if (len > far)
         traceEnd = traceEnd * (far / len);
 
-    vec3 stepLocal = traceEnd / (VL_MaxSamples);
-    float stepDist = length(stepLocal);
+    //vec3 stepLocal = traceEnd / (VL_MaxSamples);
+    //float stepDist = length(stepLocal);
 
     vec3 localViewDir = normalize(localPos);
     float VoL_sun = dot(localViewDir, Scene_LocalSunDir);
@@ -148,7 +150,7 @@ void main() {
 
     vec3 shadowViewStart = mul3(ap.celestial.view, vec3(0.0));
     vec3 shadowViewEnd = mul3(ap.celestial.view, traceEnd);
-    vec3 shadowViewStep = (shadowViewEnd - shadowViewStart) * stepScale;
+    //vec3 shadowViewStep = (shadowViewEnd - shadowViewStart) * stepScale;
 
     float miePhase_sun = 0.0;
     float miePhase_moon = 0.0;
@@ -217,15 +219,26 @@ void main() {
     vec3 scattering = vec3(0.0);
     vec3 transmittance = vec3(1.0);
 
+    const vec3 localPosStart = vec3(0.0);
+    vec3 sampleLocalPosLast = vec3(0.0);
+
     for (int i = 0; i < VL_MaxSamples; i++) {
         float iF = min(i + dither, VL_MaxSamples-1);
+        float stepF = saturate(iF / (VL_MaxSamples-1));
+        stepF = pow(stepF, 2.0);
+
+        //vec3 sampleLocalPos = iF * stepLocal;
+        vec3 sampleLocalPos = mix(localPosStart, traceEnd, stepF);
+
+        float stepDist = length(sampleLocalPos - sampleLocalPosLast);
 
         float waterDepth = EPSILON;
         vec3 shadowSample = vec3(1.0);//vec3(smoothstep(0.0, 0.6, Scene_SkyBrightnessSmooth));
         #ifdef SHADOWS_ENABLED
             const float shadowRadius = 2.0*shadowPixelSize;
 
-            vec3 shadowViewPos = fma(shadowViewStep, vec3(iF), shadowViewStart);
+            //vec3 shadowViewPos = fma(shadowViewStep, vec3(iF), shadowViewStart);
+            vec3 shadowViewPos = mix(shadowViewStart, shadowViewEnd, stepF);
 
             int shadowCascade;
             vec3 shadowPos = GetShadowSamplePos(shadowViewPos, shadowRadius, shadowCascade);
@@ -239,8 +252,6 @@ void main() {
             shadowSample *= SampleShadowColor(shadowPos, shadowCascade, waterDepth);
             waterDepth = max(waterDepth, EPSILON);
         #endif
-
-        vec3 sampleLocalPos = iF * stepLocal;
 
         vec3 sunTransmit, moonTransmit;
         GetSkyLightTransmission(sampleLocalPos, sunTransmit, moonTransmit);
@@ -263,11 +274,17 @@ void main() {
             sampleDensity = GetSkyDensity(sampleLocalPos);
 
             #ifdef SKY_CLOUDS_ENABLED
+                //float last_iF = max(iF - 1.0, 0.0);
+                //float stepLastF = pow(last_iF / VL_MaxSamples-1, 1.0);
+
+                //float sampleLocalPosLastY = mix(localPosStart.y, traceEnd.y, stepLastF);
+                float sampleHeightLast = sampleLocalPosLast.y+ap.camera.pos.y;
+
                 float sampleHeight = sampleLocalPos.y+ap.camera.pos.y;
-                float heightLast = sampleHeight - stepLocal.y;
+                //float heightLast = sampleHeight - stepLocal.y;
 
                 // Clouds
-                if (sign(sampleHeight - cloudHeight) != sign(heightLast - cloudHeight)) {
+                if (sign(sampleHeight - cloudHeight) != sign(sampleHeightLast - cloudHeight)) {
                     sampleDensity += cloudDensity;
 
                     sunSkyLight *= cloud_shadowSun;
@@ -460,12 +477,14 @@ void main() {
 
         scattering += scatteringIntegral * transmittance;
         transmittance *= sampleTransmittance;
+
+        sampleLocalPosLast = sampleLocalPos;
     }
 
     #ifdef SKY_CLOUDS_ENABLED
         if (depth == 1.0 && ap.camera.fluid == 0) {
             float endWorldY = traceEnd.y + ap.camera.pos.y;
-            endWorldY -= (1.0-dither) * stepLocal.y;
+            //endWorldY -= (1.0-dither) * stepLocal.y;
 
             if (endWorldY < cloudHeight && cloudDensity > 0.0) {
                 //vec3 cloud_localPos = cloudDist * localViewDir;
@@ -482,6 +501,7 @@ void main() {
                 float mieAbsorption = mieAbsorptionF * cloudDensity;
                 vec3 extinction = vec3(mieScattering + mieAbsorption);
 
+                const float stepDist = 10.0;
                 vec3 sampleTransmittance = exp(-extinction * stepDist);
 
                 vec3 psiMS = getValFromMultiScattLUT(texSkyMultiScatter, skyPos, Scene_LocalSunDir) + Sky_MinLight;

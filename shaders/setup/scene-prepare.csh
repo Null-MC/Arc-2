@@ -13,7 +13,7 @@ uniform sampler2D solidDepthTex;
 #include "/lib/sampling/depth.glsl"
 #include "/lib/utility/blackbody.glsl"
 
-#if LIGHTING_MODE == LIGHT_MODE_RT
+#if LIGHTING_MODE == LIGHT_MODE_RT || defined(DEBUG_LIGHT_COUNT)
 	#include "/lib/buffers/light-list.glsl"
 #endif
 
@@ -33,7 +33,7 @@ void main() {
 	centerDepthL = linearizeDepth(centerDepthL, ap.camera.near, ap.camera.far);
 	Scene_FocusDepth += (centerDepthL - Scene_FocusDepth) * depthTimeF;
 
-	#if LIGHTING_MODE == LIGHT_MODE_RT
+	#if LIGHTING_MODE == LIGHT_MODE_RT || defined(DEBUG_LIGHT_COUNT)
 		Scene_LightCount = 0u;
 	#endif
 

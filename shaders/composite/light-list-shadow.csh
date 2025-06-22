@@ -36,6 +36,10 @@ void main() {
 
 				LightBinMap[lightBinIndex].lightList[lightIndex].voxelIndex = voxelIndex;
 				LightBinMap[lightBinIndex].lightList[lightIndex].shadowIndex = shadowIndex;
+
+				#ifdef DEBUG_LIGHT_COUNT
+					atomicAdd(Scene_LightCount, 1u);
+				#endif
 			}
 		}
 	}

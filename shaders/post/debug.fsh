@@ -63,7 +63,7 @@ in vec2 uv;
 #include "/lib/common.glsl"
 #include "/lib/buffers/scene.glsl"
 
-#if LIGHTING_MODE == LIGHT_MODE_RT
+#ifdef DEBUG_LIGHT_COUNT
     #include "/lib/buffers/light-list.glsl"
 #endif
 
@@ -274,7 +274,7 @@ void main() {
 //     printUnsignedInt(ap.time.frames);
 //     printLine();
 
-    #if LIGHTING_MODE == LIGHT_MODE_RT && defined(DEBUG_RT)
+    #ifdef DEBUG_LIGHT_COUNT
         printString((_L, _i, _g, _h, _t, _s, _colon, _space));
         printUnsignedInt(Scene_LightCount);
         printLine();

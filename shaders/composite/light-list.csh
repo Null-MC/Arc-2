@@ -54,7 +54,7 @@ void main() {
 		}
 	}
 
-	#ifdef DEBUG_RT
+	#ifdef DEBUG_LIGHT_COUNT
 		barrier();
 
 		ivec3 globalBinPos = voxelPos / LIGHT_BIN_SIZE;

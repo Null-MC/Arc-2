@@ -81,16 +81,13 @@ uniform sampler2D texBlueNoise;
 	#include "/lib/shadow/clouds.glsl"
 #endif
 
-#if LIGHTING_MODE == LIGHT_MODE_RT || (LIGHTING_MODE == LIGHT_MODE_SHADOWS && defined(LIGHTING_SHADOW_BIN_ENABLED))
+#if LIGHTING_MODE == LIGHT_MODE_RT || LIGHTING_MODE == LIGHT_MODE_SHADOWS
 	#include "/lib/light/hcm.glsl"
 	#include "/lib/material/material_fresnel.glsl"
+#endif
 
-	//#include "/lib/voxel/voxel-common.glsl"
-	//#include "/lib/voxel/voxel-sample.glsl"
+#if LIGHTING_MODE == LIGHT_MODE_RT || (LIGHTING_MODE == LIGHT_MODE_SHADOWS && defined(LIGHTING_SHADOW_BIN_ENABLED))
 	#include "/lib/voxel/light-list.glsl"
-
-//	#include "/lib/light/fresnel.glsl"
-//	#include "/lib/light/sampling.glsl"
 #endif
 
 #if LIGHTING_MODE == LIGHT_MODE_SHADOWS

@@ -204,6 +204,8 @@ option.RT_MAX_SAMPLE_COUNT.comment=The maximum number of lights that can be stor
 
 screen.LIGHTING_SHADOWS=Shadow Maps
 
+option.LIGHTING_SHADOW_PCSS=PCSS/Soft-Shadows
+
 option.LIGHTING_SHADOW_EMISSION_MASK=Emission Mask
 
 option.LIGHTING_SHADOW_BIN_ENABLED=Bin Lists

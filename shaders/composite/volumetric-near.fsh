@@ -72,10 +72,10 @@ uniform sampler2D texSkyMultiScatter;
     #include "/lib/light/sampling.glsl"
 #endif
 
-#if LIGHTING_MODE == LIGHT_MODE_SHADOWS
+#if LIGHTING_MODE == LIGHT_MODE_SHADOWS && defined(LIGHTING_VL_SHADOWS)
     #include "/lib/light/point-light-sample-common.glsl"
     #include "/lib/light/point-light-sample-vl.glsl"
-#elif LIGHTING_MODE == LIGHT_MODE_RT
+#elif LIGHTING_MODE == LIGHT_MODE_RT && defined(LIGHTING_VL_SHADOWS)
     #include "/lib/voxel/dda.glsl"
     #include "/lib/voxel/light-trace.glsl"
 #elif LIGHTING_MODE == LIGHT_MODE_LPV

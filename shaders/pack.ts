@@ -100,6 +100,8 @@ function applySettings(settings : ShaderSettings, internal) {
 
     if (settings.Lighting_Mode == LightingModes.ShadowMaps) {
         defineGlobally("LIGHTING_SHADOW_MAX_COUNT", settings.Lighting_Shadow_BinMaxCount);
+        if (settings.Lighting_Shadow_PCSS)
+            defineGlobally1('LIGHTING_SHADOW_PCSS');
         if (settings.Lighting_Shadow_EmissionMask)
             defineGlobally1('LIGHTING_SHADOW_EMISSION_MASK');
         if (settings.Lighting_Shadow_BinsEnabled)
@@ -1590,6 +1592,8 @@ export function onSettingsChanged(state : WorldState) {
     const settings = new ShaderSettings();
 
     worldSettings.sunPathRotation = settings.Sky_SunAngle;
+    worldSettings.pointRealTime = settings.Lighting_Shadow_RealtimeCount;
+    worldSettings.pointUpdateThreshold = settings.Lighting_Shadow_UpdateThreshold * 0.01;
 
     const d = settings.Fog_Density * 0.01;
 

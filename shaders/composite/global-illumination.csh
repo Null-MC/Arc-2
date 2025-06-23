@@ -15,6 +15,10 @@ uniform sampler2D texBlueNoise;
 
 #if LIGHTING_MODE == LIGHT_MODE_SHADOWS
 	uniform samplerCubeArrayShadow pointLightFiltered;
+
+	#ifdef LIGHTING_SHADOW_PCSS
+		uniform samplerCubeArray pointLight;
+	#endif
 #elif LIGHTING_MODE == LIGHT_MODE_LPV
 	uniform sampler3D texFloodFill;
 	uniform sampler3D texFloodFill_alt;

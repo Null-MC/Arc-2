@@ -32,9 +32,15 @@ float sample_PointLight(const in vec3 localPos, const in float range, const in f
         const int PointLight_FilterCount = 3;
         const float blocker_radius = 0.04;
 
+        #ifdef RENDER_COMPUTE
+            vec2 fragCoord = vec2(0.0);
+        #else
+            vec2 fragCoord = gl_FragCoord.xy;
+        #endif
+
         float avg_depth = 0.0;
         for (int i = 0; i < PointLight_BlockerCount; i++) {
-            vec3 seed = vec3(gl_FragCoord.xy, ap.time.frames + i);
+            vec3 seed = vec3(fragCoord, ap.time.frames + i);
             vec3 randomVec = normalize(hash33(seed) * 2.0 - 1.0);
             if (dot(randomVec, sampleDir) < 0.0) randomVec = -randomVec;
             randomVec = mix(sampleDir, randomVec, blocker_radius);
@@ -49,7 +55,7 @@ float sample_PointLight(const in vec3 localPos, const in float range, const in f
 
         float light_shadow = 0.0;
         for (int i = 0; i < PointLight_FilterCount; i++) {
-            vec3 seed = vec3(gl_FragCoord.xy, ap.time.frames + i + 9.0);
+            vec3 seed = vec3(fragCoord, ap.time.frames + i + 9.0);
             vec3 randomVec = normalize(hash33(seed) * 2.0 - 1.0);
             if (dot(randomVec, sampleDir) < 0.0) randomVec = -randomVec;
             randomVec = mix(sampleDir, randomVec, sample_radius);

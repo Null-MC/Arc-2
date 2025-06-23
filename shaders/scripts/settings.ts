@@ -86,6 +86,7 @@ export class ShaderSettings {
     get Lighting_Shadow_BinsEnabled(): boolean {return this.getCachedBoolSetting('LIGHTING_SHADOW_BIN_ENABLED');}
     get Lighting_Shadow_BinMaxCount(): number {return this.getCachedIntSetting('LIGHTING_SHADOW_MAX_COUNT');}
     get Lighting_Shadow_RealtimeCount(): number {return this.getCachedIntSetting('LIGHTING_SHADOW_REALTIME');}
+    get Lighting_Shadow_UpdateThreshold(): number {return this.getCachedIntSetting('LIGHTING_SHADOW_UPDATE_THRESHOLD');}
     get Lighting_Shadow_VoxelFill(): boolean {return false;}
 
     get Voxel_Size(): number {return this.getCachedIntSetting('VOXEL_SIZE');}

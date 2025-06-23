@@ -18,9 +18,10 @@ function applySettings(settings : ShaderSettings, internal) {
     //worldSettings.cascadeCount = settings.Shadow_CascadeCount;
     worldSettings.pointNearPlane = 0.05;
     worldSettings.pointFarPlane = 16.0;
-    worldSettings.pointResolution = 256;
+    worldSettings.pointResolution = 128;
     worldSettings.pointMaxUpdates = 8;
     worldSettings.pointRealTime = settings.Lighting_Shadow_RealtimeCount;
+    worldSettings.pointUpdateThreshold = settings.Lighting_Shadow_UpdateThreshold * 0.01;
     worldSettings.renderWaterOverlay = false;
     worldSettings.renderStars = false;
     worldSettings.renderMoon = false;

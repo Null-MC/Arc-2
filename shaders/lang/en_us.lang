@@ -194,11 +194,6 @@ suffix.LIGHT_TRACE_PENUMBRA=%
 option.LIGHTING_TRACE_TRIANGLE=Full Quad Tracing
 option.LIGHTING_REFLECT_TRIANGLE.comment=Allows full-detail, per-quad tracing for ray-traced lighting. WARNING: Heavy on performance!
 
-option.LIGHTING_VL_RES=Volumetric Resolution
-value.LIGHTING_VL_RES.0=Full
-value.LIGHTING_VL_RES.1=Half
-value.LIGHTING_VL_RES.2=Quarter
-
 option.RT_MAX_SAMPLE_COUNT=Max Sample Count
 option.RT_MAX_SAMPLE_COUNT.comment=The maximum number of lights that can be sampled per-pixel, per-frame. Increasing this value will improve quality but reduce performance.
 value.RT_MAX_SAMPLE_COUNT.0=Infinite
@@ -217,6 +212,20 @@ option.LIGHTING_SHADOW_MAX_COUNT=Bin Max Count
 
 option.LIGHTING_SHADOW_REALTIME=Real-Time Count
 option.LIGHTING_SHADOW_REALTIME.comment=The maximum number of real-time lights that can be active.
+
+option.LIGHTING_SHADOW_UPDATE_THRESHOLD=Update Threshold
+option.LIGHTING_SHADOW_UPDATE_THRESHOLD.comment=The threshold for replacing current low-priority lights with pending higher-priority lights. Lower values will cause more frequent updates.
+suffix.LIGHTING_SHADOW_UPDATE_THRESHOLD=%
+
+
+screen.LIGHTING_VOLUMETRIC=Volumetric Fog
+
+option.LIGHTING_VL_RES=Volumetric Resolution
+value.LIGHTING_VL_RES.0=Full
+value.LIGHTING_VL_RES.1=Half
+value.LIGHTING_VL_RES.2=Quarter
+
+option.LIGHTING_VL_SHADOWS=Block-Light Shadows
 
 
 screen.VOXELS=Voxels

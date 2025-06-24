@@ -14,13 +14,14 @@
 //#define VL_SELF_SHADOW
 
 #define POINT_LIGHT_MAX 64
+#define POINT_LIGHT_POM
 
 #define VOXEL_SHADOW_CASCADE 0
 
 #define VOXEL_SKIP_EMPTY
 //#define VOXEL_SKIP_SECTIONS
 
-#define TRANSLUCENT_DEPTH_TEST_FIX
+//#define TRANSLUCENT_DEPTH_TEST_FIX
 
 
 const float ATMOSPHERE_MAX = 4200.0;
@@ -52,6 +53,9 @@ const float WaterTintMinDist = 1.0;
 const float shadowMapResolution = float(SHADOW_RESOLUTION);
 const float cloudHeight = 320.0;
 
+const float pointNearPlane = 0.05;
+const float pointFarPlane = 16.0;
+
 const vec3 WhiteWorld_Value = vec3(0.8);
 
 
@@ -60,6 +64,10 @@ const float shadowPixelSize = 1.0 / shadowMapResolution;
 
 #if defined MATERIAL_PARALLAX_ENABLED && defined RENDER_TERRAIN && MATERIAL_FORMAT != MAT_NONE
 	#define RENDER_PARALLAX
+#endif
+
+#if defined(POINT_LIGHT_POM) && defined(MATERIAL_PARALLAX_ENABLED) && defined(MATERIAL_PARALLAX_DEPTHWRITE)
+	#define IS_POINT_LIGHT_POM_ENABLED
 #endif
 
 layout (std140, binding = 0) uniform SceneSettings {

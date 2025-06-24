@@ -3,12 +3,6 @@
 #include "/lib/constants.glsl"
 #include "/settings.glsl"
 
-// layout(location = 6) in int blockMask;
-
-#if defined(RENDER_TERRAIN) && defined(RENDER_TRANSLUCENT)
-	uniform sampler3D texFogNoise;
-#endif
-
 out VertexData2 {
 	vec2 uv;
 	vec2 light;
@@ -37,6 +31,10 @@ out VertexData2 {
 		flat vec2 atlasCoordSize;
 	#endif
 } vOut;
+
+#if defined(RENDER_TERRAIN) && defined(RENDER_TRANSLUCENT)
+	uniform sampler3D texFogNoise;
+#endif
 
 #include "/lib/common.glsl"
 

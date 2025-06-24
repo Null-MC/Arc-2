@@ -81,5 +81,5 @@ vec3 wsgi_sample(const in vec3 localPos, const in vec3 sampleDir) {
 	if (wsgi_cascade >= 0)
 		color = wsgi_sample_linear(wsgi_bufferPos, sampleDir, wsgi_cascade) * 1000.0;
 
-	return color * PI;
+	return color;
 }

@@ -11,6 +11,7 @@ in vec2 uv;
 uniform sampler2D mainDepthTex;
 
 uniform sampler3D texFogNoise;
+uniform sampler2D texBlueNoise;
 uniform sampler2D texSkyTransmit;
 uniform sampler2D texSkyMultiScatter;
 
@@ -41,6 +42,7 @@ uniform sampler2D texSkyMultiScatter;
 
 #include "/lib/noise/ign.glsl"
 #include "/lib/noise/hash.glsl"
+#include "/lib/noise/blue.glsl"
 #include "/lib/hg.glsl"
 
 #include "/lib/utility/hsv.glsl"
@@ -94,7 +96,8 @@ void main() {
     float depth = textureLod(mainDepthTex, uv, 0).r;
 
     #ifdef EFFECT_TAA_ENABLED
-        float dither = InterleavedGradientNoiseTime(gl_FragCoord.xy);
+        //float dither = InterleavedGradientNoiseTime(gl_FragCoord.xy);
+        float dither = sample_blueNoise(gl_FragCoord.xy).x;
     #else
         float dither = InterleavedGradientNoise(gl_FragCoord.xy);
     #endif
@@ -225,7 +228,7 @@ void main() {
     for (int i = 0; i < VL_MaxSamples; i++) {
         float iF = min(i + dither, VL_MaxSamples-1);
         float stepF = saturate(iF / (VL_MaxSamples-1));
-        stepF = pow(stepF, 2.0);
+        stepF = pow(stepF, 1.6);
 
         //vec3 sampleLocalPos = iF * stepLocal;
         vec3 sampleLocalPos = mix(localPosStart, traceEnd, stepF);

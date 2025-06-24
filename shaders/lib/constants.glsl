@@ -2,6 +2,10 @@
 #define MAT_LABPBR 1
 #define MAT_OLDPBR 2
 
+#define POM_TYPE_NONE 0
+#define POM_TYPE_SHARP 1
+#define POM_TYPE_SMOOTH 2
+
 #define LIGHT_MODE_VANILLA 0
 #define LIGHT_MODE_LPV 1
 #define LIGHT_MODE_RT 2

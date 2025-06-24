@@ -55,7 +55,7 @@ in VertexData2 {
 #include "/lib/sampling/atlas.glsl"
 #include "/lib/sampling/lightmap.glsl"
 
-#ifdef MATERIAL_NORMAL_SMOOTH
+#if defined(MATERIAL_NORMAL_SMOOTH) || MATERIAL_PARALLAX_TYPE == POM_TYPE_SMOOTH
     #include "/lib/sampling/linear.glsl"
 #endif
 
@@ -196,7 +196,7 @@ void iris_emitFragment() {
     #endif
 
     #if MATERIAL_FORMAT != MAT_NONE
-        #if defined RENDER_PARALLAX && defined MATERIAL_PARALLAX_SHARP
+        #if defined(RENDER_PARALLAX) && MATERIAL_PARALLAX_TYPE == POM_TYPE_SHARP
             if (!skipParallax) {
                 float depthDiff = max(texDepth - traceCoordDepth.z, 0.0);
 

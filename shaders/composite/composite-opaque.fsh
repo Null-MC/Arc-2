@@ -115,9 +115,9 @@ uniform sampler3D texFogNoise;
     #include "/lib/effects/ssr.glsl"
 #endif
 
-#ifdef VOXEL_ENABLED
+//#ifdef VOXEL_ENABLED
     #include "/lib/voxel/voxel-common.glsl"
-#endif
+//#endif
 
 #if LIGHTING_MODE == LIGHT_MODE_SHADOWS && defined(LIGHTING_SHADOW_BIN_ENABLED)
     #include "/lib/voxel/light-list.glsl"
@@ -227,6 +227,7 @@ void main() {
         ApplyWetness_roughL(roughL, porosity, wetness);
         roughness = sqrt(roughL);
 
+        // Lighting
         vec3 H = normalize(Scene_LocalLightDir + -localViewDir);
 
         float NoLm = max(dot(localTexNormal, Scene_LocalLightDir), 0.0);
@@ -317,14 +318,7 @@ void main() {
             vec3 sss_skyLight = (2.0*PI) * sss_shadow * (sss_phase_sun + sss_phase_moon)
                               + sss_skyIrradiance * phaseIso;
 
-            //vec3 indirect_sss = max(shadow_sss.w - shadow_sss.rgb, 0.0);
-
             skyLightDiffuse += sss * sss_skyLight * saturate(1.0 - NoL_sun);// * exp(-1.0 * (1.0 - albedo.rgb));
-
-    //        float wrapF = sss;
-    //        float wrap_diffuse = max((NoL_sun + wrapF) / (1.0 + wrapF), 0.0);
-
-            //skyLightDiffuse = mix(skyLightDiffuse, sss_skyLight * PI, indirect_sss * sss);
         }
 
         vec3 skyIrradiance = SampleSkyIrradiance(localTexNormal, lmCoord.y);
@@ -343,16 +337,11 @@ void main() {
             skyIrradiance += wsgi_sample(wsgi_localPos, localTexNormal);
         #endif
 
-        //skyIrradiance *= 1.0 + (1.0 - skyLightF);
-
         skyLightDiffuse += skyIrradiance;
         skyLightDiffuse *= occlusion;
 
         vec3 blockLighting = GetVanillaBlockLight(lmCoord.x, occlusion);
-
-        #ifdef VOXEL_ENABLED
-            vec3 voxelPos = voxel_GetBufferPosition(localPos);
-        #endif
+        vec3 voxelPos = voxel_GetBufferPosition(localPos);
 
         #if LIGHTING_MODE == LIGHT_MODE_SHADOWS
             // TODO: add fade?
@@ -452,7 +441,6 @@ void main() {
 
             float NoHm = max(dot(localTexNormal, H), 0.0);
             specular += skyLightFinal * shadow_sss.rgb * SampleLightSpecular(NoLm, NoHm, LoHm, roughL);
-
             specular += skyReflectColor;
 
             #ifdef ACCUM_ENABLED

@@ -61,7 +61,13 @@ uniform sampler2D texSkyIrradiance;
     uniform sampler2D texSpecularRT;
 #endif
 
-#if LIGHTING_MODE == LIGHT_MODE_LPV
+#if LIGHTING_MODE == LIGHT_MODE_SHADOWS
+    uniform samplerCubeArrayShadow pointLightFiltered;
+
+    #ifdef LIGHTING_SHADOW_PCSS
+        uniform samplerCubeArray pointLight;
+    #endif
+#elif LIGHTING_MODE == LIGHT_MODE_LPV
     uniform sampler3D texFloodFill;
     uniform sampler3D texFloodFill_alt;
 #endif
@@ -75,6 +81,10 @@ uniform sampler2D texSkyIrradiance;
 
 #ifdef HANDLIGHT_TRACE
     #include "/lib/buffers/voxel-block.glsl"
+#endif
+
+#if LIGHTING_MODE == LIGHT_MODE_SHADOWS && defined(LIGHTING_SHADOW_BIN_ENABLED)
+    #include "/lib/buffers/light-list.glsl"
 #endif
 
 #ifdef LIGHTING_GI_ENABLED
@@ -118,8 +128,12 @@ uniform sampler2D texSkyIrradiance;
     #include "/lib/effects/ssr.glsl"
 #endif
 
-#ifdef VOXEL_ENABLED
+//#ifdef VOXEL_ENABLED
     #include "/lib/voxel/voxel-common.glsl"
+//#endif
+
+#if LIGHTING_MODE == LIGHT_MODE_SHADOWS && defined(LIGHTING_SHADOW_BIN_ENABLED)
+    #include "/lib/voxel/light-list.glsl"
 #endif
 
 #ifdef HANDLIGHT_TRACE
@@ -129,7 +143,10 @@ uniform sampler2D texSkyIrradiance;
     #include "/lib/voxel/light-trace.glsl"
 #endif
 
-#if LIGHTING_MODE == LIGHT_MODE_LPV
+#if LIGHTING_MODE == LIGHT_MODE_SHADOWS
+    #include "/lib/light/point-light-sample-common.glsl"
+    #include "/lib/light/point-light-sample-geo.glsl"
+#elif LIGHTING_MODE == LIGHT_MODE_LPV
     #include "/lib/voxel/floodfill-common.glsl"
     #include "/lib/voxel/floodfill-sample.glsl"
 #endif
@@ -258,7 +275,7 @@ void main() {
             shadow_sss = textureLod(TEX_SHADOW, uv, 0);
         #endif
 
-        float skyLightF = smoothstep(0.0, 0.2, Scene_LocalLightDir.y);
+        float skyLightF = smoothstep(0.0, 0.1, Scene_LocalLightDir.y);
 
         #if defined(SKY_CLOUDS_ENABLED) && defined(SHADOWS_CLOUD_ENABLED)
             skyLightF *= SampleCloudShadows(localPosTrans);
@@ -276,34 +293,53 @@ void main() {
             if (tir) view_F = vec3(1.0);
         #endif
 
-        float NoL_sun = dot(localTexNormal, Scene_LocalSunDir);
-        float NoL_moon = -NoL_sun;
-
         vec3 sunTransmit, moonTransmit;
         GetSkyLightTransmission(localPosTrans, sunTransmit, moonTransmit);
         vec3 sunLight = skyLightF * SUN_LUX * sunTransmit * Scene_SunColor;
         vec3 moonLight = skyLightF * MOON_LUX * moonTransmit;
 
-        vec3 skyLight_NoLm = sunLight * max(NoL_sun, 0.0) + moonLight * max(NoL_moon, 0.0);
+        float NoL_sun = dot(localTexNormal, Scene_LocalSunDir);
+        float NoL_moon = -NoL_sun;
 
-        vec3 skyLightDiffuse = skyLight_NoLm * shadow_sss.rgb * SampleLightDiffuse(NoVm, NoLm, LoHm, roughL);
+        // TODO: VL_SELF_SHADOW
+
+        float sss_diffuse = max((NoL_sun + sss) / (1.0 + sss), 0.0);
+        vec3 sss_shadow = mix(shadow_sss.rgb * step(0.0, dot(localGeoNormal, Scene_LocalLightDir)), vec3(shadow_sss.w), sss);
+
+        vec3 skyLightFinal = sunLight * sss_diffuse + moonLight * max(NoL_moon, 0.0);
+
+        vec3 skyLightDiffuse = skyLightFinal * sss_shadow * SampleLightDiffuse(NoVm, NoLm, LoHm, roughL);
+
+
+        //vec3 skyLight_NoLm = sunLight * max(NoL_sun, 0.0) + moonLight * max(NoL_moon, 0.0);
+
+        //vec3 skyLightDiffuse = skyLight_NoLm * shadow_sss.rgb * SampleLightDiffuse(NoVm, NoLm, LoHm, roughL);
 
         // SSS
-        const float sss_G = 0.24;
+        if (sss > EPSILON) {
+            const float sss_G = 0.24;
 
-        vec3 sss_skyIrradiance = SampleSkyIrradiance(localViewDir, lmCoord.y);
+            vec3 sss_skyIrradiance = SampleSkyIrradiance(localTexNormal, lmCoord.y);
 
-        float VoL_sun = dot(localViewDir, Scene_LocalSunDir);
-        vec3 sss_phase_sun = max(HG(VoL_sun, sss_G), 0.0) * abs(NoL_sun) * sunLight;
-        vec3 sss_phase_moon = max(HG(-VoL_sun, sss_G), 0.0) * abs(NoL_moon) * moonLight;
-        vec3 sss_skyLight = shadow_sss.w * (sss_phase_sun + sss_phase_moon)
-                          + phaseIso * sss_skyIrradiance * occlusion;
+            float VoL_sun = dot(localViewDir, Scene_LocalSunDir);
+            vec3 sss_phase_sun = max(HG(VoL_sun, sss_G), 0.0) * abs(NoL_sun) * sunLight;
+            vec3 sss_phase_moon = max(HG(-VoL_sun, sss_G), 0.0) * abs(NoL_moon) * moonLight;
+            vec3 sss_skyLight = (2.0*PI) * sss_shadow * (sss_phase_sun + sss_phase_moon)
+                              + sss_skyIrradiance * phaseIso;
 
-        skyLightDiffuse = mix(skyLightDiffuse, sss_skyLight * PI, sss);
-
-        #ifdef VOXEL_ENABLED
-            vec3 voxelPos = voxel_GetBufferPosition(localPosTrans);
-        #endif
+            skyLightDiffuse += sss * sss_skyLight * saturate(1.0 - NoL_sun);// * exp(-1.0 * (1.0 - albedo.rgb));
+        }
+//        const float sss_G = 0.24;
+//
+//        vec3 sss_skyIrradiance = SampleSkyIrradiance(localViewDir, lmCoord.y);
+//
+//        float VoL_sun = dot(localViewDir, Scene_LocalSunDir);
+//        vec3 sss_phase_sun = max(HG(VoL_sun, sss_G), 0.0) * abs(NoL_sun) * sunLight;
+//        vec3 sss_phase_moon = max(HG(-VoL_sun, sss_G), 0.0) * abs(NoL_moon) * moonLight;
+//        vec3 sss_skyLight = shadow_sss.w * (sss_phase_sun + sss_phase_moon)
+//                          + phaseIso * sss_skyIrradiance * occlusion;
+//
+//        skyLightDiffuse = mix(skyLightDiffuse, sss_skyLight * PI, sss);
 
         vec3 skyIrradiance = SampleSkyIrradiance(localTexNormal, lmCoord.y);
 
@@ -324,8 +360,12 @@ void main() {
         skyLightDiffuse *= occlusion;
 
         vec3 blockLighting = GetVanillaBlockLight(lmCoord.x, occlusion);
+        vec3 voxelPos = voxel_GetBufferPosition(localPosTrans);
 
-        #if LIGHTING_MODE == LIGHT_MODE_RT
+        #if LIGHTING_MODE == LIGHT_MODE_SHADOWS
+            // TODO: add fade?
+            blockLighting = vec3(0.0);
+        #elif LIGHTING_MODE == LIGHT_MODE_RT
             if (voxel_isInBounds(voxelPos)) {
                 blockLighting = vec3(0.0);
             }
@@ -351,6 +391,13 @@ void main() {
             diffuse += accumDiffuse * 1000.0;
         #elif LIGHTING_MODE == LIGHT_MODE_RT || LIGHTING_REFLECT_MODE == REFLECT_MODE_WSR
             diffuse += textureLod(texDiffuseRT, uv, 0).rgb * 1000.0;
+        #endif
+
+        //vec3 view_F = vec3(0.0);
+        vec3 specular = vec3(0.0);
+
+        #if LIGHTING_MODE == LIGHT_MODE_SHADOWS
+            sample_AllPointLights(diffuse, specular, localPosTrans, localGeoNormal, localTexNormal, albedo.rgb, f0_metal, roughL);
         #endif
 
         // reflections
@@ -411,7 +458,7 @@ void main() {
 
         float NoHm = max(dot(localTexNormal, H), 0.0);
 
-        vec3 specular = skyLight_NoLm * shadow_sss.rgb * SampleLightSpecular(NoLm, NoHm, LoHm, roughL);
+        specular += skyLightFinal * shadow_sss.rgb * SampleLightSpecular(NoLm, NoHm, LoHm, roughL);
         specular += skyReflectColor;
 
         #ifdef ACCUM_ENABLED

@@ -1,7 +1,3 @@
-const float pointNearPlane = 0.05;
-const float pointFarPlane = 16.0;
-
-
 #ifdef LIGHTING_SHADOW_PCSS
     float sample_PointLightDepth(const in vec3 sampleDir, const in uint index) {
         float ndcDepth = texture(pointLight, vec4(sampleDir, index)).r * 2.0 - 1.0;

@@ -19,7 +19,7 @@ vec2 GetParallaxCoord(const in vec2 texcoord, const in float LOD, const in vec3 
     vec2 stepCoord = tanViewDir.xy * ParallaxDepthF / (fma(tanViewDir.z, MATERIAL_PARALLAX_SAMPLES, 1.0));
     float stepDepth = maxTexDepth / MATERIAL_PARALLAX_SAMPLES;
 
-    #if DISPLACE_MODE == DISPLACE_POM_SMOOTH
+    #if MATERIAL_PARALLAX_TYPE == POM_TYPE_SMOOTH
         vec2 atlasPixelSize = 1.0 / atlasSize;
         float prevTexDepth;
     #endif
@@ -37,15 +37,15 @@ vec2 GetParallaxCoord(const in vec2 texcoord, const in float LOD, const in vec3 
     for (i = 0; i < MATERIAL_PARALLAX_SAMPLES; i++) {
         if (i > maxSampleCount || depthDist < (1.0/255.0)) break;
 
-        #if DISPLACE_MODE == DISPLACE_POM_SMOOTH
+        #if MATERIAL_PARALLAX_TYPE == POM_TYPE_SMOOTH
             prevTexDepth = texDepth;
         #endif
 
         vec2 localTraceCoord = fma(vec2(i), -stepCoord, texcoord);
 
-        #ifdef MATERIAL_PARALLAX_SMOOTH
+        #if MATERIAL_PARALLAX_TYPE == POM_TYPE_SMOOTH
             vec2 uv[4];
-            vec2 atlasTileSize = vIn.atlasBounds[1] * atlasSize;
+            vec2 atlasTileSize = vIn.atlasCoordSize * atlasSize;
             vec2 f = GetLinearCoords(localTraceCoord, atlasTileSize, uv);
 
             uv[0] = GetAtlasCoord(uv[0], vIn.atlasCoordMin, vIn.atlasCoordSize);
@@ -65,7 +65,7 @@ vec2 GetParallaxCoord(const in vec2 texcoord, const in float LOD, const in vec3 
     i = max(i - 1, 0);
     float pI = max(i - 1, 0);
 
-    #ifdef MATERIAL_PARALLAX_SMOOTH
+    #if MATERIAL_PARALLAX_TYPE == POM_TYPE_SMOOTH
         vec2 currentTraceOffset = texcoord - i * stepCoord;
         float currentTraceDepth = max(1.0 - i * stepDepth, 0.0);
         vec2 prevTraceOffset = texcoord - pI * stepCoord;
@@ -81,14 +81,14 @@ vec2 GetParallaxCoord(const in vec2 texcoord, const in float LOD, const in vec3 
         traceDepth.z = max(1.0 - pI * stepDepth, 0.0);
     #endif
 
-    #ifdef MATERIAL_PARALLAX_SMOOTH
+    #if MATERIAL_PARALLAX_TYPE == POM_TYPE_SMOOTH
         return GetAtlasCoord(traceDepth.xy, vIn.atlasCoordMin, vIn.atlasCoordSize);
     #else
         return GetAtlasCoord(texcoord - i * stepCoord, vIn.atlasCoordMin, vIn.atlasCoordSize);
     #endif
 }
 
-#ifdef MATERIAL_PARALLAX_SHARP
+#if MATERIAL_PARALLAX_TYPE == POM_TYPE_SHARP
     vec3 GetParallaxSlopeNormal(const in vec2 atlasCoord, const in float LOD, const in float traceDepth, const in vec3 tanViewDir) {
         // WARN: temp workaround
         vec2 atlasSize = textureSize(irisInt_NormalMap, 0);

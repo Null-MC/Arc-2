@@ -45,8 +45,8 @@ int voxel_GetBufferIndex(ivec3 voxelPos) {
 }
 
 
-#ifdef VOXEL_ENABLED
+//#ifdef VOXEL_ENABLED
     bool iris_hasAnyTag(uint blockData, uint tags) {
         return (blockData & tags) != 0u;
     }
-#endif
+//#endif

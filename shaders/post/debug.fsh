@@ -209,15 +209,15 @@ void main() {
 //        }
 
         bool AccumulationEnabled = false;
-        bool VoxelizationEnabled = false;
+        //bool VoxelizationEnabled = false;
 
         #ifdef ACCUM_ENABLED
             AccumulationEnabled = true;
         #endif
 
-        #ifdef VOXEL_ENABLED
-            VoxelizationEnabled = true;
-        #endif
+//        #ifdef VOXEL_ENABLED
+//            VoxelizationEnabled = true;
+//        #endif
 
         #ifdef DEBUG_EXPOSURE
             beginText(ivec2(gl_FragCoord.xy*0.5), ivec2(8, ap.game.screenSize.y*0.5-8));
@@ -240,9 +240,9 @@ void main() {
             printString((_A, _c, _c, _u, _m, _u, _l, _a, _t, _i, _o, _n, _colon, _space));
             printBool(AccumulationEnabled);
             printLine();
-            printString((_V, _o, _x, _e, _l, _i, _z, _a, _t, _i, _o, _n, _colon, _space));
-            printBool(VoxelizationEnabled);
-            printLine();
+//            printString((_V, _o, _x, _e, _l, _i, _z, _a, _t, _i, _o, _n, _colon, _space));
+//            printBool(VoxelizationEnabled);
+//            printLine();
             //...
             endText(color);
         #endif

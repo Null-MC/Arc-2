@@ -15,22 +15,28 @@ in VertexData2 {
     vec3 localNormal;
 
     #ifdef RENDER_TERRAIN
-        flat int currentCascade;
         flat uint blockId;
 
-        #ifdef VOXEL_ENABLED
-            vec3 localPos;
-            vec2 lmcoord;
-
-            //#ifdef RENDER_TERRAIN
-                flat vec3 originPos;
-
-                #ifdef VOXEL_BLOCK_FACE
-                    flat uint textureId;
-                #endif
-            //#endif
+        #if defined(VOXEL_BLOCK_FACE) || defined(VOXEL_TRI_ENABLED)
+            flat uint textureId;
         #endif
     #endif
+
+    //#if defined(RENDER_TERRAIN) || (defined(RENDER_ENTITY) && defined(VOXEL_TRI_ENABLED))
+        flat int currentCascade;
+
+        #ifdef VOXEL_TRI_ENABLED
+            vec3 localPos;
+        #endif
+
+        #if defined(VOXEL_BLOCK_FACE) || defined(VOXEL_TRI_ENABLED)
+            vec2 lmcoord;
+
+            #ifdef RENDER_TERRAIN
+                flat vec3 originPos;
+            #endif
+        #endif
+    //#endif
 } vIn[];
 
 out VertexData2 {
@@ -45,7 +51,7 @@ out VertexData2 {
 
 #include "/lib/common.glsl"
 
-#ifdef VOXEL_ENABLED
+#if defined(VOXEL_BLOCK_FACE) || defined(VOXEL_TRI_ENABLED)
     #ifdef RENDER_TERRAIN
         #include "/lib/buffers/voxel-block.glsl"
     #endif
@@ -81,7 +87,7 @@ void main() {
 
     EndPrimitive();
 
-    #ifdef VOXEL_ENABLED
+    #if !defined(VOXEL_PROVIDED) || defined(VOXEL_BLOCK_FACE) || defined(VOXEL_TRI_ENABLED)
         if (gl_PrimitiveIDIn % 2 == 0) {
             #ifdef RENDER_TERRAIN
                 vec3 voxelPos = voxel_GetBufferPosition(vIn[0].originPos);

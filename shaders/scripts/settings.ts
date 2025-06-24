@@ -47,7 +47,7 @@ export class ShaderSettings {
     get Material_ParallaxEnabled(): boolean {return this.getCachedBoolSetting('MATERIAL_PARALLAX_ENABLED');}
     get Material_ParallaxDepth(): number {return this.getCachedIntSetting('MATERIAL_PARALLAX_DEPTH');}
     get Material_ParallaxStepCount(): number {return this.getCachedIntSetting('MATERIAL_PARALLAX_SAMPLES');}
-    get Material_ParallaxSharp(): boolean {return this.getCachedBoolSetting('MATERIAL_PARALLAX_SHARP');}
+    get Material_ParallaxType(): number {return this.getCachedSetting<number>('MATERIAL_PARALLAX_TYPE', k => parseInt(getStringSetting(k)));}
     get Material_ParallaxDepthWrite(): boolean {return this.getCachedBoolSetting('MATERIAL_PARALLAX_DEPTHWRITE');}
     get Material_NormalFormat(): number {return this.getCachedSetting<number>('MATERIAL_NORMAL_FORMAT', k => parseInt(getStringSetting(k)));}
     get Material_NormalSmooth(): boolean {return this.getCachedBoolSetting('MATERIAL_NORMAL_SMOOTH');}
@@ -130,7 +130,6 @@ export class ShaderSettings {
         const settings = {
             Accumulation: false,
             LightListsEnabled: false,
-            VoxelizeBlocks: false,
             VoxelizeBlockFaces: false,
             VoxelizeTriangles: false,
             DebugEnabled: false,
@@ -143,11 +142,7 @@ export class ShaderSettings {
                 if (this.Lighting_Shadow_BinsEnabled)
                     settings.LightListsEnabled = true;
                 break;
-            case LightingModes.FloodFill:
-                settings.VoxelizeBlocks = true;
-                break;
             case LightingModes.RayTraced:
-                settings.VoxelizeBlocks = true;
                 settings.LightListsEnabled = true;
                 settings.Accumulation = true;
 
@@ -157,7 +152,6 @@ export class ShaderSettings {
         }
 
         if (this.Lighting_ReflectionMode == ReflectionModes.WorldSpace) {
-            settings.VoxelizeBlocks = true;
             settings.Accumulation = true;
 
             if (this.Lighting_ReflectionQuads) {
@@ -166,17 +160,10 @@ export class ShaderSettings {
             else {
                 settings.VoxelizeBlockFaces = true;
             }
-
-            // if (settings.Lighting.Mode == LightMode_RT) {
-            //     settings.Internal.Voxelization = true;
-            //     settings.Internal.LPV = true;
-            // }
         }
 
-        if (this.Lighting_GI_Enabled) {
-            settings.VoxelizeBlocks = true;
+        if (this.Lighting_GI_Enabled)
             settings.VoxelizeBlockFaces = true;
-        }
 
         if (this.Debug_View != 0 || this.Debug_Exposure || this.Debug_RT || this.Debug_LightCount)
             settings.DebugEnabled = true;
@@ -203,10 +190,5 @@ export class ShaderSettings {
             this._cache[key] = value;
         }
         return value;
-    }}
-
-function getStringSettingIndex(name: string, defaultValue: number, ...options: string[]) : number {
-    const value = getStringSetting(name);
-    const index = options.indexOf(value);
-    return index < 0 ? defaultValue : index;
+    }
 }

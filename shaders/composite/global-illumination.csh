@@ -160,7 +160,7 @@ vec3 GetRandomFaceNormal(const in ivec3 cellPos, const in vec3 face_dir) {
 
 //	vec2 noise_seed = cellPos.xz * vec2(71.0, 83.0) + cellPos.y * 67.0;
 //	noise_seed += ap.time.frames * vec2(71.0, 83.0);
-//	//vec3 noise_dir = sample_blueNoise(hash23(cellPos));
+//	//vec3 noise_dir = sample_blueNoiseNorm(hash23(cellPos));
 //
 //	vec3 noise_dir = hash32(vec2(seed_pos * 123.45, ap.time.frames));
 //	noise_dir = normalize(noise_dir * 2.0 - 1.0);

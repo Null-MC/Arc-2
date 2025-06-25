@@ -22,6 +22,7 @@ uniform sampler2D texSkyIrradiance;
 uniform sampler2D texParticleOpaque;
 
 uniform sampler3D texFogNoise;
+uniform sampler2D texBlueNoise;
 
 #ifdef SHADOWS_ENABLED
     uniform sampler2D TEX_SHADOW;
@@ -87,6 +88,7 @@ uniform sampler3D texFogNoise;
 
 #include "/lib/noise/ign.glsl"
 #include "/lib/noise/hash.glsl"
+#include "/lib/noise/blue.glsl"
 
 #include "/lib/light/hcm.glsl"
 #include "/lib/light/fresnel.glsl"

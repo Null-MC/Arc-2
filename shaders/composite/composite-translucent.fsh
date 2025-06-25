@@ -15,6 +15,7 @@ uniform sampler2D solidDepthTex;
 uniform sampler2D texDeferredTrans_Color;
 uniform sampler2D texDeferredTrans_TexNormal;
 uniform usampler2D texDeferredTrans_Data;
+uniform sampler2D texDeferredTrans_Depth;
 
 uniform sampler2D texParticleTranslucent;
 uniform sampler2D texClouds;
@@ -22,6 +23,8 @@ uniform sampler2D texClouds;
 uniform sampler2D texSkyView;
 uniform sampler2D texSkyTransmit;
 uniform sampler2D texSkyIrradiance;
+
+uniform sampler2D texBlueNoise;
 
 //uniform sampler2DArray shadowMap;
 //uniform sampler2DArray solidShadowMap;
@@ -101,6 +104,7 @@ uniform sampler2D texSkyIrradiance;
 
 #include "/lib/noise/ign.glsl"
 #include "/lib/noise/hash.glsl"
+#include "/lib/noise/blue.glsl"
 
 #include "/lib/light/hcm.glsl"
 #include "/lib/light/fresnel.glsl"
@@ -176,19 +180,12 @@ void main() {
     vec4 finalColor = vec4(0.0);
     bool is_fluid = false;
 
-//    float depthOpaque = texelFetch(solidDepthTex, iuv, 0).r;
-//    float depthTrans = texelFetch(mainDepthTex, iuv, 0).r;
-//    #ifdef TRANSLUCENT_DEPTH_TEST_FIX
-//        // TODO: manual depth-test
-//        //float depthOpaque = texelFetch(solidDepthTex, ivec2(gl_FragCoord.xy), 0).r;
-//        if (depthOpaque > depthTrans) albedo.a = 0.0;
-//    #endif
+    float depthOpaque = texelFetch(solidDepthTex, iuv, 0).r;
+    float depthTrans = texelFetch(texDeferredTrans_Depth, iuv, 0).r;
 
-    if (albedo.a > EPSILON) {
+    if (albedo.a > EPSILON && depthTrans <= depthOpaque) {
         vec3 texNormalData = texelFetch(texDeferredTrans_TexNormal, iuv, 0).rgb;
         uvec4 data = texelFetch(texDeferredTrans_Data, iuv, 0);
-        float depthOpaque = texelFetch(solidDepthTex, iuv, 0).r;
-        float depthTrans = texelFetch(mainDepthTex, iuv, 0).r;
 
         vec3 ndcPosOpaque = vec3(uv, depthOpaque) * 2.0 - 1.0;
         vec3 ndcPosTrans = vec3(uv, depthTrans) * 2.0 - 1.0;

@@ -35,6 +35,8 @@ void sample_AllPointLights(inout vec3 diffuse, inout vec3 specular, const in vec
         vec3 lightColor = iris_getLightColor(blockId).rgb;
         lightColor = RgbToLinear(lightColor);
 
+        float lightSize = iris_isFullBlock(blockId) ? 1.0 : 0.15;
+
         vec3 fragToLight = ap.point.pos[lightIndex].xyz - localSamplePos;
         float sampleDist = length(fragToLight);
         vec3 sampleDir = fragToLight / sampleDist;
@@ -42,7 +44,7 @@ void sample_AllPointLights(inout vec3 diffuse, inout vec3 specular, const in vec
 
         float geo_facing = step(0.0, dot(localGeoNormal, sampleDir));
 
-        float lightShadow = geo_facing * sample_PointLight(localSamplePos, lightRange, offsetBias, lightIndex);
+        float lightShadow = geo_facing * sample_PointLight(localSamplePos, lightSize, lightRange, offsetBias, lightIndex);
 
 
 

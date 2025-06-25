@@ -7,14 +7,12 @@ layout(location = 0) out vec4 outColor;
 layout(location = 1) out vec4 outTexNormal;
 layout(location = 2) out uvec4 outData;
 
-#if defined RENDER_PARALLAX && defined MATERIAL_PARALLAX_DEPTHWRITE
-    layout (depth_greater) out float gl_FragDepth;
+#ifdef RENDER_TRANSLUCENT
+    layout(location = 3) out float outDepth;
 #endif
 
-uniform sampler3D texFogNoise;
-
-#if defined(RENDER_ENTITY) && defined(RENDER_TRANSLUCENT) && defined(TRANSLUCENT_DEPTH_TEST_FIX)
-    uniform sampler2D solidDepthTex;
+#if defined RENDER_PARALLAX && defined MATERIAL_PARALLAX_DEPTHWRITE
+    layout (depth_greater) out float gl_FragDepth;
 #endif
 
 in VertexData2 {
@@ -45,6 +43,8 @@ in VertexData2 {
         flat vec2 atlasCoordSize;
     #endif
 } vIn;
+
+uniform sampler3D texFogNoise;
 
 #include "/lib/common.glsl"
 
@@ -126,20 +126,8 @@ void iris_emitFragment() {
         #ifdef MATERIAL_NORMAL_SMOOTH
             vec2 atlasSize = textureSize(irisInt_NormalMap, 0);
 
-            //vec2 uv_min = floor(mUV * atlasSize) / atlasSize;
             vec2 uv[4];
-            //vec2 atlasTileSize = vIn.atlasCoordSize * atlasSize;
             vec2 f = GetLinearCoords(mUV - 0.5/atlasSize, atlasSize, uv);
-
-//            uv[0] = GetLocalCoord(uv[0], vIn.atlasCoordMin, vIn.atlasCoordSize);
-//            uv[1] = GetLocalCoord(uv[1], vIn.atlasCoordMin, vIn.atlasCoordSize);
-//            uv[2] = GetLocalCoord(uv[2], vIn.atlasCoordMin, vIn.atlasCoordSize);
-//            uv[3] = GetLocalCoord(uv[3], vIn.atlasCoordMin, vIn.atlasCoordSize);
-//
-//            uv[0] = GetAtlasCoord(uv[0], vIn.atlasCoordMin, vIn.atlasCoordSize);
-//            uv[1] = GetAtlasCoord(uv[1], vIn.atlasCoordMin, vIn.atlasCoordSize);
-//            uv[2] = GetAtlasCoord(uv[2], vIn.atlasCoordMin, vIn.atlasCoordSize);
-//            uv[3] = GetAtlasCoord(uv[3], vIn.atlasCoordMin, vIn.atlasCoordSize);
 
             vec2 uv_min = vIn.atlasCoordMin + 0.5/atlasSize;
             vec2 uv_max = vIn.atlasCoordMin + vIn.atlasCoordSize - 1.0/atlasSize;
@@ -249,12 +237,6 @@ void iris_emitFragment() {
         const float alphaThreshold = 0.1;
     #endif
 
-    #if defined(RENDER_ENTITY) && defined(RENDER_TRANSLUCENT) && defined(TRANSLUCENT_DEPTH_TEST_FIX)
-        // TODO: manual depth-test
-        float depthOpaque = texelFetch(solidDepthTex, ivec2(gl_FragCoord.xy), 0).r;
-        if (depthOpaque < gl_FragCoord.z - 1.0e-8) albedo.a = 0.0;
-    #endif
-
     //if (iris_discardFragment(albedo)) {discard; return;}
     if (albedo.a < alphaThreshold) {discard; return;}
 
@@ -301,4 +283,8 @@ void iris_emitFragment() {
     outData.g = packUnorm4x8(vec4(roughness, f0_metal, emission, sss));
     outData.b = packUnorm4x8(vec4(lmcoord, occlusion, porosity));
     outData.a = vIn.blockId;
+
+    #ifdef RENDER_TRANSLUCENT
+        outDepth = gl_FragCoord.z;
+    #endif
 }

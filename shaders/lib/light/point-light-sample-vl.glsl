@@ -29,12 +29,14 @@ vec3 sample_AllPointLights_VL(const in vec3 localPos) {
         vec3 lightColor = iris_getLightColor(blockId).rgb;
         lightColor = RgbToLinear(lightColor);
 
+        float lightSize = iris_isFullBlock(blockId) ? 1.0 : 0.15;
+
         vec3 fragToLight = ap.point.pos[lightIndex].xyz - localPos;
         float sampleDist = length(fragToLight);
         vec3 sampleDir = fragToLight / sampleDist;
 
-        const float bias = 0.0;
-        float lightShadow = sample_PointLight(localPos, lightRange, bias, lightIndex);
+        const float bias = -0.08;
+        float lightShadow = sample_PointLight(localPos, lightSize, lightRange, bias, lightIndex);
 
         float VoL = dot(viewDir, sampleDir);
         float phase = saturate(getMiePhase(VoL));

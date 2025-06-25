@@ -339,6 +339,10 @@ export function setupShader(dimension : NamespacedId) {
     setLightColorEx('#362b21', 'brown_mushroom');
     setLightColorEx('#f39849', 'campfire');
     setLightColorEx('#935b2c', 'cave_vines', "cave_vines_plant");
+    setLightColorEx('#d39f6d', 'copper_bulb', 'waxed_copper_bulb');
+    setLightColorEx('#d39255', 'exposed_copper_bulb', 'waxed_exposed_copper_bulb');
+    setLightColorEx('#cf833a', 'weathered_copper_bulb', 'waxed_weathered_copper_bulb');
+    setLightColorEx('#87480b', 'oxidized_copper_bulb', 'waxed_oxidized_copper_bulb');
     setLightColorEx('#7f17a8', 'crying_obsidian', 'respawn_anchor');
     setLightColorEx('#371559', "enchanting_table");
     setLightColorEx('#bea935', "firefly_bush");
@@ -552,6 +556,13 @@ export function setupShader(dimension : NamespacedId) {
         .format(Format.RGBA32UI)
         //.clearColor(0.0, 0.0, 0.0, 0.0)
         .clear(false)
+        .width(screenWidth)
+        .height(screenHeight)
+        .build();
+
+    const texDeferredTrans_Depth = new Texture("texDeferredTrans_Depth")
+        .format(Format.R32F)
+        .clearColor(1.0, 1.0, 1.0, 1.0)
         .width(screenWidth)
         .height(screenHeight)
         .build();
@@ -1056,6 +1067,9 @@ export function setupShader(dimension : NamespacedId) {
             // .blendFunc(1, FUNC_ONE, FUNC_ZERO, FUNC_ONE, FUNC_ZERO)
             .target(2, texDeferredTrans_Data)
             // .blendFunc(2, FUNC_ONE, FUNC_ZERO, FUNC_ONE, FUNC_ZERO)
+            .target(3, texDeferredTrans_Depth)
+            .blendOff(3)
+            // .blendFunc(3, FUNC_ONE, FUNC_ZERO, FUNC_ONE, FUNC_ZERO)
             .define("RENDER_TRANSLUCENT", "1");
     }
 

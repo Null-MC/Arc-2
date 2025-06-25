@@ -12,4 +12,5 @@ vec3 sample_blueNoiseNorm(const in vec2 seed) {
 	vec2 coord = (seed + vec2(71.0, 83.0) * ap.time.frames) / texSize;
 	vec3 noise = textureLod(texBlueNoise, coord, 0).rgb;
 	return normalize(noise * 2.0 - 1.0);
+	//return normalize(noise);
 }

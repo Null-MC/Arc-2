@@ -22,8 +22,12 @@ uniform sampler2D texSkyMultiScatter;
     uniform sampler2DArray texShadowColor;
 #endif
 
-#if LIGHTING_MODE == LIGHT_MODE_SHADOWS
+#if LIGHTING_MODE == LIGHT_MODE_SHADOWS && defined(LIGHTING_VL_SHADOWS)
     uniform samplerCubeArrayShadow pointLightFiltered;
+
+    #ifdef LIGHTING_SHADOW_PCSS
+        uniform samplerCubeArray pointLight;
+    #endif
 #elif LIGHTING_MODE == LIGHT_MODE_LPV
     uniform sampler3D texFloodFill;
     uniform sampler3D texFloodFill_alt;
@@ -347,7 +351,7 @@ void main() {
         #ifdef LIGHTING_VL_SHADOWS
             #if LIGHTING_MODE == LIGHT_MODE_SHADOWS
                 vec3 blockLight = sample_AllPointLights_VL(sampleLocalPos);
-                sampleLit += blockLight * 100.0;
+                sampleLit += blockLight * 20.0;
             #elif LIGHTING_MODE == LIGHT_MODE_RT
                 vec3 voxelPos = voxel_GetBufferPosition(sampleLocalPos);
                 ivec3 lightBinPos = ivec3(floor(voxelPos / LIGHT_BIN_SIZE));

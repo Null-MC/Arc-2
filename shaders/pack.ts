@@ -19,7 +19,7 @@ function applySettings(settings : ShaderSettings, internal) {
     worldSettings.pointNearPlane = 0.05;
     worldSettings.pointFarPlane = 16.0;
     worldSettings.pointResolution = 128;
-    worldSettings.pointMaxUpdates = 8;
+    worldSettings.pointMaxUpdates = settings.Lighting_Shadow_UpdateCount;
     worldSettings.pointRealTime = settings.Lighting_Shadow_RealtimeCount;
     worldSettings.pointUpdateThreshold = settings.Lighting_Shadow_UpdateThreshold * 0.01;
     worldSettings.renderWaterOverlay = false;

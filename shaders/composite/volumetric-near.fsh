@@ -140,7 +140,7 @@ void main() {
         }
     }
 
-    float far = ap.camera.far * 0.25;
+    float far = 128.0;//ap.camera.far * 0.25;
 
     vec3 traceEnd = localPos;
     if (len > far)
@@ -232,7 +232,11 @@ void main() {
     for (int i = 0; i < VL_MaxSamples; i++) {
         float iF = min(i + dither, VL_MaxSamples-1);
         float stepF = saturate(iF / (VL_MaxSamples-1));
-        stepF = pow(stepF, 1.6);
+
+        #if VL_STEP_POW != 100
+            const float VL_StepPower = VL_STEP_POW * 0.01;
+            stepF = pow(stepF, VL_StepPower);
+        #endif
 
         //vec3 sampleLocalPos = iF * stepLocal;
         vec3 sampleLocalPos = mix(localPosStart, traceEnd, stepF);

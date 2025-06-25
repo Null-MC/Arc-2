@@ -12,6 +12,7 @@
 #define HANDLIGHT_TRACE
 
 //#define VL_SELF_SHADOW
+#define VL_STEP_POW 160
 
 #define POINT_LIGHT_MAX 64
 #define POINT_LIGHT_POM

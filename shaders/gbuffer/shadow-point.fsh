@@ -87,12 +87,8 @@ void iris_emitFragment() {
             if (emission > 0.0) alpha = 0.0;
         }
     #else
-        if (vIn.isFull || true) {
-            if (clamp(vIn.modelPos, -0.5, 0.5) == vIn.modelPos) alpha = 0.0;
-        }
-        else {
-            if (length(vIn.modelPos) < 0.1) alpha = 0.0;
-        }
+        float near = vIn.isFull ? 0.5 : 0.49999;
+        if (clamp(vIn.modelPos, -near, near) == vIn.modelPos) alpha = 0.0;
     #endif
 
     const float alphaThreshold = 0.2;

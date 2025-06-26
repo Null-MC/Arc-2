@@ -12,9 +12,8 @@
 #define HANDLIGHT_TRACE
 
 //#define VL_SELF_SHADOW
-#define VL_STEP_POW 160
+#define VL_STEP_POW 100
 
-#define POINT_LIGHT_MAX 64
 #define POINT_LIGHT_POM
 
 #define VOXEL_SHADOW_CASCADE 0
@@ -50,18 +49,18 @@ const float Shadow_MaxPcfSize = 0.6;
 const int SHADOW_SCREEN_STEPS = 12;
 const float ShadowScreenSlope = 0.85;
 
-const float WaterTintMinDist = 1.0;
-const float shadowMapResolution = float(SHADOW_RESOLUTION);
+const float WaterTintMinDist = 0.0;
 const float cloudHeight = 320.0;
-
-const float pointNearPlane = 0.05;
-const float pointFarPlane = 16.0;
 
 const vec3 WhiteWorld_Value = vec3(0.8);
 
 
 // DO NOT EDIT
+const float shadowMapResolution = float(SHADOW_RESOLUTION);
 const float shadowPixelSize = 1.0 / shadowMapResolution;
+
+const float pointNearPlane = POINT_LIGHT_NEAR;
+const float pointFarPlane = POINT_LIGHT_FAR;
 
 #if defined MATERIAL_PARALLAX_ENABLED && defined RENDER_TERRAIN && MATERIAL_FORMAT != MAT_NONE
 	#define RENDER_PARALLAX

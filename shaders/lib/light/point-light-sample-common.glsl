@@ -69,7 +69,7 @@ float sample_PointLight(const in vec3 localPos, const in float lightSize, const 
         float light_shadow = sample_PointLightShadow(sampleDir, faceDepth, lightRange, bias, index);
     #endif
 
-    float light_att = GetLightAttenuation(sampleDist, lightRange);
+    float light_att = GetLightAttenuation_Linear(sampleDist, lightRange);
 
     return light_shadow * light_att;
 }

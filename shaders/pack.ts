@@ -14,11 +14,12 @@ let BlockMappings: BlockMap;
 function applySettings(settings : ShaderSettings, internal) {
     worldSettings.disableShade = true;
     worldSettings.ambientOcclusionLevel = 0.0;
-    //worldSettings.shadowMapResolution = settings.Shadow_Resolution;
-    //worldSettings.cascadeCount = settings.Shadow_CascadeCount;
-    worldSettings.pointNearPlane = 0.05;
-    worldSettings.pointFarPlane = 16.0;
+    worldSettings.shadowMapDistance = settings.Shadow_Distance;
+    worldSettings.shadowMapResolution = settings.Shadow_Resolution;
+    worldSettings.cascadeCount = settings.Shadow_CascadeCount;
     worldSettings.pointResolution = 128;
+    worldSettings.pointNearPlane = internal.PointLightNear;
+    worldSettings.pointFarPlane = internal.PointLightFar;
     worldSettings.pointMaxUpdates = settings.Lighting_Shadow_UpdateCount;
     worldSettings.pointRealTime = settings.Lighting_Shadow_RealtimeCount;
     worldSettings.pointUpdateThreshold = settings.Lighting_Shadow_UpdateThreshold * 0.01;
@@ -99,6 +100,9 @@ function applySettings(settings : ShaderSettings, internal) {
     defineGlobally('LIGHTING_MODE', settings.Lighting_Mode);
     defineGlobally('LIGHTING_VL_RES', settings.Lighting_VolumetricResolution);
 
+    defineGlobally('POINT_LIGHT_MAX', internal.PointLightMax);
+    defineGlobally('POINT_LIGHT_NEAR', internal.PointLightNear);
+    defineGlobally('POINT_LIGHT_FAR', internal.PointLightFar);
     if (settings.Lighting_Mode == LightingModes.ShadowMaps) {
         defineGlobally('LIGHTING_SHADOW_MAX_COUNT', settings.Lighting_Shadow_BinMaxCount);
         if (settings.Lighting_Shadow_PCSS)
@@ -1154,8 +1158,7 @@ export function setupShader(dimension : NamespacedId) {
         .build());
 
     if (settings.Lighting_Mode == LightingModes.ShadowMaps && settings.Lighting_Shadow_BinsEnabled) {
-        const MaxLightCount = 64;
-        const pointGroupCount = Math.ceil(MaxLightCount / (8*8*8));
+        const pointGroupCount = Math.ceil(internal.PointLightMax / (8*8*8));
         const voxelGroupCount = Math.ceil(settings.Voxel_Size / 8);
 
         registerShader(Stage.POST_RENDER, new Compute("light-list-point")
@@ -1333,7 +1336,7 @@ export function setupShader(dimension : NamespacedId) {
             .build());
     }
 
-    registerShader(Stage.POST_RENDER, new Composite("volumetric-far")
+    const vlFarShader = new Composite("volumetric-far")
         .vertex("shared/bufferless.vsh")
         .fragment("composite/volumetric-far.fsh")
         .target(0, texScatterVL)
@@ -1341,8 +1344,12 @@ export function setupShader(dimension : NamespacedId) {
         .ssbo(0, sceneBuffer)
         // .ssbo(1, shLpvBuffer)
         // .ssbo(2, shLpvBuffer_alt)
-        .ubo(0, SceneSettingsBuffer)
-        .build());
+        .ubo(0, SceneSettingsBuffer);
+
+    if (internal.LightListsEnabled)
+        vlFarShader.ssbo(3, lightListBuffer);
+
+    registerShader(Stage.POST_RENDER, vlFarShader.build());
 
     registerBarrier(Stage.POST_RENDER, new MemoryBarrier(SSBO_BIT | IMAGE_BIT));
 

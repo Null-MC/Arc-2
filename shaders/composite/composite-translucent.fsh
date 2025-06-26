@@ -360,8 +360,13 @@ void main() {
         vec3 voxelPos = voxel_GetBufferPosition(localPosTrans);
 
         #if LIGHTING_MODE == LIGHT_MODE_SHADOWS
-            // TODO: add fade?
-            blockLighting = vec3(0.0);
+            vec3 sectionOffset = fract(ap.camera.pos / 16.0) * 16.0;
+            vec3 sectionPos = floor((sectionOffset + localPosTrans) / 16.0);
+            const vec3 pointBoundsMax = vec2(2.0, 1.0).xyx + 0.08;
+
+            if (clamp(sectionPos, -pointBoundsMax, pointBoundsMax) == sectionPos) {
+                blockLighting = vec3(0.0);
+            }
         #elif LIGHTING_MODE == LIGHT_MODE_RT
             if (voxel_isInBounds(voxelPos)) {
                 blockLighting = vec3(0.0);
@@ -583,7 +588,7 @@ void main() {
             vec3 vlTransmit = textureLod(texTransmitFinal, uv, 0).rgb;
         #endif
 
-        colorFinal = colorFinal * vlTransmit + vlScatter*1000.0;
+        colorFinal = colorFinal * vlTransmit + vlScatter * 1000.0;
     #endif
 
     vec4 weather = textureLod(texParticleTranslucent, uv, 0);

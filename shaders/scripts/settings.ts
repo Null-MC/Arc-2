@@ -37,6 +37,7 @@ export class ShaderSettings {
     get Water_TessellationLevel(): number {return this.getCachedIntSetting('WATER_TESSELLATION_LEVEL');}
 
     get Shadow_Enabled(): boolean {return this.getCachedBoolSetting('SHADOWS_ENABLED');}
+    get Shadow_Distance(): number {return this.getCachedIntSetting('SHADOW_DISTANCE');}
     get Shadow_Resolution(): number {return this.getCachedIntSetting('SHADOW_RESOLUTION');}
     get Shadow_CascadeCount(): number {return this.getCachedIntSetting('SHADOW_CASCADE_COUNT');}
     get Shadow_CloudEnabled(): boolean {return this.getCachedBoolSetting('SHADOWS_CLOUD_ENABLED');}
@@ -133,6 +134,9 @@ export class ShaderSettings {
             LightListsEnabled: false,
             VoxelizeBlockFaces: false,
             VoxelizeTriangles: false,
+            PointLightNear: 0.1,
+            PointLightFar: 16.0,
+            PointLightMax: 128,
             DebugEnabled: false,
         };
 

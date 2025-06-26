@@ -32,6 +32,7 @@ export function setupOptions() {
 
     const screen_Shadows = new Page("SHADOWS")
         .add(asBool("SHADOWS_ENABLED", true, true))
+        .add(asIntRange("SHADOW_DISTANCE", 200, 50, 2000, 50, true))
         .add(asInt("SHADOW_RESOLUTION", 256, 512, 1024, 2048, 4096).build(1024))
         .add(asIntRange("SHADOW_CASCADE_COUNT", 4, 1, 6, 1, true))
         .add(asBool("SHADOWS_SS_FALLBACK", true, true))
@@ -114,7 +115,7 @@ export function setupOptions() {
     let screen_Voxel = new Page("VOXELS")
         .add(asInt("VOXEL_SIZE", 64, 128, 256).build(128))
         .add(asInt("VOXEL_FRUSTUM_OFFSET", 0, 25, 50, 75).build(0))
-        .add(asBool("VOXEL_PROVIDED", false, true))
+        .add(asBool("VOXEL_PROVIDED", true, true))
         .build();
 
     const screen_Effects = new Page("EFFECTS")

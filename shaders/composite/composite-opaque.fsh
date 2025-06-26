@@ -236,7 +236,7 @@ void main() {
         float LoHm = max(dot(Scene_LocalLightDir, H), 0.0);
         float NoVm = max(dot(localTexNormal, -localViewDir), 0.0);
 
-        vec4 shadow_sss = vec4(vec3(1.0), 0.0);
+        vec4 shadow_sss = vec4(lmCoord.y);
         #ifdef SHADOWS_ENABLED
             shadow_sss = textureLod(TEX_SHADOW, uv, 0);
         #endif
@@ -346,8 +346,13 @@ void main() {
         vec3 voxelPos = voxel_GetBufferPosition(localPos);
 
         #if LIGHTING_MODE == LIGHT_MODE_SHADOWS
-            // TODO: add fade?
-            blockLighting = vec3(0.0);
+            vec3 sectionOffset = fract(ap.camera.pos / 16.0) * 16.0;
+            vec3 sectionPos = floor((sectionOffset + localPos) / 16.0);
+            const vec3 pointBoundsMax = vec2(2.0, 1.0).xyx + 0.08;
+
+            if (clamp(sectionPos, -pointBoundsMax, pointBoundsMax) == sectionPos) {
+                blockLighting = vec3(0.0);
+            }
         #elif LIGHTING_MODE == LIGHT_MODE_RT
             // TODO: replace check with light-list bounds!
             if (voxel_isInBounds(voxelPos)) {
@@ -553,9 +558,9 @@ void main() {
     }
 
     #ifdef EFFECT_VL_ENABLED
-        vec3 vlScatter = textureLod(texScatterVL, uv, 0).rgb*1000.0;
+        vec3 vlScatter = textureLod(texScatterVL, uv, 0).rgb;
         vec3 vlTransmit = textureLod(texTransmitVL, uv, 0).rgb;
-        colorFinal = fma(colorFinal, vlTransmit, vlScatter);
+        colorFinal = fma(colorFinal, vlTransmit, vlScatter * 1000.0);
     #endif
 
     vec4 particles = textureLod(texParticleOpaque, uv, 0);

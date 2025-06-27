@@ -137,7 +137,7 @@ void main() {
         vec3 localPosOpaque = mul3(ap.camera.viewInv, viewPos);
         
         float len = length(localPosOpaque);
-        float far = ap.camera.far * 0.5;
+        float far = 128.0;//ap.camera.far * 0.5;
         
         if (len > far)
             localPosOpaque = localPosOpaque / len * far;
@@ -162,8 +162,8 @@ void main() {
         vec3 shadowViewEnd = mul3(ap.celestial.view, localPosOpaque);
         vec3 shadowViewStep = (shadowViewEnd - shadowViewStart) * stepScale;
 
-        float miePhaseValue = getMiePhase(VoL_sun, 0.2);
-        //float miePhase_moon = getMiePhase(VoL_moon, 0.2);
+        float miePhase_sun = getMiePhase(VoL_sun, 0.2);
+        float miePhase_moon = getMiePhase(VoL_moon, 0.2);
 
 
         // int material = int(unpackUnorm4x8(data_r).w * 255.0 + 0.5);
@@ -173,11 +173,11 @@ void main() {
         for (int i = 0; i < VL_MaxSamples; i++) {
             vec3 sampleLocalPos = fma(stepLocal, vec3(i+dither), localPosTrans);
             vec2 sample_lmcoord = vec2(0.0, 1.0);
-            bool isFluid = isWater;
 
             #ifdef VOXEL_PROVIDED
                 ivec3 blockWorldPos = ivec3(floor(sampleLocalPos + ap.camera.pos));
 
+                bool isFluid = false;
                 if (blockWorldPos.y > -64 && blockWorldPos.y < 320) { // && lengthSq(sampleLocalPos) < renderDistSq) {
                     uint blockId = iris_getBlockAtPos(blockWorldPos).x;
                     isFluid = iris_hasFluid(blockId) && iris_getEmission(blockId) == 0;
@@ -191,13 +191,17 @@ void main() {
                     sample_lmcoord = saturate(blockLightInt / 240.0);
                 }
 
-                uint blockLightData = iris_getBlockAtPos(blockWorldPos).y;
+                if (isFluid) {
+                    uint blockLightData = iris_getBlockAtPos(blockWorldPos).y;
 
-                uvec2 blockLightInt = uvec2(
-                    bitfieldExtract(blockLightData,  0, 16),
-                    bitfieldExtract(blockLightData, 16, 16));
+                    uvec2 blockLightInt = uvec2(
+                        bitfieldExtract(blockLightData, 0, 16),
+                        bitfieldExtract(blockLightData, 16, 16));
 
-                sample_lmcoord = saturate(blockLightInt / 240.0);
+                    sample_lmcoord = saturate(blockLightInt / 240.0);
+                }
+            #else
+                bool isFluid = isWater;
             #endif
 
             float waterDepth = EPSILON;
@@ -241,13 +245,39 @@ void main() {
 //                }
 //            #endif
 
+            float vs_shadowF = 1.0;
             float sampleDensity = VL_WaterDensity;
             if (!isFluid) {
                 sampleDensity = GetSkyDensity(sampleLocalPos);
 
-//                float worldY = sampleLocalPos.y + ap.camera.pos.y;
-//                float lightAtmosDist = max(SKY_SEA_LEVEL + 200.0 - worldY, 0.0) / Scene_LocalLightDir.y;
-//                shadowSample *= exp2(-0.16 * lightAtmosDist * transmitF);
+                // TODO: cloud shadows & fog noise
+
+                #ifdef VL_SELF_SHADOW
+                    float shadow_dither = dither;
+
+                    float shadowStepDist = 1.0;
+                    float shadowDensity = 0.0;
+                    for (float ii = shadow_dither; ii < 8.0; ii += 1.0) {
+                        vec3 fogShadow_localPos = (shadowStepDist * ii) * Scene_LocalLightDir + sampleLocalPos;
+
+                        float shadowSampleDensity = VL_WaterDensity;
+                        if (ap.camera.fluid != 1) {
+                            shadowSampleDensity = GetSkyDensity(fogShadow_localPos);
+
+                            #ifdef SKY_FOG_NOISE
+                            shadowSampleDensity += SampleFogNoise(fogShadow_localPos);
+                            #endif
+                        }
+
+                        shadowDensity += shadowSampleDensity * shadowStepDist;// * (1.0 - max(1.0 - ii, 0.0));
+                        shadowStepDist *= 2.0;
+                    }
+
+                    if (shadowDensity > 0.0) {
+                        vs_shadowF *= exp(-VL_ShadowTransmit * shadowDensity);
+                        shadowSample *= vs_shadowF;
+                    }
+                #endif
             }
 
 //            vec3 sampleLit = phase * sampleColor + ambientBase;
@@ -280,23 +310,23 @@ void main() {
 
             vec3 scatteringIntegral, sampleTransmittance, inScattering, extinction;
 
-            sampleLit *= 9.0;
+            sampleLit *= 27.0;
 
             if (!isFluid) {
                 vec3 skyPos = getSkyPosition(sampleLocalPos);
 
-                float mieDensity = max(sampleDensity, EPSILON);
+                float mieDensity = sampleDensity + EPSILON;
                 float mieScattering = mieScatteringF * mieDensity;
                 float mieAbsorption = mieAbsorptionF * mieDensity;
                 extinction = vec3(mieScattering + mieAbsorption);
 
                 sampleTransmittance = exp(-extinction * stepDist);
 
-                vec3 psiMS = getValFromMultiScattLUT(texSkyMultiScatter, skyPos, Scene_LocalSunDir);
+                vec3 psiMS = getValFromMultiScattLUT(texSkyMultiScatter, skyPos, Scene_LocalSunDir) + Sky_MinLight;
                 psiMS *= Scene_SkyBrightnessSmooth;
 
-                // TODO: add moon
-                vec3 mieInScattering = mieScattering * (miePhaseValue * sunSkyLight * shadowSample + psiMS + sampleLit);
+                vec3 mieSkyLight = miePhase_sun * sunSkyLight + miePhase_moon * moonSkyLight;
+                vec3 mieInScattering = mieScattering * (mieSkyLight * shadowSample + psiMS + sampleLit);
                 inScattering = mieInScattering;
             }
             else {

@@ -285,7 +285,7 @@ void main() {
 
         float vs_shadowF = 1.0;
         float sampleDensity = VL_WaterDensity;
-        if (ap.camera.fluid != 1) {
+        if (!isFluid) {
             sampleDensity = GetSkyDensity(sampleLocalPos);
 
             #ifdef SKY_CLOUDS_ENABLED
@@ -439,7 +439,7 @@ void main() {
 
         vec3 scatteringIntegral, sampleTransmittance, inScattering, extinction;
 
-        sampleLit *= 9.0;
+        sampleLit *= 27.0;
 
         if (!isFluid) {
             vec3 skyPos = getSkyPosition(sampleLocalPos);

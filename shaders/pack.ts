@@ -109,7 +109,9 @@ function applySettings(settings : ShaderSettings, internal) {
     defineGlobally('LIGHTING_MODE', settings.Lighting_Mode);
     defineGlobally('LIGHTING_VL_RES', settings.Lighting_VolumetricResolution);
 
-    //defineGlobally('POINT_LIGHT_MAX', internal.PointLightMax);
+    defineGlobally('POINT_LIGHT_MAX0', internal.PointLightMax0);
+    defineGlobally('POINT_LIGHT_MAX1', internal.PointLightMax1);
+    defineGlobally('POINT_LIGHT_MAX2', internal.PointLightMax2);
     defineGlobally('POINT_LIGHT_NEAR', internal.PointLightNear);
     defineGlobally('POINT_LIGHT_FAR', internal.PointLightFar);
     if (settings.Lighting_Mode == LightingModes.ShadowMaps) {
@@ -871,7 +873,7 @@ export function setupShader(dimension : NamespacedId) {
     let lightListBuffer: BuiltBuffer | null = null;
     if (internal.LightListsEnabled) {
         const counterSize = settings.Lighting_Mode == LightingModes.ShadowMaps ? 2 : 1;
-        const lightSize = settings.Lighting_Mode == LightingModes.ShadowMaps ? 2 : 1;
+        const lightSize = settings.Lighting_Mode == LightingModes.ShadowMaps ? 3 : 1;
 
         const maxCount = settings.Lighting_Mode == LightingModes.ShadowMaps
             ? settings.Lighting_Shadow_BinMaxCount
@@ -1189,7 +1191,8 @@ export function setupShader(dimension : NamespacedId) {
         .build());
 
     if (settings.Lighting_Mode == LightingModes.ShadowMaps && settings.Lighting_Shadow_BinsEnabled) {
-        const pointGroupCount = Math.ceil(settings.Lighting_Shadow_MaxCount / (8*8*8));
+        const pointMaxCount = internal.PointLightMax0 + internal.PointLightMax1 + internal.PointLightMax2;
+        const pointGroupCount = Math.ceil(pointMaxCount / (8*8*8));
         const voxelGroupCount = Math.ceil(settings.Voxel_Size / 8);
 
         registerShader(Stage.POST_RENDER, new Compute("light-list-point")

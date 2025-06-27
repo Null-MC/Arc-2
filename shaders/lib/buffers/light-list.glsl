@@ -11,6 +11,7 @@
 struct PointLight {
     uint voxelIndex;
     #if LIGHTING_MODE == LIGHT_MODE_SHADOWS && defined(LIGHTING_SHADOW_BIN_ENABLED)
+        uint shadowLod;
         uint shadowIndex;
     #endif
 };

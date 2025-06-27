@@ -140,6 +140,9 @@ export class ShaderSettings {
             VoxelizeTriangles: false,
             PointLightNear: 0.1,
             PointLightFar: 16.0,
+            PointLightMax0: 16,
+            PointLightMax1: 32,
+            PointLightMax2: 64,
             DebugEnabled: false,
         };
 

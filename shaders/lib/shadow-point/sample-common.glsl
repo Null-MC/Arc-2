@@ -1,21 +1,48 @@
 #ifdef LIGHTING_SHADOW_PCSS
     float sample_PointLightDepth(const in vec3 sampleDir, const in uint index) {
-        float ndcDepth = texture(pointLight, vec4(sampleDir, index)).r * 2.0 - 1.0;
+        float depth;
+        switch (lod) {
+            case 0u:
+                depth = texture(pointLight0, vec4(sampleDir, index)).r;
+                break;
+            case 1u:
+                depth = texture(pointLight1, vec4(sampleDir, index)).r;
+                break;
+            case 2u:
+                depth = texture(pointLight2, vec4(sampleDir, index)).r;
+                break;
+        }
+
+        float ndcDepth = depth * 2.0 - 1.0;
         return 2.0 * pointNearPlane * pointFarPlane / (pointFarPlane + pointNearPlane - ndcDepth * (pointFarPlane - pointNearPlane));
     }
 #endif
 
-float sample_PointLightShadow(const in vec3 sampleDir, const in float sampleDist, const in float lightRange, const float bias, const in uint index) {
+float sample_PointLightShadow(const in vec3 sampleDir, const in float sampleDist, const in float lightRange, const float bias, const in uint index, const in uint lod) {
     if (sampleDist >= lightRange) return 0.0;
 
     float linearDepth = sampleDist - bias;
     float ndcDepth = (pointFarPlane + pointNearPlane - 2.0 * pointNearPlane * pointFarPlane / linearDepth) / (pointFarPlane - pointNearPlane);
     float depth = ndcDepth * 0.5 + 0.5;
 
-    return texture(pointLightFiltered, vec4(sampleDir, index), depth).r;
+    vec4 samplePos = vec4(sampleDir, index);
+
+    float result;
+    switch (lod) {
+        case 0u:
+            result = texture(pointLightFiltered0, samplePos, depth).r;
+            break;
+        case 1u:
+            result = texture(pointLightFiltered1, samplePos, depth).r;
+            break;
+        case 2u:
+            result = texture(pointLightFiltered2, samplePos, depth).r;
+            break;
+    }
+    return result;
 }
 
-float sample_PointLight(const in vec3 localPos, const in float lightSize, const in float lightRange, const in float bias, const in uint index) {
+float sample_PointLight(const in vec3 localPos, const in float lightSize, const in float lightRange, const in float bias, const in uint index, const in uint lod) {
     vec3 fragToLight = localPos - ap.point.pos[index].xyz;
     float sampleDist = length(fragToLight);
     vec3 sampleDir = fragToLight / sampleDist;
@@ -62,11 +89,11 @@ float sample_PointLight(const in vec3 localPos, const in float lightSize, const 
             if (dot(randomVec, sampleDir) < 0.0) randomVec = -randomVec;
             randomVec = mix(sampleDir, randomVec, sample_radius);
 
-            light_shadow += sample_PointLightShadow(randomVec, faceDepth, lightRange, bias, index);
+            light_shadow += sample_PointLightShadow(randomVec, faceDepth, lightRange, bias, index, lod);
         }
         light_shadow /= PointLight_FilterCount;
     #else
-        float light_shadow = sample_PointLightShadow(sampleDir, faceDepth, lightRange, bias, index);
+        float light_shadow = sample_PointLightShadow(sampleDir, faceDepth, lightRange, bias, index, lod);
     #endif
 
     float light_att = GetLightAttenuation(sampleDist, lightRange);

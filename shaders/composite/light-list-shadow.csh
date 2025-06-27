@@ -19,12 +19,37 @@ void main() {
 	uint globalIndex = workGroupIndex * workGroupSize + gl_LocalInvocationIndex;
 
 	uint shadowIndex = globalIndex;
-	if (shadowIndex < LIGHTING_SHADOW_MAX_COUNT) {
-		vec3 lightLocalPos = ap.point.pos[shadowIndex].xyz;
+//	if (shadowIndex < LIGHTING_SHADOW_MAX_COUNT) {
+//		vec3 lightLocalPos = ap.point.pos[shadowIndex].xyz;
+
+	// TODO: get LOD index
+	int lod = -1;
+	if      (shadowIndex < POINT_LIGHT_MAX0) lod = 0;
+	else if (shadowIndex < POINT_LIGHT_MAX0+POINT_LIGHT_MAX1) lod = 1;
+	else if (shadowIndex < POINT_LIGHT_MAX0+POINT_LIGHT_MAX1+POINT_LIGHT_MAX2) lod = 2;
+
+	if (lod >= 0) {
+		vec3 lightLocalPos;
+		uint blockId;
+
+		switch (lod) {
+			case 0:
+				lightLocalPos = ap.point.pos0[shadowIndex].xyz;
+				blockId = ap.point.block0[shadowIndex];
+				break;
+			case 1:
+				lightLocalPos = ap.point.pos1[shadowIndex].xyz;
+				blockId = ap.point.block1[shadowIndex];
+				break;
+			case 2:
+				lightLocalPos = ap.point.pos2[shadowIndex].xyz;
+				blockId = ap.point.block2[shadowIndex];
+				break;
+		}
 
 		// get light bin index
 		vec3 voxelPos = voxel_GetBufferPosition(lightLocalPos);
-		if (voxel_isInBounds(voxelPos) && ap.point.block[shadowIndex] > 0) {
+		if (voxel_isInBounds(voxelPos) && blockId > 0) {
 			ivec3 lightBinPos = ivec3(floor(voxelPos / LIGHT_BIN_SIZE));
 			int lightBinIndex = GetLightBinIndex(lightBinPos);
 
@@ -36,6 +61,7 @@ void main() {
 
 				LightBinMap[lightBinIndex].lightList[lightIndex].voxelIndex = voxelIndex;
 				LightBinMap[lightBinIndex].lightList[lightIndex].shadowIndex = shadowIndex;
+				LightBinMap[lightBinIndex].lightList[lightIndex].shadowLod = lod;
 
 				#ifdef DEBUG_LIGHT_COUNT
 					atomicAdd(Scene_LightCount, 1u);

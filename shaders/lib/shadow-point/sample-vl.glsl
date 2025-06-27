@@ -9,34 +9,79 @@ vec3 sample_AllPointLights_VL(const in vec3 localPos) {
 
         uint maxLightCount = min(LightBinMap[lightBinIndex].shadowLightCount, LIGHTING_SHADOW_BIN_MAX_COUNT);
     #else
-        const uint maxLightCount = LIGHTING_SHADOW_MAX_COUNT;
+        const uint maxLightCount = POINT_LIGHT_MAX+POINT_LIGHT_MAX1+POINT_LIGHT_MAX2;
     #endif
 
-    for (uint i = 0; i < LIGHTING_SHADOW_BIN_MAX_COUNT; i++) {
+    uint blockId;
+    vec3 lightPos;
+    switch (lightLod) {
+        case 0:
+            blockId = ap.point.block0[lightIndex];
+            lightPos = ap.point.pos0[lightIndex].xyz;
+            break;
+        case 1:
+            blockId = ap.point.block1[lightIndex];
+            lightPos = ap.point.pos1[lightIndex].xyz;
+            break;
+        case 2:
+            blockId = ap.point.block2[lightIndex];
+            lightPos = ap.point.pos2[lightIndex].xyz;
+            break;
+    }
+
+    for (uint i = 0; i < LIGHTING_SHADOW_MAX_COUNT; i++) {
         if (i >= maxLightCount) break;
 
         #ifdef LIGHTING_SHADOW_BIN_ENABLED
+            uint lightLod   = LightBinMap[lightBinIndex].lightList[i].shadowLod;
             uint lightIndex = LightBinMap[lightBinIndex].lightList[i].shadowIndex;
         #else
+            uint lightLod = -1;
             uint lightIndex = i;
+
+            if      (lightIndex < POINT_LIGHT_MAX0) lightLod = 0;
+            else if (lightIndex < POINT_LIGHT_MAX0+POINT_LIGHT_MAX1) lightLod = 1;
+            else if (lightIndex < POINT_LIGHT_MAX0+POINT_LIGHT_MAX1+POINT_LIGHT_MAX2) lightLod = 2;
         #endif
 
-        uint blockId = ap.point.block[lightIndex];
+        uint blockId;
+        vec3 lightPos;
+        switch (lightLod) {
+            case 0:
+                blockId = ap.point.block0[lightIndex];
+                lightPos = ap.point.pos0[lightIndex].xyz;
+                break;
+            case 1:
+                blockId = ap.point.block1[lightIndex];
+                lightPos = ap.point.pos1[lightIndex].xyz;
+                break;
+            case 2:
+                blockId = ap.point.block2[lightIndex];
+                lightPos = ap.point.pos2[lightIndex].xyz;
+                break;
+        }
+
         #ifndef LIGHTING_SHADOW_BIN_ENABLED
             if (blockId == uint(-1)) continue;
         #endif
+
+        //uint blockId = ap.point.block[lightIndex];
+        #ifndef LIGHTING_SHADOW_BIN_ENABLED
+            if (blockId == uint(-1)) continue;
+        #endif
+
         float lightRange = iris_getEmission(blockId);
         vec3 lightColor = iris_getLightColor(blockId).rgb;
         lightColor = RgbToLinear(lightColor);
 
         float lightSize = iris_isFullBlock(blockId) ? 1.0 : 0.15;
 
-        vec3 fragToLight = ap.point.pos[lightIndex].xyz - localPos;
+        vec3 fragToLight = lightPos - localPos;
         float sampleDist = length(fragToLight);
         vec3 sampleDir = fragToLight / sampleDist;
 
         const float bias = -0.08;
-        float lightShadow = sample_PointLight(localPos, lightSize, lightRange, bias, lightIndex);
+        float lightShadow = sample_PointLight(localPos, lightSize, lightRange, bias, lightIndex, lightLod);
 
         float VoL = dot(viewDir, sampleDir);
         float phase = saturate(getMiePhase(VoL));

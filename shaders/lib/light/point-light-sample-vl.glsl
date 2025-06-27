@@ -62,7 +62,7 @@ vec3 sample_AllPointLights_VL(const in vec3 localPos) {
             float sampleDist = length(fragToLight);
             vec3 sampleDir = fragToLight / sampleDist;
 
-            float light_att = GetLightAttenuation_Linear(sampleDist, lightRange);
+            float light_att = GetLightAttenuation(sampleDist, lightRange);
 
             float VoL = dot(viewDir, sampleDir);
             float phase = saturate(getMiePhase(VoL));

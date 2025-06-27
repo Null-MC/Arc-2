@@ -86,7 +86,7 @@ void sample_AllPointLights(inout vec3 diffuse, inout vec3 specular, const in vec
             vec3 lightDir = sampleDir;
 
             float geo_facing = step(0.0, dot(localGeoNormal, sampleDir));
-            float light_att = GetLightAttenuation_Linear(sampleDist, lightRange);
+            float light_att = GetLightAttenuation(sampleDist, lightRange);
             float lightShadow = geo_facing * light_att;
 
 

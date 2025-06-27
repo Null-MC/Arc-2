@@ -1058,9 +1058,9 @@ export function setupShader(dimension : NamespacedId) {
             .target(0, texDeferredOpaque_Color)
             // .blendFunc(0, FUNC_SRC_ALPHA, FUNC_ONE_MINUS_SRC_ALPHA, FUNC_ONE, FUNC_ZERO)
             .target(1, texDeferredOpaque_TexNormal)
-            // .blendFunc(1, FUNC_ONE, FUNC_ZERO, FUNC_ONE, FUNC_ZERO)
-            .target(2, texDeferredOpaque_Data);
-            // .blendFunc(2, FUNC_ONE, FUNC_ZERO, FUNC_ONE, FUNC_ZERO)
+            .blendOff(1)
+            .target(2, texDeferredOpaque_Data)
+            .blendOff(2);
     }
 
     function mainShaderTranslucent(name: string, usage: ProgramUsage) : ObjectShader {
@@ -1068,14 +1068,19 @@ export function setupShader(dimension : NamespacedId) {
             .target(0, texDeferredTrans_Color)
             // .blendFunc(0, FUNC_SRC_ALPHA, FUNC_ONE_MINUS_SRC_ALPHA, FUNC_ONE, FUNC_ZERO)
             .target(1, texDeferredTrans_TexNormal)
-            // .blendFunc(1, FUNC_ONE, FUNC_ZERO, FUNC_ONE, FUNC_ZERO)
+            .blendOff(1)
             .target(2, texDeferredTrans_Data)
-            // .blendFunc(2, FUNC_ONE, FUNC_ZERO, FUNC_ONE, FUNC_ZERO)
+            .blendOff(2)
             .target(3, texDeferredTrans_Depth)
             .blendOff(3)
-            // .blendFunc(3, FUNC_ONE, FUNC_ZERO, FUNC_ONE, FUNC_ZERO)
             .define("RENDER_TRANSLUCENT", "1");
     }
+
+    registerShader(new ObjectShader("crumbling", Usage.CRUMBLING)
+        .vertex("gbuffer/crumbling.vsh")
+        .fragment("gbuffer/crumbling.fsh")
+        .target(0, texDeferredOpaque_Color)
+        .build());
 
     registerShader(mainShaderOpaque("basic", Usage.BASIC).build());
 

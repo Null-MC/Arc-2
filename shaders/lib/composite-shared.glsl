@@ -32,8 +32,8 @@ void GetHandLight(inout vec3 diffuse, inout vec3 specular, const in uint blockId
     vec3 lightColor = iris_getLightColor(blockId).rgb;
     //            lightColor = RgbToLinear(lightColor);
 
-    vec3 light_hsv = RgbToHsv(lightColor);
-    lightColor = HsvToRgb(vec3(light_hsv.xy, lightRange/15.0));
+//    vec3 light_hsv = RgbToHsv(lightColor);
+//    lightColor = HsvToRgb(vec3(light_hsv.xy, lightRange/15.0));
 
     // TODO: before or after HSV?
     lightColor = RgbToLinear(lightColor);
@@ -42,7 +42,7 @@ void GetHandLight(inout vec3 diffuse, inout vec3 specular, const in uint blockId
     float lightDist = length(lightVec);
     vec3 lightDir = lightVec / lightDist;
 
-    float lightAtt = GetLightAttenuation_invSq(lightDist);
+    float lightAtt = GetLightAttenuation(lightDist, lightRange);
 
     float NoLm = max(dot(localTexNormal, lightDir), 0.0);
 

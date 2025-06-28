@@ -14,10 +14,10 @@ void sample_AllPointLights(inout vec3 diffuse, inout vec3 specular, const in vec
 
         uint maxLightCount = LightBinMap[lightBinIndex].shadowLightCount;
     #else
-        const uint maxLightCount = POINT_LIGHT_MAX;
+        const uint maxLightCount = LIGHTING_SHADOW_MAX_COUNT;
     #endif
 
-    for (uint i = 0u; i < LIGHTING_SHADOW_MAX_COUNT; i++) {
+    for (uint i = 0u; i < LIGHTING_SHADOW_BIN_MAX_COUNT; i++) {
         if (i >= maxLightCount) break;
 
         #ifdef LIGHTING_SHADOW_BIN_ENABLED
@@ -70,7 +70,7 @@ void sample_AllPointLights(inout vec3 diffuse, inout vec3 specular, const in vec
         // sample non-shadow lights
         uint offset = maxLightCount;
         maxLightCount = offset + LightBinMap[lightBinIndex].lightCount;
-        for (uint i = offset; i < LIGHTING_SHADOW_MAX_COUNT; i++) {
+        for (uint i = offset; i < LIGHTING_SHADOW_BIN_MAX_COUNT; i++) {
             if (i >= maxLightCount) break;
 
             vec3 voxelPos = GetLightVoxelPos(LightBinMap[lightBinIndex].lightList[i].voxelIndex) + 0.5;

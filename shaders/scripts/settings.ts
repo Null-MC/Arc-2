@@ -85,9 +85,10 @@ export class ShaderSettings {
 
     get Lighting_Shadow_PCSS(): boolean {return this.getCachedBoolSetting('LIGHTING_SHADOW_PCSS');}
     get Lighting_Shadow_EmissionMask(): boolean {return this.getCachedBoolSetting('LIGHTING_SHADOW_EMISSION_MASK');}
-    get Lighting_Shadow_BinsEnabled(): boolean {return this.getCachedBoolSetting('LIGHTING_SHADOW_BIN_ENABLED');}
-    get Lighting_Shadow_BinMaxCount(): number {return this.getCachedIntSetting('LIGHTING_SHADOW_MAX_COUNT');}
+    get Lighting_Shadow_MaxCount(): number {return this.getCachedIntSetting('LIGHTING_SHADOW_MAX_COUNT');}
     get Lighting_Shadow_UpdateCount(): number {return this.getCachedIntSetting('LIGHTING_SHADOW_UPDATES');}
+    get Lighting_Shadow_BinsEnabled(): boolean {return this.getCachedBoolSetting('LIGHTING_SHADOW_BIN_ENABLED');}
+    get Lighting_Shadow_BinMaxCount(): number {return this.getCachedIntSetting('LIGHTING_SHADOW_BIN_MAX_COUNT');}
     get Lighting_Shadow_RealtimeCount(): number {return this.getCachedIntSetting('LIGHTING_SHADOW_REALTIME');}
     get Lighting_Shadow_UpdateThreshold(): number {return this.getCachedIntSetting('LIGHTING_SHADOW_UPDATE_THRESHOLD');}
     get Lighting_Shadow_VoxelFill(): boolean {return false;}
@@ -124,7 +125,7 @@ export class ShaderSettings {
     get Debug_WhiteWorld(): boolean {return this.getCachedBoolSetting("DEBUG_WHITE_WORLD");}
     get Debug_Translucent(): boolean {return this.getCachedBoolSetting("DEBUG_TRANSLUCENT");}
     get Debug_Exposure(): boolean {return this.getCachedBoolSetting("DEBUG_EXPOSURE");}
-    get Debug_LightCount(): boolean {return false;}
+    get Debug_LightCount(): boolean {return true;}
     get Debug_RT(): boolean {return false;}
 
 
@@ -136,7 +137,6 @@ export class ShaderSettings {
             VoxelizeTriangles: false,
             PointLightNear: 0.1,
             PointLightFar: 16.0,
-            PointLightMax: 64,
             DebugEnabled: false,
         };
 

@@ -20,7 +20,7 @@ void main() {
 	int lightBinIndex = GetLightBinIndex(lightBinPos);
 	uint shadowLightCount = LightBinMap[lightBinIndex].shadowLightCount;
 
-	for (uint i = 0u; i < min(shadowLightCount, LIGHTING_SHADOW_MAX_COUNT); i++) {
+	for (uint i = 0u; i < min(shadowLightCount, LIGHTING_SHADOW_BIN_MAX_COUNT); i++) {
 		uint lightIndex = LightBinMap[lightBinIndex].lightList[i].shadowIndex;
 		uint lightBlockId = ap.point.block[lightIndex];
 		float lightRange = iris_getEmission(lightBlockId);
@@ -44,7 +44,7 @@ void main() {
 						int neighborBinIndex = GetLightBinIndex(neighborBinPos);
 						uint neighborLightIndex = atomicAdd(LightBinMap[neighborBinIndex].shadowLightCount, 1u);
 
-						if (neighborLightIndex < LIGHTING_SHADOW_MAX_COUNT) {
+						if (neighborLightIndex < LIGHTING_SHADOW_BIN_MAX_COUNT) {
 							LightBinMap[neighborBinIndex].lightList[neighborLightIndex].voxelIndex = LightBinMap[lightBinIndex].lightList[i].voxelIndex;
 							LightBinMap[neighborBinIndex].lightList[neighborLightIndex].shadowIndex = lightIndex;
 						}

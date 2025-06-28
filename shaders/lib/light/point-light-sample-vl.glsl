@@ -7,12 +7,12 @@ vec3 sample_AllPointLights_VL(const in vec3 localPos) {
         ivec3 lightBinPos = ivec3(floor(voxelPos / LIGHT_BIN_SIZE));
         int lightBinIndex = GetLightBinIndex(lightBinPos);
 
-        uint maxLightCount = min(LightBinMap[lightBinIndex].shadowLightCount, LIGHTING_SHADOW_MAX_COUNT);
+        uint maxLightCount = min(LightBinMap[lightBinIndex].shadowLightCount, LIGHTING_SHADOW_BIN_MAX_COUNT);
     #else
-        const uint maxLightCount = POINT_LIGHT_MAX;
+        const uint maxLightCount = LIGHTING_SHADOW_MAX_COUNT;
     #endif
 
-    for (uint i = 0; i < LIGHTING_SHADOW_MAX_COUNT; i++) {
+    for (uint i = 0; i < LIGHTING_SHADOW_BIN_MAX_COUNT; i++) {
         if (i >= maxLightCount) break;
 
         #ifdef LIGHTING_SHADOW_BIN_ENABLED
@@ -47,8 +47,8 @@ vec3 sample_AllPointLights_VL(const in vec3 localPos) {
     #ifdef LIGHTING_SHADOW_BIN_ENABLED
         // sample non-shadow lights
         uint offset = maxLightCount;
-        maxLightCount = min(offset + LightBinMap[lightBinIndex].lightCount, LIGHTING_SHADOW_MAX_COUNT);
-        for (uint i = offset; i < LIGHTING_SHADOW_MAX_COUNT; i++) {
+        maxLightCount = min(offset + LightBinMap[lightBinIndex].lightCount, LIGHTING_SHADOW_BIN_MAX_COUNT);
+        for (uint i = offset; i < LIGHTING_SHADOW_BIN_MAX_COUNT; i++) {
             if (i >= maxLightCount) break;
 
             vec3 voxelPos = GetLightVoxelPos(LightBinMap[lightBinIndex].lightList[i].voxelIndex) + 0.5;

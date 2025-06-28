@@ -94,11 +94,9 @@ uniform sampler2D texSkyMultiScatter;
     #include "/lib/lightmap/sample.glsl"
 #endif
 
-const int VL_MaxSamples = 16;
-
 
 void main() {
-    const float stepScale = 1.0 / VL_MaxSamples;
+    const float stepScale = 1.0 / VL_maxSamples_far;
 
     ivec2 iuv = ivec2(uv * ap.game.screenSize);
 
@@ -170,7 +168,7 @@ void main() {
         // bool isWater = bitfieldExtract(material, 6, 1) != 0
         //     && ap.camera.fluid != 1;
 
-        for (int i = 0; i < VL_MaxSamples; i++) {
+        for (int i = 0; i < VL_maxSamples_far; i++) {
             vec3 sampleLocalPos = fma(stepLocal, vec3(i+dither), localPosTrans);
             vec2 sample_lmcoord = vec2(0.0, 1.0);
 

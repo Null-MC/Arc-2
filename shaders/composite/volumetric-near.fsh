@@ -94,11 +94,8 @@ uniform sampler2D texSkyMultiScatter;
 #endif
 
 
-const int VL_MaxSamples = 16;
-
-
 void main() {
-    const float stepScale = 1.0 / VL_MaxSamples;
+    const float stepScale = 1.0 / VL_maxSamples_near;
 
     float depth = textureLod(mainDepthTex, uv, 0).r;
 
@@ -129,7 +126,7 @@ void main() {
     if (len > far)
         traceEnd = traceEnd * (far / len);
 
-    //vec3 stepLocal = traceEnd / (VL_MaxSamples);
+    //vec3 stepLocal = traceEnd / (VL_maxSamples_near);
     //float stepDist = length(stepLocal);
 
     vec3 localViewDir = normalize(localPos);
@@ -207,9 +204,9 @@ void main() {
     const vec3 localPosStart = vec3(0.0);
     vec3 sampleLocalPosLast = vec3(0.0);
 
-    for (int i = 0; i < VL_MaxSamples; i++) {
-        float iF = min(i + dither, VL_MaxSamples-1);
-        float stepF = saturate(iF / (VL_MaxSamples-1));
+    for (int i = 0; i < VL_maxSamples_near; i++) {
+        float iF = min(i + dither, VL_maxSamples_near-1);
+        float stepF = saturate(iF / (VL_maxSamples_near-1));
 
         #if VL_STEP_POW != 100
             const float VL_StepPower = VL_STEP_POW * 0.01;
@@ -290,7 +287,7 @@ void main() {
 
             #ifdef SKY_CLOUDS_ENABLED
                 //float last_iF = max(iF - 1.0, 0.0);
-                //float stepLastF = pow(last_iF / VL_MaxSamples-1, 1.0);
+                //float stepLastF = pow(last_iF / VL_maxSamples_near-1, 1.0);
 
                 //float sampleLocalPosLastY = mix(localPosStart.y, traceEnd.y, stepLastF);
                 float sampleHeightLast = sampleLocalPosLast.y+ap.camera.pos.y;

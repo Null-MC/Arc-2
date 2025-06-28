@@ -19,7 +19,7 @@ void main() {
 	uint globalIndex = workGroupIndex * workGroupSize + gl_LocalInvocationIndex;
 
 	uint shadowIndex = globalIndex;
-	if (shadowIndex < POINT_LIGHT_MAX) {
+	if (shadowIndex < LIGHTING_SHADOW_MAX_COUNT) {
 		vec3 lightLocalPos = ap.point.pos[shadowIndex].xyz;
 
 		// get light bin index
@@ -31,7 +31,7 @@ void main() {
 			// add light to bin
 			uint lightIndex = atomicAdd(LightBinMap[lightBinIndex].shadowLightCount, 1u);
 
-			if (lightIndex < LIGHTING_SHADOW_MAX_COUNT) {
+			if (lightIndex < LIGHTING_SHADOW_BIN_MAX_COUNT) {
 				uint voxelIndex = voxel_GetBufferIndex(ivec3(floor(voxelPos)));
 
 				LightBinMap[lightBinIndex].lightList[lightIndex].voxelIndex = voxelIndex;

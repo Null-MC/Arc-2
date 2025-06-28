@@ -5,7 +5,8 @@
 
 out VertexData2 {
 	vec2 uv;
-//	vec4 color;
+//	vec2 light;
+	vec4 color;
 } vOut;
 
 #include "/lib/common.glsl"
@@ -26,5 +27,6 @@ void iris_emitVertex(inout VertexData data) {
 
 void iris_sendParameters(in VertexData data) {
     vOut.uv = data.uv;
-    //vOut.color = data.color;
+    //vOut.light = data.light;
+    vOut.color = data.color;
 }

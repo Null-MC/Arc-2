@@ -20,6 +20,7 @@ function applySettings(settings : ShaderSettings, internal) {
     worldSettings.pointResolution = 128;
     worldSettings.pointNearPlane = internal.PointLightNear;
     worldSettings.pointFarPlane = internal.PointLightFar;
+    worldSettings.pointMaxCount = settings.Lighting_Shadow_MaxCount;
     worldSettings.pointMaxUpdates = settings.Lighting_Shadow_UpdateCount;
     worldSettings.pointRealTime = settings.Lighting_Shadow_RealtimeCount;
     worldSettings.pointUpdateThreshold = settings.Lighting_Shadow_UpdateThreshold * 0.01;
@@ -27,8 +28,6 @@ function applySettings(settings : ShaderSettings, internal) {
     worldSettings.renderStars = false;
     worldSettings.renderMoon = false;
     worldSettings.renderSun = false;
-    // worldSettings.vignette = false;
-    // worldSettings.clouds = false;
 
     // TODO: fix hands later, for now just unbreak them
     worldSettings.mergedHandDepth = true;
@@ -100,11 +99,14 @@ function applySettings(settings : ShaderSettings, internal) {
     defineGlobally('LIGHTING_MODE', settings.Lighting_Mode);
     defineGlobally('LIGHTING_VL_RES', settings.Lighting_VolumetricResolution);
 
-    defineGlobally('POINT_LIGHT_MAX', internal.PointLightMax);
+    //defineGlobally('POINT_LIGHT_MAX', internal.PointLightMax);
     defineGlobally('POINT_LIGHT_NEAR', internal.PointLightNear);
     defineGlobally('POINT_LIGHT_FAR', internal.PointLightFar);
     if (settings.Lighting_Mode == LightingModes.ShadowMaps) {
-        defineGlobally('LIGHTING_SHADOW_MAX_COUNT', settings.Lighting_Shadow_BinMaxCount);
+        enableCubemapShadows(128, settings.Lighting_Shadow_MaxCount);
+
+        defineGlobally('LIGHTING_SHADOW_MAX_COUNT', settings.Lighting_Shadow_MaxCount);
+        defineGlobally('LIGHTING_SHADOW_BIN_MAX_COUNT', settings.Lighting_Shadow_BinMaxCount);
         if (settings.Lighting_Shadow_PCSS)
             defineGlobally1('LIGHTING_SHADOW_PCSS');
         if (settings.Lighting_Shadow_EmissionMask)
@@ -362,6 +364,7 @@ export function setupShader(dimension : NamespacedId) {
     setLightColorEx('#e0ba42', 'redstone_lamp');
     setLightColorEx('#f9321c', 'redstone_ore', 'deepslate_redstone_ore');
     setLightColorEx('#8bdff8', 'sea_lantern');
+    setLightColorEx('#918f34', 'shroomlight');
     setLightColorEx('#28aaeb', 'soul_torch', 'soul_wall_torch', 'soul_campfire');
     setLightColorEx('#f3b549', 'torch', 'wall_torch');
     setLightColorEx('#63e53c', 'verdant_froglight');
@@ -1082,6 +1085,17 @@ export function setupShader(dimension : NamespacedId) {
         .target(0, texDeferredOpaque_Color)
         .build());
 
+    // TODO: outline not yet supported
+    // registerShader(new ObjectShader("lines", Usage.LINES)
+    //     .vertex("gbuffer/lines.vsh")
+    //     .fragment("gbuffer/lines.fsh")
+    //     .target(0, texDeferredOpaque_Color)
+    //     .target(1, texDeferredOpaque_TexNormal)
+    //     .blendOff(1)
+    //     .target(2, texDeferredOpaque_Data)
+    //     .blendOff(2)
+    //     .build());
+
     registerShader(mainShaderOpaque("basic", Usage.BASIC).build());
 
     registerShader(mainShaderOpaque("emissive", Usage.EMISSIVE)
@@ -1163,7 +1177,7 @@ export function setupShader(dimension : NamespacedId) {
         .build());
 
     if (settings.Lighting_Mode == LightingModes.ShadowMaps && settings.Lighting_Shadow_BinsEnabled) {
-        const pointGroupCount = Math.ceil(internal.PointLightMax / (8*8*8));
+        const pointGroupCount = Math.ceil(settings.Lighting_Shadow_MaxCount / (8*8*8));
         const voxelGroupCount = Math.ceil(settings.Voxel_Size / 8);
 
         registerShader(Stage.POST_RENDER, new Compute("light-list-point")
@@ -1626,6 +1640,7 @@ export function onSettingsChanged(state : WorldState) {
     const settings = new ShaderSettings();
 
     worldSettings.sunPathRotation = settings.Sky_SunAngle;
+    worldSettings.pointMaxCount = settings.Lighting_Shadow_MaxCount;
     worldSettings.pointRealTime = settings.Lighting_Shadow_RealtimeCount;
     worldSettings.pointUpdateThreshold = settings.Lighting_Shadow_UpdateThreshold * 0.01;
 

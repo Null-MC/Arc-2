@@ -45,7 +45,7 @@ void main() {
 		if (lightRange > 0) {
 			uint lightIndex = atomicAdd(LightBinMap[voxelBinIndex].lightCount, 1u) + shadowLightCount;
 
-			if (lightIndex < LIGHTING_SHADOW_MAX_COUNT) {
+			if (lightIndex < LIGHTING_SHADOW_BIN_MAX_COUNT) {
 				LightBinMap[voxelBinIndex].lightList[lightIndex].voxelIndex = voxelIndex;
 			}
 		}

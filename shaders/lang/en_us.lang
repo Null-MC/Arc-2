@@ -211,10 +211,16 @@ screen.LIGHTING_SHADOWS=Shadow Maps
 option.LIGHTING_SHADOW_PCSS=PCSS/Soft-Shadows
 
 option.LIGHTING_SHADOW_EMISSION_MASK=Emission Mask
+option.LIGHTING_SHADOW_EMISSION_MASK.comment=Masks the light emitted by the emission PBR channel of the block.
 
 option.LIGHTING_SHADOW_BIN_ENABLED=Bin Lists
+option.LIGHTING_SHADOW_BIN_ENABLED.comment=Optimizes sampling of cubemaps be making smaller localized lists.
 
-option.LIGHTING_SHADOW_MAX_COUNT=Bin Max Count
+option.LIGHTING_SHADOW_BIN_MAX_COUNT=Bin Max Count
+option.LIGHTING_SHADOW_BIN_MAX_COUNT.comment=The maximum number of cubemaps that can be stored in bins/sampled per frame.
+
+option.LIGHTING_SHADOW_MAX_COUNT=Max Light Count
+option.LIGHTING_SHADOW_MAX_COUNT.comment=The maximum number of cubemaps that can exist.
 
 option.LIGHTING_SHADOW_UPDATES=Max Update Count
 option.LIGHTING_SHADOW_UPDATES.comment=The maximum number of cubemaps that can be updated per-frame.

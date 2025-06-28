@@ -62,6 +62,9 @@ const float shadowPixelSize = 1.0 / shadowMapResolution;
 const float pointNearPlane = POINT_LIGHT_NEAR;
 const float pointFarPlane = POINT_LIGHT_FAR;
 
+const int VL_maxSamples_near = 32;
+const int VL_maxSamples_far = 16;
+
 #if defined MATERIAL_PARALLAX_ENABLED && defined RENDER_TERRAIN && MATERIAL_FORMAT != MAT_NONE
 	#define RENDER_PARALLAX
 #endif

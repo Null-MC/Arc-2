@@ -116,6 +116,10 @@ void iris_sendParameters(in VertexData data) {
     vOut.color = data.color;
     vOut.blockId = data.blockId;
 
+	#ifdef RENDER_HAND
+		vOut.blockId = BLOCK_HAND;
+	#endif
+
 	#ifdef RENDER_ENTITY
 		vOut.overlayColor = data.overlayColor;
 	#endif

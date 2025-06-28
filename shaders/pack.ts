@@ -365,10 +365,8 @@ export function setupShader(dimension : NamespacedId) {
     setLightColorEx('#918f34', 'shroomlight');
     setLightColorEx('#28aaeb', 'soul_torch', 'soul_wall_torch', 'soul_campfire');
     setLightColorEx('#f3b549', 'torch', 'wall_torch');
+    setLightColorEx('#6e0000', 'vault');
     setLightColorEx('#63e53c', 'verdant_froglight');
-
-    // setLightColorEx("#ff0000", "redstone_wall_torch");
-    // setLightColorEx("#330000", "soul_wall_torch");
 
     setLightColorEx("#322638", "tinted_glass");
     setLightColorEx("#ffffff", "white_stained_glass", "white_stained_glass_pane");
@@ -1122,13 +1120,13 @@ export function setupShader(dimension : NamespacedId) {
 
     registerShader(waterShader.build());
 
-    // registerShader(mainShaderOpaque("hand-solid", Usage.HAND)
-    //     .define("RENDER_HAND", "1")
-    //     .build());
-    //
-    // registerShader(mainShaderTranslucent("hand-translucent", Usage.TRANSLUCENT_HAND)
-    //     .define("RENDER_HAND", "1")
-    //     .build());
+    registerShader(mainShaderOpaque("hand-solid", Usage.HAND)
+        .define("RENDER_HAND", "1")
+        .build());
+
+    registerShader(mainShaderTranslucent("hand-translucent", Usage.TRANSLUCENT_HAND)
+        .define("RENDER_HAND", "1")
+        .build());
 
     registerShader(mainShaderOpaque("entity-solid", Usage.ENTITY_SOLID)
         .define("RENDER_ENTITY", "1")

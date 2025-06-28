@@ -176,6 +176,14 @@ void main() {
         unjitter(ndcPos);
     #endif
 
+    uvec4 data = texelFetch(texDeferredOpaque_Data, iuv, 0);
+    uint blockId = data.a;
+
+    if (blockId == BLOCK_HAND) {
+        #define MC_HAND_DEPTH 0.125 // [0.0625 0.125 0.25]
+        ndcPos.z /= MC_HAND_DEPTH;
+    }
+
     vec3 viewPos = unproject(ap.camera.projectionInv, ndcPos);
     vec3 localPos = mul3(ap.camera.viewInv, viewPos);
 
@@ -183,9 +191,9 @@ void main() {
 
     if (albedo.a > EPSILON) {
         vec3 texNormalData = texelFetch(texDeferredOpaque_TexNormal, iuv, 0).rgb;
-        uvec4 data = texelFetch(texDeferredOpaque_Data, iuv, 0);
+//        uvec4 data = texelFetch(texDeferredOpaque_Data, iuv, 0);
         uint trans_blockId = texelFetch(texDeferredTrans_Data, iuv, 0).a;
-        uint blockId = data.a;
+//        uint blockId = data.a;
 
         #ifdef ACCUM_ENABLED
             bool altFrame = (ap.time.frames % 2) == 1;

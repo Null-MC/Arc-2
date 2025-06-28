@@ -80,8 +80,9 @@ uniform sampler2D texSkyMultiScatter;
 #endif
 
 #if LIGHTING_MODE == LIGHT_MODE_SHADOWS && defined(LIGHTING_VL_SHADOWS)
-    #include "/lib/light/point-light-sample-common.glsl"
-    #include "/lib/light/point-light-sample-vl.glsl"
+    #include "/lib/shadow-point/common.glsl"
+    #include "/lib/shadow-point/sample-common.glsl"
+    #include "/lib/shadow-point/sample-vl.glsl"
 #elif LIGHTING_MODE == LIGHT_MODE_RT && defined(LIGHTING_VL_SHADOWS)
     #include "/lib/voxel/dda.glsl"
     #include "/lib/voxel/light-trace.glsl"
@@ -308,7 +309,7 @@ void main() {
 
             vec3 scatteringIntegral, sampleTransmittance, inScattering, extinction;
 
-            sampleLit *= 27.0;
+            sampleLit *= 15.0;
 
             if (!isFluid) {
                 vec3 skyPos = getSkyPosition(sampleLocalPos);
@@ -320,11 +321,11 @@ void main() {
 
                 sampleTransmittance = exp(-extinction * stepDist);
 
-                vec3 psiMS = getValFromMultiScattLUT(texSkyMultiScatter, skyPos, Scene_LocalSunDir) + Sky_MinLight;
-                psiMS *= Scene_SkyBrightnessSmooth;
+                vec3 psiMS = getValFromMultiScattLUT(texSkyMultiScatter, skyPos, Scene_LocalSunDir);
+                vec3 ambient = psiMS * Scene_SkyBrightnessSmooth + VL_MinLight;
 
                 vec3 mieSkyLight = miePhase_sun * sunSkyLight + miePhase_moon * moonSkyLight;
-                vec3 mieInScattering = mieScattering * (mieSkyLight * shadowSample + psiMS + sampleLit);
+                vec3 mieInScattering = mieScattering * (mieSkyLight * shadowSample + ambient + sampleLit);
                 inScattering = mieInScattering;
             }
             else {

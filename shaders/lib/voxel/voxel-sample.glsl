@@ -31,3 +31,14 @@ uint SampleVoxelBlock(const in vec3 voxelPos) {
         return imageLoad(imgVoxelBlock, ivec3(floor(voxelPos))).r;
     #endif
 }
+
+uint SampleVoxelBlockLocal(const in vec3 localPos) {
+    #ifdef VOXEL_PROVIDED
+        ivec3 blockWorldPos = ivec3(floor(localPos + ap.camera.pos));
+        //return uint(_iris_getBlockAtPos(blockWorldPos).x);
+        return uint(iris_getBlockAtPos(blockWorldPos).x);
+    #else
+        vec3 voxelPos = voxel_GetBufferPosition(localPos);
+        return imageLoad(imgVoxelBlock, ivec3(floor(voxelPos))).r;
+    #endif
+}

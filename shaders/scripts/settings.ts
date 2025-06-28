@@ -83,6 +83,7 @@ export class ShaderSettings {
     get Lighting_VolumetricResolution(): number {return this.getCachedIntSetting('LIGHTING_VL_RES');}
     get Lighting_Volumetric_ShadowsEnabled(): boolean {return this.getCachedBoolSetting('LIGHTING_VL_SHADOWS');}
 
+    get Lighting_Shadow_Resolution(): number {return this.getCachedIntSetting('LIGHTING_SHADOW_RESOLUTION');}
     get Lighting_Shadow_PCSS(): boolean {return this.getCachedBoolSetting('LIGHTING_SHADOW_PCSS');}
     get Lighting_Shadow_EmissionMask(): boolean {return this.getCachedBoolSetting('LIGHTING_SHADOW_EMISSION_MASK');}
     get Lighting_Shadow_MaxCount(): number {return this.getCachedIntSetting('LIGHTING_SHADOW_MAX_COUNT');}
@@ -125,7 +126,7 @@ export class ShaderSettings {
     get Debug_WhiteWorld(): boolean {return this.getCachedBoolSetting("DEBUG_WHITE_WORLD");}
     get Debug_Translucent(): boolean {return this.getCachedBoolSetting("DEBUG_TRANSLUCENT");}
     get Debug_Exposure(): boolean {return this.getCachedBoolSetting("DEBUG_EXPOSURE");}
-    get Debug_LightCount(): boolean {return true;}
+    get Debug_LightCount(): boolean {return this.getCachedBoolSetting("DEBUG_LIGHT_COUNT");}
     get Debug_RT(): boolean {return false;}
 
 
@@ -133,6 +134,7 @@ export class ShaderSettings {
         const settings = {
             Accumulation: false,
             LightListsEnabled: false,
+            FloodFillEnabled: false,
             VoxelizeBlockFaces: false,
             VoxelizeTriangles: false,
             PointLightNear: 0.1,
@@ -146,6 +148,7 @@ export class ShaderSettings {
             case LightingModes.ShadowMaps:
                 if (this.Lighting_Shadow_BinsEnabled)
                     settings.LightListsEnabled = true;
+                    settings.FloodFillEnabled = true;
                 break;
             case LightingModes.RayTraced:
                 settings.LightListsEnabled = true;
@@ -153,6 +156,9 @@ export class ShaderSettings {
 
                 if (this.Lighting_TraceQuads)
                     settings.VoxelizeTriangles = true;
+                break;
+            case LightingModes.FloodFill:
+                settings.FloodFillEnabled = true;
                 break;
         }
 

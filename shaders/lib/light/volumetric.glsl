@@ -9,6 +9,8 @@ const float VL_WaterPhaseB = -0.14;
 const float VL_WaterPhaseM =  0.65;
 const float VL_WaterDensity = 0.2;
 
+const float VL_MinLight = 8.0;
+
 const float VL_ShadowTransmit = mieAbsorptionF;//0.02;
 
 vec3 VL_WaterScatter = RgbToLinear(vec3(0.5));

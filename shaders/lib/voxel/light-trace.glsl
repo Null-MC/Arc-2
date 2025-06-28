@@ -85,7 +85,8 @@ vec3 TraceDDA(vec3 origin, const in vec3 endPos, const in float range, const in 
                     }
                 }
             #else
-                uint blockId = SampleVoxelBlock(voxelPos);
+                vec3 localPos = voxel_getLocalPosition(voxelPos);
+                uint blockId = SampleVoxelBlockLocal(localPos);
 
                 if (blockId != 0u) {
                     bool isFullBlock = iris_isFullBlock(blockId);

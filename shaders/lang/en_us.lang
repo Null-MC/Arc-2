@@ -253,10 +253,6 @@ option.VOXEL_FRUSTUM_OFFSET=Offset
 option.VOXEL_FRUSTUM_OFFSET.comment=Shifts the volume in the direction the camera is looking.
 suffix.VOXEL_FRUSTUM_OFFSET=%
 
-option.LPV_ENABLED=Enabled
-
-#option.LPV_RSM_ENABLED=RSM
-
 option.VOXEL_PROVIDED=Use Provided
 option.VOXEL_PROVIDED.comment=Allows the shader to use built-in voxel data provided by Aperture.
 
@@ -327,6 +323,9 @@ option.DEBUG_WHITE_WORLD=White-World
 option.DEBUG_WHITE_WORLD.comment=Makes all blocks in the world white, so that lighting can be visualized/debugged more easily.
 
 option.DEBUG_TRANSLUCENT=View Translucent
+
+option.DEBUG_LIGHT_COUNT=Show Light Count
+option.DEBUG_LIGHT_COUNT.comment=Shows the total number of lights currently being tracked.
 
 option.DEBUG_EXPOSURE=Exposure
 

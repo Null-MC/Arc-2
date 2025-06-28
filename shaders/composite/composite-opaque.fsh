@@ -62,7 +62,9 @@ uniform sampler2D texBlueNoise;
     #ifdef LIGHTING_SHADOW_PCSS
         uniform samplerCubeArray pointLight;
     #endif
-#elif LIGHTING_MODE == LIGHT_MODE_LPV
+#endif
+
+#ifdef FLOODFILL_ENABLED
     uniform sampler3D texFloodFill;
     uniform sampler3D texFloodFill_alt;
 #endif
@@ -117,9 +119,7 @@ uniform sampler2D texBlueNoise;
     #include "/lib/effects/ssr.glsl"
 #endif
 
-//#ifdef VOXEL_ENABLED
-    #include "/lib/voxel/voxel-common.glsl"
-//#endif
+#include "/lib/voxel/voxel-common.glsl"
 
 #if LIGHTING_MODE == LIGHT_MODE_SHADOWS && defined(LIGHTING_SHADOW_BIN_ENABLED)
     #include "/lib/voxel/light-list.glsl"
@@ -127,15 +127,17 @@ uniform sampler2D texBlueNoise;
 
 #ifdef HANDLIGHT_TRACE
     #include "/lib/voxel/dda.glsl"
-//    #include "/lib/voxel/voxel-common.glsl"
     #include "/lib/voxel/voxel-sample.glsl"
     #include "/lib/voxel/light-trace.glsl"
 #endif
 
 #if LIGHTING_MODE == LIGHT_MODE_SHADOWS
-    #include "/lib/light/point-light-sample-common.glsl"
-    #include "/lib/light/point-light-sample-geo.glsl"
-#elif LIGHTING_MODE == LIGHT_MODE_LPV
+    #include "/lib/shadow-point/common.glsl"
+    #include "/lib/shadow-point/sample-common.glsl"
+    #include "/lib/shadow-point/sample-geo.glsl"
+#endif
+
+#ifdef FLOODFILL_ENABLED
     #include "/lib/voxel/floodfill-common.glsl"
     #include "/lib/voxel/floodfill-sample.glsl"
 #endif
@@ -346,11 +348,7 @@ void main() {
         vec3 voxelPos = voxel_GetBufferPosition(localPos);
 
         #if LIGHTING_MODE == LIGHT_MODE_SHADOWS
-            vec3 sectionOffset = fract(ap.camera.pos / 16.0) * 16.0;
-            vec3 sectionPos = floor((sectionOffset + localPos) / 16.0);
-            const vec3 pointBoundsMax = vec2(2.0, 1.0).xyx + 0.08;
-
-            if (clamp(sectionPos, -pointBoundsMax, pointBoundsMax) == sectionPos) {
+            if (shadowPoint_isInBounds(localPos)) {
                 blockLighting = vec3(0.0);
             }
         #elif LIGHTING_MODE == LIGHT_MODE_RT
@@ -358,7 +356,9 @@ void main() {
             if (voxel_isInBounds(voxelPos)) {
                 blockLighting = vec3(0.0);
             }
-        #elif LIGHTING_MODE == LIGHT_MODE_LPV
+        #endif
+
+        #ifdef FLOODFILL_ENABLED
             vec3 voxelSamplePos = 0.5*localTexNormal - 0.25*localGeoNormal + voxelPos;
 
             if (floodfill_isInBounds(voxelSamplePos)) {
@@ -461,18 +461,16 @@ void main() {
             #endif
         }
 
+        vec3 handSampleLocalPos = localGeoNormal*0.02 + localPos;
+
         if (ap.game.mainHand != 0u) {
-            // TODO: rotate with camera/player
-//            vec3 lightLocalPos = vec3(0.2, -0.4, -0.2);
             vec3 lightLocalPos = GetHandLightPos(0.2);
-            GetHandLight(diffuse, specular, ap.game.mainHand, lightLocalPos, localPos, -localViewDir, localTexNormal, localGeoNormal, albedo.rgb, f0_metal, roughL);
+            GetHandLight(diffuse, specular, ap.game.mainHand, lightLocalPos, handSampleLocalPos, -localViewDir, localTexNormal, localGeoNormal, albedo.rgb, f0_metal, roughL);
         }
 
         if (ap.game.offHand != 0u) {
-            // TODO: rotate with camera/player
-//            vec3 lightLocalPos = vec3(-0.2, -0.4, -0.2);
             vec3 lightLocalPos = GetHandLightPos(-0.2);
-            GetHandLight(diffuse, specular, ap.game.offHand, lightLocalPos, localPos, -localViewDir, localTexNormal, localGeoNormal, albedo.rgb, f0_metal, roughL);
+            GetHandLight(diffuse, specular, ap.game.offHand, lightLocalPos, handSampleLocalPos, -localViewDir, localTexNormal, localGeoNormal, albedo.rgb, f0_metal, roughL);
         }
 
         float metalness = mat_metalness(f0_metal);

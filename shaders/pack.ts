@@ -103,7 +103,7 @@ function applySettings(settings : ShaderSettings, internal) {
     defineGlobally('POINT_LIGHT_NEAR', internal.PointLightNear);
     defineGlobally('POINT_LIGHT_FAR', internal.PointLightFar);
     if (settings.Lighting_Mode == LightingModes.ShadowMaps) {
-        enableCubemapShadows(128, settings.Lighting_Shadow_MaxCount);
+        enableCubemapShadows(settings.Lighting_Shadow_Resolution, settings.Lighting_Shadow_MaxCount);
 
         defineGlobally('LIGHTING_SHADOW_MAX_COUNT', settings.Lighting_Shadow_MaxCount);
         defineGlobally('LIGHTING_SHADOW_BIN_MAX_COUNT', settings.Lighting_Shadow_BinMaxCount);
@@ -142,38 +142,36 @@ function applySettings(settings : ShaderSettings, internal) {
         if (settings.Lighting_ReflectionQuads) defineGlobally1('LIGHTING_REFLECT_TRIANGLE');
     }
 
-    //if (internal.VoxelizeBlocks) {
-        //defineGlobally1('VOXEL_ENABLED');
-        defineGlobally('VOXEL_SIZE', settings.Voxel_Size);
-        defineGlobally('VOXEL_FRUSTUM_OFFSET', settings.Voxel_Offset);
+    defineGlobally('VOXEL_SIZE', settings.Voxel_Size);
+    defineGlobally('VOXEL_FRUSTUM_OFFSET', settings.Voxel_Offset);
 
-        defineGlobally('LIGHT_BIN_SIZE', LIGHT_BIN_SIZE);
-        defineGlobally('RT_MAX_LIGHT_COUNT', settings.Lighting_TraceLightMax);
+    defineGlobally('LIGHT_BIN_SIZE', LIGHT_BIN_SIZE);
+    defineGlobally('RT_MAX_LIGHT_COUNT', settings.Lighting_TraceLightMax);
 
-        if (settings.Voxel_UseProvided)
-            defineGlobally1('VOXEL_PROVIDED');
+    if (settings.Voxel_UseProvided)
+        defineGlobally1('VOXEL_PROVIDED');
 
-        if (settings.Lighting_Mode == LightingModes.RayTraced) {
-            defineGlobally1('RT_ENABLED');
-            defineGlobally('RT_MAX_SAMPLE_COUNT', `${settings.Lighting_TraceSampleCount}u`);
-            // defineGlobally("RT_MAX_LIGHT_COUNT", settings.Lighting_TraceLightMax);
-            //defineGlobally("LIGHT_BIN_MAX", snapshot.Voxel_MaxLightCount);
+    if (settings.Lighting_Mode == LightingModes.RayTraced) {
+        defineGlobally1('RT_ENABLED');
+        defineGlobally('RT_MAX_SAMPLE_COUNT', `${settings.Lighting_TraceSampleCount}u`);
+        // defineGlobally("RT_MAX_LIGHT_COUNT", settings.Lighting_TraceLightMax);
+        //defineGlobally("LIGHT_BIN_MAX", snapshot.Voxel_MaxLightCount);
 
-            if (settings.Lighting_TraceQuads) defineGlobally1('RT_TRI_ENABLED');
-        }
+        if (settings.Lighting_TraceQuads) defineGlobally1('RT_TRI_ENABLED');
+    }
 
-        if (internal.VoxelizeBlockFaces)
-            defineGlobally1('VOXEL_BLOCK_FACE');
+    if (internal.VoxelizeBlockFaces)
+        defineGlobally1('VOXEL_BLOCK_FACE');
 
-        if (internal.VoxelizeTriangles) {
-            defineGlobally1('VOXEL_TRI_ENABLED');
-            defineGlobally('QUAD_BIN_MAX', settings.Voxel_MaxQuadCount);
-            defineGlobally('QUAD_BIN_SIZE', QUAD_BIN_SIZE);
-        }
+    if (internal.VoxelizeTriangles) {
+        defineGlobally1('VOXEL_TRI_ENABLED');
+        defineGlobally('QUAD_BIN_MAX', settings.Voxel_MaxQuadCount);
+        defineGlobally('QUAD_BIN_SIZE', QUAD_BIN_SIZE);
+    }
 
-        if (settings.Lighting_Mode == LightingModes.FloodFill)
-            defineGlobally1('LPV_ENABLED');
-    //}
+    if (internal.FloodFillEnabled) {
+        defineGlobally1('FLOODFILL_ENABLED');
+    }
 
     if (settings.Effect_SSAO_Enabled) defineGlobally1('EFFECT_SSAO_ENABLED');
     defineGlobally('EFFECT_SSAO_SAMPLES', settings.Effect_SSAO_StepCount);
@@ -462,12 +460,6 @@ export function setupShader(dimension : NamespacedId) {
         //.clearColor(0.0, 0.0, 0.0, 0.0)
         .clear(false)
         .build();
-
-    // const texShadowNormal = new ArrayTexture("texShadowNormal")
-    //     .format(Format.RGB8)
-    //     //.clearColor(0.0, 0.0, 0.0, 0.0)
-    //     .clear(false)
-    //     .build();
 
     const texFinalA = new Texture("texFinalA")
         //.imageName("imgFinalA")
@@ -812,7 +804,7 @@ export function setupShader(dimension : NamespacedId) {
             .build();
     }
 
-    if (settings.Lighting_Mode == LightingModes.FloodFill) {
+    if (internal.FloodFillEnabled) {
         const texFloodFill = new Texture("texFloodFill")
             .imageName("imgFloodFill")
             .format(Format.RGBA16F)
@@ -975,12 +967,20 @@ export function setupShader(dimension : NamespacedId) {
     }
 
     function shadowTerrainShader(name: string, usage: ProgramUsage) : ObjectShader {
-        return shadowShader(name, usage)
-            .geometry("gbuffer/shadow-celestial.gsh")
+        const shader = shadowShader(name, usage)
             .ssbo(3, lightListBuffer)
-            .ssbo(4, quadListBuffer)
-            .ssbo(5, blockFaceBuffer)
             .define("RENDER_TERRAIN", "1");
+
+        if (internal.VoxelizeBlockFaces || internal.VoxelizeTriangles || !settings.Voxel_UseProvided)
+            shader.geometry("gbuffer/shadow-celestial.gsh");
+
+        if (internal.VoxelizeBlockFaces)
+            shader.ssbo(5, blockFaceBuffer)
+
+        if (internal.VoxelizeTriangles)
+            shader.ssbo(4, quadListBuffer);
+
+        return shader;
     }
 
     function shadowEntityShader(name: string, usage: ProgramUsage) : ObjectShader {
@@ -1096,11 +1096,11 @@ export function setupShader(dimension : NamespacedId) {
     //     .blendOff(2)
     //     .build());
 
-    registerShader(mainShaderOpaque("basic", Usage.BASIC).build());
-
     registerShader(mainShaderOpaque("emissive", Usage.EMISSIVE)
         .define("RENDER_EMISSIVE", "1")
         .build());
+
+    registerShader(mainShaderOpaque("basic", Usage.BASIC).build());
 
     registerShader(mainShaderOpaque("terrain-solid", Usage.TERRAIN_SOLID)
         .define("RENDER_TERRAIN", "1")
@@ -1223,7 +1223,7 @@ export function setupShader(dimension : NamespacedId) {
             .build());
     }
 
-    if (settings.Lighting_Mode == LightingModes.FloodFill) {
+    if (internal.FloodFillEnabled) {
         const groupCount = Math.ceil(settings.Voxel_Size / 8);
 
         registerShader(Stage.POST_RENDER, new Compute("floodfill")

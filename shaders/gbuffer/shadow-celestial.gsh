@@ -4,7 +4,18 @@
 #include "/settings.glsl"
 #include "/lib/constants.glsl"
 
-#define VOXEL_WRITE
+#if defined(RENDER_TERRAIN) && !defined(VOXEL_PROVIDED)
+    #define IS_TERRAIN_VOXEL
+    #define VOXEL_WRITE
+#endif
+
+#if defined(RENDER_TERRAIN) && defined(VOXEL_BLOCK_FACE)
+    #define IS_TERRAIN_BLOCKFACE
+#endif
+
+#if (defined(RENDER_TERRAIN) || defined(RENDER_ENTITY)) && defined(VOXEL_TRI_ENABLED)
+    #define IS_TERRAIN_ENTITY_QUADS
+#endif
 
 layout(triangles) in;
 layout(triangle_strip, max_vertices=3) out;
@@ -12,37 +23,36 @@ layout(triangle_strip, max_vertices=3) out;
 in VertexData2 {
     vec4 color;
     vec2 uv;
-    vec3 localNormal;
 
     #ifdef RENDER_TERRAIN
         flat uint blockId;
+    #endif
 
-        #if defined(VOXEL_BLOCK_FACE) || defined(VOXEL_TRI_ENABLED)
-            flat uint textureId;
+    #ifdef IS_TERRAIN_BLOCKFACE
+        vec3 localNormal;
+    #endif
+
+    #if defined(IS_TERRAIN_BLOCKFACE) || defined(IS_TERRAIN_ENTITY_QUADS)
+        flat uint textureId;
+        vec2 lmcoord;
+    #endif
+
+    #if defined(IS_TERRAIN_VOXEL) || defined(IS_TERRAIN_BLOCKFACE) || defined(IS_TERRAIN_ENTITY_QUADS)
+        flat int currentCascade;
+
+        #ifdef RENDER_TERRAIN
+            flat vec3 originPos;
         #endif
     #endif
 
-    //#if defined(RENDER_TERRAIN) || (defined(RENDER_ENTITY) && defined(VOXEL_TRI_ENABLED))
-        flat int currentCascade;
-
-        #ifdef VOXEL_TRI_ENABLED
-            vec3 localPos;
-        #endif
-
-        #if defined(VOXEL_BLOCK_FACE) || defined(VOXEL_TRI_ENABLED)
-            vec2 lmcoord;
-
-            #ifdef RENDER_TERRAIN
-                flat vec3 originPos;
-            #endif
-        #endif
-    //#endif
+    #ifdef IS_TERRAIN_ENTITY_QUADS
+        vec3 localPos;
+    #endif
 } vIn[];
 
 out VertexData2 {
     vec4 color;
     vec2 uv;
-    vec3 localNormal;
 
     #ifdef RENDER_TERRAIN
         flat uint blockId;
@@ -72,8 +82,6 @@ void main() {
     for (int v = 0; v < 3; v++) {
         vOut.color = vIn[v].color;
         vOut.uv = vIn[v].uv;
-
-        vOut.localNormal = vIn[v].localNormal;
 
         #ifdef RENDER_TERRAIN
             vOut.blockId = vIn[v].blockId;
@@ -162,9 +170,6 @@ void main() {
                         uint quadIndex = atomicAdd(SceneQuads.bin[quadBinIndex].count, 1u);
 
                         if (quadIndex < QUAD_BIN_MAX) {
-                            //vec3 offset = ivec3(voxelPos) - quadBinPos*QUAD_BIN_SIZE;
-                            //vec3 originBase = vIn[0].originPos - 0.5 - offset;
-
                             vec3 originBase = voxel_getLocalPosition(quadBinPos*QUAD_BIN_SIZE);
                             Quad quad;
 

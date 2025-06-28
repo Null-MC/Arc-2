@@ -165,6 +165,11 @@ void main() {
 //				uint blocking = bitfieldExtract(meta, 10, 4);
 //				blockTint *= 1.0 - blocking/16.0;
 		}
+
+		#if LIGHTING_MODE != LIGHT_MODE_FLOODFILL
+			uint blockMapId = iris_getCustomId(blockId);
+			if (blockMapId != BLOCK_LAVA) lightRange = 0;
+		#endif
 	}
 
 	vec3 accumLight = vec3(0.0);

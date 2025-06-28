@@ -4,33 +4,47 @@
 #include "/lib/constants.glsl"
 #include "/settings.glsl"
 
+
+#if defined(RENDER_TERRAIN) && !defined(VOXEL_PROVIDED)
+    #define IS_TERRAIN_VOXEL
+#endif
+
+#if defined(RENDER_TERRAIN) && defined(VOXEL_BLOCK_FACE)
+    #define IS_TERRAIN_BLOCKFACE
+#endif
+
+#if (defined(RENDER_TERRAIN) || defined(RENDER_ENTITY)) && defined(VOXEL_TRI_ENABLED)
+    #define IS_TERRAIN_ENTITY_QUADS
+#endif
+
+
 out VertexData2 {
     vec4 color;
     vec2 uv;
-    vec3 localNormal;
 
     #ifdef RENDER_TERRAIN
         flat uint blockId;
+    #endif
 
-        #if defined(VOXEL_BLOCK_FACE) || defined(VOXEL_TRI_ENABLED)
-            flat uint textureId;
+    #ifdef IS_TERRAIN_BLOCKFACE
+        vec3 localNormal;
+    #endif
+
+    #if defined(IS_TERRAIN_BLOCKFACE) || defined(IS_TERRAIN_ENTITY_QUADS)
+        flat uint textureId;
+        vec2 lmcoord;
+    #endif
+
+    #if defined(IS_TERRAIN_VOXEL) || defined(IS_TERRAIN_BLOCKFACE) || defined(IS_TERRAIN_ENTITY_QUADS)
+        flat int currentCascade;
+
+        #ifdef RENDER_TERRAIN
+            flat vec3 originPos;
         #endif
     #endif
 
-    #if defined(RENDER_TERRAIN) || (defined(RENDER_ENTITY) && defined(VOXEL_TRI_ENABLED))
-        flat int currentCascade;
-
-        #ifdef VOXEL_TRI_ENABLED
-            vec3 localPos;
-        #endif
-
-        #if defined(VOXEL_BLOCK_FACE) || defined(VOXEL_TRI_ENABLED)
-            vec2 lmcoord;
-
-            #ifdef RENDER_TERRAIN
-                flat vec3 originPos;
-            #endif
-        #endif
+    #ifdef IS_TERRAIN_ENTITY_QUADS
+        vec3 localPos;
     #endif
 } vOut;
 
@@ -42,21 +56,17 @@ out VertexData2 {
     #include "/lib/wind_waves.glsl"
 #endif
 
-//#ifdef VOXEL_ENABLED
-    #include "/lib/sampling/lightmap.glsl"
-//#endif
+#include "/lib/sampling/lightmap.glsl"
 
 
 void iris_emitVertex(inout VertexData data) {
     vec3 shadowViewPos = mul3(iris_modelViewMatrix, data.modelPos.xyz);
 
-    #if defined(RENDER_TERRAIN) || defined(VOXEL_TRI_ENABLED)
+    #if defined(RENDER_TERRAIN) || defined(IS_TERRAIN_ENTITY_QUADS)
         vec3 localPos = mul3(ap.celestial.viewInv, shadowViewPos);
     #endif
 
     #ifdef RENDER_TERRAIN
-        //vec3 localPos = mul3(ap.celestial.viewInv, shadowViewPos);
-
         vec3 midPos = data.midBlock / 64.0;
         vec3 originPos = localPos + midPos;
 
@@ -65,17 +75,13 @@ void iris_emitVertex(inout VertexData data) {
             shadowViewPos = mul3(ap.celestial.view, localPos);
         #endif
 
-//        vOut.localPos = localPos;
-
-        #if defined(VOXEL_BLOCK_FACE) || defined(VOXEL_TRI_ENABLED)
+        #if defined(IS_TERRAIN_BLOCKFACE) || defined(IS_TERRAIN_ENTITY_QUADS)
             vOut.originPos = originPos;
         #endif
     #endif
 
-    #if defined(RENDER_TERRAIN) || (defined(RENDER_ENTITY) && defined(VOXEL_TRI_ENABLED))
-        #ifdef VOXEL_TRI_ENABLED
-            vOut.localPos = localPos;
-        #endif
+    #if defined(IS_TERRAIN_ENTITY_QUADS)
+        vOut.localPos = localPos;
     #endif
 
     data.clipPos = iris_projectionMatrix * vec4(shadowViewPos, 1.0);
@@ -104,22 +110,21 @@ void iris_sendParameters(in VertexData data) {
         // viewPos = mul3(ap.camera.view, vOut.localPos);
     }
 
-    vec3 shadowViewNormal = mat3(iris_modelViewMatrix) * data.normal;
-    vOut.localNormal = mat3(ap.celestial.viewInv) * shadowViewNormal;
-
     #ifdef RENDER_TERRAIN
         vOut.blockId = data.blockId;
-
-        #if defined(VOXEL_BLOCK_FACE) || defined(VOXEL_TRI_ENABLED)
-            vOut.textureId = data.textureId;
-        #endif
     #endif
 
-    #if defined(RENDER_TERRAIN) || (defined(RENDER_ENTITY) && defined(VOXEL_TRI_ENABLED))
-        vOut.currentCascade = iris_currentCascade;
+    #ifdef IS_TERRAIN_BLOCKFACE
+        vec3 shadowViewNormal = mat3(iris_modelViewMatrix) * data.normal;
+        vOut.localNormal = mat3(ap.celestial.viewInv) * shadowViewNormal;
+    #endif
 
-        #if defined(VOXEL_BLOCK_FACE) || defined(VOXEL_TRI_ENABLED)
-            vOut.lmcoord = LightMapNorm(data.light);
-        #endif
+    #if defined(IS_TERRAIN_VOXEL) || defined(IS_TERRAIN_BLOCKFACE) || defined(IS_TERRAIN_ENTITY_QUADS)
+        vOut.currentCascade = iris_currentCascade;
+    #endif
+
+    #if defined(IS_TERRAIN_BLOCKFACE) || defined(IS_TERRAIN_ENTITY_QUADS)
+        vOut.textureId = data.textureId;
+        vOut.lmcoord = LightMapNorm(data.light);
     #endif
 }

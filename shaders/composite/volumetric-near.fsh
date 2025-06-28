@@ -28,7 +28,9 @@ uniform sampler2D texSkyMultiScatter;
     #ifdef LIGHTING_SHADOW_PCSS
         uniform samplerCubeArray pointLight;
     #endif
-#elif LIGHTING_MODE == LIGHT_MODE_LPV
+#endif
+
+#ifdef FLOODFILL_ENABLED
     uniform sampler3D texFloodFill;
     uniform sampler3D texFloodFill_alt;
 #endif
@@ -51,6 +53,8 @@ uniform sampler2D texSkyMultiScatter;
 
 #include "/lib/utility/hsv.glsl"
 
+#include "/lib/voxel/voxel-common.glsl"
+
 #ifdef SHADOWS_ENABLED
     #include "/lib/shadow/csm.glsl"
     #include "/lib/shadow/sample.glsl"
@@ -68,7 +72,6 @@ uniform sampler2D texSkyMultiScatter;
 #endif
 
 #if LIGHTING_MODE == LIGHT_MODE_RT || (LIGHTING_MODE == LIGHT_MODE_SHADOWS && defined(LIGHTING_SHADOW_BIN_ENABLED))
-    #include "/lib/voxel/voxel-common.glsl"
     #include "/lib/voxel/voxel-sample.glsl"
     #include "/lib/voxel/light-list.glsl"
 #endif
@@ -79,18 +82,20 @@ uniform sampler2D texSkyMultiScatter;
 #endif
 
 #if LIGHTING_MODE == LIGHT_MODE_SHADOWS && defined(LIGHTING_VL_SHADOWS)
-    #include "/lib/light/point-light-sample-common.glsl"
-    #include "/lib/light/point-light-sample-vl.glsl"
+    #include "/lib/shadow-point/common.glsl"
+    #include "/lib/shadow-point/sample-common.glsl"
+    #include "/lib/shadow-point/sample-vl.glsl"
 #elif LIGHTING_MODE == LIGHT_MODE_RT && defined(LIGHTING_VL_SHADOWS)
     #include "/lib/voxel/dda.glsl"
     #include "/lib/voxel/light-trace.glsl"
-#elif LIGHTING_MODE == LIGHT_MODE_LPV
-    #include "/lib/voxel/voxel-common.glsl"
-    #include "/lib/voxel/floodfill-common.glsl"
-    #include "/lib/voxel/floodfill-sample.glsl"
 #elif LIGHTING_MODE == LIGHT_MODE_VANILLA
     #include "/lib/utility/blackbody.glsl"
     #include "/lib/lightmap/sample.glsl"
+#endif
+
+#ifdef FLOODFILL_ENABLED
+    #include "/lib/voxel/floodfill-common.glsl"
+    #include "/lib/voxel/floodfill-sample.glsl"
 #endif
 
 
@@ -315,7 +320,7 @@ void main() {
             #endif
 
             #ifdef SKY_FOG_NOISE
-                sampleDensity += SampleFogNoise(sampleLocalPos);
+                sampleDensity *= SampleFogNoise(sampleLocalPos);
             #endif
 
             #ifdef VL_SELF_SHADOW
@@ -382,12 +387,12 @@ void main() {
 
                     uint light_voxelIndex = LightBinMap[lightBinIndex].lightList[i2].voxelIndex;
 
-                    vec3 light_voxelPos = GetLightVoxelPos(light_voxelIndex) + 0.5;
-                    light_voxelPos += jitter;
+                    vec3 light_voxelPos = GetLightVoxelPos(light_voxelIndex);
+                    light_voxelPos += 0.5 + jitter;
 
                     vec3 light_LocalPos = voxel_getLocalPosition(light_voxelPos);
 
-                    uint blockId = SampleVoxelBlock(light_voxelPos);
+                    uint blockId = SampleVoxelBlockLocal(light_LocalPos);
 
                     float lightRange = iris_getEmission(blockId);
                     vec3 lightColor = iris_getLightColor(blockId).rgb;
@@ -418,14 +423,16 @@ void main() {
             #endif
         #endif
 
-        #if LIGHTING_MODE == LIGHT_MODE_LPV
+        #ifdef FLOODFILL_ENABLED
             vec3 voxelPos = voxel_GetBufferPosition(sampleLocalPos);
 
             if (floodfill_isInBounds(voxelPos)) {
                 vec3 blockLight = floodfill_sample(voxelPos);
                 sampleLit += phaseIso * blockLight;
             }
-        #elif LIGHTING_MODE == LIGHT_MODE_VANILLA
+        #endif
+
+        #if LIGHTING_MODE == LIGHT_MODE_VANILLA
             vec3 blockLighting = GetVanillaBlockLight(sample_lmcoord.x, 1.0);
             sampleLit += phaseIso * blockLighting;
         #endif
@@ -436,7 +443,7 @@ void main() {
 
         vec3 scatteringIntegral, sampleTransmittance, inScattering, extinction;
 
-        sampleLit *= 27.0;
+        sampleLit *= 15.0;
 
         if (!isFluid) {
             vec3 skyPos = getSkyPosition(sampleLocalPos);
@@ -448,12 +455,12 @@ void main() {
 
             sampleTransmittance = exp(-extinction * stepDist);
 
-            vec3 psiMS = getValFromMultiScattLUT(texSkyMultiScatter, skyPos, Scene_LocalSunDir) + Sky_MinLight;
-            psiMS *= Scene_SkyBrightnessSmooth;
+            vec3 psiMS = getValFromMultiScattLUT(texSkyMultiScatter, skyPos, Scene_LocalSunDir);
+            vec3 ambient = psiMS * Scene_SkyBrightnessSmooth + VL_MinLight;
 
             //vec3 rayleighInScattering = rayleighScattering * (rayleighPhaseValue * sunSkyLight * shadowSample + psiMS + sampleLit);
             vec3 mieSkyLight = miePhase_sun * sunSkyLight + miePhase_moon * moonSkyLight;
-            vec3 mieInScattering = mieScattering * (mieSkyLight * shadowSample + psiMS + sampleLit);
+            vec3 mieInScattering = mieScattering * (mieSkyLight * shadowSample + ambient + sampleLit);
             inScattering = mieInScattering;
         }
         else {
@@ -505,10 +512,10 @@ void main() {
                 const float stepDist = 10.0;
                 vec3 sampleTransmittance = exp(-extinction * stepDist);
 
-                vec3 psiMS = getValFromMultiScattLUT(texSkyMultiScatter, skyPos, Scene_LocalSunDir) + Sky_MinLight;
-                psiMS *= Scene_SkyBrightnessSmooth;// * phaseIso;
+                vec3 psiMS = getValFromMultiScattLUT(texSkyMultiScatter, skyPos, Scene_LocalSunDir);
+                vec3 ambient = psiMS * Scene_SkyBrightnessSmooth + VL_MinLight;
 
-                vec3 mieInScattering = mieScattering * (miePhase_sun * sunSkyLight + miePhase_moon * moonSkyLight + psiMS);
+                vec3 mieInScattering = mieScattering * (miePhase_sun * sunSkyLight + miePhase_moon * moonSkyLight + ambient);
                 vec3 inScattering = mieInScattering;//rayleighInScattering; // + mieInScattering
 
                 vec3 scatteringIntegral = (inScattering - inScattering * sampleTransmittance) / extinction;

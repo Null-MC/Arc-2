@@ -20,7 +20,7 @@ void randomize_reflection(inout vec3 reflectRay, const in vec3 normal, const in 
 vec3 GetHandLightPos(const in float offsetX) {
     vec3 pos = vec3(offsetX, 0.0, -0.2);
     pos = mul3(ap.camera.viewInv, pos);
-    pos.y -= 0.4;
+    pos.y -= 0.32;
     return pos;
 }
 
@@ -51,7 +51,7 @@ void GetHandLight(inout vec3 diffuse, inout vec3 specular, const in uint blockId
         // TODO: trace hand shadows
         #ifdef HANDLIGHT_TRACE
             vec3 traceStart = voxel_GetBufferPosition(lightLocalPos);
-            vec3 traceEnd = voxel_GetBufferPosition(localPos + 0.06*localGeoNormal);
+            vec3 traceEnd = voxel_GetBufferPosition(localPos);
             const bool traceSelf = true;
             lightColor *= TraceDDA(traceStart, traceEnd, lightRange, traceSelf);
         #endif

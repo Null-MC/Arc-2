@@ -19,7 +19,7 @@ void iris_emitFragment() {
     vec4 mColor = vec4(1.0);//vIn.color;
     iris_modifyBase(mUV, mColor, mLight);
 
-    vec4 albedo = iris_sampleBaseTexLod(mUV);
+    vec4 albedo = iris_sampleBaseTex(mUV);
 
     const float alphaThreshold = 0.1;
     if (albedo.a < alphaThreshold) {discard; return;}

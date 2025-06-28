@@ -52,6 +52,8 @@ screen.SHADOWS=Shadows
 
 option.SHADOWS_ENABLED=Enabled
 
+option.SHADOW_PCSS_ENABLED=Soft Shadows
+
 option.SHADOW_RESOLUTION=Resolution
 suffix.SHADOW_RESOLUTION=px
 

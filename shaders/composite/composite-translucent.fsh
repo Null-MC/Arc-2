@@ -184,6 +184,7 @@ void main() {
     if (albedo.a > EPSILON && depthTrans <= depthOpaque) {
         vec3 texNormalData = texelFetch(texDeferredTrans_TexNormal, iuv, 0).rgb;
         uvec4 data = texelFetch(texDeferredTrans_Data, iuv, 0);
+        uint blockId = data.a;
 
         vec3 ndcPosOpaque = vec3(uv, depthOpaque) * 2.0 - 1.0;
         vec3 ndcPosTrans = vec3(uv, depthTrans) * 2.0 - 1.0;
@@ -192,6 +193,10 @@ void main() {
             unjitter(ndcPosOpaque);
             unjitter(ndcPosTrans);
         #endif
+
+        if (blockId == BLOCK_HAND) {
+            ndcPosTrans.z /= MC_HAND_DEPTH;
+        }
 
         vec3 viewPosOpaque = unproject(ap.camera.projectionInv, ndcPosOpaque);
         vec3 localPosOpaque = mul3(ap.camera.viewInv, viewPosOpaque);
@@ -217,12 +222,17 @@ void main() {
         float texOcclusion = data_b.b;
         float porosity = data_b.a;
 
-        uint blockId = data.a;
+//        uint blockId = data.a;
 
         //lmCoord = _pow3(lmCoord);
         float roughL = _pow2(roughness);
 
         is_fluid = iris_hasFluid(blockId);
+
+//        if (is_fluid) {
+//            // fuck up foam but fix reflections
+//            albedo.a = 0.0;
+//        }
 
 //        bool is_trans_fluid = iris_hasFluid(trans_blockId);
 
@@ -508,6 +518,7 @@ void main() {
 
         finalColor.rgb = mix(albedo.rgb * diffuse * albedo.a, specular, view_F);
         //finalColor.a = min(finalColor.a + maxOf(specular), 1.0);
+        //finalColor.a = mix(finalColor.a, 1.0, maxOf(view_F));
 
         // Refraction
         float linearDist = length(localPosOpaque - localPosTrans);

@@ -335,7 +335,7 @@ void main() {
             vec3 skyPos = getSkyPosition(vec3(0.0));
             vec3 skyReflectColor = lmCoord.y * getValFromSkyLUT(texSkyView, skyPos, reflectLocalDir, Scene_LocalSunDir);
 
-            vec3 reflectSun = SUN_LUX * sun(reflectLocalDir, Scene_LocalSunDir) * sunTransmit;
+            vec3 reflectSun = SUN_LUX * sun(reflectLocalDir, Scene_LocalSunDir) * sunTransmit * Scene_SunColor;
             vec3 reflectMoon = MOON_LUX * moon(reflectLocalDir, -Scene_LocalSunDir) * moonTransmit;
             skyReflectColor += shadow_sss.rgb * (reflectSun + reflectMoon);
 
@@ -455,7 +455,7 @@ void main() {
                 float NoL_sun = dot(reflect_localTexNormal, Scene_LocalSunDir);
                 float NoL_moon = -NoL_sun;//dot(localTexNormal, -Scene_LocalSunDir);
 
-                float skyLightF = smoothstep(0.0, 0.2, Scene_LocalLightDir.y);
+                float skyLightF = smoothstep(0.0, 0.1, Scene_LocalLightDir.y);
 
                 #if defined(SKY_CLOUDS_ENABLED) && defined(SHADOWS_CLOUD_ENABLED)
                     skyLightF *= SampleCloudShadows(reflect_localPos);
@@ -463,10 +463,13 @@ void main() {
 
                 vec3 reflect_sunTransmit, reflect_moonTransmit;
                 GetSkyLightTransmission(reflect_localPos, reflect_sunTransmit, reflect_moonTransmit);
-                vec3 reflect_skyLight = SUN_LUX  * reflect_sunTransmit  * max(NoL_sun, 0.0)
-                                      + MOON_LUX * reflect_moonTransmit * max(NoL_moon, 0.0);
+                vec3 sunLight = skyLightF * SUN_LUX * reflect_sunTransmit * Scene_SunColor;
+                vec3 moonLight = skyLightF * MOON_LUX * reflect_moonTransmit;
 
-                vec3 reflect_diffuse = reflect_skyLight * skyLightF * reflect_shadow;
+                vec3 reflect_skyLight = sunLight * max(NoL_sun, 0.0)
+                                      + moonLight * max(NoL_moon, 0.0);
+
+                vec3 reflect_diffuse = reflect_skyLight * reflect_shadow;
                 reflect_diffuse *= SampleLightDiffuse(reflect_NoVm, reflect_NoLm, reflect_LoHm, reflect_roughL);
 
                 vec3 reflect_specular = vec3(0.0);

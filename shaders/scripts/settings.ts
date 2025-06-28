@@ -37,6 +37,7 @@ export class ShaderSettings {
     get Water_TessellationLevel(): number {return this.getCachedIntSetting('WATER_TESSELLATION_LEVEL');}
 
     get Shadow_Enabled(): boolean {return this.getCachedBoolSetting('SHADOWS_ENABLED');}
+    get Shadow_PcssEnabled(): boolean {return this.getCachedBoolSetting('SHADOW_PCSS_ENABLED');}
     get Shadow_Distance(): number {return this.getCachedIntSetting('SHADOW_DISTANCE');}
     get Shadow_Resolution(): number {return this.getCachedIntSetting('SHADOW_RESOLUTION');}
     get Shadow_CascadeCount(): number {return this.getCachedIntSetting('SHADOW_CASCADE_COUNT');}

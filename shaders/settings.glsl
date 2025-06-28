@@ -11,7 +11,7 @@
 
 #define HANDLIGHT_TRACE
 
-#define VL_SELF_SHADOW
+//#define VL_SELF_SHADOW
 #define VL_STEP_POW 100
 
 #define POINT_LIGHT_POM
@@ -22,6 +22,8 @@
 //#define VOXEL_SKIP_SECTIONS
 
 //#define TRANSLUCENT_DEPTH_TEST_FIX
+
+#define MC_HAND_DEPTH 0.125 // [0.0625 0.125 0.25]
 
 
 const float ATMOSPHERE_MAX = 4200.0;

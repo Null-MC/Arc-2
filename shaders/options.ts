@@ -32,6 +32,7 @@ export function setupOptions() {
 
     const screen_Shadows = new Page("SHADOWS")
         .add(asBool("SHADOWS_ENABLED", true, true))
+        .add(asBool("SHADOW_PCSS_ENABLED", true, true))
         .add(asIntRange("SHADOW_DISTANCE", 200, 50, 2000, 50, true))
         .add(asInt("SHADOW_RESOLUTION", 256, 512, 1024, 2048, 4096).build(1024))
         .add(asIntRange("SHADOW_CASCADE_COUNT", 4, 1, 6, 1, true))

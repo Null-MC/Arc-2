@@ -39,7 +39,8 @@ void main() {
     float sssFinal = 0.0;
 
     if (depthOpaque < 1.0) {
-        uvec2 data = texelFetch(texDeferredOpaque_Data, iuv, 0).rg;
+        uvec4 data = texelFetch(texDeferredOpaque_Data, iuv, 0);
+        uint blockId = data.a;
 
         vec3 clipPos = vec3(uv, depthOpaque);
         vec3 ndcPos = clipPos * 2.0 - 1.0;
@@ -47,6 +48,10 @@ void main() {
         #ifdef EFFECT_TAA_ENABLED
             unjitter(ndcPos);
         #endif
+
+        if (blockId == BLOCK_HAND) {
+            ndcPos.z /= MC_HAND_DEPTH;
+        }
 
         vec3 viewPos = unproject(ap.camera.projectionInv, ndcPos);
         vec3 localPos = mul3(ap.camera.viewInv, viewPos);
@@ -64,7 +69,14 @@ void main() {
         float dither = GetShadowDither();
         
         if (saturate(shadowPos) == shadowPos) {
-            shadowFinal *= SampleShadowColor_PCSS(shadowPos, shadowCascade);
+            #ifdef SHADOW_PCSS_ENABLED
+                shadowFinal *= SampleShadowColor_PCSS(shadowPos, shadowCascade);
+            #else
+                float bias = GetShadowBias(shadowCascade);
+                shadowPos.z -= bias;
+
+                shadowFinal *= SampleShadowColor(shadowPos, shadowCascade);
+            #endif
 
             float shadowRange = GetShadowRange(shadowCascade);
             vec3 shadowCoord = vec3(shadowPos.xy, shadowCascade);

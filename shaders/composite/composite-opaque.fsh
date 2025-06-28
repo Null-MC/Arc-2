@@ -180,7 +180,6 @@ void main() {
     uint blockId = data.a;
 
     if (blockId == BLOCK_HAND) {
-        #define MC_HAND_DEPTH 0.125 // [0.0625 0.125 0.25]
         ndcPos.z /= MC_HAND_DEPTH;
     }
 

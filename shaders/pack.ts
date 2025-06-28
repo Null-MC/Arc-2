@@ -60,6 +60,7 @@ function applySettings(settings : ShaderSettings, internal) {
     }
 
     if (settings.Shadow_Enabled) defineGlobally1('SHADOWS_ENABLED');
+    if (settings.Shadow_PcssEnabled) defineGlobally1('SHADOW_PCSS_ENABLED');
     if (settings.Shadow_CloudEnabled) defineGlobally1('SHADOWS_CLOUD_ENABLED');
     if (settings.Shadow_SS_Fallback) defineGlobally1('SHADOWS_SS_FALLBACK');
     defineGlobally('SHADOW_RESOLUTION', settings.Shadow_Resolution);
@@ -1724,6 +1725,8 @@ function setupSky(sceneBuffer) {
         .vertex("shared/bufferless.vsh")
         .fragment("setup/sky_multi_scatter.fsh")
         .target(0, texSkyMultiScatter)
+        .ssbo(0, sceneBuffer)
+        .ubo(0, SceneSettingsBuffer)
         .build())
 
     registerShader(Stage.PRE_RENDER, new Composite("sky-view")

@@ -10,6 +10,7 @@ in vec2 uv;
 uniform sampler2D texSkyTransmit;
 
 #include "/lib/common.glsl"
+#include "/lib/buffers/scene.glsl"
 
 #include "/lib/hg.glsl"
 #include "/lib/sky/common.glsl"
@@ -79,7 +80,7 @@ void getMulScattValues(vec3 pos, vec3 sunDir, out vec3 lumTotal, out vec3 fms) {
 
                 // This is slightly different from the paper, but I think the paper has a mistake?
                 // In equation (6), I think S(x,w_s) should be S(x-tv,w_s).
-                vec3 sunTransmittanceLux = getValFromTLUT(texSkyTransmit, newPos, sunDir) * SUN_LUX;
+                vec3 sunTransmittanceLux = getValFromTLUT(texSkyTransmit, newPos, sunDir) * SUN_LUX * Scene_SunColor;
                 vec3 moonTransmittanceLux = getValFromTLUT(texSkyTransmit, newPos, -sunDir) * MOON_LUX;
 
                 vec3 rayleighInScattering_sun = rayleighScattering * rayleighPhase_sun;

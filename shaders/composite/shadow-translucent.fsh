@@ -67,7 +67,14 @@ void main() {
         float dither = GetShadowDither();
         
         if (saturate(shadowPos) == shadowPos) {
-            shadowFinal *= SampleShadowColor_PCSS(shadowPos, shadowCascade);
+            #ifdef SHADOW_PCSS_ENABLED
+                shadowFinal *= SampleShadowColor_PCSS(shadowPos, shadowCascade);
+            #else
+                float bias = GetShadowBias(shadowCascade);
+                shadowPos.z -= bias;
+
+                shadowFinal *= SampleShadowColor(shadowPos, shadowCascade);
+            #endif
 
             // SSS
             vec4 data_a = unpackUnorm4x8(data.g);

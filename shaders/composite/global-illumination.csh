@@ -19,7 +19,9 @@ uniform sampler2D texBlueNoise;
 	#ifdef LIGHTING_SHADOW_PCSS
 		uniform samplerCubeArray pointLight;
 	#endif
-#elif LIGHTING_MODE == LIGHT_MODE_LPV
+#endif
+
+#ifdef FLOODFILL_ENABLED
 	uniform sampler3D texFloodFill;
 	uniform sampler3D texFloodFill_alt;
 #endif
@@ -95,16 +97,10 @@ uniform sampler2D texBlueNoise;
 #endif
 
 #if LIGHTING_MODE == LIGHT_MODE_SHADOWS
-	#include "/lib/light/point-light-sample-common.glsl"
-	#include "/lib/light/point-light-sample-geo.glsl"
+	#include "/lib/shadow-point/common.glsl"
+	#include "/lib/shadow-point/sample-common.glsl"
+	#include "/lib/shadow-point/sample-geo.glsl"
 #elif LIGHTING_MODE == LIGHT_MODE_RT
-	//#include "/lib/light/hcm.glsl"
-//	#include "/lib/light/fresnel.glsl"
-//	#include "/lib/light/sampling.glsl"
-
-	//#include "/lib/material/material_fresnel.glsl"
-
-	//#include "/lib/voxel/light-list.glsl"
 	#include "/lib/voxel/light-trace.glsl"
 #elif LIGHTING_MODE == LIGHT_MODE_NONE
 	#include "/lib/lightmap/sample.glsl"
@@ -498,7 +494,12 @@ vec3 trace_GI(const in vec3 traceOrigin, const in vec3 traceDir, const in int fa
 					//hit_specular += sampleSpecular * shadow_color * bright_scale;
 				//}
 			}
-		#elif LIGHTING_MODE == LIGHT_MODE_LPV
+		#elif LIGHTING_MODE == LIGHT_MODE_VANILLA
+			const float occlusion = 1.0;
+			hit_diffuse += GetVanillaBlockLight(hit_lmcoord.x, occlusion);
+		#endif
+
+		#ifdef FLOODFILL_ENABLED
 			vec3 lpv_voxelPos = hit_voxelPos + 0.5*hitNormal;
 
 			if (voxel_isInBounds(lpv_voxelPos)) {
@@ -511,9 +512,6 @@ vec3 trace_GI(const in vec3 traceOrigin, const in vec3 traceDir, const in int fa
 
 				hit_diffuse += lpv_light * BLOCK_LUX;
 			}
-		#elif LIGHTING_MODE == LIGHT_MODE_VANILLA
-			const float occlusion = 1.0;
-			hit_diffuse += GetVanillaBlockLight(hit_lmcoord.x, occlusion);
 		#endif
 
 		float hit_metalness = mat_metalness(hit_f0_metal);

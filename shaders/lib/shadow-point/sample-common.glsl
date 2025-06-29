@@ -32,13 +32,13 @@ float sample_PointLightShadow(const in vec3 sampleDir, const in float sampleDist
     float result;
     switch (lod) {
         case 0u:
-            result = texture(pointLightFiltered0, samplePos, depth).r;
+            result = texture(pointLight0Filtered, samplePos, depth).r;
             break;
         case 1u:
-            result = texture(pointLightFiltered1, samplePos, depth).r;
+            result = texture(pointLight1Filtered, samplePos, depth).r;
             break;
         case 2u:
-            result = texture(pointLightFiltered2, samplePos, depth).r;
+            result = texture(pointLight2Filtered, samplePos, depth).r;
             break;
     }
     return result;

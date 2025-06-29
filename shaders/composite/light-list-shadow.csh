@@ -11,6 +11,7 @@ layout (local_size_x = 8, local_size_y = 8, local_size_z = 8) in;
 
 #include "/lib/voxel/voxel-common.glsl"
 #include "/lib/voxel/light-list.glsl"
+#include "/lib/shadow-point/common.glsl"
 
 
 void main() {
@@ -23,33 +24,24 @@ void main() {
 //		vec3 lightLocalPos = ap.point.pos[shadowIndex].xyz;
 
 	// TODO: get LOD index
-	int lod = -1;
-	if      (shadowIndex < POINT_LIGHT_MAX0) lod = 0;
-	else if (shadowIndex < POINT_LIGHT_MAX0+POINT_LIGHT_MAX1) lod = 1;
-	else if (shadowIndex < POINT_LIGHT_MAX0+POINT_LIGHT_MAX1+POINT_LIGHT_MAX2) lod = 2;
+	uint lod = uint(-1);
+	if      (shadowIndex < POINT_LIGHT_MAX0) lod = 0u;
+	else if (shadowIndex < POINT_LIGHT_MAX0+POINT_LIGHT_MAX1) {
+		lod = 1u;
+		shadowIndex -= POINT_LIGHT_MAX0;
+	}
+	else if (shadowIndex < POINT_LIGHT_MAX0+POINT_LIGHT_MAX1+POINT_LIGHT_MAX2) {
+		lod = 2u;
+		shadowIndex -= POINT_LIGHT_MAX0+POINT_LIGHT_MAX1;
+	}
 
-	if (lod >= 0) {
-		vec3 lightLocalPos;
-		uint blockId;
-
-		switch (lod) {
-			case 0:
-				lightLocalPos = ap.point.pos0[shadowIndex].xyz;
-				blockId = ap.point.block0[shadowIndex];
-				break;
-			case 1:
-				lightLocalPos = ap.point.pos1[shadowIndex].xyz;
-				blockId = ap.point.block1[shadowIndex];
-				break;
-			case 2:
-				lightLocalPos = ap.point.pos2[shadowIndex].xyz;
-				blockId = ap.point.block2[shadowIndex];
-				break;
-		}
+	if (lod != uint(-1)) {
+		vec3 lightLocalPos = getPointLightPos(lod, shadowIndex);
+		uint blockId = getPointLightBlock(lod, shadowIndex);
 
 		// get light bin index
 		vec3 voxelPos = voxel_GetBufferPosition(lightLocalPos);
-		if (voxel_isInBounds(voxelPos) && blockId > 0) {
+		if (voxel_isInBounds(voxelPos) && blockId != uint(-1)) {
 			ivec3 lightBinPos = ivec3(floor(voxelPos / LIGHT_BIN_SIZE));
 			int lightBinIndex = GetLightBinIndex(lightBinPos);
 

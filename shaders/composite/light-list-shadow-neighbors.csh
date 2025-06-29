@@ -11,6 +11,7 @@ layout (local_size_x = 8, local_size_y = 8, local_size_z = 8) in;
 
 #include "/lib/voxel/voxel-common.glsl"
 #include "/lib/voxel/light-list.glsl"
+#include "/lib/shadow-point/common.glsl"
 
 
 void main() {
@@ -21,8 +22,11 @@ void main() {
 	uint shadowLightCount = LightBinMap[lightBinIndex].shadowLightCount;
 
 	for (uint i = 0u; i < min(shadowLightCount, LIGHTING_SHADOW_BIN_MAX_COUNT); i++) {
+		uint lightLod = LightBinMap[lightBinIndex].lightList[i].shadowLod;
 		uint lightIndex = LightBinMap[lightBinIndex].lightList[i].shadowIndex;
-		uint lightBlockId = ap.point.block[lightIndex];
+
+		uint lightBlockId = getPointLightBlock(lightLod, lightIndex);
+
 		float lightRange = iris_getEmission(lightBlockId);
 		float lightRangeSq = _pow2(lightRange);
 
@@ -46,6 +50,7 @@ void main() {
 
 						if (neighborLightIndex < LIGHTING_SHADOW_BIN_MAX_COUNT) {
 							LightBinMap[neighborBinIndex].lightList[neighborLightIndex].voxelIndex = LightBinMap[lightBinIndex].lightList[i].voxelIndex;
+							LightBinMap[neighborBinIndex].lightList[neighborLightIndex].shadowLod = lightLod;
 							LightBinMap[neighborBinIndex].lightList[neighborLightIndex].shadowIndex = lightIndex;
 						}
 					}

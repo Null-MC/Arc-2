@@ -27,6 +27,8 @@ out VertexData2 {
     #include "/lib/utility/tbn.glsl"
 #endif
 
+#include "/lib/shadow-point/common.glsl"
+
 
 void iris_emitVertex(inout VertexData data) {
     vec3 shadowViewPos = mul3(iris_modelViewMatrix, data.modelPos.xyz);
@@ -34,7 +36,8 @@ void iris_emitVertex(inout VertexData data) {
     vOut.modelPos = data.modelPos.xyz;
 
     #ifdef SKY_WIND_ENABLED
-        vec3 localPos = vOut.modelPos + ap.point.pos[iris_currentPointLight].xyz;
+        vec3 lightPos = getPointLightPos(iris_pointLightLod, iris_currentPointLight).xyz;
+        vec3 localPos = vOut.modelPos + lightPos;
 
         vec3 midPos = data.midBlock / 64.0;
         vec3 originPos = localPos + midPos;
@@ -54,7 +57,7 @@ void iris_emitVertex(inout VertexData data) {
 void iris_sendParameters(in VertexData data) {
     vOut.uv = data.uv;
 
-    uint blockId = ap.point.block[iris_currentPointLight];
+    uint blockId = getPointLightBlock(iris_pointLightLod, iris_currentPointLight);
     vOut.isFull = iris_isFullBlock(blockId);
 
     #ifdef IS_POINT_LIGHT_POM_ENABLED

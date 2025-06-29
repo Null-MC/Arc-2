@@ -8,3 +8,35 @@ bool shadowPoint_isInBounds(const in vec3 localPos) {
 
     return all(lessThanEqual(sectionPos_abs, _max));
 }
+
+uint getPointLightBlock(const in uint lod, const in uint index) {
+    uint blockId;
+    switch (lod) {
+        case 0u:
+            blockId = ap.point.block0[index];
+            break;
+        case 1u:
+            blockId = ap.point.block1[index];
+            break;
+        case 2u:
+            blockId = ap.point.block2[index];
+            break;
+    }
+    return blockId;
+}
+
+vec3 getPointLightPos(const in uint lod, const in uint index) {
+    vec3 lightPos;
+    switch (lod) {
+        case 0u:
+            lightPos = ap.point.pos0[index].xyz;
+            break;
+        case 1u:
+            lightPos = ap.point.pos1[index].xyz;
+            break;
+        case 2u:
+            lightPos = ap.point.pos2[index].xyz;
+            break;
+    }
+    return lightPos;
+}

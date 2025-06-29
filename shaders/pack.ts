@@ -11,7 +11,10 @@ let SceneSettingsBuffer: BuiltStreamingBuffer;
 let BlockMappings: BlockMap;
 
 
-function applySettings(settings : ShaderSettings, internal) {
+export function initShader() {
+    const settings = new ShaderSettings();
+    const internal = settings.BuildInternalSettings();
+
     worldSettings.disableShade = true;
     worldSettings.ambientOcclusionLevel = 0.0;
     worldSettings.shadowMapDistance = settings.Shadow_Distance;
@@ -21,9 +24,9 @@ function applySettings(settings : ShaderSettings, internal) {
     worldSettings.pointNearPlane = internal.PointLightNear;
     worldSettings.pointFarPlane = internal.PointLightFar;
     worldSettings.pointMaxCount = settings.Lighting_Shadow_MaxCount;
-    worldSettings.pointMaxUpdates = settings.Lighting_Shadow_UpdateCount;
-    worldSettings.pointRealTime = settings.Lighting_Shadow_RealtimeCount;
-    worldSettings.pointUpdateThreshold = settings.Lighting_Shadow_UpdateThreshold * 0.01;
+    // worldSettings.pointMaxUpdates = settings.Lighting_Shadow_UpdateCount;
+    // worldSettings.pointRealTime = settings.Lighting_Shadow_RealtimeCount;
+    // worldSettings.pointUpdateThreshold = settings.Lighting_Shadow_UpdateThreshold * 0.01;
     worldSettings.renderWaterOverlay = false;
     worldSettings.renderStars = false;
     worldSettings.renderMoon = false;
@@ -31,6 +34,12 @@ function applySettings(settings : ShaderSettings, internal) {
 
     // TODO: fix hands later, for now just unbreak them
     worldSettings.mergedHandDepth = true;
+}
+
+function applySettings(settings : ShaderSettings, internal) {
+    worldSettings.pointMaxUpdates = settings.Lighting_Shadow_UpdateCount;
+    worldSettings.pointRealTime = settings.Lighting_Shadow_RealtimeCount;
+    worldSettings.pointUpdateThreshold = settings.Lighting_Shadow_UpdateThreshold * 0.01;
 
     if (settings.Shadow_Enabled) {
         enableShadows(settings.Shadow_Resolution, settings.Shadow_CascadeCount);
@@ -104,7 +113,7 @@ function applySettings(settings : ShaderSettings, internal) {
     defineGlobally('POINT_LIGHT_NEAR', internal.PointLightNear);
     defineGlobally('POINT_LIGHT_FAR', internal.PointLightFar);
     if (settings.Lighting_Mode == LightingModes.ShadowMaps) {
-        enableCubemapShadows(settings.Lighting_Shadow_Resolution, settings.Lighting_Shadow_MaxCount);
+        //enableCubemapShadows(settings.Lighting_Shadow_Resolution, settings.Lighting_Shadow_MaxCount);
 
         defineGlobally('LIGHTING_SHADOW_MAX_COUNT', settings.Lighting_Shadow_MaxCount);
         defineGlobally('LIGHTING_SHADOW_BIN_MAX_COUNT', settings.Lighting_Shadow_BinMaxCount);

@@ -11,19 +11,18 @@ let SceneSettingsBuffer: BuiltStreamingBuffer;
 let BlockMappings: BlockMap;
 
 
-export function initShader() {
+export function initShader(dimension : NamespacedId) {
     const settings = new ShaderSettings();
     const internal = settings.BuildInternalSettings();
 
     worldSettings.disableShade = true;
     worldSettings.ambientOcclusionLevel = 0.0;
-    worldSettings.shadowMapDistance = settings.Shadow_Distance;
     worldSettings.shadowMapResolution = settings.Shadow_Resolution;
     worldSettings.cascadeCount = settings.Shadow_CascadeCount;
-    worldSettings.pointResolution = 128;
     worldSettings.pointNearPlane = internal.PointLightNear;
     worldSettings.pointFarPlane = internal.PointLightFar;
     worldSettings.pointMaxCount = settings.Lighting_Shadow_MaxCount;
+    worldSettings.pointResolution = settings.Lighting_Shadow_Resolution;
     // worldSettings.pointMaxUpdates = settings.Lighting_Shadow_UpdateCount;
     // worldSettings.pointRealTime = settings.Lighting_Shadow_RealtimeCount;
     // worldSettings.pointUpdateThreshold = settings.Lighting_Shadow_UpdateThreshold * 0.01;
@@ -37,6 +36,7 @@ export function initShader() {
 }
 
 function applySettings(settings : ShaderSettings, internal) {
+    worldSettings.shadowMapDistance = settings.Shadow_Distance;
     worldSettings.pointMaxUpdates = settings.Lighting_Shadow_UpdateCount;
     worldSettings.pointRealTime = settings.Lighting_Shadow_RealtimeCount;
     worldSettings.pointUpdateThreshold = settings.Lighting_Shadow_UpdateThreshold * 0.01;

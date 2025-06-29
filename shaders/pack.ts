@@ -183,6 +183,10 @@ function applySettings(settings : ShaderSettings, internal) {
         defineGlobally1('FLOODFILL_ENABLED');
     }
 
+    if (internal.LightListsEnabled) {
+        defineGlobally1('LIGHT_LIST_ENABLED');
+    }
+
     if (settings.Effect_SSAO_Enabled) defineGlobally1('EFFECT_SSAO_ENABLED');
     defineGlobally('EFFECT_SSAO_SAMPLES', settings.Effect_SSAO_StepCount);
 
@@ -1314,7 +1318,7 @@ export function setupShader(dimension : NamespacedId) {
                 .ssbo(2, shLpvBuffer_alt);
         }
 
-        if (settings.Lighting_Mode == LightingModes.RayTraced) {
+        if (internal.LightListsEnabled) {
             rtOpaqueShader
                 .ssbo(3, lightListBuffer);
         }

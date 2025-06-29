@@ -166,7 +166,7 @@ void main() {
 //				blockTint *= 1.0 - blocking/16.0;
 		}
 
-		#if LIGHTING_MODE != LIGHT_MODE_FLOODFILL
+		#if LIGHTING_MODE != LIGHT_MODE_LPV
 			uint blockMapId = iris_getCustomId(blockId);
 			if (blockMapId != BLOCK_LAVA) lightRange = 0;
 		#endif

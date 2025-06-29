@@ -40,7 +40,15 @@ uniform sampler2D texBlueNoise;
         uniform sampler2DArray texShadowColor;
     #endif
 
-    #if LIGHTING_MODE == LIGHT_MODE_LPV
+    #if LIGHTING_MODE == LIGHT_MODE_SHADOWS
+        uniform samplerCubeArrayShadow pointLightFiltered;
+
+        #ifdef LIGHTING_SHADOW_PCSS
+            uniform samplerCubeArray pointLight;
+        #endif
+    #endif
+
+    #ifdef FLOODFILL_ENABLED
         uniform sampler3D texFloodFill;
         uniform sampler3D texFloodFill_alt;
     #endif
@@ -50,11 +58,11 @@ in vec2 uv;
 
 #include "/lib/common.glsl"
 
-#if LIGHTING_MODE == LIGHT_MODE_RT
+#include "/lib/buffers/voxel-block.glsl"
+
+#ifdef LIGHT_LIST_ENABLED
     #include "/lib/buffers/light-list.glsl"
 #endif
-
-#include "/lib/buffers/voxel-block.glsl"
 
 #ifdef VOXEL_TRI_ENABLED
     #include "/lib/buffers/quad-list.glsl"
@@ -76,6 +84,10 @@ in vec2 uv;
 #include "/lib/voxel/voxel-common.glsl"
 #include "/lib/voxel/voxel-sample.glsl"
 
+#ifdef LIGHT_LIST_ENABLED
+    #include "/lib/voxel/light-list.glsl"
+#endif
+
 #if LIGHTING_MODE == LIGHT_MODE_RT || LIGHTING_REFLECT_MODE == REFLECT_MODE_WSR
     #include "/lib/voxel/dda.glsl"
 #endif
@@ -85,9 +97,13 @@ in vec2 uv;
     #include "/lib/voxel/quad-list.glsl"
 #endif
 
-#if LIGHTING_MODE == LIGHT_MODE_RT
-    #include "/lib/voxel/light-list.glsl"
-#endif
+//#if LIGHTING_MODE == LIGHT_MODE_SHADOWS
+//    #include "/lib/shadow-point/common.glsl"
+//    #include "/lib/shadow-point/sample-common.glsl"
+//    #include "/lib/shadow-point/sample-geo.glsl"
+//#elif LIGHTING_MODE == LIGHT_MODE_RT
+//    //#include "/lib/voxel/light-list.glsl"
+//#endif
 
 #if LIGHTING_MODE == LIGHT_MODE_RT || defined(HANDLIGHT_TRACE)
     #include "/lib/voxel/light-trace.glsl"
@@ -125,10 +141,6 @@ in vec2 uv;
         #include "/lib/shadow/sample.glsl"
     #endif
 
-    #if LIGHTING_MODE == LIGHT_MODE_LPV
-        #include "/lib/voxel/floodfill-sample.glsl"
-    #endif
-
     #if defined(SKY_CLOUDS_ENABLED) && defined(SHADOWS_CLOUD_ENABLED)
         #include "/lib/sky/density.glsl"
         #include "/lib/sky/clouds.glsl"
@@ -143,8 +155,16 @@ in vec2 uv;
     #include "/lib/sampling/depth.glsl"
     #include "/lib/effects/ssr.glsl"
 
-    #if LIGHTING_MODE == LIGHT_MODE_NONE
-        #include "/lib/lightmap/sample.glsl"
+    #include "/lib/lightmap/sample.glsl"
+
+    #if LIGHTING_MODE == LIGHT_MODE_SHADOWS
+        #include "/lib/shadow-point/common.glsl"
+        #include "/lib/shadow-point/sample-common.glsl"
+        #include "/lib/shadow-point/sample-geo.glsl"
+    #endif
+
+    #ifdef FLOODFILL_ENABLED
+        #include "/lib/voxel/floodfill-sample.glsl"
     #endif
 
     #include "/lib/composite-shared.glsl"
@@ -491,7 +511,15 @@ void main() {
 
                 reflect_diffuse += reflect_skyIrradiance;
 
-                #if LIGHTING_MODE == LIGHT_MODE_RT
+                #if LIGHTING_MODE == LIGHT_MODE_SHADOWS
+                    if (!shadowPoint_isInBounds(reflect_localPos)) {
+                        const float occlusion = 1.0;
+                        reflect_diffuse += GetVanillaBlockLight(reflect_lmcoord.x, occlusion);
+                    }
+                    else {
+                        sample_AllPointLights(reflect_diffuse, reflect_specular, reflect_localPos, reflect_geoNormal, reflect_geoNormal, reflection.rgb, reflect_f0_metal, reflect_roughL);
+                    }
+                #elif LIGHTING_MODE == LIGHT_MODE_RT
                     ivec3 lightBinPos = ivec3(floor(reflect_voxelPos / LIGHT_BIN_SIZE));
                     int lightBinIndex = GetLightBinIndex(lightBinPos);
                     uint binLightCount = LightBinMap[lightBinIndex].lightCount;
@@ -565,15 +593,17 @@ void main() {
                         reflect_diffuse += sampleDiffuse * shadow_color * bright_scale;
                         //reflect_specular += sampleSpecular * shadow_color * bright_scale;
                     }
-                #elif LIGHTING_MODE == LIGHT_MODE_LPV
+                #elif LIGHTING_MODE == LIGHT_MODE_VANILLA
+                    const float occlusion = 1.0;
+                    reflect_diffuse += GetVanillaBlockLight(reflect_lmcoord.x, occlusion);
+                #endif
+
+                #ifdef FLOODFILL_ENABLED
                     vec3 voxelSamplePos = fma(reflect_geoNormal, vec3(0.5), reflect_voxelPos);
                     vec3 voxelLight = floodfill_sample(voxelSamplePos);
 
                     // TODO: move cloud shadows to RSM sampling!!!
                     reflect_diffuse += voxelLight;// * cloudShadowF;// * SampleLightDiffuse(NoVm, 1.0, 1.0, roughL);
-                #elif LIGHTING_MODE == LIGHT_MODE_VANILLA
-                    const float occlusion = 1.0;
-                    reflect_diffuse += GetVanillaBlockLight(reflect_lmcoord.x, occlusion);
                 #endif
 
                 reflect_diffuse += 0.0016;

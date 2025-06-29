@@ -369,9 +369,14 @@ void main() {
             vec3 voxelSamplePos = 0.5*localTexNormal - 0.25*localGeoNormal + voxelPos;
 
             if (floodfill_isInBounds(voxelSamplePos)) {
-                float floodfill_FadeF = floodfill_getFade(voxelPos);
                 vec3 floodfill_light = floodfill_sample(voxelSamplePos);
-                blockLighting = mix(blockLighting, floodfill_light, floodfill_FadeF);
+
+                #if LIGHTING_MODE == LIGHT_MODE_LPV
+                    float floodfill_FadeF = floodfill_getFade(voxelPos);
+                    blockLighting = mix(blockLighting, floodfill_light, floodfill_FadeF);
+                #else
+                    blockLighting += floodfill_light;
+                #endif
             }
         #endif
 

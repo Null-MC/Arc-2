@@ -1,15 +1,17 @@
 #ifdef LIGHTING_SHADOW_PCSS
     float sample_PointLightDepth(const in vec3 sampleDir, const in uint index) {
+        vec4 samplePos = vec4(sampleDir, index);
+
         float depth;
         switch (lod) {
             case 0u:
-                depth = texture(pointLight0, vec4(sampleDir, index)).r;
+                depth = texture(pointLight0, samplePos).r;
                 break;
             case 1u:
-                depth = texture(pointLight1, vec4(sampleDir, index)).r;
+                depth = texture(pointLight1, samplePos).r;
                 break;
             case 2u:
-                depth = texture(pointLight2, vec4(sampleDir, index)).r;
+                depth = texture(pointLight2, samplePos).r;
                 break;
         }
 

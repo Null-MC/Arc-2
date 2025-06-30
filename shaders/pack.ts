@@ -1652,8 +1652,8 @@ export function onSettingsChanged(state : WorldState) {
     const settings = new ShaderSettings();
 
     worldSettings.sunPathRotation = settings.Sky_SunAngle;
-    worldSettings.pointMaxCount = settings.Lighting_Shadow_MaxCount;
     worldSettings.pointRealTime = settings.Lighting_Shadow_RealtimeCount;
+    worldSettings.pointMaxUpdates = settings.Lighting_Shadow_UpdateCount;
     worldSettings.pointUpdateThreshold = settings.Lighting_Shadow_UpdateThreshold * 0.01;
 
     const d = settings.Fog_Density * 0.01;

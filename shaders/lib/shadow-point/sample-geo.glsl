@@ -47,17 +47,17 @@ void sample_AllPointLights(inout vec3 diffuse, inout vec3 specular, const in vec
         vec3 lightColor = iris_getLightColor(blockId).rgb;
         lightColor = RgbToLinear(lightColor);
 
-        switch (lightLod) {
-            case 0u:
-                lightColor = vec3(1.0,0.0,0.0);
-                break;
-            case 1u:
-                lightColor = vec3(0.0,1.0,0.0);
-                break;
-            case 2u:
-                lightColor = vec3(0.0,0.0,1.0);
-                break;
-        }
+//        switch (lightLod) {
+//            case 0u:
+//                lightColor = vec3(1.0,0.0,0.0);
+//                break;
+//            case 1u:
+//                lightColor = vec3(0.0,1.0,0.0);
+//                break;
+//            case 2u:
+//                lightColor = vec3(0.0,0.0,1.0);
+//                break;
+//        }
 
         float lightSize = iris_isFullBlock(blockId) ? 1.0 : 0.15;
 

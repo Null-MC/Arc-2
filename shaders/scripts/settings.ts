@@ -141,8 +141,8 @@ export class ShaderSettings {
             PointLightNear: 0.1,
             PointLightFar: 16.0,
             PointLightMax0: 8,
-            PointLightMax1: 16,
-            PointLightMax2: 32,
+            PointLightMax1: 32,
+            PointLightMax2: 128,
             DebugEnabled: false,
         };
 

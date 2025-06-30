@@ -41,10 +41,14 @@ uniform sampler2D texBlueNoise;
     #endif
 
     #if LIGHTING_MODE == LIGHT_MODE_SHADOWS
-        uniform samplerCubeArrayShadow pointLightFiltered;
+        uniform samplerCubeArrayShadow pointLight0Filtered;
+        uniform samplerCubeArrayShadow pointLight1Filtered;
+        uniform samplerCubeArrayShadow pointLight2Filtered;
 
         #ifdef LIGHTING_SHADOW_PCSS
-            uniform samplerCubeArray pointLight;
+            uniform samplerCubeArray pointLight0;
+            uniform samplerCubeArray pointLight1;
+            uniform samplerCubeArray pointLight2;
         #endif
     #endif
 

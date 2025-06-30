@@ -16,9 +16,7 @@ in VertexData2 {
     #endif
 } vIn;
 
-#ifdef IS_POINT_LIGHT_POM_ENABLED
-    layout (depth_greater) out float gl_FragDepth;
-#endif
+out float gl_FragDepth;
 
 #include "/lib/common.glsl"
 
@@ -44,39 +42,26 @@ void iris_emitFragment() {
         float texDepth = 1.0;
         vec3 traceCoordDepth = vec3(1.0);
 
-        float viewDist = 0.0;//length(vIn.localPos);
         vec3 tanViewDir = normalize(vIn.tangentViewPos);
-        //bool skipParallax = false;
 
         float depthInitial = iris_sampleNormalMapLod(mUV, int(LOD)).a;
 
+        const float pomViewDist = 0.0;
         vec2 localCoord = GetLocalCoord(mUV, vIn.atlasCoordMin, vIn.atlasCoordSize);
-        mUV = GetParallaxCoord(localCoord, LOD, tanViewDir, viewDist, texDepth, traceCoordDepth);
+        mUV = GetParallaxCoord(localCoord, LOD, tanViewDir, pomViewDist, texDepth, traceCoordDepth);
 
         // depth-write
         float pomDist = (1.0 - traceCoordDepth.z) / max(-tanViewDir.z, 0.00001);
+        float finalDist = length(vIn.modelPos);
 
         if (pomDist > 0.0 && depthInitial < 1.0) {
             const float ParallaxDepthF = MATERIAL_PARALLAX_DEPTH * 0.01;
-
-            vec3 shadowViewPos = vIn.shadowViewPos;
-            vec3 viewDir = normalize(shadowViewPos);
-
-            shadowViewPos += viewDir * pomDist * ParallaxDepthF;
-//            shadowViewPos.z += pomDist * ParallaxDepthF;
-            vec3 ndcPos = unproject(ap.point.projection, shadowViewPos);
-            //gl_FragDepth = (((pointFarPlane - pointNearPlane) * ndcPos.z) + pointNearPlane + pointFarPlane) / 2.0;
-            gl_FragDepth = ndcPos.z * 0.5 + 0.5;
-
-//            float linearDepth = -vIn.shadowViewPos.z + pomDist * ParallaxDepthF;
-//            float ndcDepth = (-ap.point.projection[2].z*linearDepth + ap.point.projection[3].z) / linearDepth;
-//            //float ndcDepth = (pointFarPlane + pointNearPlane - 2.0 * pointNearPlane * pointFarPlane / linearDepth) / (pointFarPlane - pointNearPlane);
-//            gl_FragDepth = ndcDepth * 0.5 + 0.5;
+            finalDist += pomDist * ParallaxDepthF;
         }
-        else {
-            gl_FragDepth = gl_FragCoord.z;
-        }
+    #else
+        float finalDist = length(vIn.modelPos);
     #endif
+    gl_FragDepth = (finalDist - pointNearPlane) / (pointFarPlane - pointNearPlane);
 
     float alpha = iris_sampleBaseTexLod(mUV, LOD).a;
 

@@ -67,8 +67,6 @@ void iris_sendParameters(in VertexData data) {
 
         mat3 matViewTBN = GetTBN(viewNormal, viewTangent, data.tangent.w);
 
-        //vec3 localPos = vOut.modelPos + ap.point.pos[iris_currentPointLight].xyz;
-        //vec3 shadowViewPos = mul3(ap.camera.view, localPos);
         vOut.tangentViewPos = vOut.shadowViewPos.xyz * matViewTBN;
     #endif
 }

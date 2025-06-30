@@ -1,10 +1,9 @@
 void sample_AllPointLights(inout vec3 diffuse, inout vec3 specular, const in vec3 localPos, const in vec3 localGeoNormal, const in vec3 localTexNormal, const in vec3 albedo, const in float f0_metal, const in float roughL) {
-    //vec3 blockLighting = vec3(0.0);
     vec3 localViewDir = -normalize(localPos);
     float NoVm = max(dot(localTexNormal, localViewDir), 0.0);
 
-    const float offsetBias = 0.02;
-    const float normalBias = 0.02;
+    const float offsetBias = 0.8;
+    const float normalBias = 0.04;
     vec3 localSamplePos = normalBias * localGeoNormal + localPos;
 
     #ifdef LIGHTING_SHADOW_BIN_ENABLED

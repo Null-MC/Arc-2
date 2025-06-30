@@ -115,6 +115,7 @@ function applySettings(settings : ShaderSettings, internal) {
     if (settings.Lighting_Mode == LightingModes.ShadowMaps) {
         //enableCubemapShadows(settings.Lighting_Shadow_Resolution, settings.Lighting_Shadow_MaxCount);
 
+        defineGlobally('LIGHTING_SHADOW_RANGE', settings.Lighting_Shadow_Range);
         defineGlobally('LIGHTING_SHADOW_MAX_COUNT', settings.Lighting_Shadow_MaxCount);
         defineGlobally('LIGHTING_SHADOW_BIN_MAX_COUNT', settings.Lighting_Shadow_BinMaxCount);
         if (settings.Lighting_Shadow_PCSS)
@@ -123,6 +124,8 @@ function applySettings(settings : ShaderSettings, internal) {
             defineGlobally1('LIGHTING_SHADOW_EMISSION_MASK');
         if (settings.Lighting_Shadow_BinsEnabled)
             defineGlobally1('LIGHTING_SHADOW_BIN_ENABLED');
+        if (settings.Lighting_Shadow_VoxelFill)
+            defineGlobally1('LIGHTING_SHADOW_VOXEL_FILL');
     }
 
     if (settings.Lighting_GI_Enabled) {

@@ -32,6 +32,8 @@ void sample_AllPointLights(inout vec3 diffuse, inout vec3 specular, const in vec
         #endif
 
         float lightRange = iris_getEmission(blockId);
+        lightRange *= (LIGHTING_SHADOW_RANGE * 0.01);
+
         vec3 lightColor = iris_getLightColor(blockId).rgb;
         lightColor = RgbToLinear(lightColor);
 
@@ -66,7 +68,7 @@ void sample_AllPointLights(inout vec3 diffuse, inout vec3 specular, const in vec
         specular += BLOCK_LUX * S * lightShadow * F * lightColor;
     }
 
-    #ifdef LIGHTING_SHADOW_BIN_ENABLED
+    #if defined(LIGHTING_SHADOW_BIN_ENABLED) && defined(LIGHTING_SHADOW_VOXEL_FILL)
         // sample non-shadow lights
         uint offset = maxLightCount;
         maxLightCount = offset + LightBinMap[lightBinIndex].lightCount;
@@ -75,7 +77,10 @@ void sample_AllPointLights(inout vec3 diffuse, inout vec3 specular, const in vec
 
             vec3 voxelPos = GetLightVoxelPos(LightBinMap[lightBinIndex].lightList[i].voxelIndex) + 0.5;
             uint blockId = SampleVoxelBlock(voxelPos);
+
             float lightRange = iris_getEmission(blockId);
+            lightRange *= (LIGHTING_SHADOW_RANGE * 0.01);
+
             vec3 lightColor = iris_getLightColor(blockId).rgb;
             lightColor = RgbToLinear(lightColor);
 

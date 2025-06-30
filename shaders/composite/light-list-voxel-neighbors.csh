@@ -36,7 +36,9 @@ void main() {
 		uint voxelIndex = LightBinMap[lightBinIndex].lightList[i_offset].voxelIndex;
 		ivec3 lightVoxelPos = GetLightVoxelPos(voxelIndex);
 		uint lightBlockId = SampleVoxelBlock(lightVoxelPos);
+
 		float lightRange = iris_getEmission(lightBlockId);
+		lightRange *= (LIGHTING_SHADOW_RANGE * 0.01);
 		float lightRangeSq = _pow2(lightRange);
 
 		for (int _z = -2; _z <= 2; _z++) {

@@ -57,6 +57,9 @@ option.SHADOW_PCSS_ENABLED=Soft Shadows
 option.SHADOW_RESOLUTION=Resolution
 suffix.SHADOW_RESOLUTION=px
 
+option.LIGHTING_SHADOW_RANGE=Range
+suffix.LIGHTING_SHADOW_RANGE=%
+
 option.SHADOW_CASCADE_COUNT=Cascade Count
 
 option.SHADOWS_SS_FALLBACK=Screen-Space

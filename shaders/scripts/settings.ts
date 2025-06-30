@@ -85,6 +85,7 @@ export class ShaderSettings {
     get Lighting_Volumetric_ShadowsEnabled(): boolean {return this.getCachedBoolSetting('LIGHTING_VL_SHADOWS');}
 
     get Lighting_Shadow_Resolution(): number {return this.getCachedIntSetting('LIGHTING_SHADOW_RESOLUTION');}
+    get Lighting_Shadow_Range(): number {return this.getCachedIntSetting('LIGHTING_SHADOW_RANGE');}
     get Lighting_Shadow_PCSS(): boolean {return this.getCachedBoolSetting('LIGHTING_SHADOW_PCSS');}
     get Lighting_Shadow_EmissionMask(): boolean {return this.getCachedBoolSetting('LIGHTING_SHADOW_EMISSION_MASK');}
     get Lighting_Shadow_MaxCount(): number {return this.getCachedIntSetting('LIGHTING_SHADOW_MAX_COUNT');}
@@ -139,7 +140,7 @@ export class ShaderSettings {
             VoxelizeBlockFaces: false,
             VoxelizeTriangles: false,
             PointLightNear: 0.1,
-            PointLightFar: 16.0,
+            PointLightFar: 16.0 * (this.Lighting_Shadow_Range * 0.01),
             DebugEnabled: false,
         };
 

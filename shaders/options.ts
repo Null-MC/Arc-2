@@ -98,6 +98,7 @@ export function setupOptions() {
             .build())
         .add(new Page('LIGHTING_SHADOWS')
             .add(asInt('LIGHTING_SHADOW_RESOLUTION', 32, 64, 128, 256, 512).needsReload(true).build(128))
+            .add(asIntRange('LIGHTING_SHADOW_RANGE', 100, 10, 400, 10, true))
             .add(asBool('LIGHTING_SHADOW_PCSS', false, true))
             .add(asBool('LIGHTING_SHADOW_EMISSION_MASK', false, true))
             .add(asBool('LIGHTING_SHADOW_BIN_ENABLED', true, true))

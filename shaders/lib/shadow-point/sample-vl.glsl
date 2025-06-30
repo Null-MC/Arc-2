@@ -25,7 +25,10 @@ vec3 sample_AllPointLights_VL(const in vec3 localPos) {
         #ifndef LIGHTING_SHADOW_BIN_ENABLED
             if (blockId == uint(-1)) continue;
         #endif
+
         float lightRange = iris_getEmission(blockId);
+        lightRange *= (LIGHTING_SHADOW_RANGE * 0.01);
+
         vec3 lightColor = iris_getLightColor(blockId).rgb;
         lightColor = RgbToLinear(lightColor);
 
@@ -44,7 +47,7 @@ vec3 sample_AllPointLights_VL(const in vec3 localPos) {
         blockLighting += BLOCK_LUX * lightShadow * phase * lightColor;
     }
 
-    #ifdef LIGHTING_SHADOW_BIN_ENABLED
+    #if defined(LIGHTING_SHADOW_BIN_ENABLED) && defined(LIGHTING_SHADOW_VOXEL_FILL)
         // sample non-shadow lights
         uint offset = maxLightCount;
         maxLightCount = min(offset + LightBinMap[lightBinIndex].lightCount, LIGHTING_SHADOW_BIN_MAX_COUNT);
@@ -53,7 +56,10 @@ vec3 sample_AllPointLights_VL(const in vec3 localPos) {
 
             vec3 voxelPos = GetLightVoxelPos(LightBinMap[lightBinIndex].lightList[i].voxelIndex) + 0.5;
             uint blockId = SampleVoxelBlock(voxelPos);
+
             float lightRange = iris_getEmission(blockId);
+            lightRange *= (LIGHTING_SHADOW_RANGE * 0.01);
+
             vec3 lightColor = iris_getLightColor(blockId).rgb;
             lightColor = RgbToLinear(lightColor);
 

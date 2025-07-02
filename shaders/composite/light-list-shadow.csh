@@ -24,7 +24,7 @@ void main() {
 
 		// get light bin index
 		vec3 voxelPos = voxel_GetBufferPosition(lightLocalPos);
-		if (voxel_isInBounds(voxelPos) && ap.point.block[shadowIndex] > 0) {
+		if (voxel_isInBounds(voxelPos) && ap.point.block[shadowIndex] != uint(-1)) {
 			ivec3 lightBinPos = ivec3(floor(voxelPos / LIGHT_BIN_SIZE));
 			int lightBinIndex = GetLightBinIndex(lightBinPos);
 

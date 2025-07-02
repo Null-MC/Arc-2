@@ -16,19 +16,23 @@ void sample_AllPointLights(inout vec3 diffuse, inout vec3 specular, const in vec
         const uint maxLightCount = LIGHTING_SHADOW_MAX_COUNT;
     #endif
 
-    for (uint i = 0u; i < LIGHTING_SHADOW_BIN_MAX_COUNT; i++) {
-        if (i >= maxLightCount) break;
-
+    for (uint i = 0u; i < maxLightCount; i++) {
         #ifdef LIGHTING_SHADOW_BIN_ENABLED
             uint lightIndex = LightBinMap[lightBinIndex].lightList[i].shadowIndex;
         #else
             uint lightIndex = i;
         #endif
 
-        uint blockId = ap.point.block[lightIndex];
+        vec3 lightPos = ap.point.pos[lightIndex].xyz;
+        //if (lengthSq(lightPos) < 1.0) continue;
+
+        int blockId = ap.point.block[lightIndex];
         #ifndef LIGHTING_SHADOW_BIN_ENABLED
-            if (blockId == uint(-1)) continue;
+            if (blockId == -1) continue;
         #endif
+
+//        ivec3 worldPos = ivec3(floor(lightPos + ap.camera.pos));
+//        uint blockId = uint(iris_getBlockAtPos(worldPos).x);
 
         float lightRange = iris_getEmission(blockId);
         lightRange *= (LIGHTING_SHADOW_RANGE * 0.01);
@@ -38,7 +42,7 @@ void sample_AllPointLights(inout vec3 diffuse, inout vec3 specular, const in vec
 
         float lightSize = iris_isFullBlock(blockId) ? 1.0 : 0.15;
 
-        vec3 fragToLight = ap.point.pos[lightIndex].xyz - localSamplePos;
+        vec3 fragToLight = lightPos - localSamplePos;
         float sampleDist = length(fragToLight);
         vec3 sampleDir = fragToLight / sampleDist;
         vec3 lightDir = sampleDir;

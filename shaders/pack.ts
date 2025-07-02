@@ -889,6 +889,11 @@ export function setupShader(dimension : NamespacedId) {
             .clear(false)
             .build();
     }
+    else if (settings.Debug_LightCount) {
+        lightListBuffer = new GPUBuffer(4)
+            .clear(false)
+            .build();
+    }
 
     let blockFaceBuffer: BuiltBuffer | null = null;
     if (internal.VoxelizeBlockFaces) {

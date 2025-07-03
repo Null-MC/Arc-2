@@ -33,14 +33,14 @@ void main() {
 	centerDepthL = linearizeDepth(centerDepthL, ap.camera.near, ap.camera.far);
 	Scene_FocusDepth += (centerDepthL - Scene_FocusDepth) * depthTimeF;
 
-	#if defined(LIGHT_LIST_ENABLED) || defined(DEBUG_LIGHT_COUNT)
+	#if defined(LIGHT_LIST_ENABLED) && defined(DEBUG_LIGHT_COUNT)
 		Scene_LightCount = 0u;
 
 		#ifndef LIGHTING_SHADOW_BIN_ENABLED
 			// manually count from uniform
 			for (int i = 0; i < LIGHTING_SHADOW_MAX_COUNT; i++) {
-				int blockId = ap.point.block[i];
-				if (blockId >= 0) Scene_LightCount++;
+				ap_PointLight light = iris_getPointLight(i);
+				if (light.block >= 0) Scene_LightCount++;
 			}
 		#endif
 	#endif

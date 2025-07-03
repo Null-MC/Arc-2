@@ -34,7 +34,8 @@ void iris_emitVertex(inout VertexData data) {
     vOut.modelPos = data.modelPos.xyz;
 
     #ifdef SKY_WIND_ENABLED
-        vec3 localPos = vOut.modelPos + ap.point.pos[iris_currentPointLight].xyz;
+        ap_PointLight light = iris_getPointLight(iris_currentPointLight);
+        vec3 localPos = vOut.modelPos + light.pos;
 
         vec3 midPos = data.midBlock / 64.0;
         vec3 originPos = localPos + midPos;
@@ -54,8 +55,9 @@ void iris_emitVertex(inout VertexData data) {
 void iris_sendParameters(in VertexData data) {
     vOut.uv = data.uv;
 
-    uint blockId = ap.point.block[iris_currentPointLight];
-    vOut.isFull = iris_isFullBlock(blockId);
+    ap_PointLight light = iris_getPointLight(iris_currentPointLight);
+//    uint blockId = ap.point.block[iris_currentPointLight];
+    vOut.isFull = iris_isFullBlock(light.block);
 
     #ifdef IS_POINT_LIGHT_POM_ENABLED
         // TODO: These are wrong! replace with old midcoord derived version

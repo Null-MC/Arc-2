@@ -104,7 +104,7 @@ export function setupOptions() {
             .add(asBool('LIGHTING_SHADOW_BIN_ENABLED', true, true))
             .add(asIntRange('LIGHTING_SHADOW_BIN_MAX_COUNT', 64, 2, 128, 2, true))
             .add(EMPTY)
-            .add(asIntRange('LIGHTING_SHADOW_MAX_COUNT', 64, 2, 128, 2, true))
+            .add(asIntRange('LIGHTING_SHADOW_MAX_COUNT', 64, 2, 256, 2, true))
             .add(asIntRange('LIGHTING_SHADOW_REALTIME', 2, 0, 64, 1, false))
             .add(asIntRange('LIGHTING_SHADOW_UPDATES', 1, 1, 16, 1, false))
             .add(asIntRange('LIGHTING_SHADOW_UPDATE_THRESHOLD', 10, 1, 99, 1, false))

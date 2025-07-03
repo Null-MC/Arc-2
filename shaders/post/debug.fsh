@@ -278,9 +278,10 @@ void main() {
         printString((_B, _i, _n, _space, _L, _i, _g, _h, _t, _s, _colon, _space));
         printUnsignedInt(Scene_LightCount);
         printLine();
-//        printString((_T, _o, _t, _a, _l, _space, _L, _i, _g, _h, _t, _s, _colon, _space));
-//        printUnsignedInt(ap.point.total);
-//        printLine();
+
+        printString((_T, _o, _t, _a, _l, _space, _L, _i, _g, _h, _t, _s, _colon, _space));
+        printUnsignedInt(ap.point.total);
+        printLine();
     #endif
 
     #ifdef VOXEL_TRI_ENABLED

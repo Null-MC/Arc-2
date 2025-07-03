@@ -20,11 +20,13 @@ void main() {
 
 	uint shadowIndex = globalIndex;
 	if (shadowIndex < LIGHTING_SHADOW_MAX_COUNT) {
-		vec3 lightLocalPos = ap.point.pos[shadowIndex].xyz;
+		ap_PointLight light = iris_getPointLight(shadowIndex);
+
+		vec3 lightLocalPos = light.pos;
 
 		// get light bin index
 		vec3 voxelPos = voxel_GetBufferPosition(lightLocalPos);
-		if (voxel_isInBounds(voxelPos) && ap.point.block[shadowIndex] != uint(-1)) {
+		if (voxel_isInBounds(voxelPos) && light.block != -1) {
 			ivec3 lightBinPos = ivec3(floor(voxelPos / LIGHT_BIN_SIZE));
 			int lightBinIndex = GetLightBinIndex(lightBinPos);
 

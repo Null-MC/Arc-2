@@ -287,7 +287,7 @@ void main() {
 
             #ifdef LIGHTING_VL_SHADOWS
                 #if LIGHTING_MODE == LIGHT_MODE_SHADOWS
-                    vec3 blockLight = sample_AllPointLights_VL(sampleLocalPos);
+                    vec3 blockLight = sample_AllPointLights_VL(sampleLocalPos, isFluid);
                     sampleLit += blockLight;
                 #elif LIGHTING_MODE == LIGHT_MODE_RT
                     // TODO: ?
@@ -305,7 +305,6 @@ void main() {
                 vec3 blockLighting = GetVanillaBlockLight(sample_lmcoord.x, 1.0);
                 sampleLit += phaseIso * blockLighting;
             #endif
-
 
             vec3 scatteringIntegral, sampleTransmittance, inScattering, extinction;
 

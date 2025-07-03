@@ -1,4 +1,4 @@
-vec3 sample_AllPointLights_VL(const in vec3 localPos) {
+vec3 sample_AllPointLights_VL(const in vec3 localPos, const in bool isFluid) {
     vec3 viewDir = normalize(localPos);
     vec3 blockLighting = vec3(0.0);
 
@@ -20,31 +20,31 @@ vec3 sample_AllPointLights_VL(const in vec3 localPos) {
             uint lightIndex = i;
         #endif
 
-        vec3 lightPos = ap.point.pos[lightIndex].xyz;
-        //if (lengthSq(lightPos) < 1.0) continue;
+        ap_PointLight light = iris_getPointLight(lightIndex);
 
-        int blockId = ap.point.block[lightIndex];
         #ifndef LIGHTING_SHADOW_BIN_ENABLED
-            if (blockId == -1) continue;
+            if (light.block == -1) continue;
         #endif
 
-//        ivec3 worldPos = ivec3(floor(lightPos + ap.camera.pos));
-//        uint blockId = uint(iris_getBlockAtPos(worldPos).x);
-
-        float lightRange = iris_getEmission(blockId);
+        float lightRange = iris_getEmission(light.block);
         lightRange *= (LIGHTING_SHADOW_RANGE * 0.01);
 
-        vec3 lightColor = iris_getLightColor(blockId).rgb;
+        vec3 lightColor = iris_getLightColor(light.block).rgb;
         lightColor = RgbToLinear(lightColor);
 
-        float lightSize = iris_isFullBlock(blockId) ? 1.0 : 0.15;
+        float lightSize = getLightSize(light.block);
 
-        vec3 fragToLight = lightPos - localPos;
+        vec3 fragToLight = light.pos - localPos;
         float sampleDist = length(fragToLight);
         vec3 sampleDir = fragToLight / sampleDist;
 
+        if (isFluid) {
+            const vec3 extinction = (VL_WaterTransmit + VL_WaterScatter) * VL_WaterDensity;
+            lightColor *= exp(-sampleDist * extinction);
+        }
+
         const float bias = -0.08;
-        float lightShadow = sample_PointLight(localPos, lightSize, lightRange, bias, lightIndex);
+        float lightShadow = sample_PointLight(-fragToLight, lightSize, lightRange, bias, lightIndex);
 
         float VoL = dot(viewDir, sampleDir);
         float phase = saturate(getMiePhase(VoL));

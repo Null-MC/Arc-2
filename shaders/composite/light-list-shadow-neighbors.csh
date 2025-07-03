@@ -22,9 +22,11 @@ void main() {
 
 	for (uint i = 0u; i < min(shadowLightCount, LIGHTING_SHADOW_BIN_MAX_COUNT); i++) {
 		uint lightIndex = LightBinMap[lightBinIndex].lightList[i].shadowIndex;
-		uint lightBlockId = ap.point.block[lightIndex];
 
-		float lightRange = iris_getEmission(lightBlockId);
+		//uint lightBlockId = ap.point.block[lightIndex];
+		ap_PointLight light = iris_getPointLight(lightIndex);
+
+		float lightRange = iris_getEmission(light.block);
 		lightRange *= (LIGHTING_SHADOW_RANGE * 0.01);
 		float lightRangeSq = _pow2(lightRange);
 

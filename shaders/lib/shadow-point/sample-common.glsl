@@ -15,8 +15,8 @@ float sample_PointLightShadow(const in vec3 sampleDir, const in float sampleDist
     return texture(pointLightFiltered, vec4(sampleDir, index), depth).r;
 }
 
-float sample_PointLight(const in vec3 localPos, const in float lightSize, const in float lightRange, const in float bias, const in uint index) {
-    vec3 fragToLight = localPos - ap.point.pos[index].xyz;
+float sample_PointLight(const in vec3 fragToLight, const in float lightSize, const in float lightRange, const in float bias, const in uint index) {
+    //vec3 fragToLight = localPos - lightPos;
     float sampleDist = length(fragToLight);
     vec3 sampleDir = fragToLight / sampleDist;
 

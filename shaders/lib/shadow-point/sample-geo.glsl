@@ -23,33 +23,28 @@ void sample_AllPointLights(inout vec3 diffuse, inout vec3 specular, const in vec
             uint lightIndex = i;
         #endif
 
-        vec3 lightPos = ap.point.pos[lightIndex].xyz;
-        //if (lengthSq(lightPos) < 1.0) continue;
+        ap_PointLight light = iris_getPointLight(lightIndex);
 
-        int blockId = ap.point.block[lightIndex];
         #ifndef LIGHTING_SHADOW_BIN_ENABLED
-            if (blockId == -1) continue;
+            if (light.block == -1) continue;
         #endif
 
-//        ivec3 worldPos = ivec3(floor(lightPos + ap.camera.pos));
-//        uint blockId = uint(iris_getBlockAtPos(worldPos).x);
-
-        float lightRange = iris_getEmission(blockId);
+        float lightRange = iris_getEmission(light.block);
         lightRange *= (LIGHTING_SHADOW_RANGE * 0.01);
 
-        vec3 lightColor = iris_getLightColor(blockId).rgb;
+        vec3 lightColor = iris_getLightColor(light.block).rgb;
         lightColor = RgbToLinear(lightColor);
 
-        float lightSize = iris_isFullBlock(blockId) ? 1.0 : 0.15;
+        float lightSize = getLightSize(light.block);
 
-        vec3 fragToLight = lightPos - localSamplePos;
+        vec3 fragToLight = light.pos - localSamplePos;
         float sampleDist = length(fragToLight);
         vec3 sampleDir = fragToLight / sampleDist;
         vec3 lightDir = sampleDir;
 
         float geo_facing = step(0.0, dot(localGeoNormal, sampleDir));
 
-        float lightShadow = geo_facing * sample_PointLight(localSamplePos, lightSize, lightRange, offsetBias, lightIndex);
+        float lightShadow = geo_facing * sample_PointLight(-fragToLight, lightSize, lightRange, offsetBias, lightIndex);
 
 
 

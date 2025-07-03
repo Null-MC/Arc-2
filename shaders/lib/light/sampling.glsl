@@ -29,6 +29,10 @@ float GetLightAttenuation(const in vec3 lightVec, const in float lightRange) {
     return GetLightAttenuation(length(lightVec), lightRange);
 }
 
+float getLightSize(int blockId) {
+    return iris_isFullBlock(blockId) ? 1.0 : 0.15;
+}
+
 float SampleLightDiffuse(const in float NoV, const in float NoL, const in float LoH, const in float roughL) {
     float f90 = 0.5 + 2.0*roughL * (LoH*LoH);
     float light_scatter = F_schlick(NoL, 1.0, f90);

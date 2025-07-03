@@ -56,24 +56,26 @@ vec3 getReprojectedClipPos(const in vec2 texcoord, const in float depthNow, cons
 }
 
 void main() {
-    vec2 uv2 = uv;
+    vec2 uv2 = gl_FragCoord.xy / ap.game.screenSize;// uv;
+    ivec2 iuv = ivec2(gl_FragCoord.xy);
 
     // uv2 += getJitterOffset(ap.time.frames);
 
-    float depth = textureLod(solidDepthTex, uv, 0).r;
+    float depth = texelFetch(solidDepthTex, iuv, 0).r;
 
     // TODO: add velocity buffer
     vec3 velocity = vec3(0.0); //textureLod(BUFFER_VELOCITY, uv, 0).xyz;
-    vec2 uvLast = getReprojectedClipPos(uv, depth, velocity).xy;
+    vec2 uvLast = getReprojectedClipPos(uv2, depth, velocity).xy;
     // TODO: make RGB version of sampler
     vec4 lastColor = sample_CatmullRom_RGBA(texTaaPrev, uvLast, ap.game.screenSize);
+//    vec4 lastColor = textureLod(texTaaPrev, uvLast, 0);
 
     vec3 antialiased = lastColor.rgb;
     float mixRate = clamp(lastColor.a+1.0, TAA_MIX_MIN, TAA_MAX_FRAMES);
 
     if (saturate(uvLast) != uvLast) mixRate = 0.0;
     
-    vec3 in0 = textureLod(TEX_SRC, uv, 0).rgb;
+    vec3 in0 = texelFetch(TEX_SRC, iuv, 0).rgb;
 
     antialiased = mix(antialiased * antialiased, in0 * in0, 1.0 / (1.0 + mixRate));
     antialiased = sqrt(antialiased);

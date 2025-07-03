@@ -1,4 +1,4 @@
-const ivec3 pointBoundsMax = ivec3(3, 2, 3);
+const ivec3 pointBoundsMax = ivec2(4, 3).xyx;
 
 
 bool shadowPoint_isInBounds(const in vec3 localPos) {

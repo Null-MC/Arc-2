@@ -102,6 +102,7 @@ uniform sampler2D texBlueNoise;
 #include "/lib/utility/blackbody.glsl"
 #include "/lib/utility/matrix.glsl"
 #include "/lib/utility/hsv.glsl"
+#include "/lib/utility/tbn.glsl"
 
 #include "/lib/light/sampling.glsl"
 #include "/lib/light/volumetric.glsl"

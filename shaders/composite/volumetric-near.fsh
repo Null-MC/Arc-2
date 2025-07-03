@@ -52,6 +52,8 @@ uniform sampler2D texSkyMultiScatter;
 #include "/lib/hg.glsl"
 
 #include "/lib/utility/hsv.glsl"
+#include "/lib/utility/tbn.glsl"
+#include "/lib/utility/matrix.glsl"
 
 #include "/lib/voxel/voxel-common.glsl"
 

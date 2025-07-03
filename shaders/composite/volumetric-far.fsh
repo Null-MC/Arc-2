@@ -13,6 +13,7 @@ uniform sampler2D solidDepthTex;
 uniform usampler2D texDeferredTrans_Data;
 
 uniform sampler3D texFogNoise;
+uniform sampler2D texBlueNoise;
 uniform sampler2D texSkyTransmit;
 uniform sampler2D texSkyMultiScatter;
 
@@ -47,9 +48,12 @@ uniform sampler2D texSkyMultiScatter;
 
 #include "/lib/noise/ign.glsl"
 #include "/lib/noise/hash.glsl"
+#include "/lib/noise/blue.glsl"
 #include "/lib/hg.glsl"
 
 #include "/lib/utility/hsv.glsl"
+#include "/lib/utility/tbn.glsl"
+#include "/lib/utility/matrix.glsl"
 //#include "/lib/utility/blackbody.glsl"
 
 #ifdef SHADOWS_ENABLED

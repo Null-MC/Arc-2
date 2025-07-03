@@ -321,6 +321,10 @@ export function setupShader(dimension : NamespacedId) {
         new NamespacedId("pale_moss_carpet"),
         new NamespacedId("moss_carpet")));
 
+    blockTags.map("TAG_NON_POINT_LIGHT", createTag(new NamespacedId("arc", "non_point_lights"),
+        new NamespacedId("lava"),
+        new NamespacedId("magma_block")));
+
     blockTags.map("TAG_TINTS_LIGHT", createTag(new NamespacedId("arc", "tints_light"),
         new NamespacedId("minecraft", "glass_blocks"),
         new NamespacedId("tinted_glass"),
@@ -365,15 +369,15 @@ export function setupShader(dimension : NamespacedId) {
     setLightColorEx('#cf833a', 'weathered_copper_bulb', 'waxed_weathered_copper_bulb');
     setLightColorEx('#87480b', 'oxidized_copper_bulb', 'waxed_oxidized_copper_bulb');
     setLightColorEx('#7f17a8', 'crying_obsidian', 'respawn_anchor');
-    setLightColorEx('#371559', "enchanting_table");
-    setLightColorEx('#bea935', "firefly_bush");
-    setLightColorEx('#5f9889', "glow_lichen");
-    setLightColorEx('#d3b178', "glowstone");
+    setLightColorEx('#371559', 'enchanting_table');
+    setLightColorEx('#bea935', 'firefly_bush');
+    setLightColorEx('#5f9889', 'glow_lichen');
+    setLightColorEx('#d3b178', 'glowstone');
     setLightColorEx('#c2985a', 'jack_o_lantern');
     setLightColorEx('#f39e49', 'lantern');
-    setLightColorEx('#b8491c', "lava");
-    setLightColorEx('#650a5e', "nether_portal");
-    setLightColorEx('#dfac47', "ochre_froglight");
+    setLightColorEx('#b8491c', 'lava', 'magma_block');
+    setLightColorEx('#650a5e', 'nether_portal');
+    setLightColorEx('#dfac47', 'ochre_froglight');
     setLightColorEx('#e075e8', 'pearlescent_froglight');
     setLightColorEx('#f9321c', 'redstone_torch', 'redstone_wall_torch');
     setLightColorEx('#e0ba42', 'redstone_lamp');
@@ -1603,13 +1607,18 @@ export function setupShader(dimension : NamespacedId) {
     finalFlipper.flip();
 
     if (settings.Post_TAA_Enabled) {
+        registerBarrier(Stage.POST_RENDER, new MemoryBarrier(FETCH_BIT));
+
         registerShader(Stage.POST_RENDER, new Composite('TAA')
             .vertex('shared/bufferless.vsh')
             .fragment('post/taa.fsh')
             .target(0, texTaaPrev)
             .target(1, finalFlipper.getWriteTexture())
+            //.blendOff(1)
             .define('TEX_SRC', finalFlipper.getReadName())
             .build());
+
+        registerBarrier(Stage.POST_RENDER, new MemoryBarrier(FETCH_BIT));
 
         finalFlipper.flip();
     }

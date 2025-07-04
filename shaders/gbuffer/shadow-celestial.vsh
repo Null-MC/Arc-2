@@ -56,7 +56,7 @@ out VertexData2 {
     #include "/lib/wind_waves.glsl"
 #endif
 
-#include "/lib/sampling/lightmap.glsl"
+#include "/lib/lightmap/lmcoord.glsl"
 
 
 void iris_emitVertex(inout VertexData data) {

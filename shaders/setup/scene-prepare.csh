@@ -24,6 +24,8 @@ uniform sampler2D solidDepthTex;
 
 void main() {
 	Scene_SunColor = blackbody(Sky_SunTemp);
+	// fix for UBO having no/bad data first frame
+	if (Sky_SunTemp < EPSILON) Scene_SunColor = vec3(0.0);
 
 	Scene_LocalSunDir = normalize(mat3(ap.camera.viewInv) * ap.celestial.sunPos);
 	Scene_LocalLightDir = normalize(mat3(ap.camera.viewInv) * ap.celestial.pos);

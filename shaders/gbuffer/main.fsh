@@ -53,7 +53,7 @@ uniform sampler3D texFogNoise;
 #include "/lib/material/material.glsl"
 
 #include "/lib/sampling/atlas.glsl"
-#include "/lib/sampling/lightmap.glsl"
+#include "/lib/lightmap/lmcoord.glsl"
 
 #if defined(MATERIAL_NORMAL_SMOOTH) || MATERIAL_PARALLAX_TYPE == POM_TYPE_SMOOTH
     #include "/lib/sampling/linear.glsl"

@@ -167,7 +167,8 @@ void main() {
 		}
 
 		#if LIGHTING_MODE == LIGHT_MODE_SHADOWS
-			if (!iris_hasTag(blockId, TAG_NON_POINT_LIGHT)) lightRange = 0;
+			//if (!iris_hasTag(blockId, TAG_NON_POINT_LIGHT)) lightRange = 0;
+			if (lightRange >= 5 && !iris_hasFluid(blockId)) lightRange = 0;
 		#endif
 	}
 

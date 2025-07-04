@@ -75,7 +75,7 @@ export function setupOptions() {
     let screen_Lighting = new Page('LIGHTING')
         .add(asString('LIGHTING_MODE', '0', '1', '2', '3').build('1'))
         .add(new Page('LIGHTING_GI')
-            .add(asBool("LIGHTING_GI_ENABLED", true, true))
+            .add(asBool("LIGHTING_GI_ENABLED", false, true))
             .add(asBool("LIGHTING_GI_SKYLIGHT", true, true))
             .add(asInt("LIGHTING_GI_CASCADES", 1, 2, 3, 4).build(3))
             .add(asInt("LIGHTING_GI_SIZE", 32, 64, 128).build(64))

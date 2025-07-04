@@ -322,6 +322,7 @@ export function setupShader(dimension : NamespacedId) {
         new NamespacedId("moss_carpet")));
 
     blockTags.map("TAG_NON_POINT_LIGHT", createTag(new NamespacedId("arc", "non_point_lights"),
+        new NamespacedId("firefly_bush"),
         new NamespacedId("lava"),
         new NamespacedId("magma_block")));
 
@@ -1055,6 +1056,53 @@ export function setupShader(dimension : NamespacedId) {
             .build());
     }
 
+    if (settings.Lighting_Mode == LightingModes.ShadowMaps && settings.Lighting_Shadow_BinsEnabled) {
+        const pointGroupCount = Math.ceil(settings.Lighting_Shadow_MaxCount / (8*8*8));
+        const voxelGroupCount = Math.ceil(settings.Voxel_Size / 8);
+
+        registerShader(Stage.POST_SHADOW, new Compute("light-list-point")
+            .location("composite/light-list-shadow.csh")
+            .workGroups(pointGroupCount, pointGroupCount, pointGroupCount)
+            .ssbo(3, lightListBuffer)
+            .build());
+
+        registerBarrier(Stage.POST_SHADOW, new MemoryBarrier(SSBO_BIT));
+
+        registerShader(Stage.POST_SHADOW, new Compute("light-list-neighbors")
+            .location("composite/light-list-shadow-neighbors.csh")
+            .workGroups(voxelGroupCount, voxelGroupCount, voxelGroupCount)
+            .ssbo(3, lightListBuffer)
+            .build());
+
+        if (settings.Lighting_Shadow_VoxelFill) {
+            registerBarrier(Stage.POST_SHADOW, new MemoryBarrier(SSBO_BIT));
+
+            registerShader(Stage.POST_SHADOW, new Compute("light-list-voxel")
+                .location("composite/light-list-voxel.csh")
+                .workGroups(voxelGroupCount, voxelGroupCount, voxelGroupCount)
+                .ssbo(3, lightListBuffer)
+                .build());
+
+            registerBarrier(Stage.POST_SHADOW, new MemoryBarrier(SSBO_BIT));
+
+            registerShader(Stage.POST_SHADOW, new Compute("light-list-voxel-neighbors")
+                .location("composite/light-list-voxel-neighbors.csh")
+                .workGroups(voxelGroupCount, voxelGroupCount, voxelGroupCount)
+                .ssbo(3, lightListBuffer)
+                .build());
+        }
+    }
+    else if (settings.Lighting_Mode == LightingModes.RayTraced) {
+        const voxelGroupCount = Math.ceil(settings.Voxel_Size / 8);
+
+        registerShader(Stage.POST_SHADOW, new Compute("light-list")
+            .location("composite/light-list.csh")
+            .workGroups(voxelGroupCount, voxelGroupCount, voxelGroupCount)
+            .ssbo(0, sceneBuffer)
+            .ssbo(3, lightListBuffer)
+            .build());
+    }
+
     function DiscardObjectShader(name: string, usage: ProgramUsage) {
         return new ObjectShader(name, usage)
             .vertex("shared/discard.vsh")
@@ -1182,70 +1230,35 @@ export function setupShader(dimension : NamespacedId) {
         return shader;
     }
 
-    registerShader(particleShader('particle-opaque', Usage.PARTICLES)
+    const particleOpaqueShader = particleShader('particle-opaque', Usage.PARTICLES)
         .target(0, texParticleOpaque)
-        .blendOff(0)
-        .build());
+        .blendOff(0);
 
-    registerShader(particleShader('particle-translucent', Usage.PARTICLES_TRANSLUCENT)
+    if (internal.LightListsEnabled)
+        particleOpaqueShader.ssbo(3, lightListBuffer);
+
+    registerShader(particleOpaqueShader.build());
+
+    const particleTranslucentShader = particleShader('particle-translucent', Usage.PARTICLES_TRANSLUCENT)
         .target(0, texParticleTranslucent)
         .blendOff(0)
-        .define('RENDER_TRANSLUCENT', '1')
-        .build());
+        .define('RENDER_TRANSLUCENT', '1');
 
-    registerShader(new ObjectShader("weather", Usage.WEATHER)
+    if (internal.LightListsEnabled)
+        particleTranslucentShader.ssbo(3, lightListBuffer);
+
+    registerShader(particleTranslucentShader.build());
+
+    const weatherShader = new ObjectShader("weather", Usage.WEATHER)
         .vertex("gbuffer/weather.vsh")
         .fragment("gbuffer/weather.fsh")
         .target(0, texParticleTranslucent)
-        .ssbo(0, sceneBuffer)
-        .build());
+        .ssbo(0, sceneBuffer);
 
-    if (settings.Lighting_Mode == LightingModes.ShadowMaps && settings.Lighting_Shadow_BinsEnabled) {
-        const pointGroupCount = Math.ceil(settings.Lighting_Shadow_MaxCount / (8*8*8));
-        const voxelGroupCount = Math.ceil(settings.Voxel_Size / 8);
+    if (internal.LightListsEnabled)
+        weatherShader.ssbo(3, lightListBuffer);
 
-        registerShader(Stage.POST_RENDER, new Compute("light-list-point")
-            .location("composite/light-list-shadow.csh")
-            .workGroups(pointGroupCount, pointGroupCount, pointGroupCount)
-            .ssbo(3, lightListBuffer)
-            .build());
-
-        registerBarrier(Stage.POST_RENDER, new MemoryBarrier(SSBO_BIT));
-
-        registerShader(Stage.POST_RENDER, new Compute("light-list-neighbors")
-            .location("composite/light-list-shadow-neighbors.csh")
-            .workGroups(voxelGroupCount, voxelGroupCount, voxelGroupCount)
-            .ssbo(3, lightListBuffer)
-            .build());
-
-        if (settings.Lighting_Shadow_VoxelFill) {
-            registerBarrier(Stage.POST_RENDER, new MemoryBarrier(SSBO_BIT));
-
-            registerShader(Stage.POST_RENDER, new Compute("light-list-voxel")
-                .location("composite/light-list-voxel.csh")
-                .workGroups(voxelGroupCount, voxelGroupCount, voxelGroupCount)
-                .ssbo(3, lightListBuffer)
-                .build());
-
-            registerBarrier(Stage.POST_RENDER, new MemoryBarrier(SSBO_BIT));
-
-            registerShader(Stage.POST_RENDER, new Compute("light-list-voxel-neighbors")
-                .location("composite/light-list-voxel-neighbors.csh")
-                .workGroups(voxelGroupCount, voxelGroupCount, voxelGroupCount)
-                .ssbo(3, lightListBuffer)
-                .build());
-        }
-    }
-    else if (settings.Lighting_Mode == LightingModes.RayTraced) {
-        const voxelGroupCount = Math.ceil(settings.Voxel_Size / 8);
-
-        registerShader(Stage.POST_RENDER, new Compute("light-list")
-            .location("composite/light-list.csh")
-            .workGroups(voxelGroupCount, voxelGroupCount, voxelGroupCount)
-            .ssbo(0, sceneBuffer)
-            .ssbo(3, lightListBuffer)
-            .build());
-    }
+    registerShader(weatherShader.build());
 
     if (internal.FloodFillEnabled) {
         const groupCount = Math.ceil(settings.Voxel_Size / 8);

@@ -28,13 +28,25 @@ uniform sampler3D texFogNoise;
     uniform sampler2DArray texShadowBlocker;
 #endif
 
-#if LIGHTING_MODE == LIGHT_MODE_LPV
+#if LIGHTING_MODE == LIGHT_MODE_SHADOWS
+    uniform samplerCubeArrayShadow pointLightFiltered;
+
+    #ifdef LIGHTING_SHADOW_PCSS
+        uniform samplerCubeArray pointLight;
+    #endif
+#endif
+
+#ifdef FLOODFILL_ENABLED
     uniform sampler3D texFloodFill;
     uniform sampler3D texFloodFill_alt;
 #endif
 
 #include "/lib/common.glsl"
 #include "/lib/buffers/scene.glsl"
+
+#if LIGHTING_MODE == LIGHT_MODE_SHADOWS && defined(LIGHTING_SHADOW_BIN_ENABLED)
+    #include "/lib/buffers/light-list.glsl"
+#endif
 
 #include "/lib/noise/ign.glsl"
 #include "/lib/noise/hash.glsl"
@@ -48,7 +60,15 @@ uniform sampler3D texFogNoise;
 #include "/lib/sky/transmittance.glsl"
 
 #include "/lib/light/sky.glsl"
+#include "/lib/light/hcm.glsl"
+#include "/lib/light/fresnel.glsl"
 #include "/lib/light/volumetric.glsl"
+
+#include "/lib/material/material.glsl"
+#include "/lib/material/material_fresnel.glsl"
+
+#include "/lib/lightmap/lmcoord.glsl"
+#include "/lib/lightmap/sample.glsl"
 
 #ifdef SHADOWS_ENABLED
     #include "/lib/shadow/csm.glsl"
@@ -64,8 +84,21 @@ uniform sampler3D texFogNoise;
     #include "/lib/sky/density.glsl"
 #endif
 
-#if LIGHTING_MODE == LIGHT_MODE_LPV
-    #include "/lib/voxel/voxel-common.glsl"
+#include "/lib/voxel/voxel-common.glsl"
+
+#if LIGHTING_MODE == LIGHT_MODE_SHADOWS && defined(LIGHTING_SHADOW_BIN_ENABLED)
+    #include "/lib/voxel/light-list.glsl"
+#endif
+
+#if LIGHTING_MODE == LIGHT_MODE_SHADOWS
+    #include "/lib/light/sampling.glsl"
+
+    #include "/lib/shadow-point/common.glsl"
+    #include "/lib/shadow-point/sample-common.glsl"
+    #include "/lib/shadow-point/sample-particle.glsl"
+#endif
+
+#ifdef FLOODFILL_ENABLED
     #include "/lib/voxel/floodfill-common.glsl"
     #include "/lib/voxel/floodfill-sample.glsl"
 #endif
@@ -94,6 +127,7 @@ void iris_emitFragment() {
     // const float emission = 0.0;
 
     // vec2 lmcoord = clamp((mLight - (0.5/16.0)) / (15.0/16.0), 0.0, 1.0);
+    vec2 lmcoord = LightMapNorm(mLight);
     // lmcoord = pow(lmcoord, vec2(3.0));
 
     // // vec3 _localNormal = normalize(localNormal);
@@ -180,12 +214,33 @@ void iris_emitFragment() {
 
     finalColor.rgb += 0.02 * skyLightF * (sun_light + moon_light) * shadowSample;
 
-    #if LIGHTING_MODE == LIGHT_MODE_LPV
+    #if LIGHTING_MODE == LIGHT_MODE_SHADOWS || defined(FLOODFILL_ENABLED)
         vec3 voxelPos = voxel_GetBufferPosition(vIn.localPos);
-
-        if (floodfill_isInBounds(voxelPos))
-            finalColor.rgb += 0.04 * floodfill_sample(voxelPos);
     #endif
+
+    const float occlusion = 1.0;
+    vec3 blockLighting = GetVanillaBlockLight(lmcoord.x, occlusion);
+
+    #if LIGHTING_MODE == LIGHT_MODE_SHADOWS
+        if (shadowPoint_isInBounds(vIn.localPos)) {
+            blockLighting = sample_AllPointLights_particle(vIn.localPos);
+        }
+    #endif
+
+    #ifdef FLOODFILL_ENABLED
+        if (floodfill_isInBounds(voxelPos)) {
+            vec3 floodfill_light = floodfill_sample(voxelPos);
+
+            #if LIGHTING_MODE == LIGHT_MODE_LPV
+                float floodfill_FadeF = floodfill_getFade(voxelPos);
+                blockLighting = mix(blockLighting, floodfill_light, floodfill_FadeF);
+            #else
+                blockLighting += floodfill_light;
+            #endif
+        }
+    #endif
+
+    finalColor.rgb += phaseIso * blockLighting;
 
     finalColor *= mColor;
 

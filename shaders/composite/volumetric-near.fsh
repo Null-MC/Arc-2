@@ -129,14 +129,17 @@ void main() {
 
     float far = 128.0;//ap.camera.far * 0.25;
 
-    vec3 traceEnd = localPos;
+    float bias = len * 0.004;
+
+    vec3 localViewDir = localPos / len;
+    vec3 traceEnd = max(len - bias, 0.0) * localViewDir;
     if (len > far)
         traceEnd = traceEnd * (far / len);
 
     //vec3 stepLocal = traceEnd / (VL_maxSamples_near);
     //float stepDist = length(stepLocal);
 
-    vec3 localViewDir = normalize(localPos);
+//    vec3 localViewDir = normalize(localPos);
     float VoL_sun = dot(localViewDir, Scene_LocalSunDir);
     float phase_sun = DHG(VoL_sun, VL_WaterPhaseB, VL_WaterPhaseF, VL_WaterPhaseM);
     float VoL_moon = dot(localViewDir, -Scene_LocalSunDir);
@@ -225,20 +228,22 @@ void main() {
 
         float stepDist = length(sampleLocalPos - sampleLocalPosLast);
 
+        bool isFluid = ap.camera.fluid == 1;
+
         vec2 sample_lmcoord = vec2(0.0, 1.0);
         #ifdef VOXEL_PROVIDED
             ivec3 blockWorldPos = ivec3(floor(sampleLocalPos + ap.camera.pos));
 
-            bool isFluid = false;
-            uvec2 blockData;
-            if (blockWorldPos.y > -64 && blockWorldPos.y < 320 && lengthSq(sampleLocalPos) < renderDistSq) {
-                blockData = iris_getBlockAtPos(blockWorldPos).xy;
-
-                uint blockId = blockData.x;
-                isFluid = iris_hasFluid(blockId) && iris_getEmission(blockId) == 0;
-            }
-
             if (isFluid) {
+    //            bool isFluid = false;
+                uvec2 blockData;
+                if (blockWorldPos.y > -64 && blockWorldPos.y < 320 && lengthSq(sampleLocalPos) < renderDistSq) {
+                    blockData = iris_getBlockAtPos(blockWorldPos).xy;
+
+    //                uint blockId = blockData.x;
+    //                isFluid = iris_hasFluid(blockId) && iris_getEmission(blockId) == 0;
+                }
+
                 uint blockLightData = blockData.y;
 
                 uvec2 blockLightInt = uvec2(
@@ -247,14 +252,14 @@ void main() {
 
                 sample_lmcoord = saturate(blockLightInt / 240.0);
             }
-        #else
-            bool isFluid = ap.camera.fluid == 1;
+//        #else
+//            bool isFluid = ap.camera.fluid == 1;
         #endif
 
         float waterDepth = EPSILON;
         vec3 shadowSample = vec3(1.0);//vec3(smoothstep(0.0, 0.6, Scene_SkyBrightnessSmooth));
         #ifdef SHADOWS_ENABLED
-            const float shadowRadius = 2.0*shadowPixelSize;
+            const float shadowRadius = 4.0;//*shadowPixelSize;
 
             //vec3 shadowViewPos = fma(shadowViewStep, vec3(iF), shadowViewStart);
             vec3 shadowViewPos = mix(shadowViewStart, shadowViewEnd, stepF);

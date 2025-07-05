@@ -1,18 +1,27 @@
 import type {} from '../iris'
 
 
+interface ShaderBuilderIf<T extends Shader<T>> {
+    (shader: ShaderBuilder<T>): void;
+}
+
+interface ShaderBuilderWithShader<T extends Shader<T>> {
+    (shader: T): void;
+}
+
 export class ShaderBuilder<T extends Shader<T>> {
     shader: T;
-    shaderUsage: ProgramUsage;
+    programStage: ProgramStage;
     ssbo_index: number = 0;
+    ubo_index: number = 0;
 
 
     constructor(shader: T) {
         this.shader = shader;
     }
 
-    usage(shaderUsage: ProgramUsage) : ShaderBuilder<T> {
-        this.shaderUsage = shaderUsage;
+    stage(programStage: ProgramStage) : ShaderBuilder<T> {
+        this.programStage = programStage;
         return this;
     }
 
@@ -24,12 +33,30 @@ export class ShaderBuilder<T extends Shader<T>> {
         return this;
     }
 
-    with(callback: CallableFunction) : ShaderBuilder<T> {
+    ubo(name: string, buffer: BuiltBuffer) : ShaderBuilder<T> {
+        this.shader.define(name, this.ubo_index.toString());
+        this.shader.ubo(this.ubo_index, buffer);
+        this.ubo_index++;
+
+        return this;
+    }
+
+    if(condition: boolean, callback: ShaderBuilderIf<T>) : ShaderBuilder<T> {
+        if (condition) callback(this);
+        return this;
+    }
+
+    with(callback: ShaderBuilderWithShader<T>) : ShaderBuilder<T> {
         callback(this.shader);
         return this;
     }
 
     build() {
-        registerShader(this.usage, this.shader.build());
+        if (this.shader instanceof ObjectShader) {
+            registerShader(this.shader.build());
+        }
+        else {
+            registerShader(this.programStage, this.shader.build());
+        }
     }
 }

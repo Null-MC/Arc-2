@@ -23,7 +23,7 @@ struct LightBin {
     PointLight lightList[LIGHT_LIST_MAX];  // [4|8]*N
 };
 
-layout(binding = 3) buffer lightListBuffer {
+layout(binding = SSBO_LIGHT_LIST) buffer lightListBuffer {
     uint Scene_LightCount;          // 4
     LightBin LightBinMap[];         // [4|8]*(N + 1)
 };

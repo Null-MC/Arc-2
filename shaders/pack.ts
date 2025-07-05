@@ -9,6 +9,15 @@ import {LightingModes, ReflectionModes, ShaderSettings} from "./scripts/settings
 const LIGHT_BIN_SIZE = 8;
 const QUAD_BIN_SIZE = 2;
 
+const SSBO_Scene = 'SSBO_SCENE';
+const SSBO_VxGI = 'SSBO_VXGI';
+const SSBO_VxGI_alt = 'SSBO_VXGI_ALT';
+const SSBO_LightList = 'SSBO_LIGHT_LIST';
+const SSBO_QuadList = 'SSBO_QUAD_LIST';
+const SSBO_BlockFace = 'SSBO_BLOCK_FACE';
+
+const UBO_SceneSettings = 'UBO_SCENE_SETTINGS';
+
 const SceneSettingsBufferSize = 128;
 let SceneSettingsBuffer: BuiltStreamingBuffer;
 let BlockMappings: BlockMap;
@@ -924,33 +933,28 @@ export function setupShader(dimension : NamespacedId) {
             .build();
     }
 
-    registerShader(Stage.SCREEN_SETUP, new Compute("scene-setup")
-        .workGroups(1, 1, 1)
-        .location("setup/scene-setup.csh")
-        .ssbo(0, sceneBuffer)
-        .build());
+    new ShaderBuilder(new Compute('scene-setup')
+            .location('setup/scene-setup.csh')
+            .workGroups(1, 1, 1)
+        )
+        .stage(Stage.SCREEN_SETUP)
+        .ssbo(SSBO_Scene, sceneBuffer)
+        .build();
 
-    registerShader(Stage.SCREEN_SETUP, new Compute("histogram-clear")
-        .location("setup/histogram-clear.csh")
+    registerShader(Stage.SCREEN_SETUP, new Compute('histogram-clear')
+        .location('setup/histogram-clear.csh')
         .workGroups(1, 1, 1)
         .build());
 
     if (settings.Lighting_GI_Enabled) {
-        // new ShaderBuilder<Compute>(new Compute("wsgi-clear")
-        //         .location("setup/wsgi-clear.csh")
-        //         .workGroups(8, 8, 8)
-        //     )
-        //     .usage(Stage.SCREEN_SETUP)
-        //     .ssbo('SSBO_VXGI', shLpvBuffer)
-        //     .ssbo('SSBO_VXGI_ALT', shLpvBuffer_alt)
-        //     .build();
-
-        registerShader(Stage.SCREEN_SETUP, new Compute("wsgi-clear")
-            .location("setup/wsgi-clear.csh")
-            .workGroups(8, 8, 8)
-            .ssbo(1, shLpvBuffer)
-            .ssbo(2, shLpvBuffer_alt)
-            .build());
+        new ShaderBuilder<Compute>(new Compute('wsgi-clear')
+                .location('setup/wsgi-clear.csh')
+                .workGroups(8, 8, 8)
+            )
+            .stage(Stage.SCREEN_SETUP)
+            .ssbo(SSBO_VxGI, shLpvBuffer)
+            .ssbo(SSBO_VxGI_alt, shLpvBuffer_alt)
+            .build();
     }
 
     if (internal.LightListsEnabled) {
@@ -959,21 +963,25 @@ export function setupShader(dimension : NamespacedId) {
 
         print(`light list clear bounds: [${groupCount}]^3`);
 
-        registerShader(Stage.PRE_RENDER, new Compute("light-list-clear")
-            .location("setup/light-list-clear.csh")
-            .workGroups(groupCount, groupCount, groupCount)
-            .ssbo(3, lightListBuffer)
-            .build());
+        new ShaderBuilder(new Compute('light-list-clear')
+                .location('setup/light-list-clear.csh')
+                .workGroups(groupCount, groupCount, groupCount)
+            )
+            .stage(Stage.PRE_RENDER)
+            .ssbo(SSBO_LightList, lightListBuffer)
+            .build();
     }
 
-    registerShader(Stage.PRE_RENDER, new Compute("scene-prepare")
-        .workGroups(1, 1, 1)
-        .location("setup/scene-prepare.csh")
-        .ssbo(0, sceneBuffer)
-        .ssbo(3, lightListBuffer)
-        .ssbo(4, quadListBuffer)
-        .ubo(0, SceneSettingsBuffer)
-        .build());
+    new ShaderBuilder(new Compute('scene-prepare')
+            .location('setup/scene-prepare.csh')
+            .workGroups(1, 1, 1)
+        )
+        .stage(Stage.PRE_RENDER)
+        .ssbo(SSBO_Scene, sceneBuffer)
+        .ssbo(SSBO_LightList, lightListBuffer)
+        .ssbo(SSBO_QuadList, quadListBuffer)
+        .ubo(UBO_SceneSettings, SceneSettingsBuffer)
+        .build();
 
     // IMAGE_BIT | SSBO_BIT | UBO_BIT | FETCH_BIT
     registerBarrier(Stage.PRE_RENDER, new MemoryBarrier(SSBO_BIT));
@@ -982,80 +990,73 @@ export function setupShader(dimension : NamespacedId) {
 
     registerBarrier(Stage.PRE_RENDER, new TextureBarrier());
 
-    registerShader(Stage.PRE_RENDER, new Compute("scene-begin")
-        .workGroups(1, 1, 1)
-        .location("setup/scene-begin.csh")
-        .ssbo(0, sceneBuffer)
-        .build());
+    new ShaderBuilder(new Compute('scene-begin')
+            .location('setup/scene-begin.csh')
+            .workGroups(1, 1, 1)
+        )
+        .stage(Stage.PRE_RENDER)
+        .ssbo(SSBO_Scene, sceneBuffer)
+        .build();
 
     registerBarrier(Stage.PRE_RENDER, new MemoryBarrier(SSBO_BIT));
 
-    function shadowShader(name: string, usage: ProgramUsage) : ObjectShader {
-        return new ObjectShader(name, usage)
-            .vertex("gbuffer/shadow-celestial.vsh")
-            .fragment("gbuffer/shadow-celestial.fsh")
-            .ssbo(0, sceneBuffer)
-            // .ssbo(4, quadListBuffer)
-            .target(0, texShadowColor)
-            //.blendOff(0)
-            //.target(1, texShadowNormal)
-            //.blendOff(1);
-            .define("RENDER_SHADOW", "1");
+    function shadowShader(name: string, usage: ProgramUsage) : ShaderBuilder<ObjectShader> {
+        return new ShaderBuilder(new ObjectShader(name, usage)
+                .vertex('gbuffer/shadow-celestial.vsh')
+                .fragment('gbuffer/shadow-celestial.fsh')
+                .target(0, texShadowColor)
+                .define('RENDER_SHADOW', '1')
+            )
+            .ssbo(SSBO_Scene, sceneBuffer);
     }
 
-    function shadowTerrainShader(name: string, usage: ProgramUsage) : ObjectShader {
-        const shader = shadowShader(name, usage)
-            .ssbo(3, lightListBuffer)
-            .define("RENDER_TERRAIN", "1");
-
-        if (internal.VoxelizeBlockFaces || internal.VoxelizeTriangles || !settings.Voxel_UseProvided)
-            shader.geometry("gbuffer/shadow-celestial.gsh");
-
-        if (internal.VoxelizeBlockFaces)
-            shader.ssbo(5, blockFaceBuffer)
-
-        if (internal.VoxelizeTriangles)
-            shader.ssbo(4, quadListBuffer);
-
-        return shader;
+    function shadowTerrainShader(name: string, usage: ProgramUsage) : ShaderBuilder<ObjectShader> {
+        return shadowShader(name, usage)
+            .if(internal.VoxelizeBlockFaces || internal.VoxelizeTriangles || !settings.Voxel_UseProvided, builder => builder
+                .with(s => s.geometry('gbuffer/shadow-celestial.gsh')))
+            .with(shader => shader
+                .define('RENDER_TERRAIN', '1'))
+            .ssbo(SSBO_LightList, lightListBuffer)
+            .if(internal.VoxelizeBlockFaces, builder => builder
+                .ssbo(SSBO_BlockFace, blockFaceBuffer))
+            .if(internal.VoxelizeTriangles, builder => builder
+                .ssbo(SSBO_QuadList, quadListBuffer));
     }
 
-    function shadowEntityShader(name: string, usage: ProgramUsage) : ObjectShader {
-        const shader = shadowShader(name, usage)
-            .define("RENDER_ENTITY", "1");
-
-        if (internal.VoxelizeTriangles) shader
-            .geometry("gbuffer/shadow-celestial.gsh")
-            .ssbo(4, quadListBuffer);
-
-        return shader;
+    function shadowEntityShader(name: string, usage: ProgramUsage) : ShaderBuilder<ObjectShader> {
+        return shadowShader(name, usage)
+            .with(shader => shader
+                .define('RENDER_ENTITY', '1'))
+            .if(internal.VoxelizeTriangles, builder => builder
+                .with(s => s.geometry('gbuffer/shadow-celestial.gsh'))
+                .ssbo(SSBO_QuadList, quadListBuffer));
     }
 
     function shadowBlockerShader(layer: number) {
         const blockerGroupSize = settings.Shadow_Resolution/32;
 
         return new Compute(`shadow-blocker-${layer}`)
-            .location("composite/shadow-blocker.csh")
+            .location('composite/shadow-blocker.csh')
             .workGroups(blockerGroupSize, blockerGroupSize, 1)
             .define('SHADOW_LAYER', layer.toString());
     }
 
     if (settings.Shadow_Enabled) {
-        registerShader(shadowShader("shadow", Usage.SHADOW).build());
+        shadowShader('shadow', Usage.SHADOW).build();
 
-        registerShader(shadowTerrainShader("shadow-terrain-solid", Usage.SHADOW_TERRAIN_SOLID).build());
+        shadowTerrainShader('shadow-terrain-solid', Usage.SHADOW_TERRAIN_SOLID).build();
 
-        registerShader(shadowTerrainShader("shadow-terrain-cutout", Usage.SHADOW_TERRAIN_CUTOUT).build());
+        shadowTerrainShader('shadow-terrain-cutout', Usage.SHADOW_TERRAIN_CUTOUT).build();
 
-        registerShader(shadowTerrainShader("shadow-terrain-translucent", Usage.SHADOW_TERRAIN_TRANSLUCENT)
-            .define("RENDER_TRANSLUCENT", "1")
-            .build());
+        shadowTerrainShader('shadow-terrain-translucent', Usage.SHADOW_TERRAIN_TRANSLUCENT)
+            .with(s => s.define('RENDER_TRANSLUCENT', '1'))
+            .build();
 
-        registerShader(shadowEntityShader("shadow-entity-solid", Usage.SHADOW_ENTITY_SOLID).build());
-        registerShader(shadowEntityShader("shadow-entity-cutout", Usage.SHADOW_ENTITY_CUTOUT).build());
-        registerShader(shadowEntityShader("shadow-entity-translucent", Usage.SHADOW_ENTITY_TRANSLUCENT)
-            .define("RENDER_TRANSLUCENT", "1")
-            .build());
+        shadowEntityShader('shadow-entity-solid', Usage.SHADOW_ENTITY_SOLID).build();
+        shadowEntityShader('shadow-entity-cutout', Usage.SHADOW_ENTITY_CUTOUT).build();
+        shadowEntityShader('shadow-entity-translucent', Usage.SHADOW_ENTITY_TRANSLUCENT)
+            .with(s => s.define('RENDER_TRANSLUCENT', '1'))
+            .build();
 
         for (let l = 0; l < settings.Shadow_CascadeCount; l++)
             registerShader(Stage.POST_SHADOW, shadowBlockerShader(l).build());
@@ -1072,47 +1073,57 @@ export function setupShader(dimension : NamespacedId) {
         const pointGroupCount = Math.ceil(settings.Lighting_Shadow_MaxCount / (8*8*8));
         const voxelGroupCount = Math.ceil(settings.Voxel_Size / 8);
 
-        registerShader(Stage.POST_SHADOW, new Compute("light-list-point")
-            .location("composite/light-list-shadow.csh")
-            .workGroups(pointGroupCount, pointGroupCount, pointGroupCount)
-            .ssbo(3, lightListBuffer)
-            .build());
+        new ShaderBuilder(new Compute('light-list-point')
+                .location('composite/light-list-shadow.csh')
+                .workGroups(pointGroupCount, pointGroupCount, pointGroupCount)
+            )
+            .stage(Stage.POST_SHADOW)
+            .ssbo(SSBO_LightList, lightListBuffer)
+            .build();
 
         registerBarrier(Stage.POST_SHADOW, new MemoryBarrier(SSBO_BIT));
 
-        registerShader(Stage.POST_SHADOW, new Compute("light-list-neighbors")
-            .location("composite/light-list-shadow-neighbors.csh")
-            .workGroups(voxelGroupCount, voxelGroupCount, voxelGroupCount)
-            .ssbo(3, lightListBuffer)
-            .build());
+        new ShaderBuilder(new Compute('light-list-neighbors')
+                .location('composite/light-list-shadow-neighbors.csh')
+                .workGroups(voxelGroupCount, voxelGroupCount, voxelGroupCount)
+            )
+            .stage(Stage.POST_SHADOW)
+            .ssbo(SSBO_LightList, lightListBuffer)
+            .build();
 
         if (settings.Lighting_Shadow_VoxelFill) {
             registerBarrier(Stage.POST_SHADOW, new MemoryBarrier(SSBO_BIT));
 
-            registerShader(Stage.POST_SHADOW, new Compute("light-list-voxel")
-                .location("composite/light-list-voxel.csh")
-                .workGroups(voxelGroupCount, voxelGroupCount, voxelGroupCount)
-                .ssbo(3, lightListBuffer)
-                .build());
+            new ShaderBuilder(new Compute('light-list-voxel')
+                    .location('composite/light-list-voxel.csh')
+                    .workGroups(voxelGroupCount, voxelGroupCount, voxelGroupCount)
+                )
+                .stage(Stage.POST_SHADOW)
+                .ssbo(SSBO_LightList, lightListBuffer)
+                .build();
 
             registerBarrier(Stage.POST_SHADOW, new MemoryBarrier(SSBO_BIT));
 
-            registerShader(Stage.POST_SHADOW, new Compute("light-list-voxel-neighbors")
-                .location("composite/light-list-voxel-neighbors.csh")
-                .workGroups(voxelGroupCount, voxelGroupCount, voxelGroupCount)
-                .ssbo(3, lightListBuffer)
-                .build());
+            new ShaderBuilder(new Compute('light-list-voxel-neighbors')
+                    .location('composite/light-list-voxel-neighbors.csh')
+                    .workGroups(voxelGroupCount, voxelGroupCount, voxelGroupCount)
+                )
+                .stage(Stage.POST_SHADOW)
+                .ssbo(SSBO_LightList, lightListBuffer)
+                .build();
         }
     }
     else if (settings.Lighting_Mode == LightingModes.RayTraced) {
         const voxelGroupCount = Math.ceil(settings.Voxel_Size / 8);
 
-        registerShader(Stage.POST_SHADOW, new Compute("light-list")
-            .location("composite/light-list.csh")
-            .workGroups(voxelGroupCount, voxelGroupCount, voxelGroupCount)
-            .ssbo(0, sceneBuffer)
-            .ssbo(3, lightListBuffer)
-            .build());
+        new ShaderBuilder(new Compute('light-list')
+                .location('composite/light-list.csh')
+                .workGroups(voxelGroupCount, voxelGroupCount, voxelGroupCount)
+            )
+            .stage(Stage.POST_SHADOW)
+            .ssbo(SSBO_Scene, sceneBuffer)
+            .ssbo(SSBO_LightList, lightListBuffer)
+            .build();
     }
 
     function DiscardObjectShader(name: string, usage: ProgramUsage) {
@@ -1134,24 +1145,24 @@ export function setupShader(dimension : NamespacedId) {
         .target(0, texFinalA)
         .build());
 
-    function _mainShader(name: string, usage: ProgramUsage) : ObjectShader {
-        return new ObjectShader(name, usage)
+    function _mainShader(name: string, usage: ProgramUsage) : ShaderBuilder<ObjectShader> {
+        return new ShaderBuilder(new ObjectShader(name, usage)
             .vertex("gbuffer/main.vsh")
-            .fragment("gbuffer/main.fsh");
+            .fragment("gbuffer/main.fsh"));
     }
 
-    function mainShaderOpaque(name: string, usage: ProgramUsage) : ObjectShader {
-        return _mainShader(name, usage)
+    function mainShaderOpaque(name: string, usage: ProgramUsage) : ShaderBuilder<ObjectShader> {
+        return _mainShader(name, usage).with(shader => shader
             .target(0, texDeferredOpaque_Color)
             // .blendFunc(0, FUNC_SRC_ALPHA, FUNC_ONE_MINUS_SRC_ALPHA, FUNC_ONE, FUNC_ZERO)
             .target(1, texDeferredOpaque_TexNormal)
             .blendOff(1)
             .target(2, texDeferredOpaque_Data)
-            .blendOff(2);
+            .blendOff(2));
     }
 
-    function mainShaderTranslucent(name: string, usage: ProgramUsage) : ObjectShader {
-        return _mainShader(name, usage)
+    function mainShaderTranslucent(name: string, usage: ProgramUsage) : ShaderBuilder<ObjectShader> {
+        return _mainShader(name, usage).with(shader => shader
             .target(0, texDeferredTrans_Color)
             // .blendFunc(0, FUNC_SRC_ALPHA, FUNC_ONE_MINUS_SRC_ALPHA, FUNC_ONE, FUNC_ZERO)
             .target(1, texDeferredTrans_TexNormal)
@@ -1160,12 +1171,12 @@ export function setupShader(dimension : NamespacedId) {
             .blendOff(2)
             .target(3, texDeferredTrans_Depth)
             .blendOff(3)
-            .define("RENDER_TRANSLUCENT", "1");
+            .define('RENDER_TRANSLUCENT', '1'));
     }
 
-    registerShader(new ObjectShader("crumbling", Usage.CRUMBLING)
-        .vertex("gbuffer/crumbling.vsh")
-        .fragment("gbuffer/crumbling.fsh")
+    registerShader(new ObjectShader('crumbling', Usage.CRUMBLING)
+        .vertex('gbuffer/crumbling.vsh')
+        .fragment('gbuffer/crumbling.fsh')
         .target(0, texDeferredOpaque_Color)
         .build());
 
@@ -1180,150 +1191,146 @@ export function setupShader(dimension : NamespacedId) {
     //     .blendOff(2)
     //     .build());
 
-    registerShader(mainShaderOpaque("emissive", Usage.EMISSIVE)
-        .define("RENDER_EMISSIVE", "1")
-        .build());
+    mainShaderOpaque('emissive', Usage.EMISSIVE)
+        .with(s => s.define('RENDER_EMISSIVE', '1'))
+        .build();
 
-    registerShader(mainShaderOpaque("basic", Usage.BASIC).build());
+    mainShaderOpaque('basic', Usage.BASIC).build();
 
-    registerShader(mainShaderOpaque("terrain-solid", Usage.TERRAIN_SOLID)
-        .define("RENDER_TERRAIN", "1")
-        .build());
+    mainShaderOpaque('terrain-solid', Usage.TERRAIN_SOLID)
+        .with(s => s.define('RENDER_TERRAIN', '1'))
+        .build();
 
-    registerShader(mainShaderOpaque("terrain-cutout", Usage.TERRAIN_CUTOUT)
-        .define("RENDER_TERRAIN", "1")
-        .build());
+    mainShaderOpaque('terrain-cutout', Usage.TERRAIN_CUTOUT)
+        .with(s => s.define('RENDER_TERRAIN', '1'))
+        .build();
 
-    const waterShader = mainShaderTranslucent("terrain-translucent", Usage.TERRAIN_TRANSLUCENT)
-        .ubo(0, SceneSettingsBuffer)
-        .define("RENDER_TERRAIN", "1");
+    mainShaderTranslucent('terrain-translucent', Usage.TERRAIN_TRANSLUCENT)
+        .with(s => s.define('RENDER_TERRAIN', '1'))
+        .if(settings.Water_WaveEnabled && settings.Water_TessellationEnabled, builder => builder
+            .with(shader => shader
+                .control('gbuffer/main.tcs')
+                .eval('gbuffer/main.tes')))
+        .ubo(UBO_SceneSettings, SceneSettingsBuffer)
+        .build();
 
-    if (settings.Water_WaveEnabled && settings.Water_TessellationEnabled) {
-        waterShader
-            .control("gbuffer/main.tcs")
-            .eval("gbuffer/main.tes");
+    mainShaderOpaque('hand-solid', Usage.HAND)
+        .with(s => s.define('RENDER_HAND', '1'))
+        .build();
+
+    mainShaderTranslucent('hand-translucent', Usage.TRANSLUCENT_HAND)
+        .with(s => s.define('RENDER_HAND', '1'))
+        .build();
+
+    mainShaderOpaque('entity-solid', Usage.ENTITY_SOLID)
+        .with(s => s.define('RENDER_ENTITY', '1'))
+        .build();
+
+    mainShaderOpaque('entity-cutout', Usage.ENTITY_CUTOUT)
+        .with(s => s.define('RENDER_ENTITY', '1'))
+        .build();
+
+    mainShaderTranslucent('entity-translucent', Usage.ENTITY_TRANSLUCENT)
+        .with(s => s.define('RENDER_ENTITY', '1'))
+        .build();
+
+    function particleShader(name: string, usage: ProgramUsage) : ShaderBuilder<ObjectShader> {
+        return new ShaderBuilder(new ObjectShader(name, usage)
+                .vertex('gbuffer/particles.vsh')
+                .fragment('gbuffer/particles.fsh')
+            )
+            .ssbo(SSBO_Scene, sceneBuffer)
+            .if(settings.Lighting_GI_Enabled, builder => builder
+                .ssbo(SSBO_VxGI, shLpvBuffer)
+                .ssbo(SSBO_VxGI_alt, shLpvBuffer_alt))
+            .if(internal.LightListsEnabled, builder => builder
+                .ssbo(SSBO_LightList, lightListBuffer))
+            .ubo(UBO_SceneSettings, SceneSettingsBuffer);
     }
 
-    registerShader(waterShader.build());
+    particleShader('particle-opaque', Usage.PARTICLES)
+        .with(shader => shader
+            .target(0, texParticleOpaque)
+            .blendOff(0))
+        .build();
 
-    registerShader(mainShaderOpaque("hand-solid", Usage.HAND)
-        .define("RENDER_HAND", "1")
-        .build());
+    particleShader('particle-translucent', Usage.PARTICLES_TRANSLUCENT)
+        .with(shader => shader
+            .target(0, texParticleTranslucent)
+            .blendOff(0)
+            .define('RENDER_TRANSLUCENT', '1'))
+        .build();
 
-    registerShader(mainShaderTranslucent("hand-translucent", Usage.TRANSLUCENT_HAND)
-        .define("RENDER_HAND", "1")
-        .build());
-
-    registerShader(mainShaderOpaque("entity-solid", Usage.ENTITY_SOLID)
-        .define("RENDER_ENTITY", "1")
-        .build());
-
-    registerShader(mainShaderOpaque("entity-cutout", Usage.ENTITY_CUTOUT)
-        .define("RENDER_ENTITY", "1")
-        .build());
-
-    registerShader(mainShaderTranslucent('entity-translucent', Usage.ENTITY_TRANSLUCENT)
-        .define('RENDER_ENTITY', '1')
-        .build());
-
-    function particleShader(name: string, usage: ProgramUsage) {
-        const shader = new ObjectShader(name, usage)
-            .vertex('gbuffer/particles.vsh')
-            .fragment('gbuffer/particles.fsh')
-            .ssbo(0, sceneBuffer)
-            .ubo(0, SceneSettingsBuffer);
-
-        if (settings.Lighting_GI_Enabled) {
-            shader
-                .ssbo(1, shLpvBuffer)
-                .ssbo(2, shLpvBuffer_alt);
-        }
-
-        return shader;
-    }
-
-    const particleOpaqueShader = particleShader('particle-opaque', Usage.PARTICLES)
-        .target(0, texParticleOpaque)
-        .blendOff(0);
-
-    if (internal.LightListsEnabled)
-        particleOpaqueShader.ssbo(3, lightListBuffer);
-
-    registerShader(particleOpaqueShader.build());
-
-    const particleTranslucentShader = particleShader('particle-translucent', Usage.PARTICLES_TRANSLUCENT)
-        .target(0, texParticleTranslucent)
-        .blendOff(0)
-        .define('RENDER_TRANSLUCENT', '1');
-
-    if (internal.LightListsEnabled)
-        particleTranslucentShader.ssbo(3, lightListBuffer);
-
-    registerShader(particleTranslucentShader.build());
-
-    const weatherShader = new ObjectShader("weather", Usage.WEATHER)
-        .vertex("gbuffer/weather.vsh")
-        .fragment("gbuffer/weather.fsh")
-        .target(0, texParticleTranslucent)
-        .ssbo(0, sceneBuffer);
-
-    if (internal.LightListsEnabled)
-        weatherShader.ssbo(3, lightListBuffer);
-
-    registerShader(weatherShader.build());
+    new ShaderBuilder(new ObjectShader('weather', Usage.WEATHER)
+            .vertex('gbuffer/weather.vsh')
+            .fragment('gbuffer/weather.fsh')
+            .target(0, texParticleTranslucent)
+        )
+        .ssbo(SSBO_Scene, sceneBuffer)
+        .if(internal.LightListsEnabled, builder => builder
+            .ssbo(SSBO_LightList, lightListBuffer))
+        .build();
 
     if (internal.FloodFillEnabled) {
         const groupCount = Math.ceil(settings.Voxel_Size / 8);
 
-        registerShader(Stage.POST_RENDER, new Compute("floodfill")
-            .location("composite/floodfill.csh")
-            .workGroups(groupCount, groupCount, groupCount)
-            .define("RENDER_COMPUTE", "1")
-            .ssbo(0, sceneBuffer)
-            .ubo(0, SceneSettingsBuffer)
-            .build());
+        new ShaderBuilder(new Compute('floodfill')
+                .location('composite/floodfill.csh')
+                .workGroups(groupCount, groupCount, groupCount)
+                .define('RENDER_COMPUTE', '1')
+            )
+            .stage(Stage.POST_RENDER)
+            .ssbo(SSBO_Scene, sceneBuffer)
+            .ubo(UBO_SceneSettings, SceneSettingsBuffer)
+            .build();
     }
 
     if (settings.Lighting_GI_Enabled) {
         const groupCount = Math.ceil(settings.Lighting_GI_BufferSize / 8);
 
         for (let i = settings.Lighting_GI_CascadeCount-1; i >= 0; i--) {
-            let shader = new Compute(`global-illumination-${i+1}`)
-                .location("composite/global-illumination.csh")
-                .workGroups(groupCount, groupCount, groupCount)
-                .define("RENDER_COMPUTE", "1")
-                .define("WSGI_VOXEL_SCALE", (i + settings.Lighting_GI_BaseScale).toString())
-                .define("WSGI_CASCADE", i.toString())
-                .ssbo(0, sceneBuffer)
-                .ssbo(1, shLpvBuffer)
-                .ssbo(2, shLpvBuffer_alt)
-                .ssbo(5, blockFaceBuffer)
-                .ubo(0, SceneSettingsBuffer);
-
-            if (internal.LightListsEnabled) {
-                registerBarrier(Stage.POST_RENDER, new MemoryBarrier(SSBO_BIT));
-
-                shader.ssbo(3, lightListBuffer);
-            }
+            // if (internal.LightListsEnabled) {
+            //     registerBarrier(Stage.POST_RENDER, new MemoryBarrier(SSBO_BIT));
+            // }
 
             registerBarrier(Stage.POST_RENDER, new MemoryBarrier(SSBO_BIT));
 
-            registerShader(Stage.POST_RENDER, shader.build());
+            new ShaderBuilder(new Compute(`global-illumination-${i+1}`)
+                    .location('composite/global-illumination.csh')
+                    .workGroups(groupCount, groupCount, groupCount)
+                    .define('RENDER_COMPUTE', '1')
+                    .define('WSGI_VOXEL_SCALE', (i + settings.Lighting_GI_BaseScale).toString())
+                    .define('WSGI_CASCADE', i.toString())
+                )
+                .stage(Stage.POST_RENDER)
+                .ssbo(SSBO_Scene, sceneBuffer)
+                .ssbo(SSBO_VxGI, shLpvBuffer)
+                .ssbo(SSBO_VxGI_alt, shLpvBuffer_alt)
+                .ssbo(SSBO_BlockFace, blockFaceBuffer)
+                .if(internal.LightListsEnabled, builder => builder
+                    .ssbo(SSBO_LightList, lightListBuffer))
+                .ubo(UBO_SceneSettings, SceneSettingsBuffer)
+                .build();
         }
     }
 
     if (settings.Shadow_Enabled) {
-        registerShader(Stage.POST_RENDER, new Composite("shadow-opaque")
-            .vertex("shared/bufferless.vsh")
-            .fragment("composite/shadow-opaque.fsh")
-            .target(0, texShadow)
-            .build());
+        new ShaderBuilder(new Composite('shadow-opaque')
+                .vertex('shared/bufferless.vsh')
+                .fragment('composite/shadow-opaque.fsh')
+                .target(0, texShadow)
+            )
+            .stage(Stage.POST_RENDER)
+            .ssbo(SSBO_Scene, sceneBuffer)
+            .build();
 
         if (settings.Shadow_Filter) {
-            registerShader(Stage.POST_RENDER, new Compute("shadow-opaque-filter")
-                .location("composite/shadow-opaque-filter.csh")
-                .workGroups(Math.ceil(screenWidth / 16.0), Math.ceil(screenHeight / 16.0), 1)
-                .build());
+            new ShaderBuilder(new Compute('shadow-opaque-filter')
+                    .location('composite/shadow-opaque-filter.csh')
+                    .workGroups(Math.ceil(screenWidth / 16.0), Math.ceil(screenHeight / 16.0), 1)
+                )
+                .stage(Stage.POST_RENDER)
+                .build();
 
             //registerBarrier(Stage.POST_RENDER, new MemoryBarrier(IMAGE_BIT));
         }
@@ -1334,42 +1341,39 @@ export function setupShader(dimension : NamespacedId) {
     if (settings.Lighting_Mode == LightingModes.RayTraced || settings.Lighting_ReflectionMode == ReflectionModes.WorldSpace) {
         registerBarrier(Stage.POST_RENDER, new MemoryBarrier(SSBO_BIT));
 
-        const rtOpaqueShader = new Composite("rt-opaque")
-            .vertex("shared/bufferless.vsh")
-            .fragment("composite/rt.fsh")
-            .target(0, texDiffuseRT)
-            .target(1, texSpecularRT)
-            .ssbo(0, sceneBuffer)
-            .ssbo(4, quadListBuffer)
-            .ssbo(5, blockFaceBuffer)
-            .ubo(0, SceneSettingsBuffer)
-            .define("TEX_DEFERRED_COLOR", "texDeferredOpaque_Color")
-            .define("TEX_DEFERRED_DATA", "texDeferredOpaque_Data")
-            .define("TEX_DEFERRED_NORMAL", "texDeferredOpaque_TexNormal")
-            .define("TEX_DEPTH", "solidDepthTex")
-            .define("TEX_SHADOW", texShadow_src);
-
-        if (settings.Lighting_ReflectionMode == ReflectionModes.WorldSpace && settings.Lighting_GI_Enabled) {
-            rtOpaqueShader
-                .ssbo(1, shLpvBuffer)
-                .ssbo(2, shLpvBuffer_alt);
-        }
-
-        if (internal.LightListsEnabled) {
-            rtOpaqueShader
-                .ssbo(3, lightListBuffer);
-        }
-
-        registerShader(Stage.POST_RENDER, rtOpaqueShader.build());
+        new ShaderBuilder(new Composite('rt-opaque')
+                .vertex('shared/bufferless.vsh')
+                .fragment('composite/rt.fsh')
+                .target(0, texDiffuseRT)
+                .target(1, texSpecularRT)
+                .define('TEX_DEFERRED_COLOR', 'texDeferredOpaque_Color')
+                .define('TEX_DEFERRED_DATA', 'texDeferredOpaque_Data')
+                .define('TEX_DEFERRED_NORMAL', 'texDeferredOpaque_TexNormal')
+                .define('TEX_DEPTH', 'solidDepthTex')
+                .define('TEX_SHADOW', texShadow_src)
+            )
+            .stage(Stage.POST_RENDER)
+            .ssbo(SSBO_Scene, sceneBuffer)
+            .ssbo(SSBO_QuadList, quadListBuffer)
+            .ssbo(SSBO_BlockFace, blockFaceBuffer)
+            .if(internal.LightListsEnabled, builder => builder
+                .ssbo(SSBO_LightList, lightListBuffer))
+            .if(settings.Lighting_ReflectionMode == ReflectionModes.WorldSpace && settings.Lighting_GI_Enabled, builder => builder
+                .ssbo(SSBO_VxGI, shLpvBuffer)
+                .ssbo(SSBO_VxGI_alt, shLpvBuffer_alt))
+            .ubo(UBO_SceneSettings, SceneSettingsBuffer)
+            .build();
     }
 
     if (settings.Effect_SSAO_Enabled) {
-        registerShader(Stage.POST_RENDER, new Composite("ssao-opaque")
-            .vertex("shared/bufferless.vsh")
-            .fragment("composite/ssao.fsh")
-            .target(0, texSSAO)
-            .ubo(0, SceneSettingsBuffer)
-            .build());
+        new ShaderBuilder(new Composite('ssao-opaque')
+                .vertex("shared/bufferless.vsh")
+                .fragment("composite/ssao.fsh")
+                .target(0, texSSAO)
+            )
+            .stage(Stage.POST_RENDER)
+            .ubo(UBO_SceneSettings, SceneSettingsBuffer)
+            .build();
 
         // registerShader(Stage.POST_RENDER, new Compute("ssao-filter-opaque")
         //     // .barrier(true)
@@ -1404,69 +1408,66 @@ export function setupShader(dimension : NamespacedId) {
             .build());
     }
 
-    const vlFarShader = new Composite("volumetric-far")
-        .vertex("shared/bufferless.vsh")
-        .fragment("composite/volumetric-far.fsh")
-        .target(0, texScatterVL)
-        .target(1, texTransmitVL)
-        .ssbo(0, sceneBuffer)
-        // .ssbo(1, shLpvBuffer)
-        // .ssbo(2, shLpvBuffer_alt)
-        .ubo(0, SceneSettingsBuffer);
-
-    if (internal.LightListsEnabled)
-        vlFarShader.ssbo(3, lightListBuffer);
-
-    registerShader(Stage.POST_RENDER, vlFarShader.build());
+    new ShaderBuilder(new Composite('volumetric-far')
+            .vertex('shared/bufferless.vsh')
+            .fragment('composite/volumetric-far.fsh')
+            .target(0, texScatterVL)
+            .target(1, texTransmitVL)
+        )
+        .stage(Stage.POST_RENDER)
+        .ssbo(SSBO_Scene, sceneBuffer)
+        .if(internal.LightListsEnabled, builder => builder
+            .ssbo(SSBO_LightList, lightListBuffer))
+        .ubo(UBO_SceneSettings, SceneSettingsBuffer)
+        .build();
 
     registerBarrier(Stage.POST_RENDER, new MemoryBarrier(SSBO_BIT | IMAGE_BIT));
 
-    const compositeOpaqueShader = new Composite("composite-opaque")
-        .vertex('shared/bufferless.vsh')
-        .fragment('composite/composite-opaque.fsh')
-        .target(0, finalFlipper.getWriteTexture())
-        .ssbo(0, sceneBuffer)
-        .ssbo(4, quadListBuffer)
-        .ssbo(5, blockFaceBuffer)
-        .ubo(0, SceneSettingsBuffer)
-        .define('TEX_SHADOW', texShadow_src)
-        .define('TEX_SSAO', 'texSSAO_final');
-
-    if (settings.Lighting_Mode == LightingModes.ShadowMaps)
-        compositeOpaqueShader.ssbo(3, lightListBuffer);
-
-    if (settings.Lighting_GI_Enabled) {
-        compositeOpaqueShader
-            .ssbo(1, shLpvBuffer)
-            .ssbo(2, shLpvBuffer_alt);
-    }
-
-    registerShader(Stage.POST_RENDER, compositeOpaqueShader.build());
+    new ShaderBuilder(new Composite('composite-opaque')
+            .vertex('shared/bufferless.vsh')
+            .fragment('composite/composite-opaque.fsh')
+            .target(0, finalFlipper.getWriteTexture())
+            .define('TEX_SHADOW', texShadow_src)
+            .define('TEX_SSAO', 'texSSAO_final')
+        )
+        .stage(Stage.POST_RENDER)
+        .ssbo(SSBO_Scene, sceneBuffer)
+        .ssbo(SSBO_QuadList, quadListBuffer)
+        .ssbo(SSBO_BlockFace, blockFaceBuffer)
+        .if(settings.Lighting_Mode == LightingModes.ShadowMaps, builder => builder
+            .ssbo(SSBO_LightList, lightListBuffer))
+        .if(settings.Lighting_GI_Enabled, builder => builder
+            .ssbo(SSBO_VxGI, shLpvBuffer)
+            .ssbo(SSBO_VxGI_alt, shLpvBuffer_alt))
+        .ubo(UBO_SceneSettings, SceneSettingsBuffer)
+        .build();
 
     finalFlipper.flip();
 
     if (settings.Lighting_Mode == LightingModes.RayTraced || settings.Lighting_ReflectionMode == ReflectionModes.WorldSpace) {
         registerBarrier(Stage.POST_RENDER, new MemoryBarrier(SSBO_BIT));
 
-        registerShader(Stage.POST_RENDER, new Composite('rt-translucent')
-            .vertex('shared/bufferless.vsh')
-            .fragment('composite/rt.fsh')
-            .target(0, texDiffuseRT)
-            .target(1, texSpecularRT)
-            .ssbo(0, sceneBuffer)
-            .ssbo(1, shLpvBuffer)
-            .ssbo(2, shLpvBuffer_alt)
-            .ssbo(3, lightListBuffer)
-            .ssbo(4, quadListBuffer)
-            .ssbo(5, blockFaceBuffer)
-            .ubo(0, SceneSettingsBuffer)
-            .define('RENDER_TRANSLUCENT', '1')
-            .define('TEX_DEFERRED_COLOR', 'texDeferredTrans_Color')
-            .define('TEX_DEFERRED_DATA', 'texDeferredTrans_Data')
-            .define('TEX_DEFERRED_NORMAL', 'texDeferredTrans_TexNormal')
-            .define('TEX_DEPTH', 'mainDepthTex')
-            .define('TEX_SHADOW', texShadow_src)
-            .build());
+        new ShaderBuilder(new Composite('rt-translucent')
+                .vertex('shared/bufferless.vsh')
+                .fragment('composite/rt.fsh')
+                .target(0, texDiffuseRT)
+                .target(1, texSpecularRT)
+                .define('RENDER_TRANSLUCENT', '1')
+                .define('TEX_DEFERRED_COLOR', 'texDeferredTrans_Color')
+                .define('TEX_DEFERRED_DATA', 'texDeferredTrans_Data')
+                .define('TEX_DEFERRED_NORMAL', 'texDeferredTrans_TexNormal')
+                .define('TEX_DEPTH', 'mainDepthTex')
+                .define('TEX_SHADOW', texShadow_src)
+            )
+            .stage(Stage.POST_RENDER)
+            .ssbo(SSBO_Scene, sceneBuffer)
+            .ssbo(SSBO_VxGI, shLpvBuffer)
+            .ssbo(SSBO_VxGI_alt, shLpvBuffer_alt)
+            .ssbo(SSBO_LightList, lightListBuffer)
+            .ssbo(SSBO_QuadList, quadListBuffer)
+            .ssbo(SSBO_BlockFace, blockFaceBuffer)
+            .ubo(UBO_SceneSettings, SceneSettingsBuffer)
+            .build();
     }
 
     if (internal.Accumulation) {
@@ -1496,20 +1497,18 @@ export function setupShader(dimension : NamespacedId) {
             .build());
     }
 
-    const vlNearShader = new Composite('volumetric-near')
-        .vertex('shared/bufferless.vsh')
-        .fragment('composite/volumetric-near.fsh')
-        .target(0, texScatterVL)
-        .target(1, texTransmitVL)
-        .ssbo(0, sceneBuffer)
-        // .ssbo(1, shLpvBuffer)
-        // .ssbo(2, shLpvBuffer_alt)
-        .ubo(0, SceneSettingsBuffer);
-
-    if (internal.LightListsEnabled)
-        vlNearShader.ssbo(3, lightListBuffer);
-
-    registerShader(Stage.POST_RENDER, vlNearShader.build());
+    new ShaderBuilder(new Composite('volumetric-near')
+            .vertex('shared/bufferless.vsh')
+            .fragment('composite/volumetric-near.fsh')
+            .target(0, texScatterVL)
+            .target(1, texTransmitVL)
+        )
+        .stage(Stage.POST_RENDER)
+        .ssbo(SSBO_Scene, sceneBuffer)
+        .if(internal.LightListsEnabled, builder => builder
+            .ssbo(SSBO_LightList, lightListBuffer))
+        .ubo(UBO_SceneSettings, SceneSettingsBuffer)
+        .build();
 
     if (settings.Lighting_VolumetricResolution > 0) {
         registerShader(Stage.POST_RENDER, new Compute('volumetric-near-filter')
@@ -1522,11 +1521,14 @@ export function setupShader(dimension : NamespacedId) {
     registerShader(Stage.POST_RENDER, new GenerateMips(finalFlipper.getReadTexture()));
 
     if (settings.Shadow_Enabled) {
-        registerShader(Stage.POST_RENDER, new Composite("shadow-translucent")
-            .vertex("shared/bufferless.vsh")
-            .fragment("composite/shadow-translucent.fsh")
-            .target(0, texShadow)
-            .build());
+        new ShaderBuilder(new Composite('shadow-translucent')
+                .vertex('shared/bufferless.vsh')
+                .fragment('composite/shadow-translucent.fsh')
+                .target(0, texShadow)
+            )
+            .stage(Stage.POST_RENDER)
+            .ssbo(SSBO_Scene, sceneBuffer)
+            .build();
 
         // if (snapshot.Shadow_Filter) {
         //     registerShader(Stage.POST_RENDER, new Compute("shadow-translucent-filter")
@@ -1538,21 +1540,24 @@ export function setupShader(dimension : NamespacedId) {
         // }
     }
 
-    const compositeTranslucentShader = new Composite('composite-translucent')
-        .vertex('shared/bufferless.vsh')
-        .fragment('composite/composite-translucent.fsh')
-        .target(0, finalFlipper.getWriteTexture())
-        .ssbo(0, sceneBuffer)
-        .ssbo(4, quadListBuffer)
-        .ssbo(5, blockFaceBuffer)
-        .ubo(0, SceneSettingsBuffer)
-        .define('TEX_SRC', finalFlipper.getReadName())
-        .define('TEX_SHADOW', 'texShadow');
-
-    if (settings.Lighting_Mode == LightingModes.ShadowMaps)
-        compositeTranslucentShader.ssbo(3, lightListBuffer);
-
-    registerShader(Stage.POST_RENDER, compositeTranslucentShader.build());
+    new ShaderBuilder(new Composite('composite-translucent')
+            .vertex('shared/bufferless.vsh')
+            .fragment('composite/composite-translucent.fsh')
+            .target(0, finalFlipper.getWriteTexture())
+            .define('TEX_SRC', finalFlipper.getReadName())
+            .define('TEX_SHADOW', 'texShadow')
+        )
+        .stage(Stage.POST_RENDER)
+        .ssbo(SSBO_Scene, sceneBuffer)
+        .ssbo(SSBO_QuadList, quadListBuffer)
+        .ssbo(SSBO_BlockFace, blockFaceBuffer)
+        .if(settings.Lighting_Mode == LightingModes.ShadowMaps, builder => builder
+            .ssbo(SSBO_LightList, lightListBuffer))
+        .if(settings.Lighting_GI_Enabled, builder => builder
+            .ssbo(SSBO_VxGI, shLpvBuffer)
+            .ssbo(SSBO_VxGI_alt, shLpvBuffer_alt))
+        .ubo(UBO_SceneSettings, SceneSettingsBuffer)
+        .build();
 
     finalFlipper.flip();
 
@@ -1586,33 +1591,40 @@ export function setupShader(dimension : NamespacedId) {
     if (settings.Effect_DOF_Enabled) {
         registerShader(Stage.POST_RENDER, new GenerateMips(finalFlipper.getReadTexture()));
 
-        registerShader(Stage.POST_RENDER, new Composite('depth-of-field')
-            .vertex('shared/bufferless.vsh')
-            .fragment('composite/depth-of-field.fsh')
-            .target(0, finalFlipper.getWriteTexture())
-            .define('TEX_SRC', finalFlipper.getReadName())
-            .ubo(0, SceneSettingsBuffer)
-            .ssbo(0, sceneBuffer)
-            .build());
+        new ShaderBuilder(new Composite('depth-of-field')
+                .vertex('shared/bufferless.vsh')
+                .fragment('composite/depth-of-field.fsh')
+                .target(0, finalFlipper.getWriteTexture())
+                .define('TEX_SRC', finalFlipper.getReadName())
+            )
+            .stage(Stage.POST_RENDER)
+            .ssbo(SSBO_Scene, sceneBuffer)
+            .ubo(UBO_SceneSettings, SceneSettingsBuffer)
+            .build();
 
         finalFlipper.flip();
     }
 
-    registerShader(Stage.POST_RENDER, new Compute('histogram')
-        .location('post/histogram.csh')
-        .workGroups(Math.ceil(screenWidth / 16.0), Math.ceil(screenHeight / 16.0), 1)
-        .ubo(0, SceneSettingsBuffer)
-        .define('TEX_SRC', finalFlipper.getReadName())
-        .build());
+    new ShaderBuilder(new Compute('histogram')
+            .location('post/histogram.csh')
+            .workGroups(Math.ceil(screenWidth / 16.0), Math.ceil(screenHeight / 16.0), 1)
+            .define('TEX_SRC', finalFlipper.getReadName())
+        )
+        .stage(Stage.POST_RENDER)
+        .ssbo(SSBO_Scene, sceneBuffer)
+        .ubo(UBO_SceneSettings, SceneSettingsBuffer)
+        .build();
 
     registerBarrier(Stage.POST_RENDER, new MemoryBarrier(IMAGE_BIT));
 
-    registerShader(Stage.POST_RENDER, new Compute('exposure')
-        .workGroups(1, 1, 1)
-        .location('post/exposure.csh')
-        .ssbo(0, sceneBuffer)
-        .ubo(0, SceneSettingsBuffer)
-        .build());
+    new ShaderBuilder(new Compute('exposure')
+            .location('post/exposure.csh')
+            .workGroups(1, 1, 1)
+        )
+        .stage(Stage.POST_RENDER)
+        .ssbo(SSBO_Scene, sceneBuffer)
+        .ubo(UBO_SceneSettings, SceneSettingsBuffer)
+        .build();
 
     if (settings.Effect_Bloom_Enabled) {
         setupBloom(finalFlipper.getReadName(), finalFlipper.getWriteTexture());
@@ -1620,14 +1632,16 @@ export function setupShader(dimension : NamespacedId) {
         finalFlipper.flip();
     }
 
-    registerShader(Stage.POST_RENDER, new Composite('tone-map')
-        .vertex('shared/bufferless.vsh')
-        .fragment('post/tonemap.fsh')
-        .ssbo(0, sceneBuffer)
-        .ubo(0, SceneSettingsBuffer)
-        .target(0, finalFlipper.getWriteTexture())
-        .define('TEX_SRC', finalFlipper.getReadName())
-        .build());
+    new ShaderBuilder(new Composite('tone-map')
+            .vertex('shared/bufferless.vsh')
+            .fragment('post/tonemap.fsh')
+            .target(0, finalFlipper.getWriteTexture())
+            .define('TEX_SRC', finalFlipper.getReadName())
+        )
+        .stage(Stage.POST_RENDER)
+        .ssbo(SSBO_Scene, sceneBuffer)
+        .ubo(UBO_SceneSettings, SceneSettingsBuffer)
+        .build();
 
     finalFlipper.flip();
 
@@ -1649,32 +1663,34 @@ export function setupShader(dimension : NamespacedId) {
     }
 
     if (internal.DebugEnabled) {
-        registerShader(Stage.POST_RENDER, new Composite('debug')
-            .vertex('shared/bufferless.vsh')
-            .fragment('post/debug.fsh')
-            .target(0, finalFlipper.getWriteTexture())
-            .ssbo(0, sceneBuffer)
-            .ssbo(3, lightListBuffer)
-            .ssbo(4, quadListBuffer)
-            .ubo(0, SceneSettingsBuffer)
-            .define('TEX_SRC', finalFlipper.getReadName())
-            .define("TEX_COLOR", settings.Debug_Translucent
-                ? "texDeferredTrans_Color"
-                : "texDeferredOpaque_Color")
-            .define("TEX_NORMAL", settings.Debug_Translucent
-                ? "texDeferredTrans_TexNormal"
-                : "texDeferredOpaque_TexNormal")
-            .define("TEX_DATA", settings.Debug_Translucent
-                ? "texDeferredTrans_Data"
-                : "texDeferredOpaque_Data")
-            .define("TEX_SHADOW", settings.Debug_Translucent
-                ? "texShadow"
-                : texShadow_src)
-            .define("TEX_SSAO", "texSSAO")
-            .define("TEX_ACCUM_OCCLUSION", settings.Debug_Translucent
-                ? "texAccumOcclusion_translucent"
-                : "texAccumOcclusion_opaque")
-            .build());
+        new ShaderBuilder(new Composite('debug')
+                .vertex('shared/bufferless.vsh')
+                .fragment('post/debug.fsh')
+                .target(0, finalFlipper.getWriteTexture())
+                .define('TEX_SRC', finalFlipper.getReadName())
+                .define("TEX_COLOR", settings.Debug_Translucent
+                    ? "texDeferredTrans_Color"
+                    : "texDeferredOpaque_Color")
+                .define("TEX_NORMAL", settings.Debug_Translucent
+                    ? "texDeferredTrans_TexNormal"
+                    : "texDeferredOpaque_TexNormal")
+                .define("TEX_DATA", settings.Debug_Translucent
+                    ? "texDeferredTrans_Data"
+                    : "texDeferredOpaque_Data")
+                .define("TEX_SHADOW", settings.Debug_Translucent
+                    ? "texShadow"
+                    : texShadow_src)
+                .define("TEX_SSAO", "texSSAO")
+                .define("TEX_ACCUM_OCCLUSION", settings.Debug_Translucent
+                    ? "texAccumOcclusion_translucent"
+                    : "texAccumOcclusion_opaque")
+            )
+            .stage(Stage.POST_RENDER)
+            .ssbo(SSBO_Scene, sceneBuffer)
+            .ssbo(SSBO_LightList, lightListBuffer)
+            .ssbo(SSBO_QuadList, quadListBuffer)
+            .ubo(UBO_SceneSettings, SceneSettingsBuffer)
+            .build();
 
         finalFlipper.flip();
     }
@@ -1763,43 +1779,52 @@ function setupSky(sceneBuffer) {
         .height(256)
         .build();
 
-    const texSkyIrradiance = new Texture("texSkyIrradiance")
+    const texSkyIrradiance = new Texture('texSkyIrradiance')
         .format(Format.RGB16F)
         .clear(false)
         .width(32)
         .height(32)
         .build();
 
-    registerShader(Stage.SCREEN_SETUP, new Composite("sky-transmit")
-        .vertex("shared/bufferless.vsh")
-        .fragment("setup/sky_transmit.fsh")
-        .target(0, texSkyTransmit)
-        .build())
+    new ShaderBuilder(new Composite('sky-transmit')
+            .vertex('shared/bufferless.vsh')
+            .fragment('setup/sky_transmit.fsh')
+            .target(0, texSkyTransmit)
+        )
+        .stage(Stage.SCREEN_SETUP)
+        .ubo(UBO_SceneSettings, SceneSettingsBuffer)
+        .build();
 
-    registerShader(Stage.SCREEN_SETUP, new Composite("sky-multi-scatter")
-        .vertex("shared/bufferless.vsh")
-        .fragment("setup/sky_multi_scatter.fsh")
-        .target(0, texSkyMultiScatter)
-        .ssbo(0, sceneBuffer)
-        .ubo(0, SceneSettingsBuffer)
-        .build())
+    new ShaderBuilder(new Composite('sky-multi-scatter')
+            .vertex('shared/bufferless.vsh')
+            .fragment('setup/sky_multi_scatter.fsh')
+            .target(0, texSkyMultiScatter)
+        )
+        .stage(Stage.SCREEN_SETUP)
+        .ssbo(SSBO_Scene, sceneBuffer)
+        .ubo(UBO_SceneSettings, SceneSettingsBuffer)
+        .build();
 
-    registerShader(Stage.PRE_RENDER, new Composite("sky-view")
-        .vertex("shared/bufferless.vsh")
-        .fragment("setup/sky_view.fsh")
-        .target(0, texSkyView)
-        .ssbo(0, sceneBuffer)
-        .ubo(0, SceneSettingsBuffer)
-        .build())
+    new ShaderBuilder(new Composite('sky-view')
+            .vertex('shared/bufferless.vsh')
+            .fragment('setup/sky_view.fsh')
+            .target(0, texSkyView)
+        )
+        .stage(Stage.PRE_RENDER)
+        .ssbo(SSBO_Scene, sceneBuffer)
+        .ubo(UBO_SceneSettings, SceneSettingsBuffer)
+        .build();
 
-    registerShader(Stage.PRE_RENDER, new Composite("sky-irradiance")
-        .vertex("shared/bufferless.vsh")
-        .fragment("setup/sky_irradiance.fsh")
-        .target(0, texSkyIrradiance)
-        .blendFunc(0, Func.SRC_ALPHA, Func.ONE_MINUS_SRC_ALPHA, Func.ONE, Func.ZERO)
-        .ssbo(0, sceneBuffer)
-        .ubo(0, SceneSettingsBuffer)
-        .build())
+    new ShaderBuilder(new Composite('sky-irradiance')
+            .vertex("shared/bufferless.vsh")
+            .fragment("setup/sky_irradiance.fsh")
+            .target(0, texSkyIrradiance)
+            .blendFunc(0, Func.SRC_ALPHA, Func.ONE_MINUS_SRC_ALPHA, Func.ONE, Func.ZERO)
+        )
+        .stage(Stage.PRE_RENDER)
+        .ssbo(SSBO_Scene, sceneBuffer)
+        .ubo(UBO_SceneSettings, SceneSettingsBuffer)
+        .build();
 }
 
 function setupBloom(src: string, target: BuiltTexture) {
@@ -1833,25 +1858,23 @@ function setupBloom(src: string, target: BuiltTexture) {
     }
 
     for (let i = maxLod-1; i >= 0; i--) {
-        const shader = new Composite(`bloom-up-${i}`)
-            .vertex('shared/bufferless.vsh')
-            .fragment('post/bloom/up.fsh')
-            .ubo(0, SceneSettingsBuffer)
-            .define('TEX_SRC', src)
-            .define('TEX_SCALE', Math.pow(2, i+1).toString())
-            .define('BLOOM_INDEX', i.toString())
-            .define('MIP_INDEX', i.toString());
-
-        if (i == 0) {
-            shader.target(0, target);
-            shader.blendFunc(0, Func.ONE, Func.ZERO, Func.ONE, Func.ZERO);
-        }
-        else {
-            shader.target(0, texBloom, i-1);
-            shader.blendFunc(0, Func.ONE, Func.ONE, Func.ONE, Func.ONE);
-        }
-
-        registerShader(Stage.POST_RENDER, shader.build());
+        new ShaderBuilder(new Composite(`bloom-up-${i}`)
+                .vertex('shared/bufferless.vsh')
+                .fragment('post/bloom/up.fsh')
+                .define('TEX_SRC', src)
+                .define('TEX_SCALE', Math.pow(2, i+1).toString())
+                .define('BLOOM_INDEX', i.toString())
+                .define('MIP_INDEX', i.toString())
+            )
+            .stage(Stage.POST_RENDER)
+            .if(i == 0, builder => builder.with(s => s
+                .target(0, target)
+                .blendFunc(0, Func.ONE, Func.ZERO, Func.ONE, Func.ZERO)))
+            .if(i != 0, builder => builder.with(s => s
+                .target(0, texBloom, i-1)
+                .blendFunc(0, Func.ONE, Func.ONE, Func.ONE, Func.ONE)))
+            .ubo(UBO_SceneSettings, SceneSettingsBuffer)
+            .build();
     }
 }
 

@@ -1,4 +1,4 @@
-layout(binding = 0) buffer sceneBuffer { // +64 +24
+layout(binding = SSBO_SCENE) buffer sceneBuffer { // +64 +24
     float Scene_AvgExposure;        // 4
     vec3 Scene_SunColor;            // 12
     vec3 Scene_LocalSunDir;         // 16

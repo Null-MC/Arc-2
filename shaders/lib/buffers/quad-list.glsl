@@ -13,7 +13,7 @@ struct QuadBin {
     Quad quadList[QUAD_BIN_MAX];  // 36*N
 };
 
-layout(binding = 4) buffer QuadListBuffer {
+layout(binding = SSBO_QUAD_LIST) buffer QuadListBuffer {
     // TODO: for debug only!
     uint total;       // 4
     QuadBin bin[];

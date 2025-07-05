@@ -63,7 +63,13 @@ out VertexData2 {
 
 #if defined(VOXEL_BLOCK_FACE) || defined(VOXEL_TRI_ENABLED)
     #ifdef RENDER_TERRAIN
-        #include "/lib/buffers/voxel-block.glsl"
+        #ifndef VOXEL_PROVIDED
+            #include "/lib/buffers/voxel-block.glsl"
+        #endif
+
+        #ifdef VOXEL_BLOCK_FACE
+            #include "/lib/buffers/voxel-block-face.glsl"
+        #endif
     #endif
 
     #ifdef VOXEL_TRI_ENABLED

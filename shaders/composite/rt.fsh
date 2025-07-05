@@ -60,6 +60,10 @@ in vec2 uv;
 
 #include "/lib/buffers/voxel-block.glsl"
 
+#if LIGHTING_REFLECT_MODE == REFLECT_MODE_WSR
+    #include "/lib/buffers/voxel-block-face.glsl"
+#endif
+
 #ifdef LIGHT_LIST_ENABLED
     #include "/lib/buffers/light-list.glsl"
 #endif

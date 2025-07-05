@@ -75,27 +75,29 @@ const int VL_maxSamples_far = 16;
 	#define IS_POINT_LIGHT_POM_ENABLED
 #endif
 
-layout (std140, binding = 0) uniform SceneSettings {
-	int Sky_SunTemp;
-	float Sky_sunPathRotation;
-	float Sky_CloudCoverage;
-	float Scene_SkyFogDensityF;
-	float Scene_SkyFogSeaLevel;
-	int Scene_WaterWaveDetail;
-	float Water_WaveHeight;
-	float Water_TessellationLevel;
-	float Material_EmissionBrightness;
-	int Lighting_BlockTemp;
-	float Lighting_PenumbraSize;
-	float Effect_SSAO_Strength;
-	float Effect_Bloom_Strength;
-	float Effect_DOF_Radius;
-	float Scene_PostExposureMin;
-	float Scene_PostExposureMax;
-	float Scene_PostExposureSpeed;
-	float Post_ExposureOffset;
-	float Post_Tonemap_Contrast;
-	float Post_Tonemap_LinearStart;
-	float Post_Tonemap_LinearLength;
-	float Post_Tonemap_Black;
-};
+#ifdef UBO_SCENE_SETTINGS
+	layout (std140, binding = UBO_SCENE_SETTINGS) uniform SceneSettings {
+		int Sky_SunTemp;
+		float Sky_sunPathRotation;
+		float Sky_CloudCoverage;
+		float Scene_SkyFogDensityF;
+		float Scene_SkyFogSeaLevel;
+		int Scene_WaterWaveDetail;
+		float Water_WaveHeight;
+		float Water_TessellationLevel;
+		float Material_EmissionBrightness;
+		int Lighting_BlockTemp;
+		float Lighting_PenumbraSize;
+		float Effect_SSAO_Strength;
+		float Effect_Bloom_Strength;
+		float Effect_DOF_Radius;
+		float Scene_PostExposureMin;
+		float Scene_PostExposureMax;
+		float Scene_PostExposureSpeed;
+		float Post_ExposureOffset;
+		float Post_Tonemap_Contrast;
+		float Post_Tonemap_LinearStart;
+		float Post_Tonemap_LinearLength;
+		float Post_Tonemap_Black;
+	};
+#endif

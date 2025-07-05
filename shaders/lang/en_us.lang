@@ -349,7 +349,7 @@ value.DEBUG_VIEW.7=Accumulation
 value.DEBUG_VIEW.8=Sky Irradiance
 value.DEBUG_VIEW.9=ShadowMap Color
 value.DEBUG_VIEW.10=ShadowMap Normal
-value.DEBUG_VIEW.11=Irradiance Cache
+value.DEBUG_VIEW.11=Voxel GI
 value.DEBUG_VIEW.12=Particles
 
 option.DEBUG_MATERIAL=Material

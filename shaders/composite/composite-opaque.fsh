@@ -349,8 +349,8 @@ void main() {
             skyIrradiance += wsgi_sample(wsgi_localPos, localTexNormal);
         #endif
 
-        skyLightDiffuse += skyIrradiance;
-        skyLightDiffuse *= occlusion;
+        skyLightDiffuse += skyIrradiance * occlusion;
+//        skyLightDiffuse *= occlusion;
 
         vec3 blockLighting = GetVanillaBlockLight(lmCoord.x, occlusion);
         vec3 voxelPos = voxel_GetBufferPosition(localPos);

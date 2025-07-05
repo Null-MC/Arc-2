@@ -131,17 +131,17 @@ function applySettings(settings : ShaderSettings, internal) {
             defineGlobally1('LIGHTING_SHADOW_VOXEL_FILL');
     }
 
-    if (settings.Lighting_GI_Enabled) {
+    if (settings.Lighting_VxGI_Enabled) {
         defineGlobally1('LIGHTING_GI_ENABLED');
-        defineGlobally('VOXEL_GI_MAXSTEP', settings.Lighting_GI_MaxSteps);
-        defineGlobally('WSGI_CASCADE_COUNT', settings.Lighting_GI_CascadeCount);
-        defineGlobally('LIGHTING_GI_SIZE', settings.Lighting_GI_BufferSize);
-        defineGlobally('VOXEL_GI_MAXFRAMES', settings.Lighting_GI_MaxFrames);
+        defineGlobally('VOXEL_GI_MAXSTEP', settings.Lighting_VxGI_MaxSteps);
+        defineGlobally('WSGI_CASCADE_COUNT', settings.Lighting_VxGI_CascadeCount);
+        defineGlobally('LIGHTING_GI_SIZE', settings.Lighting_VxGI_BufferSize);
+        defineGlobally('VOXEL_GI_MAXFRAMES', settings.Lighting_VxGI_MaxFrames);
 
-        if (settings.Lighting_GI_SkyLight)
+        if (settings.Lighting_VxGI_SkyLight)
             defineGlobally1('LIGHTING_GI_SKYLIGHT');
 
-        defineGlobally('WSGI_SCALE_BASE', settings.Lighting_GI_BaseScale);
+        defineGlobally('WSGI_SCALE_BASE', settings.Lighting_VxGI_BaseScale);
 
         // const scaleF = Math.max(settings.Lighting_GI_BaseScale + settings.Lighting_GI_CascadeCount - 2, 0);
         // const snapScale = Math.pow(2, scaleF);
@@ -812,17 +812,17 @@ export function setupShader(dimension : NamespacedId) {
             .build();
     }
 
-    let shLpvBuffer: BuiltBuffer | null = null;
-    let shLpvBuffer_alt: BuiltBuffer | null = null;
-    if (settings.Lighting_GI_Enabled) {
+    let vxgiBuffer: BuiltBuffer | null = null;
+    let vxgiBuffer_alt: BuiltBuffer | null = null;
+    if (settings.Lighting_VxGI_Enabled) {
         // f16vec4[3] * VoxelBufferSize^3
-        const bufferSize = 48 * cubed(settings.Lighting_GI_BufferSize) * settings.Lighting_GI_CascadeCount;
+        const bufferSize = 48 * cubed(settings.Lighting_VxGI_BufferSize) * settings.Lighting_VxGI_CascadeCount;
 
-        shLpvBuffer = new GPUBuffer(bufferSize)
+        vxgiBuffer = new GPUBuffer(bufferSize)
             .clear(false)
             .build();
 
-        shLpvBuffer_alt = new GPUBuffer(bufferSize)
+        vxgiBuffer_alt = new GPUBuffer(bufferSize)
             .clear(false)
             .build();
     }
@@ -937,14 +937,14 @@ export function setupShader(dimension : NamespacedId) {
         .workGroups(1, 1, 1)
         .build());
 
-    if (settings.Lighting_GI_Enabled) {
+    if (settings.Lighting_VxGI_Enabled) {
         new ShaderBuilder<Compute>(new Compute('wsgi-clear')
                 .location('setup/wsgi-clear.csh')
                 .workGroups(8, 8, 8)
             )
             .stage(Stage.SCREEN_SETUP)
-            .ssbo(SSBO.VxGI, shLpvBuffer)
-            .ssbo(SSBO.VxGI_alt, shLpvBuffer_alt)
+            .ssbo(SSBO.VxGI, vxgiBuffer)
+            .ssbo(SSBO.VxGI_alt, vxgiBuffer_alt)
             .build();
     }
 
@@ -1231,9 +1231,9 @@ export function setupShader(dimension : NamespacedId) {
                 .fragment('gbuffer/particles.fsh')
             )
             .ssbo(SSBO.Scene, sceneBuffer)
-            .if(settings.Lighting_GI_Enabled, builder => builder
-                .ssbo(SSBO.VxGI, shLpvBuffer)
-                .ssbo(SSBO.VxGI_alt, shLpvBuffer_alt))
+            .if(settings.Lighting_VxGI_Enabled, builder => builder
+                .ssbo(SSBO.VxGI, vxgiBuffer)
+                .ssbo(SSBO.VxGI_alt, vxgiBuffer_alt))
             .if(internal.LightListsEnabled, builder => builder
                 .ssbo(SSBO.LightList, lightListBuffer))
             .ubo(UBO.SceneSettings, SceneSettingsBuffer);
@@ -1260,6 +1260,7 @@ export function setupShader(dimension : NamespacedId) {
         .ssbo(SSBO.Scene, sceneBuffer)
         .if(internal.LightListsEnabled, builder => builder
             .ssbo(SSBO.LightList, lightListBuffer))
+        .ubo(UBO.SceneSettings, SceneSettingsBuffer)
         .build();
 
     if (internal.FloodFillEnabled) {
@@ -1276,10 +1277,10 @@ export function setupShader(dimension : NamespacedId) {
             .build();
     }
 
-    if (settings.Lighting_GI_Enabled) {
-        const groupCount = Math.ceil(settings.Lighting_GI_BufferSize / 8);
+    if (settings.Lighting_VxGI_Enabled) {
+        const groupCount = Math.ceil(settings.Lighting_VxGI_BufferSize / 8);
 
-        for (let i = settings.Lighting_GI_CascadeCount-1; i >= 0; i--) {
+        for (let i = settings.Lighting_VxGI_CascadeCount-1; i >= 0; i--) {
             // if (internal.LightListsEnabled) {
             //     registerBarrier(Stage.POST_RENDER, new MemoryBarrier(SSBO_BIT));
             // }
@@ -1290,13 +1291,13 @@ export function setupShader(dimension : NamespacedId) {
                     .location('composite/global-illumination.csh')
                     .workGroups(groupCount, groupCount, groupCount)
                     .define('RENDER_COMPUTE', '1')
-                    .define('WSGI_VOXEL_SCALE', (i + settings.Lighting_GI_BaseScale).toString())
+                    .define('WSGI_VOXEL_SCALE', (i + settings.Lighting_VxGI_BaseScale).toString())
                     .define('WSGI_CASCADE', i.toString())
                 )
                 .stage(Stage.POST_RENDER)
                 .ssbo(SSBO.Scene, sceneBuffer)
-                .ssbo(SSBO.VxGI, shLpvBuffer)
-                .ssbo(SSBO.VxGI_alt, shLpvBuffer_alt)
+                .ssbo(SSBO.VxGI, vxgiBuffer)
+                .ssbo(SSBO.VxGI_alt, vxgiBuffer_alt)
                 .ssbo(SSBO.BlockFace, blockFaceBuffer)
                 .if(internal.LightListsEnabled, builder => builder
                     .ssbo(SSBO.LightList, lightListBuffer))
@@ -1349,9 +1350,9 @@ export function setupShader(dimension : NamespacedId) {
             .ssbo(SSBO.BlockFace, blockFaceBuffer)
             .if(internal.LightListsEnabled, builder => builder
                 .ssbo(SSBO.LightList, lightListBuffer))
-            .if(settings.Lighting_ReflectionMode == ReflectionModes.WorldSpace && settings.Lighting_GI_Enabled, builder => builder
-                .ssbo(SSBO.VxGI, shLpvBuffer)
-                .ssbo(SSBO.VxGI_alt, shLpvBuffer_alt))
+            .if(settings.Lighting_ReflectionMode == ReflectionModes.WorldSpace && settings.Lighting_VxGI_Enabled, builder => builder
+                .ssbo(SSBO.VxGI, vxgiBuffer)
+                .ssbo(SSBO.VxGI_alt, vxgiBuffer_alt))
             .ubo(UBO.SceneSettings, SceneSettingsBuffer)
             .build();
     }
@@ -1427,9 +1428,9 @@ export function setupShader(dimension : NamespacedId) {
         .ssbo(SSBO.BlockFace, blockFaceBuffer)
         .if(settings.Lighting_Mode == LightingModes.ShadowMaps, builder => builder
             .ssbo(SSBO.LightList, lightListBuffer))
-        .if(settings.Lighting_GI_Enabled, builder => builder
-            .ssbo(SSBO.VxGI, shLpvBuffer)
-            .ssbo(SSBO.VxGI_alt, shLpvBuffer_alt))
+        .if(settings.Lighting_VxGI_Enabled, builder => builder
+            .ssbo(SSBO.VxGI, vxgiBuffer)
+            .ssbo(SSBO.VxGI_alt, vxgiBuffer_alt))
         .ubo(UBO.SceneSettings, SceneSettingsBuffer)
         .build();
 
@@ -1452,8 +1453,8 @@ export function setupShader(dimension : NamespacedId) {
             )
             .stage(Stage.POST_RENDER)
             .ssbo(SSBO.Scene, sceneBuffer)
-            .ssbo(SSBO.VxGI, shLpvBuffer)
-            .ssbo(SSBO.VxGI_alt, shLpvBuffer_alt)
+            .ssbo(SSBO.VxGI, vxgiBuffer)
+            .ssbo(SSBO.VxGI_alt, vxgiBuffer_alt)
             .ssbo(SSBO.LightList, lightListBuffer)
             .ssbo(SSBO.QuadList, quadListBuffer)
             .ssbo(SSBO.BlockFace, blockFaceBuffer)
@@ -1544,9 +1545,9 @@ export function setupShader(dimension : NamespacedId) {
         .ssbo(SSBO.BlockFace, blockFaceBuffer)
         .if(settings.Lighting_Mode == LightingModes.ShadowMaps, builder => builder
             .ssbo(SSBO.LightList, lightListBuffer))
-        .if(settings.Lighting_GI_Enabled, builder => builder
-            .ssbo(SSBO.VxGI, shLpvBuffer)
-            .ssbo(SSBO.VxGI_alt, shLpvBuffer_alt))
+        .if(settings.Lighting_VxGI_Enabled, builder => builder
+            .ssbo(SSBO.VxGI, vxgiBuffer)
+            .ssbo(SSBO.VxGI_alt, vxgiBuffer_alt))
         .ubo(UBO.SceneSettings, SceneSettingsBuffer)
         .build();
 

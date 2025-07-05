@@ -30,7 +30,9 @@ uniform sampler2D texSkyMultiScatter;
     #ifdef LIGHTING_SHADOW_PCSS
         uniform samplerCubeArray pointLight;
     #endif
-#elif LIGHTING_MODE == LIGHT_MODE_LPV
+#endif
+
+#ifdef FLOODFILL_ENABLED
     uniform sampler3D texFloodFill;
     uniform sampler3D texFloodFill_alt;
 #endif
@@ -72,8 +74,9 @@ uniform sampler2D texSkyMultiScatter;
     #include "/lib/shadow/clouds.glsl"
 #endif
 
+#include "/lib/voxel/voxel-common.glsl"
+
 #if LIGHTING_MODE == LIGHT_MODE_RT || (LIGHTING_MODE == LIGHT_MODE_SHADOWS && defined(LIGHTING_SHADOW_BIN_ENABLED))
-    #include "/lib/voxel/voxel-common.glsl"
     #include "/lib/voxel/voxel-sample.glsl"
     #include "/lib/voxel/light-list.glsl"
 #endif
@@ -90,13 +93,14 @@ uniform sampler2D texSkyMultiScatter;
 #elif LIGHTING_MODE == LIGHT_MODE_RT && defined(LIGHTING_VL_SHADOWS)
     #include "/lib/voxel/dda.glsl"
     #include "/lib/voxel/light-trace.glsl"
-#elif LIGHTING_MODE == LIGHT_MODE_LPV
-    #include "/lib/voxel/voxel-common.glsl"
-    #include "/lib/voxel/floodfill-common.glsl"
-    #include "/lib/voxel/floodfill-sample.glsl"
 #elif LIGHTING_MODE == LIGHT_MODE_VANILLA
     #include "/lib/utility/blackbody.glsl"
     #include "/lib/lightmap/sample.glsl"
+#endif
+
+#ifdef FLOODFILL_ENABLED
+    #include "/lib/voxel/floodfill-common.glsl"
+    #include "/lib/voxel/floodfill-sample.glsl"
 #endif
 
 
@@ -298,14 +302,21 @@ void main() {
                 #endif
             #endif
 
-            #if LIGHTING_MODE == LIGHT_MODE_LPV
+            #ifdef FLOODFILL_ENABLED
                 vec3 voxelPos = voxel_GetBufferPosition(sampleLocalPos);
 
                 if (floodfill_isInBounds(voxelPos)) {
                     vec3 blockLight = floodfill_sample(voxelPos);
+
+                    #if LIGHTING_MODE != LIGHT_MODE_LPV
+                        blockLight *= (1.0/15.0);
+                    #endif
+
                     sampleLit += phaseIso * blockLight;
                 }
-            #elif LIGHTING_MODE == LIGHT_MODE_VANILLA
+            #endif
+
+            #if LIGHTING_MODE == LIGHT_MODE_VANILLA
                 vec3 blockLighting = GetVanillaBlockLight(sample_lmcoord.x, 1.0);
                 sampleLit += phaseIso * blockLighting;
             #endif

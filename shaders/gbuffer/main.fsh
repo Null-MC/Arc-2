@@ -251,7 +251,8 @@ void iris_emitFragment() {
     #endif
 
     #if defined(FANCY_LAVA) && defined(RENDER_TERRAIN)
-        if (is_fluid && block_emission > 0) {
+        uint blockMapId = iris_getCustomId(vIn.blockId);
+        if (blockMapId == BLOCK_LAVA) {
             vec3 worldPos = ap.camera.pos + vIn.localPos;
             vec3 viewPos = mul3(ap.camera.view, vIn.localPos);
             vec3 viewGeoNormal = mat3(ap.camera.view) * localGeoNormal;

@@ -5,6 +5,7 @@
 
 const float AccumulationMax_Diffuse = 60.0;
 const float AccumulationMax_Specular = 30.0;
+const float AccumulationMax_Occlusion = 15.0;
 
 layout (local_size_x = 16, local_size_y = 16, local_size_z = 1) in;
 
@@ -185,7 +186,7 @@ void main() {
     specularFinal = clamp(specularFinal, 0.0, 65000.0);
 
     #if defined(EFFECT_SSAO_ENABLED) && !defined(RENDER_TRANSLUCENT)
-        //float occlusionCounter = clamp(counter, 1.0, 1.0 + AccumulationMax_Diffuse * roughL);
+        float occlusionCounter = clamp(counter, 1.0, 1.0 + AccumulationMax_Occlusion);
         float occlusionFinal = mix(previousOcclusion, occlusion, 1.0 / diffuseCounter);
 
         occlusionFinal = saturate(occlusionFinal);

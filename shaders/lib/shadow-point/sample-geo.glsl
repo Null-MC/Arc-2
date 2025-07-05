@@ -2,8 +2,8 @@ void sample_AllPointLights(inout vec3 diffuse, inout vec3 specular, const in vec
     vec3 localViewDir = -normalize(localPos);
     float NoVm = max(dot(localTexNormal, localViewDir), 0.0);
 
-    const float offsetBias = 0.8;
-    const float normalBias = 0.04;
+    const float offsetBias = 0.02;
+    const float normalBias = 0.16;
     vec3 localSamplePos = normalBias * localGeoNormal + localPos;
 
     #ifdef LIGHTING_SHADOW_BIN_ENABLED
@@ -42,13 +42,15 @@ void sample_AllPointLights(inout vec3 diffuse, inout vec3 specular, const in vec
         vec3 sampleDir = fragToLight / sampleDist;
         vec3 lightDir = sampleDir;
 
-        float geo_facing = 1.0;//step(0.0, dot(localGeoNormal, sampleDir));
+        float geo_NoLm = max(dot(localGeoNormal, sampleDir), 0.0);
         float bias = offsetBias + sss;
 
-        float lightShadow = geo_facing * sample_PointLight(-fragToLight, lightSize, lightRange, bias, lightIndex);
+        float lightShadow = sample_PointLight(-fragToLight, lightSize, lightRange, bias, lightIndex);
 
         float NoL = dot(localTexNormal, lightDir);
         float NoLm = max(NoL, 0.0);
+
+        NoLm = min(NoLm, geo_NoLm);
 
         float sss_NoLm = max((NoLm + sss) / (1.0 + sss), 0.0);
 

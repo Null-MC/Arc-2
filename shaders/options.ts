@@ -126,7 +126,7 @@ export function setupOptions() {
     const screen_Effects = new Page("EFFECTS")
         .add(new Page("EFFECT_SSAO")
             .add(asBool("EFFECT_SSAO_ENABLED", true, true))
-            .add(asIntRange("EFFECT_SSAO_STRENGTH", 400, 10, 800, 10, false))
+            .add(asIntRange("EFFECT_SSAO_STRENGTH", 140, 5, 200, 5, false))
             .add(asIntRange("EFFECT_SSAO_SAMPLES", 4, 1, 16, 1))
             .build())
         .add(new Page("EFFECT_BLOOM")

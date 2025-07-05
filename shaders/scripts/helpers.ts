@@ -1,6 +1,19 @@
 import type {} from '../iris'
 
 
+export const SSBO = {
+    Scene: 'SSBO_SCENE',
+    VxGI: 'SSBO_VXGI',
+    VxGI_alt: 'SSBO_VXGI_ALT',
+    LightList: 'SSBO_LIGHT_LIST',
+    QuadList: 'SSBO_QUAD_LIST',
+    BlockFace: 'SSBO_BLOCK_FACE',
+};
+
+export const UBO = {
+    SceneSettings: 'UBO_SCENE_SETTINGS',
+};
+
 export function hexToRgb(hex: string) {
     const bigint = parseInt(hex.substring(1), 16);
     const r = (bigint >> 16) & 255;

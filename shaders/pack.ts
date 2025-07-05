@@ -2,21 +2,12 @@ import {BlockMap} from "./scripts/BlockMap";
 import {BufferFlipper} from "./scripts/BufferFlipper";
 import {StreamBufferBuilder} from "./scripts/StreamBufferBuilder";
 import {ShaderBuilder} from "./scripts/ShaderBuilder";
-import {TagBuilder, setLightColorEx} from "./scripts/helpers";
+import {TagBuilder, setLightColorEx, SSBO, UBO} from "./scripts/helpers";
 import {LightingModes, ReflectionModes, ShaderSettings} from "./scripts/settings";
 
 
 const LIGHT_BIN_SIZE = 8;
 const QUAD_BIN_SIZE = 2;
-
-const SSBO_Scene = 'SSBO_SCENE';
-const SSBO_VxGI = 'SSBO_VXGI';
-const SSBO_VxGI_alt = 'SSBO_VXGI_ALT';
-const SSBO_LightList = 'SSBO_LIGHT_LIST';
-const SSBO_QuadList = 'SSBO_QUAD_LIST';
-const SSBO_BlockFace = 'SSBO_BLOCK_FACE';
-
-const UBO_SceneSettings = 'UBO_SCENE_SETTINGS';
 
 const SceneSettingsBufferSize = 128;
 let SceneSettingsBuffer: BuiltStreamingBuffer;
@@ -938,7 +929,7 @@ export function setupShader(dimension : NamespacedId) {
             .workGroups(1, 1, 1)
         )
         .stage(Stage.SCREEN_SETUP)
-        .ssbo(SSBO_Scene, sceneBuffer)
+        .ssbo(SSBO.Scene, sceneBuffer)
         .build();
 
     registerShader(Stage.SCREEN_SETUP, new Compute('histogram-clear')
@@ -952,8 +943,8 @@ export function setupShader(dimension : NamespacedId) {
                 .workGroups(8, 8, 8)
             )
             .stage(Stage.SCREEN_SETUP)
-            .ssbo(SSBO_VxGI, shLpvBuffer)
-            .ssbo(SSBO_VxGI_alt, shLpvBuffer_alt)
+            .ssbo(SSBO.VxGI, shLpvBuffer)
+            .ssbo(SSBO.VxGI_alt, shLpvBuffer_alt)
             .build();
     }
 
@@ -968,7 +959,7 @@ export function setupShader(dimension : NamespacedId) {
                 .workGroups(groupCount, groupCount, groupCount)
             )
             .stage(Stage.PRE_RENDER)
-            .ssbo(SSBO_LightList, lightListBuffer)
+            .ssbo(SSBO.LightList, lightListBuffer)
             .build();
     }
 
@@ -977,10 +968,10 @@ export function setupShader(dimension : NamespacedId) {
             .workGroups(1, 1, 1)
         )
         .stage(Stage.PRE_RENDER)
-        .ssbo(SSBO_Scene, sceneBuffer)
-        .ssbo(SSBO_LightList, lightListBuffer)
-        .ssbo(SSBO_QuadList, quadListBuffer)
-        .ubo(UBO_SceneSettings, SceneSettingsBuffer)
+        .ssbo(SSBO.Scene, sceneBuffer)
+        .ssbo(SSBO.LightList, lightListBuffer)
+        .ssbo(SSBO.QuadList, quadListBuffer)
+        .ubo(UBO.SceneSettings, SceneSettingsBuffer)
         .build();
 
     // IMAGE_BIT | SSBO_BIT | UBO_BIT | FETCH_BIT
@@ -995,7 +986,7 @@ export function setupShader(dimension : NamespacedId) {
             .workGroups(1, 1, 1)
         )
         .stage(Stage.PRE_RENDER)
-        .ssbo(SSBO_Scene, sceneBuffer)
+        .ssbo(SSBO.Scene, sceneBuffer)
         .build();
 
     registerBarrier(Stage.PRE_RENDER, new MemoryBarrier(SSBO_BIT));
@@ -1007,7 +998,7 @@ export function setupShader(dimension : NamespacedId) {
                 .target(0, texShadowColor)
                 .define('RENDER_SHADOW', '1')
             )
-            .ssbo(SSBO_Scene, sceneBuffer);
+            .ssbo(SSBO.Scene, sceneBuffer);
     }
 
     function shadowTerrainShader(name: string, usage: ProgramUsage) : ShaderBuilder<ObjectShader> {
@@ -1016,11 +1007,11 @@ export function setupShader(dimension : NamespacedId) {
                 .with(s => s.geometry('gbuffer/shadow-celestial.gsh')))
             .with(shader => shader
                 .define('RENDER_TERRAIN', '1'))
-            .ssbo(SSBO_LightList, lightListBuffer)
+            .ssbo(SSBO.LightList, lightListBuffer)
             .if(internal.VoxelizeBlockFaces, builder => builder
-                .ssbo(SSBO_BlockFace, blockFaceBuffer))
+                .ssbo(SSBO.BlockFace, blockFaceBuffer))
             .if(internal.VoxelizeTriangles, builder => builder
-                .ssbo(SSBO_QuadList, quadListBuffer));
+                .ssbo(SSBO.QuadList, quadListBuffer));
     }
 
     function shadowEntityShader(name: string, usage: ProgramUsage) : ShaderBuilder<ObjectShader> {
@@ -1029,7 +1020,7 @@ export function setupShader(dimension : NamespacedId) {
                 .define('RENDER_ENTITY', '1'))
             .if(internal.VoxelizeTriangles, builder => builder
                 .with(s => s.geometry('gbuffer/shadow-celestial.gsh'))
-                .ssbo(SSBO_QuadList, quadListBuffer));
+                .ssbo(SSBO.QuadList, quadListBuffer));
     }
 
     function shadowBlockerShader(layer: number) {
@@ -1078,7 +1069,7 @@ export function setupShader(dimension : NamespacedId) {
                 .workGroups(pointGroupCount, pointGroupCount, pointGroupCount)
             )
             .stage(Stage.POST_SHADOW)
-            .ssbo(SSBO_LightList, lightListBuffer)
+            .ssbo(SSBO.LightList, lightListBuffer)
             .build();
 
         registerBarrier(Stage.POST_SHADOW, new MemoryBarrier(SSBO_BIT));
@@ -1088,7 +1079,7 @@ export function setupShader(dimension : NamespacedId) {
                 .workGroups(voxelGroupCount, voxelGroupCount, voxelGroupCount)
             )
             .stage(Stage.POST_SHADOW)
-            .ssbo(SSBO_LightList, lightListBuffer)
+            .ssbo(SSBO.LightList, lightListBuffer)
             .build();
 
         if (settings.Lighting_Shadow_VoxelFill) {
@@ -1099,7 +1090,7 @@ export function setupShader(dimension : NamespacedId) {
                     .workGroups(voxelGroupCount, voxelGroupCount, voxelGroupCount)
                 )
                 .stage(Stage.POST_SHADOW)
-                .ssbo(SSBO_LightList, lightListBuffer)
+                .ssbo(SSBO.LightList, lightListBuffer)
                 .build();
 
             registerBarrier(Stage.POST_SHADOW, new MemoryBarrier(SSBO_BIT));
@@ -1109,7 +1100,7 @@ export function setupShader(dimension : NamespacedId) {
                     .workGroups(voxelGroupCount, voxelGroupCount, voxelGroupCount)
                 )
                 .stage(Stage.POST_SHADOW)
-                .ssbo(SSBO_LightList, lightListBuffer)
+                .ssbo(SSBO.LightList, lightListBuffer)
                 .build();
         }
     }
@@ -1121,8 +1112,8 @@ export function setupShader(dimension : NamespacedId) {
                 .workGroups(voxelGroupCount, voxelGroupCount, voxelGroupCount)
             )
             .stage(Stage.POST_SHADOW)
-            .ssbo(SSBO_Scene, sceneBuffer)
-            .ssbo(SSBO_LightList, lightListBuffer)
+            .ssbo(SSBO.Scene, sceneBuffer)
+            .ssbo(SSBO.LightList, lightListBuffer)
             .build();
     }
 
@@ -1211,7 +1202,7 @@ export function setupShader(dimension : NamespacedId) {
             .with(shader => shader
                 .control('gbuffer/main.tcs')
                 .eval('gbuffer/main.tes')))
-        .ubo(UBO_SceneSettings, SceneSettingsBuffer)
+        .ubo(UBO.SceneSettings, SceneSettingsBuffer)
         .build();
 
     mainShaderOpaque('hand-solid', Usage.HAND)
@@ -1239,13 +1230,13 @@ export function setupShader(dimension : NamespacedId) {
                 .vertex('gbuffer/particles.vsh')
                 .fragment('gbuffer/particles.fsh')
             )
-            .ssbo(SSBO_Scene, sceneBuffer)
+            .ssbo(SSBO.Scene, sceneBuffer)
             .if(settings.Lighting_GI_Enabled, builder => builder
-                .ssbo(SSBO_VxGI, shLpvBuffer)
-                .ssbo(SSBO_VxGI_alt, shLpvBuffer_alt))
+                .ssbo(SSBO.VxGI, shLpvBuffer)
+                .ssbo(SSBO.VxGI_alt, shLpvBuffer_alt))
             .if(internal.LightListsEnabled, builder => builder
-                .ssbo(SSBO_LightList, lightListBuffer))
-            .ubo(UBO_SceneSettings, SceneSettingsBuffer);
+                .ssbo(SSBO.LightList, lightListBuffer))
+            .ubo(UBO.SceneSettings, SceneSettingsBuffer);
     }
 
     particleShader('particle-opaque', Usage.PARTICLES)
@@ -1266,9 +1257,9 @@ export function setupShader(dimension : NamespacedId) {
             .fragment('gbuffer/weather.fsh')
             .target(0, texParticleTranslucent)
         )
-        .ssbo(SSBO_Scene, sceneBuffer)
+        .ssbo(SSBO.Scene, sceneBuffer)
         .if(internal.LightListsEnabled, builder => builder
-            .ssbo(SSBO_LightList, lightListBuffer))
+            .ssbo(SSBO.LightList, lightListBuffer))
         .build();
 
     if (internal.FloodFillEnabled) {
@@ -1280,8 +1271,8 @@ export function setupShader(dimension : NamespacedId) {
                 .define('RENDER_COMPUTE', '1')
             )
             .stage(Stage.POST_RENDER)
-            .ssbo(SSBO_Scene, sceneBuffer)
-            .ubo(UBO_SceneSettings, SceneSettingsBuffer)
+            .ssbo(SSBO.Scene, sceneBuffer)
+            .ubo(UBO.SceneSettings, SceneSettingsBuffer)
             .build();
     }
 
@@ -1303,13 +1294,13 @@ export function setupShader(dimension : NamespacedId) {
                     .define('WSGI_CASCADE', i.toString())
                 )
                 .stage(Stage.POST_RENDER)
-                .ssbo(SSBO_Scene, sceneBuffer)
-                .ssbo(SSBO_VxGI, shLpvBuffer)
-                .ssbo(SSBO_VxGI_alt, shLpvBuffer_alt)
-                .ssbo(SSBO_BlockFace, blockFaceBuffer)
+                .ssbo(SSBO.Scene, sceneBuffer)
+                .ssbo(SSBO.VxGI, shLpvBuffer)
+                .ssbo(SSBO.VxGI_alt, shLpvBuffer_alt)
+                .ssbo(SSBO.BlockFace, blockFaceBuffer)
                 .if(internal.LightListsEnabled, builder => builder
-                    .ssbo(SSBO_LightList, lightListBuffer))
-                .ubo(UBO_SceneSettings, SceneSettingsBuffer)
+                    .ssbo(SSBO.LightList, lightListBuffer))
+                .ubo(UBO.SceneSettings, SceneSettingsBuffer)
                 .build();
         }
     }
@@ -1321,7 +1312,7 @@ export function setupShader(dimension : NamespacedId) {
                 .target(0, texShadow)
             )
             .stage(Stage.POST_RENDER)
-            .ssbo(SSBO_Scene, sceneBuffer)
+            .ssbo(SSBO.Scene, sceneBuffer)
             .build();
 
         if (settings.Shadow_Filter) {
@@ -1353,15 +1344,15 @@ export function setupShader(dimension : NamespacedId) {
                 .define('TEX_SHADOW', texShadow_src)
             )
             .stage(Stage.POST_RENDER)
-            .ssbo(SSBO_Scene, sceneBuffer)
-            .ssbo(SSBO_QuadList, quadListBuffer)
-            .ssbo(SSBO_BlockFace, blockFaceBuffer)
+            .ssbo(SSBO.Scene, sceneBuffer)
+            .ssbo(SSBO.QuadList, quadListBuffer)
+            .ssbo(SSBO.BlockFace, blockFaceBuffer)
             .if(internal.LightListsEnabled, builder => builder
-                .ssbo(SSBO_LightList, lightListBuffer))
+                .ssbo(SSBO.LightList, lightListBuffer))
             .if(settings.Lighting_ReflectionMode == ReflectionModes.WorldSpace && settings.Lighting_GI_Enabled, builder => builder
-                .ssbo(SSBO_VxGI, shLpvBuffer)
-                .ssbo(SSBO_VxGI_alt, shLpvBuffer_alt))
-            .ubo(UBO_SceneSettings, SceneSettingsBuffer)
+                .ssbo(SSBO.VxGI, shLpvBuffer)
+                .ssbo(SSBO.VxGI_alt, shLpvBuffer_alt))
+            .ubo(UBO.SceneSettings, SceneSettingsBuffer)
             .build();
     }
 
@@ -1372,7 +1363,7 @@ export function setupShader(dimension : NamespacedId) {
                 .target(0, texSSAO)
             )
             .stage(Stage.POST_RENDER)
-            .ubo(UBO_SceneSettings, SceneSettingsBuffer)
+            .ubo(UBO.SceneSettings, SceneSettingsBuffer)
             .build();
 
         // registerShader(Stage.POST_RENDER, new Compute("ssao-filter-opaque")
@@ -1415,10 +1406,10 @@ export function setupShader(dimension : NamespacedId) {
             .target(1, texTransmitVL)
         )
         .stage(Stage.POST_RENDER)
-        .ssbo(SSBO_Scene, sceneBuffer)
+        .ssbo(SSBO.Scene, sceneBuffer)
         .if(internal.LightListsEnabled, builder => builder
-            .ssbo(SSBO_LightList, lightListBuffer))
-        .ubo(UBO_SceneSettings, SceneSettingsBuffer)
+            .ssbo(SSBO.LightList, lightListBuffer))
+        .ubo(UBO.SceneSettings, SceneSettingsBuffer)
         .build();
 
     registerBarrier(Stage.POST_RENDER, new MemoryBarrier(SSBO_BIT | IMAGE_BIT));
@@ -1431,15 +1422,15 @@ export function setupShader(dimension : NamespacedId) {
             .define('TEX_SSAO', 'texSSAO_final')
         )
         .stage(Stage.POST_RENDER)
-        .ssbo(SSBO_Scene, sceneBuffer)
-        .ssbo(SSBO_QuadList, quadListBuffer)
-        .ssbo(SSBO_BlockFace, blockFaceBuffer)
+        .ssbo(SSBO.Scene, sceneBuffer)
+        .ssbo(SSBO.QuadList, quadListBuffer)
+        .ssbo(SSBO.BlockFace, blockFaceBuffer)
         .if(settings.Lighting_Mode == LightingModes.ShadowMaps, builder => builder
-            .ssbo(SSBO_LightList, lightListBuffer))
+            .ssbo(SSBO.LightList, lightListBuffer))
         .if(settings.Lighting_GI_Enabled, builder => builder
-            .ssbo(SSBO_VxGI, shLpvBuffer)
-            .ssbo(SSBO_VxGI_alt, shLpvBuffer_alt))
-        .ubo(UBO_SceneSettings, SceneSettingsBuffer)
+            .ssbo(SSBO.VxGI, shLpvBuffer)
+            .ssbo(SSBO.VxGI_alt, shLpvBuffer_alt))
+        .ubo(UBO.SceneSettings, SceneSettingsBuffer)
         .build();
 
     finalFlipper.flip();
@@ -1460,13 +1451,13 @@ export function setupShader(dimension : NamespacedId) {
                 .define('TEX_SHADOW', texShadow_src)
             )
             .stage(Stage.POST_RENDER)
-            .ssbo(SSBO_Scene, sceneBuffer)
-            .ssbo(SSBO_VxGI, shLpvBuffer)
-            .ssbo(SSBO_VxGI_alt, shLpvBuffer_alt)
-            .ssbo(SSBO_LightList, lightListBuffer)
-            .ssbo(SSBO_QuadList, quadListBuffer)
-            .ssbo(SSBO_BlockFace, blockFaceBuffer)
-            .ubo(UBO_SceneSettings, SceneSettingsBuffer)
+            .ssbo(SSBO.Scene, sceneBuffer)
+            .ssbo(SSBO.VxGI, shLpvBuffer)
+            .ssbo(SSBO.VxGI_alt, shLpvBuffer_alt)
+            .ssbo(SSBO.LightList, lightListBuffer)
+            .ssbo(SSBO.QuadList, quadListBuffer)
+            .ssbo(SSBO.BlockFace, blockFaceBuffer)
+            .ubo(UBO.SceneSettings, SceneSettingsBuffer)
             .build();
     }
 
@@ -1504,10 +1495,10 @@ export function setupShader(dimension : NamespacedId) {
             .target(1, texTransmitVL)
         )
         .stage(Stage.POST_RENDER)
-        .ssbo(SSBO_Scene, sceneBuffer)
+        .ssbo(SSBO.Scene, sceneBuffer)
         .if(internal.LightListsEnabled, builder => builder
-            .ssbo(SSBO_LightList, lightListBuffer))
-        .ubo(UBO_SceneSettings, SceneSettingsBuffer)
+            .ssbo(SSBO.LightList, lightListBuffer))
+        .ubo(UBO.SceneSettings, SceneSettingsBuffer)
         .build();
 
     if (settings.Lighting_VolumetricResolution > 0) {
@@ -1527,7 +1518,7 @@ export function setupShader(dimension : NamespacedId) {
                 .target(0, texShadow)
             )
             .stage(Stage.POST_RENDER)
-            .ssbo(SSBO_Scene, sceneBuffer)
+            .ssbo(SSBO.Scene, sceneBuffer)
             .build();
 
         // if (snapshot.Shadow_Filter) {
@@ -1548,15 +1539,15 @@ export function setupShader(dimension : NamespacedId) {
             .define('TEX_SHADOW', 'texShadow')
         )
         .stage(Stage.POST_RENDER)
-        .ssbo(SSBO_Scene, sceneBuffer)
-        .ssbo(SSBO_QuadList, quadListBuffer)
-        .ssbo(SSBO_BlockFace, blockFaceBuffer)
+        .ssbo(SSBO.Scene, sceneBuffer)
+        .ssbo(SSBO.QuadList, quadListBuffer)
+        .ssbo(SSBO.BlockFace, blockFaceBuffer)
         .if(settings.Lighting_Mode == LightingModes.ShadowMaps, builder => builder
-            .ssbo(SSBO_LightList, lightListBuffer))
+            .ssbo(SSBO.LightList, lightListBuffer))
         .if(settings.Lighting_GI_Enabled, builder => builder
-            .ssbo(SSBO_VxGI, shLpvBuffer)
-            .ssbo(SSBO_VxGI_alt, shLpvBuffer_alt))
-        .ubo(UBO_SceneSettings, SceneSettingsBuffer)
+            .ssbo(SSBO.VxGI, shLpvBuffer)
+            .ssbo(SSBO.VxGI_alt, shLpvBuffer_alt))
+        .ubo(UBO.SceneSettings, SceneSettingsBuffer)
         .build();
 
     finalFlipper.flip();
@@ -1598,8 +1589,8 @@ export function setupShader(dimension : NamespacedId) {
                 .define('TEX_SRC', finalFlipper.getReadName())
             )
             .stage(Stage.POST_RENDER)
-            .ssbo(SSBO_Scene, sceneBuffer)
-            .ubo(UBO_SceneSettings, SceneSettingsBuffer)
+            .ssbo(SSBO.Scene, sceneBuffer)
+            .ubo(UBO.SceneSettings, SceneSettingsBuffer)
             .build();
 
         finalFlipper.flip();
@@ -1611,8 +1602,8 @@ export function setupShader(dimension : NamespacedId) {
             .define('TEX_SRC', finalFlipper.getReadName())
         )
         .stage(Stage.POST_RENDER)
-        .ssbo(SSBO_Scene, sceneBuffer)
-        .ubo(UBO_SceneSettings, SceneSettingsBuffer)
+        .ssbo(SSBO.Scene, sceneBuffer)
+        .ubo(UBO.SceneSettings, SceneSettingsBuffer)
         .build();
 
     registerBarrier(Stage.POST_RENDER, new MemoryBarrier(IMAGE_BIT));
@@ -1622,8 +1613,8 @@ export function setupShader(dimension : NamespacedId) {
             .workGroups(1, 1, 1)
         )
         .stage(Stage.POST_RENDER)
-        .ssbo(SSBO_Scene, sceneBuffer)
-        .ubo(UBO_SceneSettings, SceneSettingsBuffer)
+        .ssbo(SSBO.Scene, sceneBuffer)
+        .ubo(UBO.SceneSettings, SceneSettingsBuffer)
         .build();
 
     if (settings.Effect_Bloom_Enabled) {
@@ -1639,8 +1630,8 @@ export function setupShader(dimension : NamespacedId) {
             .define('TEX_SRC', finalFlipper.getReadName())
         )
         .stage(Stage.POST_RENDER)
-        .ssbo(SSBO_Scene, sceneBuffer)
-        .ubo(UBO_SceneSettings, SceneSettingsBuffer)
+        .ssbo(SSBO.Scene, sceneBuffer)
+        .ubo(UBO.SceneSettings, SceneSettingsBuffer)
         .build();
 
     finalFlipper.flip();
@@ -1686,10 +1677,10 @@ export function setupShader(dimension : NamespacedId) {
                     : "texAccumOcclusion_opaque")
             )
             .stage(Stage.POST_RENDER)
-            .ssbo(SSBO_Scene, sceneBuffer)
-            .ssbo(SSBO_LightList, lightListBuffer)
-            .ssbo(SSBO_QuadList, quadListBuffer)
-            .ubo(UBO_SceneSettings, SceneSettingsBuffer)
+            .ssbo(SSBO.Scene, sceneBuffer)
+            .ssbo(SSBO.LightList, lightListBuffer)
+            .ssbo(SSBO.QuadList, quadListBuffer)
+            .ubo(UBO.SceneSettings, SceneSettingsBuffer)
             .build();
 
         finalFlipper.flip();
@@ -1792,7 +1783,7 @@ function setupSky(sceneBuffer) {
             .target(0, texSkyTransmit)
         )
         .stage(Stage.SCREEN_SETUP)
-        .ubo(UBO_SceneSettings, SceneSettingsBuffer)
+        .ubo(UBO.SceneSettings, SceneSettingsBuffer)
         .build();
 
     new ShaderBuilder(new Composite('sky-multi-scatter')
@@ -1801,8 +1792,8 @@ function setupSky(sceneBuffer) {
             .target(0, texSkyMultiScatter)
         )
         .stage(Stage.SCREEN_SETUP)
-        .ssbo(SSBO_Scene, sceneBuffer)
-        .ubo(UBO_SceneSettings, SceneSettingsBuffer)
+        .ssbo(SSBO.Scene, sceneBuffer)
+        .ubo(UBO.SceneSettings, SceneSettingsBuffer)
         .build();
 
     new ShaderBuilder(new Composite('sky-view')
@@ -1811,8 +1802,8 @@ function setupSky(sceneBuffer) {
             .target(0, texSkyView)
         )
         .stage(Stage.PRE_RENDER)
-        .ssbo(SSBO_Scene, sceneBuffer)
-        .ubo(UBO_SceneSettings, SceneSettingsBuffer)
+        .ssbo(SSBO.Scene, sceneBuffer)
+        .ubo(UBO.SceneSettings, SceneSettingsBuffer)
         .build();
 
     new ShaderBuilder(new Composite('sky-irradiance')
@@ -1822,8 +1813,8 @@ function setupSky(sceneBuffer) {
             .blendFunc(0, Func.SRC_ALPHA, Func.ONE_MINUS_SRC_ALPHA, Func.ONE, Func.ZERO)
         )
         .stage(Stage.PRE_RENDER)
-        .ssbo(SSBO_Scene, sceneBuffer)
-        .ubo(UBO_SceneSettings, SceneSettingsBuffer)
+        .ssbo(SSBO.Scene, sceneBuffer)
+        .ubo(UBO.SceneSettings, SceneSettingsBuffer)
         .build();
 }
 
@@ -1873,7 +1864,7 @@ function setupBloom(src: string, target: BuiltTexture) {
             .if(i != 0, builder => builder.with(s => s
                 .target(0, texBloom, i-1)
                 .blendFunc(0, Func.ONE, Func.ONE, Func.ONE, Func.ONE)))
-            .ubo(UBO_SceneSettings, SceneSettingsBuffer)
+            .ubo(UBO.SceneSettings, SceneSettingsBuffer)
             .build();
     }
 }

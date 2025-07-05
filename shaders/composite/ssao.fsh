@@ -61,8 +61,8 @@ void main() {
 
         #ifdef EFFECT_SSAO_RT
 //            float viewDist = length(viewPos);
-            float viewDistF = saturate(viewDist / 100.0);
-            float max_radius = mix(0.8, 4.0, viewDistF);
+            float viewDistF = saturate(viewDist / 200.0);
+            float max_radius = mix(0.8, 32.0, viewDistF);
         #else
             float distF = min(viewDist * 0.002, 1.0);
             float max_radius = mix(0.8, 8.0, distF);
@@ -124,7 +124,7 @@ void main() {
 
                 //float sampleNoLm = max(dot(viewNormal, sampleNormal), 0.0);
 
-                float weight = 1.0;// - saturate(sampleDist / max_radius);
+                float weight = 1.0 - saturate(sampleDist / max_radius);
 
                 #ifdef SSAO_TRACE_ENABLED
                     float sampleNoLm = 0.0;
@@ -155,10 +155,10 @@ void main() {
 
     //occlusion *= 2.0;
 
-    float ao = saturate(occlusion * Effect_SSAO_Strength);
+    float ao = saturate(occlusion * _pow2(Effect_SSAO_Strength));
     //ao = ao*ao;
 
-    ao = 1.0 - ao / (ao + 1.0);
+    ao = 1.0 - ao / (ao + 0.1);
 
     out_AO = ao;
 }

@@ -1,4 +1,4 @@
-void sample_AllPointLights(inout vec3 diffuse, inout vec3 specular, const in vec3 localPos, const in vec3 localGeoNormal, const in vec3 localTexNormal, const in vec3 albedo, const in float f0_metal, const in float roughL) {
+void sample_AllPointLights(inout vec3 diffuse, inout vec3 specular, const in vec3 localPos, const in vec3 localGeoNormal, const in vec3 localTexNormal, const in vec3 albedo, const in float f0_metal, const in float roughL, const in float sss) {
     vec3 localViewDir = -normalize(localPos);
     float NoVm = max(dot(localTexNormal, localViewDir), 0.0);
 
@@ -42,18 +42,21 @@ void sample_AllPointLights(inout vec3 diffuse, inout vec3 specular, const in vec
         vec3 sampleDir = fragToLight / sampleDist;
         vec3 lightDir = sampleDir;
 
-        float geo_facing = step(0.0, dot(localGeoNormal, sampleDir));
+        float geo_facing = 1.0;//step(0.0, dot(localGeoNormal, sampleDir));
+        float bias = offsetBias + sss;
 
-        float lightShadow = geo_facing * sample_PointLight(-fragToLight, lightSize, lightRange, offsetBias, lightIndex);
+        float lightShadow = geo_facing * sample_PointLight(-fragToLight, lightSize, lightRange, bias, lightIndex);
 
+        float NoL = dot(localTexNormal, lightDir);
+        float NoLm = max(NoL, 0.0);
 
+        float sss_NoLm = max((NoLm + sss) / (1.0 + sss), 0.0);
 
         vec3 H = normalize(lightDir + localViewDir);
 
         float LoHm = max(dot(lightDir, H), 0.0);
-        float NoLm = max(dot(localTexNormal, lightDir), 0.0);
 
-        float D = NoLm * SampleLightDiffuse(NoVm, NoLm, LoHm, roughL);
+        float D = sss_NoLm * SampleLightDiffuse(NoVm, sss_NoLm, LoHm, roughL);
 
         float NoHm = max(dot(localTexNormal, H), 0.0);
 

@@ -311,10 +311,10 @@ void main() {
             }
         #endif
 
-        float sss_diffuse = max((NoL_sun + sss) / (1.0 + sss), 0.0);
+        float sss_sun_NoLm = max((NoL_sun + sss) / (1.0 + sss), 0.0);
         vec3 sss_shadow = mix(shadow_sss.rgb * step(0.0, dot(localGeoNormal, Scene_LocalLightDir)), vec3(shadow_sss.w), sss);
 
-        vec3 skyLightFinal = sunLight * sss_diffuse + moonLight * max(NoL_moon, 0.0);
+        vec3 skyLightFinal = sunLight * sss_sun_NoLm + moonLight * max(NoL_moon, 0.0);
 
         vec3 skyLightDiffuse = skyLightFinal * sss_shadow * SampleLightDiffuse(NoVm, NoLm, LoHm, roughL);
 
@@ -371,12 +371,17 @@ void main() {
 
             if (floodfill_isInBounds(voxelSamplePos)) {
                 vec3 floodfill_light = floodfill_sample(voxelSamplePos);
+//                #if LIGHTING_MODE == LIGHT_MODE_SHADOWS
+//                    vec3 floodfill_light = floodfill_sample(voxelSamplePos, 5.0);
+//                #else
+//                    vec3 floodfill_light = floodfill_sample(voxelSamplePos);
+//                #endif
 
                 #if LIGHTING_MODE == LIGHT_MODE_LPV
                     float floodfill_FadeF = floodfill_getFade(voxelPos);
                     blockLighting = mix(blockLighting, floodfill_light, floodfill_FadeF);
                 #else
-                    blockLighting += floodfill_light;
+                    blockLighting += floodfill_light * (1.0/15.0);
                 #endif
             }
         #endif
@@ -397,7 +402,7 @@ void main() {
         vec3 specular = vec3(0.0);
 
         #if LIGHTING_MODE == LIGHT_MODE_SHADOWS
-            sample_AllPointLights(diffuse, specular, localPos, localGeoNormal, localTexNormal, albedo.rgb, f0_metal, roughL);
+            sample_AllPointLights(diffuse, specular, localPos, localGeoNormal, localTexNormal, albedo.rgb, f0_metal, roughL, sss);
         #endif
 
         if (hasTexNormal) {

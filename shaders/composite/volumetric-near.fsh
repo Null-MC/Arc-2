@@ -259,7 +259,7 @@ void main() {
         float waterDepth = EPSILON;
         vec3 shadowSample = vec3(1.0);//vec3(smoothstep(0.0, 0.6, Scene_SkyBrightnessSmooth));
         #ifdef SHADOWS_ENABLED
-            const float shadowRadius = 4.0;//*shadowPixelSize;
+            const float shadowRadius = 8.0;// 0.02*shadowPixelSize;
 
             //vec3 shadowViewPos = fma(shadowViewStep, vec3(iF), shadowViewStart);
             vec3 shadowViewPos = mix(shadowViewStart, shadowViewEnd, stepF);
@@ -267,14 +267,19 @@ void main() {
             int shadowCascade;
             vec3 shadowPos = GetShadowSamplePos(shadowViewPos, shadowRadius, shadowCascade);
 
-            float avg_depth = textureLod(texShadowBlocker, vec3(shadowPos.xy, shadowCascade), 0).r;
-            float blockerDistance = max(shadowPos.z - avg_depth, 0.0) * GetShadowRange(shadowCascade);
-            vec2 pixelRadius = GetPixelRadius(blockerDistance / SHADOW_PENUMBRA_SCALE, shadowCascade);
-            //pixelRadius = clamp(pixelRadius, vec2(minShadowPixelRadius), maxPixelRadius);
-            shadowPos.xy += (hash23(vec3(gl_FragCoord.xy, i + ap.time.frames)) - 0.5) * pixelRadius;
+            if (shadowCascade >= 0) {
+                float avg_depth = textureLod(texShadowBlocker, vec3(shadowPos.xy, shadowCascade), 0).r;
+                float blockerDistance = max(shadowPos.z - avg_depth, 0.0) * GetShadowRange(shadowCascade);
+                vec2 pixelRadius = GetPixelRadius(blockerDistance / SHADOW_PENUMBRA_SCALE, shadowCascade);
+                //pixelRadius = clamp(pixelRadius, vec2(minShadowPixelRadius), maxPixelRadius);
+                shadowPos.xy += (hash23(vec3(gl_FragCoord.xy, i + ap.time.frames)) - 0.5) * pixelRadius;
 
-            shadowSample *= SampleShadowColor(shadowPos, shadowCascade, waterDepth);
-            waterDepth = max(waterDepth, EPSILON);
+                shadowSample *= SampleShadowColor(shadowPos, shadowCascade, waterDepth);
+                waterDepth = max(waterDepth, EPSILON);
+            }
+            else {
+                shadowSample = vec3(0.0);
+            }
         #endif
 
         vec3 sunTransmit, moonTransmit;
@@ -434,7 +439,16 @@ void main() {
             vec3 voxelPos = voxel_GetBufferPosition(sampleLocalPos);
 
             if (floodfill_isInBounds(voxelPos)) {
-                vec3 blockLight = floodfill_sample(voxelPos);
+//                #if LIGHTING_MODE == LIGHT_MODE_SHADOWS
+//                    vec3 blockLight = floodfill_sampleCurve(voxelPos, 5.0);
+//                #else
+                    vec3 blockLight = floodfill_sample(voxelPos);
+//                #endif
+
+                #if LIGHTING_MODE != LIGHT_MODE_LPV
+                    blockLight *= (1.0/15.0);
+                #endif
+
                 sampleLit += phaseIso * blockLight;
             }
         #endif

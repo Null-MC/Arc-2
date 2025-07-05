@@ -5,11 +5,11 @@ struct lpvShVoxel {  // 48
 const lpvShVoxel voxel_empty = lpvShVoxel(uvec2[](uvec2(0u), uvec2(0u), uvec2(0u), uvec2(0u), uvec2(0u), uvec2(0u)));
 
 
-layout(binding = 1) buffer shLpvBuffer {
+layout(binding = SSBO_VXGI) buffer shLpvBuffer {
     lpvShVoxel SH_LPV[];
 };
 
-layout(binding = 2) buffer shLpvBuffer_alt {
+layout(binding = SSBO_VXGI_ALT) buffer shLpvBuffer_alt {
     lpvShVoxel SH_LPV_alt[];
 };
 

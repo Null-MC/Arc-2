@@ -292,7 +292,15 @@ declare class TextureBarrier implements Barrier {
   constructor();
 }
 
-declare class ObjectShader {
+interface Shader<T> {
+    ssbo(index: number, buf: BuiltBuffer | undefined): T;
+    ubo(index: number, buf: BuiltBuffer | undefined): T;
+    define(key: string, value: string): T;
+
+    build(): BuiltObjectShader;
+}
+
+declare class ObjectShader implements Shader<ObjectShader> {
   constructor(name: string, usage: ProgramUsage);
 
   vertex(loc: string): ObjectShader;
@@ -319,7 +327,7 @@ declare class ObjectShader {
   build(): BuiltObjectShader;
 }
 
-declare class Composite {
+declare class Composite implements Shader<Composite> {
   constructor(name: string);
 
   vertex(loc: string): Composite;
@@ -346,7 +354,7 @@ declare class Composite {
   build(): PostPass;
 }
 
-declare class Compute {
+declare class Compute implements Shader<Compute> {
   constructor(name: string);
 
   location(loc: string): Compute;

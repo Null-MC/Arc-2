@@ -1,5 +1,8 @@
 import {BlockMap} from "./scripts/BlockMap";
-import {TagBuilder, BufferFlipper, setLightColorEx, StreamBufferBuilder} from "./scripts/helpers";
+import {BufferFlipper} from "./scripts/BufferFlipper";
+import {StreamBufferBuilder} from "./scripts/StreamBufferBuilder";
+import {ShaderBuilder} from "./scripts/ShaderBuilder";
+import {TagBuilder, setLightColorEx} from "./scripts/helpers";
 import {LightingModes, ReflectionModes, ShaderSettings} from "./scripts/settings";
 
 
@@ -933,6 +936,15 @@ export function setupShader(dimension : NamespacedId) {
         .build());
 
     if (settings.Lighting_GI_Enabled) {
+        // new ShaderBuilder<Compute>(new Compute("wsgi-clear")
+        //         .location("setup/wsgi-clear.csh")
+        //         .workGroups(8, 8, 8)
+        //     )
+        //     .usage(Stage.SCREEN_SETUP)
+        //     .ssbo('SSBO_VXGI', shLpvBuffer)
+        //     .ssbo('SSBO_VXGI_ALT', shLpvBuffer_alt)
+        //     .build();
+
         registerShader(Stage.SCREEN_SETUP, new Compute("wsgi-clear")
             .location("setup/wsgi-clear.csh")
             .workGroups(8, 8, 8)

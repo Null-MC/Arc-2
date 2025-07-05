@@ -314,11 +314,13 @@ vec3 trace_GI(const in vec3 traceOrigin, const in vec3 traceDir, const in int fa
 			float hit_f0_metal = hit_specularData.g;
 			float hit_porosity = mat_porosity(hit_specularData.b, hit_roughness, hit_f0_metal);
 			float hit_emission = mat_emission(hit_specularData);
+			float hit_sss = mat_sss(hit_specularData.b);
 		#else
 			//vec3 hit_localTexNormal = localGeoNormal;
 			float hit_roughness = 0.92;
 			float hit_f0_metal = 0.0;
 			float hit_porosity = 1.0;
+			float hit_sss = 0.0;
 
 			float hit_emission = iris_getEmission(blockId) / 15.0;
 		#endif
@@ -418,7 +420,7 @@ vec3 trace_GI(const in vec3 traceOrigin, const in vec3 traceDir, const in int fa
 
 		#if LIGHTING_MODE == LIGHT_MODE_SHADOWS
 			vec3 specular;
-			sample_AllPointLights(hit_diffuse, specular, hit_localPos, hitNormal, hitNormal, albedo, hit_f0_metal, hit_roughL);
+			sample_AllPointLights(hit_diffuse, specular, hit_localPos, hitNormal, hitNormal, albedo, hit_f0_metal, hit_roughL, hit_sss);
 		#elif LIGHTING_MODE == LIGHT_MODE_RT //&& defined(FALSE)
 			// TODO: pick a random light and sample it?
 			ivec3 lightBinPos = ivec3(floor(hit_voxelPos / LIGHT_BIN_SIZE));

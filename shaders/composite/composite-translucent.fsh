@@ -406,7 +406,7 @@ void main() {
         vec3 specular = vec3(0.0);
 
         #if LIGHTING_MODE == LIGHT_MODE_SHADOWS
-            sample_AllPointLights(diffuse, specular, localPosTrans, localGeoNormal, localTexNormal, albedo.rgb, f0_metal, roughL);
+            sample_AllPointLights(diffuse, specular, localPosTrans, localGeoNormal, localTexNormal, albedo.rgb, f0_metal, roughL, sss);
         #endif
 
         // reflections

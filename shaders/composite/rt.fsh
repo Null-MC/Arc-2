@@ -431,11 +431,13 @@ void main() {
                     float reflect_f0_metal = reflect_specularData.g;
                     float reflect_porosity = mat_porosity(reflect_specularData.b, reflect_roughness, reflect_f0_metal);
                     float reflect_emission = mat_emission(reflect_specularData);
+                    float reflect_sss = mat_sss(reflect_specularData.b);
                 #else
                     vec3 reflect_localTexNormal = localGeoNormal;
                     float reflect_roughness = 0.92;
                     float reflect_f0_metal = 0.0;
                     float reflect_porosity = 1.0;
+                    float reflect_sss = 0.0;
 
                     float reflect_emission = iris_getEmission(blockId) / 15.0;
                 #endif
@@ -517,7 +519,7 @@ void main() {
                         reflect_diffuse += GetVanillaBlockLight(reflect_lmcoord.x, occlusion);
                     }
                     else {
-                        sample_AllPointLights(reflect_diffuse, reflect_specular, reflect_localPos, reflect_geoNormal, reflect_geoNormal, reflection.rgb, reflect_f0_metal, reflect_roughL);
+                        sample_AllPointLights(reflect_diffuse, reflect_specular, reflect_localPos, reflect_geoNormal, reflect_geoNormal, reflection.rgb, reflect_f0_metal, reflect_roughL, reflect_sss);
                     }
                 #elif LIGHTING_MODE == LIGHT_MODE_RT
                     ivec3 lightBinPos = ivec3(floor(reflect_voxelPos / LIGHT_BIN_SIZE));

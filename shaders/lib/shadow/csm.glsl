@@ -19,15 +19,18 @@ void GetShadowProjection(const in vec3 shadowViewPos, const in float blockPaddin
     //float shadowPixel = 1.0 / shadowMapResolution;
     float blockPadding2 = 2.0 * blockPadding;
 
+    cascadeIndex = -1;
     for (int i = 0; i < SHADOW_CASCADE_COUNT; i++) {
         shadowPos = mul3(ap.celestial.projection[i], shadowViewPos).xyz;
-        cascadeIndex = i;
 
         //vec3 _padding = vec3(2.0 * GetPixelRadius(blockPadding, i), 0.0);
         vec2 cascadeSize = vec2(ap.celestial.projection[i][0].x, ap.celestial.projection[i][1].y);
         vec3 cascadePadding = vec3(blockPadding2 * cascadeSize, 0.0);
 
-        if (clamp(shadowPos, -1.0 + cascadePadding, 1.0 - cascadePadding) == shadowPos) break;
+        if (clamp(shadowPos, -1.0 + cascadePadding, 1.0 - cascadePadding) == shadowPos) {
+            cascadeIndex = i;
+            break;
+        }
     }
 }
 

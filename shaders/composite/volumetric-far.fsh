@@ -144,7 +144,9 @@ void main() {
         vec3 localPosOpaque = mul3(ap.camera.viewInv, viewPos);
         
         float len = length(localPosOpaque);
-        float far = 128.0;//ap.camera.far * 0.5;
+        float far = 256.0;//ap.camera.far * 0.5;
+
+        if (depthTrans >= 1.0 && len < far) len = far;
         
         if (len > far)
             localPosOpaque = localPosOpaque / len * far;

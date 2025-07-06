@@ -127,7 +127,9 @@ void main() {
 //        return;
 //    }
 
-    float far = 128.0;//ap.camera.far * 0.25;
+    float far = 256.0;//ap.camera.far * 0.5;
+
+    if (depth >= 1.0 && len < far) len = far;
 
     float bias = len * 0.004;
 

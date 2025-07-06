@@ -84,9 +84,10 @@ void main() {
             float depthTrans = textureLod(shadowMap, shadowCoord, 0).r;
             float waterDepth = max(depthOpaque - depthTrans, 0.0) * shadowRange;
 
-            // TODO: apply absorption!
-            if (waterDepth > 0.0)
-                shadowFinal *= exp(-4.0 * waterDepth * VL_WaterTransmit * VL_WaterDensity);
+            if (waterDepth > 0.0) {
+                // TODO: add a water mask to shadows
+                shadowFinal *= exp(-waterDepth * VL_WaterTransmit * VL_WaterDensity);
+            }
 
             // SSS
             vec4 data_a = unpackUnorm4x8(data.g);

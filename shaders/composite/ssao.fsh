@@ -6,7 +6,7 @@
 layout(location = 0) out float out_AO;
 
 uniform sampler2D solidDepthTex;
-//uniform usampler2D texDeferredOpaque_Data;
+uniform usampler2D texDeferredOpaque_Data;
 uniform sampler2D texDeferredOpaque_TexNormal;
 uniform sampler2D texBlueNoise;
 
@@ -43,9 +43,13 @@ void main() {
     //     uv_j -= jitterOffset;
     // #endif
 
+    uvec4 data = texelFetch(texDeferredOpaque_Data, iuv, 0);
+    uint blockId = data.a;
+    bool isHand = blockId == BLOCK_HAND;
+
     float occlusion = 0.0;
 
-    if (depth < 1.0) {
+    if (depth < 1.0 && !isHand) {
         #if defined(EFFECT_TAA_ENABLED) || defined(ACCUM_ENABLED)
             float dither = InterleavedGradientNoiseTime(ivec2(gl_FragCoord.xy));
             //vec2 dither = sample_blueNoise(gl_FragCoord.xy * 2.0).xy;
@@ -59,7 +63,7 @@ void main() {
         vec3 ndcPos = clipPos * 2.0 - 1.0;
 
         #ifdef EFFECT_TAA_ENABLED
-            //unjitter(ndcPos);
+            unjitter(ndcPos);
         #endif
 
         vec3 viewPos = unproject(ap.camera.projectionInv, ndcPos);
@@ -166,7 +170,7 @@ void main() {
                         float sampleDepthL = linearizeDepth(sampleDepth, ap.camera.near, ap.camera.far);
                         float traceDepthL = linearizeDepth(traceClipPos.z, ap.camera.near, ap.camera.far);
 
-                        float thickness = 1.0 + 0.2*viewDist;
+                        float thickness = 0.2 + 0.14*viewDist;
 
                         if (traceDepthL > sampleDepthL + EPSILON
                             && traceDepthL < sampleDepthL + thickness) sampleNoLm = 1.0;

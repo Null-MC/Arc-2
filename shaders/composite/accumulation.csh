@@ -121,7 +121,7 @@ void main() {
 
     float depthL = linearizeDepth(depth, ap.camera.near, ap.camera.far);
 
-    float offsetThreshold = depthL * 0.04;
+    float offsetThreshold = depthL * 0.02;
 
     float counterF = 1.0;
     if (saturate(uvLast) != uvLast) counterF = 0.0;

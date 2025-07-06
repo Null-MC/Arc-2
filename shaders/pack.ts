@@ -22,13 +22,6 @@ export function initShader(dimension : NamespacedId) {
     worldSettings.ambientOcclusionLevel = 0.0;
     worldSettings.shadowMapResolution = settings.Shadow_Resolution;
     worldSettings.cascadeCount = settings.Shadow_CascadeCount;
-    worldSettings.pointNearPlane = internal.PointLightNear;
-    worldSettings.pointFarPlane = internal.PointLightFar;
-    worldSettings.pointMaxCount = settings.Lighting_Shadow_MaxCount;
-    worldSettings.pointResolution = settings.Lighting_Shadow_Resolution;
-    // worldSettings.pointMaxUpdates = settings.Lighting_Shadow_UpdateCount;
-    // worldSettings.pointRealTime = settings.Lighting_Shadow_RealtimeCount;
-    // worldSettings.pointUpdateThreshold = settings.Lighting_Shadow_UpdateThreshold * 0.01;
     worldSettings.renderWaterOverlay = false;
     worldSettings.renderStars = false;
     worldSettings.renderMoon = false;
@@ -36,13 +29,20 @@ export function initShader(dimension : NamespacedId) {
 
     // TODO: fix hands later, for now just unbreak them
     worldSettings.mergedHandDepth = true;
+
+    pointShadowSettings.nearPlane = internal.PointLightNear;
+    pointShadowSettings.farPlane = internal.PointLightFar;
+    pointShadowSettings.maxCount = settings.Lighting_Shadow_MaxCount;
+    pointShadowSettings.resolution = settings.Lighting_Shadow_Resolution;
+    pointShadowSettings.cacheRealTimeTerrain = false;
 }
 
 function applySettings(settings : ShaderSettings, internal) {
     worldSettings.shadowMapDistance = settings.Shadow_Distance;
-    worldSettings.pointMaxUpdates = settings.Lighting_Shadow_UpdateCount;
-    worldSettings.pointRealTime = settings.Lighting_Shadow_RealtimeCount;
-    worldSettings.pointUpdateThreshold = settings.Lighting_Shadow_UpdateThreshold * 0.01;
+
+    pointShadowSettings.maxUpdates = settings.Lighting_Shadow_UpdateCount;
+    pointShadowSettings.realTimeCount = settings.Lighting_Shadow_RealtimeCount;
+    pointShadowSettings.updateThreshold = settings.Lighting_Shadow_UpdateThreshold * 0.01;
 
     if (settings.Shadow_Enabled) {
         enableShadows(settings.Shadow_Resolution, settings.Shadow_CascadeCount);
@@ -1702,9 +1702,10 @@ export function onSettingsChanged(state : WorldState) {
     const settings = new ShaderSettings();
 
     worldSettings.sunPathRotation = settings.Sky_SunAngle;
-    worldSettings.pointRealTime = settings.Lighting_Shadow_RealtimeCount;
-    worldSettings.pointMaxUpdates = settings.Lighting_Shadow_UpdateCount;
-    worldSettings.pointUpdateThreshold = settings.Lighting_Shadow_UpdateThreshold * 0.01;
+
+    pointShadowSettings.realTimeCount = settings.Lighting_Shadow_RealtimeCount;
+    pointShadowSettings.maxUpdates = settings.Lighting_Shadow_UpdateCount;
+    pointShadowSettings.updateThreshold = settings.Lighting_Shadow_UpdateThreshold * 0.01;
 
     const d = settings.Fog_Density * 0.01;
 

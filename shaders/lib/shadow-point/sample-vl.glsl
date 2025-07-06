@@ -47,7 +47,7 @@ vec3 sample_AllPointLights_VL(const in vec3 localPos, const in bool isFluid) {
         float lightShadow = sample_PointLight(-fragToLight, lightSize, lightRange, bias, lightIndex);
 
         float VoL = dot(viewDir, sampleDir);
-        float phase = saturate(getMiePhase(VoL));
+        float phase = saturate(getMiePhase(VoL, 0.4));
 
         blockLighting += BLOCK_LUX * lightShadow * phase * lightColor;
     }

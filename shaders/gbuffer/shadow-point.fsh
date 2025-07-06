@@ -61,7 +61,7 @@ void iris_emitFragment() {
     #else
         float finalDist = length(vIn.modelPos);
     #endif
-    gl_FragDepth = (finalDist - pointNearPlane) / (pointFarPlane - pointNearPlane);
+    gl_FragDepth = (finalDist - ap.point.nearPlane) / (ap.point.farPlane - ap.point.nearPlane);
 
     float alpha = iris_sampleBaseTexLod(mUV, LOD).a;
 

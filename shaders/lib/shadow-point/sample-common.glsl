@@ -2,17 +2,17 @@
     float sample_PointLightDepth(const in vec3 sampleDir, const in uint index) {
         float depth = texture(pointLight, vec4(sampleDir, index)).r;
         //float ndcDepth = depth * 2.0 - 1.0;
-        //return 2.0 * pointNearPlane * pointFarPlane / (pointFarPlane + pointNearPlane - ndcDepth * (pointFarPlane - pointNearPlane));
-        return depth * (pointFarPlane - pointNearPlane) + pointNearPlane;
+        //return 2.0 * ap.point.nearPlane * ap.point.farPlane / (ap.point.farPlane + ap.point.nearPlane - ndcDepth * (ap.point.farPlane - ap.point.nearPlane));
+        return depth * (ap.point.farPlane - ap.point.nearPlane) + ap.point.nearPlane;
     }
 #endif
 
 float sample_PointLightShadow(const in vec3 sampleDir, const in float sampleDist, const in float lightRange, in float bias, const in uint index) {
     if (sampleDist >= lightRange) return 0.0;
 
-    float depth = (sampleDist - pointNearPlane) / (pointFarPlane - pointNearPlane);
+    float depth = (sampleDist - ap.point.nearPlane) / (ap.point.farPlane - ap.point.nearPlane);
     bias *= depth;
-    depth = (sampleDist - bias - pointNearPlane) / (pointFarPlane - pointNearPlane);
+    depth = (sampleDist - bias - ap.point.nearPlane) / (ap.point.farPlane - ap.point.nearPlane);
     return texture(pointLightFiltered, vec4(sampleDir, index), depth).r;
 }
 

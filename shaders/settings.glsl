@@ -63,9 +63,6 @@ const vec3 WhiteWorld_Value = vec3(0.8);
 const float shadowMapResolution = float(SHADOW_RESOLUTION);
 const float shadowPixelSize = 1.0 / shadowMapResolution;
 
-const float pointNearPlane = POINT_LIGHT_NEAR;
-const float pointFarPlane = POINT_LIGHT_FAR;
-
 const int VL_maxSamples_near = 32;
 const int VL_maxSamples_far = 16;
 

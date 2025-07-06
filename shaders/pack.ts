@@ -113,8 +113,6 @@ function applySettings(settings : ShaderSettings, internal) {
     defineGlobally('LIGHTING_VL_RES', settings.Lighting_VolumetricResolution);
 
     //defineGlobally('POINT_LIGHT_MAX', internal.PointLightMax);
-    defineGlobally('POINT_LIGHT_NEAR', internal.PointLightNear);
-    defineGlobally('POINT_LIGHT_FAR', internal.PointLightFar);
     if (settings.Lighting_Mode == LightingModes.ShadowMaps) {
         //enableCubemapShadows(settings.Lighting_Shadow_Resolution, settings.Lighting_Shadow_MaxCount);
 

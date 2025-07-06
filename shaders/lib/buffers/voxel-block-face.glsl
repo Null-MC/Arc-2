@@ -13,6 +13,8 @@ layout(std430, binding = SSBO_BLOCK_FACE) VOXEL_BLOCK_FACE_LAYOUT buffer voxelBl
     VoxelBlockFace VoxelBlockFaceMap[];
 };
 
+const VoxelBlockFace EmptyBlockFace = VoxelBlockFace(-1u, 0u);
+
 int GetVoxelBlockFaceIndex(const in vec3 normal) {
     //return 0;
 

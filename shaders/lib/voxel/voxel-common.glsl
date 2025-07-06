@@ -23,20 +23,33 @@ vec3 voxel_getLocalPosition(vec3 voxelPos) {
     return voxelPos - GetVoxelCenter(ap.camera.pos, ap.camera.viewInv[2].xyz);
 }
 
+bool voxelCustom_isInBounds(const in ivec3 voxelPos) {
+    return clamp(voxelPos, 0, VOXEL_SIZE-1) == voxelPos;
+}
+
 bool voxel_isInBounds(const in ivec3 voxelPos) {
     #ifdef VOXEL_PROVIDED
-        return true;
+        float renderDistSq = _pow2(ap.camera.renderDistance);
+        vec3 localPos = voxel_getLocalPosition(voxelPos);
+        vec3 worldPos = localPos + ap.camera.pos;
+
+        return worldPos.y > -64 && worldPos.y < 320 && lengthSq(localPos) < renderDistSq;
     #else
-        return clamp(voxelPos, 0, VOXEL_SIZE-1) == voxelPos;
+        return voxelCustom_isInBounds(voxelPos);
     #endif
 }
 
 bool voxel_isInBounds(const in vec3 voxelPos) {
-    #ifdef VOXEL_PROVIDED
-        return true;
-    #else
-        return clamp(voxelPos, 0.5, VOXEL_SIZE-0.5) == voxelPos;
-    #endif
+    return voxel_isInBounds(ivec3(voxelPos));
+//    #ifdef VOXEL_PROVIDED
+//        float renderDistSq = _pow2(ap.camera.renderDistance);
+//        vec3 localPos = voxel_getLocalPosition(voxelPos);
+//        vec3 worldPos = localPos + ap.camera.pos;
+//
+//        return worldPos.y > -64 && worldPos.y < 320 && lengthSq(localPos) < renderDistSq;
+//    #else
+//        return clamp(voxelPos, 0.5, VOXEL_SIZE-0.5) == voxelPos;
+//    #endif
 }
 
 int voxel_GetBufferIndex(ivec3 voxelPos) {

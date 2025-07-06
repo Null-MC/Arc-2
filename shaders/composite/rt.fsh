@@ -366,7 +366,8 @@ void main() {
             vec4 reflection = vec4(0.0);
             vec3 reflect_tint = vec3(1.0);
 
-            vec2 reflect_uv, reflect_lmcoord;
+            vec2 reflect_lmcoord;
+            vec4 reflect_normalData, reflect_specularData;
             vec3 reflect_voxelPos, reflect_geoNormal;
             vec4 reflect_hitColor;
             float reflect_lod = 0.0;
@@ -375,6 +376,7 @@ void main() {
                 #ifdef LIGHTING_REFLECT_TRIANGLE
                     // WSR: per-triangle
 
+                    vec2 reflect_uv;
                     //vec2 reflect_hitCoord;
                     Quad reflect_hitQuad;
                     if (TraceReflection(localPos + 0.1*localGeoNormal, reflectLocalDir, reflect_voxelPos, reflect_uv, reflect_hitColor, reflect_hitQuad)) {
@@ -397,33 +399,48 @@ void main() {
                         vec3 e1 = normalize(quad_pos_1 - quad_pos_0);
                         vec3 e2 = normalize(quad_pos_2 - quad_pos_0);
                         reflect_geoNormal = normalize(cross(e1, e2));
+
+                        #if MATERIAL_FORMAT != MAT_NONE
+                            reflect_normalData = textureLod(blockAtlasN, reflect_uv, reflect_lod);
+                            reflect_specularData = textureLod(blockAtlasS, reflect_uv, reflect_lod);
+                        #endif
                     }
                 #else
                     // WSR: block-only
 
+                    vec2 reflect_uv;
                     vec3 reflect_traceTint;
                     VoxelBlockFace blockFace;
                     if (TraceReflection(localPos + 0.1*localGeoNormal, reflectLocalDir, reflect_traceTint, reflect_voxelPos, reflect_geoNormal, reflect_uv, blockFace)) {
-                        reflect_tint = GetBlockFaceTint(blockFace.data);
-                        reflect_lmcoord = GetBlockFaceLightMap(blockFace.data);
+                        if (blockFace.tex_id != -1u) {
+                            reflect_tint = GetBlockFaceTint(blockFace.data);
+                            reflect_lmcoord = GetBlockFaceLightMap(blockFace.data);
 
-                        iris_TextureInfo tex = iris_getTexture(blockFace.tex_id);
-                        reflect_uv = fma(reflect_uv, tex.maxCoord - tex.minCoord, tex.minCoord);
+                            iris_TextureInfo tex = iris_getTexture(blockFace.tex_id);
+                            reflect_uv = fma(reflect_uv, tex.maxCoord - tex.minCoord, tex.minCoord);
 
-                        reflect_lod = textureQueryLod(blockAtlas, reflect_uv).y;
+                            reflect_lod = textureQueryLod(blockAtlas, reflect_uv).y;
 
-                        vec3 reflectColor = textureLod(blockAtlas, reflect_uv, reflect_lod).rgb;
-                        reflection = vec4(reflectColor * reflect_traceTint, 1.0);
+                            vec3 reflectColor = textureLod(blockAtlas, reflect_uv, reflect_lod).rgb;
+                            reflection = vec4(reflectColor * reflect_traceTint, 1.0);
+
+                            #if MATERIAL_FORMAT != MAT_NONE
+                                reflect_normalData = textureLod(blockAtlasN, reflect_uv, reflect_lod);
+                                reflect_specularData = textureLod(blockAtlasS, reflect_uv, reflect_lod);
+                            #endif
+                        }
+                        else {
+                            vec3 reflectColor = RgbToLinear(vec3(0.439, 0.404, 0.322));
+
+                            reflect_tint = vec3(1.0);
+                            reflect_lmcoord = vec2(0.0);
+                            reflection = vec4(reflectColor, 1.0);
+                        }
                     }
                 #endif
             }
 
             if (reflection.a > 0.5) {
-                #if MATERIAL_FORMAT != MAT_NONE
-                    vec4 reflect_normalData = textureLod(blockAtlasN, reflect_uv, reflect_lod);
-                    vec4 reflect_specularData = textureLod(blockAtlasS, reflect_uv, reflect_lod);
-                #endif
-
                 reflection.rgb *= reflect_tint;
                 reflection.rgb = RgbToLinear(reflection.rgb);
 

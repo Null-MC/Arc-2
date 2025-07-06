@@ -208,7 +208,7 @@ void main() {
 //        cloudDensity2 = 0.0;
     #endif
 
-    const float renderDistSq = _pow2(ap.camera.renderDistance);
+    float renderDistSq = _pow2(ap.camera.renderDistance);
 
     vec3 scattering = vec3(0.0);
     vec3 transmittance = vec3(1.0);

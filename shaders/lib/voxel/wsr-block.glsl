@@ -76,6 +76,8 @@ bool TraceReflection(const in vec3 localPos, const in vec3 localDir, out vec3 ti
             uint blockId = SampleVoxelBlock(voxelPos);
         #endif
 
+        if (!voxel_isInBounds(voxelPos)) break;
+
         if (blockId > 0u) {
             if (iris_isFullBlock(blockId)) hit = true;
 
@@ -108,9 +110,14 @@ bool TraceReflection(const in vec3 localPos, const in vec3 localDir, out vec3 ti
         hitPos = currPos;
         hitNormal = -sign(localDir) * stepAxis;
 
-        int blockFaceIndex = GetVoxelBlockFaceIndex(hitNormal);
-        int blockFaceMapIndex = GetVoxelBlockFaceMapIndex(voxelPos, blockFaceIndex);
-        blockFace = VoxelBlockFaceMap[blockFaceMapIndex];
+        if (voxelCustom_isInBounds(voxelPos)) {
+            int blockFaceIndex = GetVoxelBlockFaceIndex(hitNormal);
+            int blockFaceMapIndex = GetVoxelBlockFaceMapIndex(voxelPos, blockFaceIndex);
+            blockFace = VoxelBlockFaceMap[blockFaceMapIndex];
+        }
+        else {
+            blockFace = EmptyBlockFace;
+        }
 
         if (abs(hitNormal.y) > 0.5)      hitCoord = hitPos.xz;
         else if (abs(hitNormal.z) > 0.5) hitCoord = hitPos.xy;

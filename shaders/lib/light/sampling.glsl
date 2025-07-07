@@ -42,16 +42,29 @@ float SampleLightDiffuse(const in float NoV, const in float NoL, const in float 
     return light_scatter * view_scatter / PI;
 }
 
-float D_GGX(const in float NoH, const in float a) {
-    float a2 = a * a;
-    float f = (NoH * a2 - NoH) * NoH + 1.0;
-    return a2 / (PI * f * f);
+//float D_GGX(const in float NoH, const in float roughL) {
+//    float a2 = roughL * roughL;
+//    float f = (NoH * a2 - NoH) * NoH + 1.0;
+//    return a2 / (PI * f * f);
+//}
+
+float D_GGX(float NoH, float roughL) {
+    float a = NoH * roughL;
+    float k = roughL / (1.0 - NoH * NoH + a * a);
+    return k * k * (1.0 / PI);
 }
 
-float V_SmithGGXCorrelated(float NoV, float NoL, float a) {
-    float a2 = a * a;
+float V_SmithGGXCorrelated(float NoV, float NoL, float roughL) {
+    float a2 = roughL * roughL;
     float GGXL = NoV * sqrt((-NoL * a2 + NoL) * NoL + a2);
     float GGXV = NoL * sqrt((-NoV * a2 + NoV) * NoV + a2);
+    return 0.5 / (GGXV + GGXL);
+}
+
+float V_SmithGGXCorrelatedFast(float NoV, float NoL, float roughL) {
+    //float a = roughL;
+    float GGXV = NoL * (NoV * (1.0 - roughL) + roughL);
+    float GGXL = NoV * (NoL * (1.0 - roughL) + roughL);
     return 0.5 / (GGXV + GGXL);
 }
 
@@ -60,7 +73,7 @@ float SampleLightSpecular(const in float NoL, const in float NoH, const in float
 
     float D = D_GGX(NoH, alpha);
 
-    float V = V_SmithGGXCorrelated(NoV, NoL, roughL);
+    float V = V_SmithGGXCorrelatedFast(NoV, NoL, roughL);
 
     return NoL * D * clamp(V, 0.0, 100.0);
 }

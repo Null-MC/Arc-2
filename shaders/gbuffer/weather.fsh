@@ -95,7 +95,7 @@ uniform sampler3D texFogNoise;
 
     #include "/lib/shadow-point/common.glsl"
     #include "/lib/shadow-point/sample-common.glsl"
-    #include "/lib/shadow-point/sample-particle.glsl"
+    #include "/lib/shadow-point/sample-vl.glsl"
 #endif
 
 #ifdef FLOODFILL_ENABLED
@@ -219,17 +219,18 @@ void iris_emitFragment() {
     #endif
 
     const float occlusion = 1.0;
-    vec3 blockLighting = GetVanillaBlockLight(lmcoord.x, occlusion);
+    vec3 blockLighting = phaseIso * GetVanillaBlockLight(lmcoord.x, occlusion);
 
     #if LIGHTING_MODE == LIGHT_MODE_SHADOWS
         if (shadowPoint_isInBounds(vIn.localPos)) {
-            blockLighting = sample_AllPointLights_particle(vIn.localPos);
+            const bool isInFluid = false;
+            blockLighting = sample_AllPointLights_VL(vIn.localPos, isInFluid);
         }
     #endif
 
     #ifdef FLOODFILL_ENABLED
         if (floodfill_isInBounds(voxelPos)) {
-            vec3 floodfill_light = floodfill_sample(voxelPos);
+            vec3 floodfill_light = phaseIso * floodfill_sample(voxelPos);
 
             #if LIGHTING_MODE == LIGHT_MODE_LPV
                 float floodfill_FadeF = floodfill_getFade(voxelPos);
@@ -240,7 +241,7 @@ void iris_emitFragment() {
         }
     #endif
 
-    finalColor.rgb += phaseIso * blockLighting;
+    finalColor.rgb += 0.2 * blockLighting;
 
     finalColor *= mColor;
 

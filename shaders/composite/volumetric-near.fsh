@@ -120,12 +120,13 @@ void main() {
     float len = length(localPos);
 
     vec3 waterAmbientBase = VL_WaterAmbient * Scene_SkyIrradianceUp;
+    bool isInFluid = ap.camera.fluid == 1;
 
-//    if (Scene_SkyFogDensityF < EPSILON) {
-//        outScatter = vec3(0.0);
-//        outTransmit = vec3(1.0);
-//        return;
-//    }
+    if (!isInFluid && Scene_SkyFogDensityF < EPSILON) {
+        outScatter = vec3(0.0);
+        outTransmit = vec3(1.0);
+        return;
+    }
 
     float far = 256.0;//ap.camera.far * 0.5;
 
@@ -230,20 +231,14 @@ void main() {
 
         float stepDist = length(sampleLocalPos - sampleLocalPosLast);
 
-        bool isFluid = ap.camera.fluid == 1;
-
         vec2 sample_lmcoord = vec2(0.0, 1.0);
         #ifdef VOXEL_PROVIDED
             ivec3 blockWorldPos = ivec3(floor(sampleLocalPos + ap.camera.pos));
 
-            if (isFluid) {
-    //            bool isFluid = false;
+            if (isInFluid) {
                 uvec2 blockData;
                 if (blockWorldPos.y > -64 && blockWorldPos.y < 320 && lengthSq(sampleLocalPos) < renderDistSq) {
                     blockData = iris_getBlockAtPos(blockWorldPos).xy;
-
-    //                uint blockId = blockData.x;
-    //                isFluid = iris_hasFluid(blockId) && iris_getEmission(blockId) == 0;
                 }
 
                 uint blockLightData = blockData.y;
@@ -254,8 +249,6 @@ void main() {
 
                 sample_lmcoord = saturate(blockLightInt / 240.0);
             }
-//        #else
-//            bool isFluid = ap.camera.fluid == 1;
         #endif
 
         float waterDepth = EPSILON;
@@ -301,7 +294,7 @@ void main() {
 
         float vs_shadowF = 1.0;
         float sampleDensity = VL_WaterDensity;
-        if (!isFluid) {
+        if (!isInFluid) {
             sampleDensity = GetSkyDensity(sampleLocalPos);
 
             #ifdef SKY_CLOUDS_ENABLED
@@ -374,7 +367,7 @@ void main() {
 
         #ifdef LIGHTING_VL_SHADOWS
             #if LIGHTING_MODE == LIGHT_MODE_SHADOWS
-                vec3 blockLight = sample_AllPointLights_VL(sampleLocalPos, isFluid);
+                vec3 blockLight = sample_AllPointLights_VL(sampleLocalPos, isInFluid);
                 sampleLit += blockLight;
             #elif LIGHTING_MODE == LIGHT_MODE_RT
                 vec3 voxelPos = voxel_GetBufferPosition(sampleLocalPos);
@@ -468,7 +461,7 @@ void main() {
 
         sampleLit *= 15.0;
 
-        if (!isFluid) {
+        if (!isInFluid) {
             vec3 skyPos = getSkyPosition(sampleLocalPos);
 
             float mieDensity = sampleDensity + EPSILON;

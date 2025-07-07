@@ -17,6 +17,10 @@ uniform usampler2D texDeferredOpaque_Data;
 #include "/lib/common.glsl"
 #include "/lib/buffers/scene.glsl"
 
+#if defined(SHADOW_VOXEL_TEST) && !defined(VOXEL_PROVIDED)
+    #include "/lib/buffers/voxel-block.glsl"
+#endif
+
 #include "/lib/noise/ign.glsl"
 #include "/lib/noise/hash.glsl"
 
@@ -25,6 +29,16 @@ uniform usampler2D texDeferredOpaque_Data;
 
 #include "/lib/shadow/csm.glsl"
 #include "/lib/shadow/sample.glsl"
+
+#ifdef SHADOW_VOXEL_TEST
+    #include "/lib/voxel/voxel-common.glsl"
+    #include "/lib/voxel/voxel-sample.glsl"
+    #include "/lib/voxel/dda.glsl"
+#endif
+
+#ifdef SHADOW_DISTORTION_ENABLED
+    #include "/lib/shadow/distorted.glsl"
+#endif
 
 #ifdef EFFECT_TAA_ENABLED
     #include "/lib/taa_jitter.glsl"
@@ -61,32 +75,71 @@ void main() {
 
         shadowFinal *= step(0.0, dot(localGeoNormal, Scene_LocalLightDir));
 
+
+        bool voxelHit = false;
+        #ifdef SHADOW_VOXEL_TEST
+            vec3 sampleLocalPos = localPos + 0.08 * localGeoNormal;
+            vec3 voxelPos = voxel_GetBufferPosition(sampleLocalPos);
+
+            vec3 stepSizes, nextDist, stepAxis;
+            dda_init(stepSizes, nextDist, voxelPos, Scene_LocalLightDir);
+
+            vec3 currPos = voxelPos;
+            for (int i = 0; i < 4; i++) {
+                vec3 step = dda_step(stepAxis, nextDist, stepSizes, Scene_LocalLightDir);
+
+                ivec3 traceVoxelPos = ivec3(floor(currPos + 0.5*step));
+                if (!voxel_isInBounds(traceVoxelPos)) break;
+
+                uint blockId = SampleVoxelBlock(traceVoxelPos);
+                if (blockId != -1u) {
+                    bool isFullBlock = iris_isFullBlock(blockId);
+                    if (isFullBlock) {
+                        voxelHit = true;
+                        shadowFinal = vec3(0.0);
+                        break;
+                    }
+                }
+
+                currPos += step;
+            }
+        #endif
+
+
         vec3 shadowViewPos = mul3(ap.celestial.view, localPos);
 
         int shadowCascade;
         vec3 shadowPos = GetShadowSamplePos(shadowViewPos, Shadow_MaxPcfSize, shadowCascade);
 
+        #ifdef SHADOW_DISTORTION_ENABLED
+            shadowPos = shadowPos * 2.0 - 1.0;
+            shadowPos = shadowDistort(shadowPos);
+            shadowPos = shadowPos * 0.5 + 0.5;
+        #endif
+
         float dither = GetShadowDither();
         
-        if (saturate(shadowPos) == shadowPos) {
-            #ifdef SHADOW_PCSS_ENABLED
-                shadowFinal *= SampleShadowColor_PCSS(shadowPos, shadowCascade);
-            #else
-                float bias = GetShadowBias(shadowCascade);
-                shadowPos.z -= bias;
+        if (saturate(shadowPos) == shadowPos && !voxelHit) {
+            if (lengthSq(shadowFinal) > 0.0) {
+                #ifdef SHADOW_PCSS_ENABLED
+                    shadowFinal *= SampleShadowColor_PCSS(shadowPos, shadowCascade);
+                #else
+                    float bias = GetShadowBias(shadowCascade);
+                    shadowPos.z -= bias;
 
-                shadowFinal *= SampleShadowColor(shadowPos, shadowCascade);
-            #endif
+                    shadowFinal *= SampleShadowColor(shadowPos, shadowCascade);
+                #endif
 
-            float shadowRange = GetShadowRange(shadowCascade);
-            vec3 shadowCoord = vec3(shadowPos.xy, shadowCascade);
-            float depthOpaque = textureLod(solidShadowMap, shadowCoord, 0).r;
-            float depthTrans = textureLod(shadowMap, shadowCoord, 0).r;
-            float waterDepth = max(depthOpaque - depthTrans, 0.0) * shadowRange;
+                float shadowRange = GetShadowRange(shadowCascade);
+                vec3 shadowCoord = vec3(shadowPos.xy, shadowCascade);
+                float depthOpaque = textureLod(solidShadowMap, shadowCoord, 0).r;
+                float depthTrans = textureLod(shadowMap, shadowCoord, 0).r;
+                float waterDepth = max(depthOpaque - depthTrans, 0.0) * shadowRange;
 
-            if (waterDepth > 0.0) {
-                // TODO: add a water mask to shadows
-                shadowFinal *= exp(-waterDepth * VL_WaterTransmit * VL_WaterDensity);
+                if (waterDepth > 0.0) {
+                    // TODO: add a water mask to shadows
+                    shadowFinal *= exp(-waterDepth * VL_WaterTransmit * VL_WaterDensity);
+                }
             }
 
             // SSS
@@ -103,6 +156,12 @@ void main() {
 //                shadowViewPos.z += sssDist;
 
                 shadowPos = GetShadowSamplePos(shadowViewPos, sssRadius, shadowCascade);
+
+                #ifdef SHADOW_DISTORTION_ENABLED
+                    shadowPos = shadowPos * 2.0 - 1.0;
+                    shadowPos = shadowDistort(shadowPos);
+                    shadowPos = shadowPos * 0.5 + 0.5;
+                #endif
 
                 vec2 sssRadiusFinal = GetPixelRadius(sssRadius, shadowCascade);
                 sssFinal = SampleShadow_PCF(shadowPos, shadowCascade, minOf(sssRadiusFinal), sss);

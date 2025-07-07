@@ -127,6 +127,9 @@ function applySettings(settings : ShaderSettings, internal) {
             defineGlobally1('LIGHTING_SHADOW_BIN_ENABLED');
         if (settings.Lighting_Shadow_VoxelFill)
             defineGlobally1('LIGHTING_SHADOW_VOXEL_FILL');
+
+        if (worldSettings.cascadeCount == 1)
+            defineGlobally1('SHADOW_DISTORTION_ENABLED');
     }
 
     if (settings.Lighting_VxGI_Enabled) {
@@ -388,7 +391,8 @@ export function setupShader(dimension : NamespacedId) {
     setLightColorEx('#918f34', 'shroomlight');
     setLightColorEx('#28aaeb', 'soul_torch', 'soul_wall_torch', 'soul_campfire');
     setLightColorEx('#f3b549', 'torch', 'wall_torch');
-    setLightColorEx('#6e0000', 'vault');
+    setLightColorEx('#a61914', 'trial_spawner');
+    setLightColorEx('#dfb906', 'vault');
     setLightColorEx('#63e53c', 'verdant_froglight');
 
     setLightColorEx("#322638", "tinted_glass");

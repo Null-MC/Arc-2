@@ -64,7 +64,8 @@ void sample_AllPointLights(inout vec3 diffuse, inout vec3 specular, const in vec
         float NoHm = max(dot(localTexNormal, H), 0.0);
 
         const bool isUnderWater = false;
-        vec3 F = material_fresnel(albedo, f0_metal, roughL, NoLm, isUnderWater);
+        float VoHm = max(dot(localViewDir, H), 0.0);
+        vec3 F = material_fresnel(albedo, f0_metal, roughL, VoHm, isUnderWater);
         float S = SampleLightSpecular(NoLm, NoHm, NoVm, roughL);
 
 
@@ -112,7 +113,8 @@ void sample_AllPointLights(inout vec3 diffuse, inout vec3 specular, const in vec
             float NoHm = max(dot(localTexNormal, H), 0.0);
 
             const bool isUnderWater = false;
-            vec3 F = material_fresnel(albedo, f0_metal, roughL, NoLm, isUnderWater);
+            float VoHm = max(dot(localViewDir, H), 0.0);
+            vec3 F = material_fresnel(albedo, f0_metal, roughL, VoHm, isUnderWater);
             float S = SampleLightSpecular(NoLm, NoHm, NoVm, roughL);
 
 

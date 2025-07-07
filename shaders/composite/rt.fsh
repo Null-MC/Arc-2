@@ -58,7 +58,9 @@ in vec2 uv;
 
 #include "/lib/common.glsl"
 
-#include "/lib/buffers/voxel-block.glsl"
+#ifndef VOXEL_PROVIDED
+    #include "/lib/buffers/voxel-block.glsl"
+#endif
 
 #if LIGHTING_REFLECT_MODE == REFLECT_MODE_WSR
     #include "/lib/buffers/voxel-block-face.glsl"
@@ -479,20 +481,51 @@ void main() {
                 reflect_roughness = sqrt(reflect_roughL);
 
                 #ifdef SHADOWS_ENABLED
+                    float reflect_shadow = 1.0;
+
+                    #ifdef SHADOW_VOXEL_TEST
+                        vec3 currPos = reflect_voxelPos + 0.08 * reflect_geoNormal;
+//                        vec3 sampleLocalPos = localPos + 0.08 * localGeoNormal;
+//                        vec3 voxelPos = voxel_GetBufferPosition(sampleLocalPos);
+
+                        vec3 stepSizes, nextDist, stepAxis;
+                        dda_init(stepSizes, nextDist, currPos, Scene_LocalLightDir);
+
+                        for (int i = 0; i < 4; i++) {
+                            vec3 step = dda_step(stepAxis, nextDist, stepSizes, Scene_LocalLightDir);
+
+                            ivec3 traceVoxelPos = ivec3(floor(currPos + 0.5*step));
+                            if (!voxel_isInBounds(traceVoxelPos)) break;
+
+                            uint blockId = SampleVoxelBlock(traceVoxelPos);
+                            if (blockId != -1u) {
+                                bool isFullBlock = iris_isFullBlock(blockId);
+                                if (isFullBlock) {
+                                    reflect_shadow = 0.0;
+                                    break;
+                                }
+                            }
+
+                            currPos += step;
+                        }
+                    #endif
+
                     int reflect_shadowCascade;
                     vec3 reflect_shadowViewPos = mul3(ap.celestial.view, reflect_localPos);
                     //reflect_shadowViewPos.z += 0.2;
-                    vec3 reflect_shadowPos = GetShadowSamplePos(reflect_shadowViewPos, 0.0, reflect_shadowCascade);
+                    const float shadowPadding = 2.0;
+                    vec3 reflect_shadowPos = GetShadowSamplePos(reflect_shadowViewPos, shadowPadding, reflect_shadowCascade);
+
                     reflect_shadowPos.z -= GetShadowBias(reflect_shadowCascade);
-                    float reflect_shadow = SampleShadow(reflect_shadowPos, reflect_shadowCascade);
+                    reflect_shadow *= SampleShadow(reflect_shadowPos, reflect_shadowCascade);
                 #else
                     float reflect_shadow = 1.0;
                 #endif
 
-                vec3 H = normalize(Scene_LocalLightDir + -reflectLocalDir);
+                vec3 reflect_H = normalize(Scene_LocalLightDir + -reflectLocalDir);
 
                 float reflect_NoLm = max(dot(reflect_localTexNormal, Scene_LocalLightDir), 0.0);
-                float reflect_LoHm = max(dot(Scene_LocalLightDir, H), 0.0);
+                float reflect_LoHm = max(dot(Scene_LocalLightDir, reflect_H), 0.0);
                 float reflect_NoVm = max(dot(reflect_localTexNormal, -reflectLocalDir), 0.0);
 
                 float NoL_sun = dot(reflect_localTexNormal, Scene_LocalSunDir);
@@ -655,9 +688,10 @@ void main() {
                 #endif
 
                 const bool reflect_isWet = false;
-                vec3 reflect_view_F = material_fresnel(reflection.rgb, reflect_f0_metal, reflect_roughL, reflect_NoVm, reflect_isWet);
+                float reflect_VoHm = max(dot(-reflectLocalDir, reflect_H), 0.0);
+                vec3 reflect_view_F = material_fresnel(reflection.rgb, reflect_f0_metal, reflect_roughL, reflect_VoHm, reflect_isWet);
 
-                float reflect_NoHm = max(dot(reflect_localTexNormal, H), 0.0);
+                float reflect_NoHm = max(dot(reflect_localTexNormal, reflect_H), 0.0);
                 float reflect_sunS = SampleLightSpecular(reflect_NoLm, reflect_NoHm, reflect_NoVm, reflect_roughL);
                 reflect_specular += reflect_skyLight * reflect_shadow * reflect_sunS;// * vec3(1,0,0);
 

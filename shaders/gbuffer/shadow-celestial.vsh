@@ -58,6 +58,10 @@ out VertexData2 {
 
 #include "/lib/lightmap/lmcoord.glsl"
 
+#ifdef SHADOW_DISTORTION_ENABLED
+    #include "/lib/shadow/distorted.glsl"
+#endif
+
 
 void iris_emitVertex(inout VertexData data) {
     vec3 shadowViewPos = mul3(iris_modelViewMatrix, data.modelPos.xyz);
@@ -85,6 +89,10 @@ void iris_emitVertex(inout VertexData data) {
     #endif
 
     data.clipPos = iris_projectionMatrix * vec4(shadowViewPos, 1.0);
+
+    #ifdef SHADOW_DISTORTION_ENABLED
+        data.clipPos.xyz = shadowDistort(data.clipPos.xyz);
+    #endif
 
     if (iris_hasTag(data.blockId, TAG_CARPET)) data.clipPos = vec4(-10.0);
 

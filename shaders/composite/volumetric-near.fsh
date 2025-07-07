@@ -261,7 +261,7 @@ void main() {
         float waterDepth = EPSILON;
         vec3 shadowSample = vec3(1.0);//vec3(smoothstep(0.0, 0.6, Scene_SkyBrightnessSmooth));
         #ifdef SHADOWS_ENABLED
-            const float shadowRadius = 8.0;// 0.02*shadowPixelSize;
+            const float shadowRadius = 2.0;// 0.02*shadowPixelSize;
 
             //vec3 shadowViewPos = fma(shadowViewStep, vec3(iF), shadowViewStart);
             vec3 shadowViewPos = mix(shadowViewStart, shadowViewEnd, stepF);

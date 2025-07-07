@@ -16,14 +16,11 @@ float GetLightAttenuation_invSq(const in float lightDist, const in float lightSi
 }
 
 float GetLightAttenuation(const in float lightDist, const in float lightRange, const in float lightSize) {
-    //return saturate(1.0 - _pow2(lightDist) / _pow2(lightRange));
+    float linear = GetLightAttenuation_Linear(lightDist, lightRange);
+    float invSq = GetLightAttenuation_invSq(max(lightDist-lightSize,0.0), lightSize);
 
-    //return GetLightAttenuation_Linear(lightDist, lightRange);
-    return GetLightAttenuation_invSq(max(lightDist-lightSize,0.0), lightSize);
-
-//    float linear = GetLightAttenuation_Linear(lightDist, lightRange);
-//    float inv_sq = GetLightAttenuation_invSq(lightDist);
-//    return min(inv_sq, linear);
+    float f = saturate(lightDist / lightRange);
+    return mix(invSq, linear, f);
 }
 
 float GetLightAttenuation(const in float lightDist, const in float lightRange) {

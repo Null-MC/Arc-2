@@ -370,7 +370,7 @@ vec3 trace_GI(const in vec3 traceOrigin, const in vec3 traceDir, const in int fa
 
 		vec3 hit_sunTransmit, hit_moonTransmit;
 		GetSkyLightTransmission(hit_localPos, hit_sunTransmit, hit_moonTransmit);
-		vec3 skyLight = SUN_LUX  * hit_sunTransmit  * max(NoL_sun, 0.0)
+		vec3 skyLight = SUN_LUX  * hit_sunTransmit  * max(NoL_sun, 0.0) * Scene_SunColor
 					  + MOON_LUX * hit_moonTransmit * max(NoL_moon, 0.0);
 
 //		#if defined(VL_SELF_SHADOW) && defined(SKY_CLOUDS_ENABLED)
@@ -403,10 +403,10 @@ vec3 trace_GI(const in vec3 traceOrigin, const in vec3 traceDir, const in int fa
 //				skyLightF *= exp(-VL_ShadowTransmit * shadowDensity);
 //		#endif
 
-		float hit_NoLm = max(dot(hitNormal, Scene_LocalLightDir), 0.0);
+		//float hit_NoLm = max(dot(hitNormal, Scene_LocalLightDir), 0.0);
 
 		vec3 hit_diffuse = skyLight * skyLightF * hit_shadow;
-		hit_diffuse *= hit_NoLm; //SampleLightDiffuse(hit_NoVm, hit_NoLm, hit_LoHm, hit_roughL);
+		//hit_diffuse *= hit_NoLm; //SampleLightDiffuse(hit_NoVm, hit_NoLm, hit_LoHm, hit_roughL);
 
 		#ifdef LIGHTING_GI_SKYLIGHT
 			vec3 hit_bufferPos = wsgi_getBufferPosition(hit_localPos, WSGI_VOXEL_SCALE);

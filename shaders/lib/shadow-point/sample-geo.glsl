@@ -42,7 +42,8 @@ void sample_AllPointLights(inout vec3 diffuse, inout vec3 specular, const in vec
         vec3 sampleDir = fragToLight / sampleDist;
         vec3 lightDir = sampleDir;
 
-        float geo_NoLm = max(dot(localGeoNormal, sampleDir), 0.0);
+        //float geo_NoLm = max(dot(localGeoNormal, sampleDir), 0.0);
+        float geo_NoLm = step(0.0, dot(localGeoNormal, lightDir));
         float bias = offsetBias + sss;
 
         float lightShadow = sample_PointLight(-fragToLight, lightSize, lightRange, bias, lightIndex);
@@ -50,7 +51,7 @@ void sample_AllPointLights(inout vec3 diffuse, inout vec3 specular, const in vec
         float NoL = dot(localTexNormal, lightDir);
         float NoLm = max(NoL, 0.0);
 
-        NoLm = min(NoLm, geo_NoLm);
+        //NoLm = min(NoLm, geo_NoLm);
 
         float sss_NoLm = max((NoLm + sss) / (1.0 + sss), 0.0);
 
@@ -64,7 +65,7 @@ void sample_AllPointLights(inout vec3 diffuse, inout vec3 specular, const in vec
 
         const bool isUnderWater = false;
         vec3 F = material_fresnel(albedo, f0_metal, roughL, NoLm, isUnderWater);
-        float S = SampleLightSpecular(NoLm, NoHm, LoHm, roughL);
+        float S = SampleLightSpecular(NoLm, NoHm, NoVm, roughL);
 
 
         diffuse  += BLOCK_LUX * D * lightShadow * (1.0 - F) * lightColor;
@@ -87,6 +88,8 @@ void sample_AllPointLights(inout vec3 diffuse, inout vec3 specular, const in vec
             vec3 lightColor = iris_getLightColor(blockId).rgb;
             lightColor = RgbToLinear(lightColor);
 
+            float lightSize = getLightSize(light.block);
+
             vec3 lightLocalPos = voxel_getLocalPosition(voxelPos);
             vec3 fragToLight = lightLocalPos - localSamplePos;
             float sampleDist = length(fragToLight);
@@ -94,7 +97,7 @@ void sample_AllPointLights(inout vec3 diffuse, inout vec3 specular, const in vec
             vec3 lightDir = sampleDir;
 
             float geo_facing = step(0.0, dot(localGeoNormal, sampleDir));
-            float light_att = GetLightAttenuation(sampleDist, lightRange);
+            float light_att = GetLightAttenuation(sampleDist, lightRange, lightSize);
             float lightShadow = geo_facing * light_att;
 
 
@@ -110,7 +113,7 @@ void sample_AllPointLights(inout vec3 diffuse, inout vec3 specular, const in vec
 
             const bool isUnderWater = false;
             vec3 F = material_fresnel(albedo, f0_metal, roughL, NoLm, isUnderWater);
-            float S = SampleLightSpecular(NoLm, NoHm, LoHm, roughL);
+            float S = SampleLightSpecular(NoLm, NoHm, NoVm, roughL);
 
 
             diffuse  += BLOCK_LUX * D * lightShadow * (1.0 - F) * lightColor;

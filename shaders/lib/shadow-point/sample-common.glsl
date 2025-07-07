@@ -80,7 +80,7 @@ float sample_PointLight(const in vec3 fragToLight, const in float lightSize, con
         float light_shadow = sample_PointLightShadow(sampleDir, sampleDist, lightRange, bias, index);
     #endif
 
-    float light_att = GetLightAttenuation(sampleDist, lightRange);
+    float light_att = GetLightAttenuation(sampleDist, lightRange, lightSize);
 
     return light_shadow * light_att;
 }

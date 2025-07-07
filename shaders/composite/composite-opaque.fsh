@@ -465,7 +465,7 @@ void main() {
             view_F = material_fresnel(albedo.rgb, f0_metal, roughL, NoVm, isWet);
 
             float NoHm = max(dot(localTexNormal, H), 0.0);
-            specular += skyLightFinal * shadow_sss.rgb * SampleLightSpecular(NoLm, NoHm, LoHm, roughL);
+            specular += skyLightFinal * shadow_sss.rgb * SampleLightSpecular(NoLm, NoHm, NoVm, roughL);
             specular += skyReflectColor;
 
             #ifdef ACCUM_ENABLED

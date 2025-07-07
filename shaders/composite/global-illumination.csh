@@ -485,7 +485,7 @@ vec3 trace_GI(const in vec3 traceOrigin, const in vec3 traceDir, const in int fa
 
 					const bool hit_isUnderWater = false;
 					vec3 F = material_fresnel(albedo, hit_f0_metal, hit_roughL, NoVm, hit_isUnderWater);
-					float S = SampleLightSpecular(NoLm, NoHm, LoHm, hit_roughL);
+					float S = SampleLightSpecular(NoLm, NoHm, NoVm, hit_roughL);
 					vec3 sampleSpecular = lightAtt * S * F * lightColor;
 
 					vec3 traceStart = light_voxelPos;

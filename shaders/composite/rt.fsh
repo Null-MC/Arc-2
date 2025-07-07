@@ -302,7 +302,7 @@ void main() {
 
                     const bool isUnderWater = false;
                     vec3 F = material_fresnel(albedo.rgb, f0_metal, roughL, NoVm, isUnderWater);
-                    float S = SampleLightSpecular(NoLm, NoHm, LoHm, roughL);
+                    float S = SampleLightSpecular(NoLm, NoHm, NoVm, roughL);
                     vec3 sampleSpecular = S * F * lightColorAtt;
 
                     vec3 traceStart = light_voxelPos;
@@ -603,7 +603,7 @@ void main() {
 
                         const bool reflect_isUnderWater = false;
                         vec3 F = material_fresnel(albedo.rgb, f0_metal, reflect_roughL, NoVm, reflect_isUnderWater);
-                        float S = SampleLightSpecular(NoLm, NoHm, LoHm, reflect_roughL);
+                        float S = SampleLightSpecular(NoLm, NoHm, NoVm, reflect_roughL);
                         vec3 sampleSpecular = lightAtt * S * F * lightColor;
 
                         vec3 traceStart = light_voxelPos;
@@ -658,7 +658,7 @@ void main() {
                 vec3 reflect_view_F = material_fresnel(reflection.rgb, reflect_f0_metal, reflect_roughL, reflect_NoVm, reflect_isWet);
 
                 float reflect_NoHm = max(dot(reflect_localTexNormal, H), 0.0);
-                float reflect_sunS = SampleLightSpecular(reflect_NoLm, reflect_NoHm, reflect_LoHm, reflect_roughL);
+                float reflect_sunS = SampleLightSpecular(reflect_NoLm, reflect_NoHm, reflect_NoVm, reflect_roughL);
                 reflect_specular += reflect_skyLight * reflect_shadow * reflect_sunS;// * vec3(1,0,0);
 
                 float smoothness = 1.0 - reflect_roughness;

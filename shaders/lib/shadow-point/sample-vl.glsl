@@ -68,12 +68,14 @@ vec3 sample_AllPointLights_VL(const in vec3 localPos, const in bool isFluid) {
             vec3 lightColor = iris_getLightColor(blockId).rgb;
             lightColor = RgbToLinear(lightColor);
 
+            float lightSize = getLightSize(light.block);
+
             vec3 lightLocalPos = voxel_getLocalPosition(voxelPos);
             vec3 fragToLight = lightLocalPos - localPos;
             float sampleDist = length(fragToLight);
             vec3 sampleDir = fragToLight / sampleDist;
 
-            float light_att = GetLightAttenuation(sampleDist, lightRange);
+            float light_att = GetLightAttenuation(sampleDist, lightRange, lightSize);
 
             float VoL = dot(viewDir, sampleDir);
             float phase = saturate(getMiePhase(VoL));

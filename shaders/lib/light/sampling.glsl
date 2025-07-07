@@ -3,26 +3,31 @@ const float ROUGH_MIN = 0.02;
 
 float GetLightAttenuation_Linear(const in float lightDist, const in float lightRange) {
     float lightDistF = lightDist / lightRange;
-    return pow5(1.0 - saturate(lightDistF));
-    //return 1.0 - saturate(lightDistF);
+    lightDistF = 1.0 - saturate(lightDistF);
+    return pow5(lightDistF);
 }
 
 float GetLightAttenuation_Linear(const in vec3 lightVec, const in float lightRange) {
     return GetLightAttenuation_Linear(length(lightVec), lightRange);
 }
 
-float GetLightAttenuation_invSq(const in float lightDist) {
-    return 1.0 / (_pow2(lightDist)+1.0);
+float GetLightAttenuation_invSq(const in float lightDist, const in float lightSize) {
+    return 1.0 / (_pow2(lightDist)+lightSize);
 }
 
-float GetLightAttenuation(const in float lightDist, const in float lightRange) {
+float GetLightAttenuation(const in float lightDist, const in float lightRange, const in float lightSize) {
     //return saturate(1.0 - _pow2(lightDist) / _pow2(lightRange));
 
-    return GetLightAttenuation_Linear(lightDist, lightRange);
+    //return GetLightAttenuation_Linear(lightDist, lightRange);
+    return GetLightAttenuation_invSq(max(lightDist-lightSize,0.0), lightSize);
 
 //    float linear = GetLightAttenuation_Linear(lightDist, lightRange);
 //    float inv_sq = GetLightAttenuation_invSq(lightDist);
 //    return min(inv_sq, linear);
+}
+
+float GetLightAttenuation(const in float lightDist, const in float lightRange) {
+    return GetLightAttenuation(lightDist, lightRange, 1.0);
 }
 
 float GetLightAttenuation(const in vec3 lightVec, const in float lightRange) {
@@ -37,25 +42,28 @@ float SampleLightDiffuse(const in float NoV, const in float NoL, const in float 
     float f90 = 0.5 + 2.0*roughL * (LoH*LoH);
     float light_scatter = F_schlick(NoL, 1.0, f90);
     float view_scatter = F_schlick(NoV, 1.0, f90);
-    return light_scatter * view_scatter;
+    return light_scatter * view_scatter / PI;
 }
 
-float G1V(const in float NoV, const in float k) {
-    return 1.0 / (NoV * (1.0 - k) + k);
+float D_GGX(const in float NoH, const in float a) {
+    float a2 = a * a;
+    float f = (NoH * a2 - NoH) * NoH + 1.0;
+    return a2 / (PI * f * f);
 }
 
-float SampleLightSpecular(const in float NoL, const in float NoH, const in float LoH, const in float roughL) {
+float V_SmithGGXCorrelated(float NoV, float NoL, float a) {
+    float a2 = a * a;
+    float GGXL = NoV * sqrt((-NoL * a2 + NoL) * NoL + a2);
+    float GGXV = NoL * sqrt((-NoV * a2 + NoV) * NoV + a2);
+    return 0.5 / (GGXV + GGXL);
+}
+
+float SampleLightSpecular(const in float NoL, const in float NoH, const in float NoV, const in float roughL) {
     float alpha = max(roughL, ROUGH_MIN);
 
-    // D
-    float alpha2 = alpha*alpha;
-    float denom = (NoH*NoH) * (alpha2 - 1.0) + 1.0;
-    float D = alpha2 / (PI * (denom*denom));
+    float D = D_GGX(NoH, alpha);
 
-    // V
-    float k = alpha / 2.0;
-    float k2 = k*k;
-    float V = 1.0 / ((LoH*LoH) * (1.0 - k2) + k2);
+    float V = V_SmithGGXCorrelated(NoV, NoL, roughL);
 
-    return clamp((NoL * D * V), 0.0, 100.0);
+    return NoL * D * clamp(V, 0.0, 100.0);
 }

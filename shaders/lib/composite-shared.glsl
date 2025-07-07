@@ -30,6 +30,8 @@ void GetHandLight(inout vec3 diffuse, inout vec3 specular, const in uint blockId
 //    vec3 lightLocalPos = vec3(0.2, 0.0, 0.0);
     float lightRange = iris_getEmission(blockId);
     vec3 lightColor = iris_getLightColor(blockId).rgb;
+    float lightSize = getLightSize(int(blockId));
+
     //            lightColor = RgbToLinear(lightColor);
 
 //    vec3 light_hsv = RgbToHsv(lightColor);
@@ -42,7 +44,7 @@ void GetHandLight(inout vec3 diffuse, inout vec3 specular, const in uint blockId
     float lightDist = length(lightVec);
     vec3 lightDir = lightVec / lightDist;
 
-    float lightAtt = GetLightAttenuation(lightDist, lightRange);
+    float lightAtt = GetLightAttenuation(lightDist, lightRange, lightSize);
 
     float NoLm = max(dot(localTexNormal, lightDir), 0.0);
 
@@ -72,7 +74,7 @@ void GetHandLight(inout vec3 diffuse, inout vec3 specular, const in uint blockId
 
         const bool isUnderWater = false;
         vec3 F = material_fresnel(albedo, f0_metal, roughL, NoVm, isUnderWater);
-        float S = SampleLightSpecular(NoLm, NoHm, LoHm, roughL);
+        float S = SampleLightSpecular(NoLm, NoHm, NoVm, roughL);
         specular += S * F * lightColorAtt;
     }
 }

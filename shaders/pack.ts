@@ -1280,7 +1280,7 @@ export function setupShader(dimension : NamespacedId) {
     }
 
     if (settings.Lighting_VxGI_Enabled) {
-        const groupCount = Math.ceil(settings.Lighting_VxGI_BufferSize / 8);
+        const groupCount = Math.ceil(settings.Lighting_VxGI_BufferSize / 4);
 
         for (let i = settings.Lighting_VxGI_CascadeCount-1; i >= 0; i--) {
             // if (internal.LightListsEnabled) {

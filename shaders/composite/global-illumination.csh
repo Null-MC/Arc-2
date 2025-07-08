@@ -3,7 +3,7 @@
 #include "/settings.glsl"
 #include "/lib/constants.glsl"
 
-layout (local_size_x = 8, local_size_y = 8, local_size_z = 8) in;
+layout (local_size_x = 64, local_size_y = 6, local_size_z = 1) in;
 
 uniform sampler2D blockAtlas;
 uniform sampler2D blockAtlasS;
@@ -112,6 +112,9 @@ uniform sampler2D texBlueNoise;
 #elif LIGHTING_MODE == LIGHT_MODE_NONE
 	#include "/lib/lightmap/sample.glsl"
 #endif
+
+
+shared lpvShVoxel sharedVoxels[64];
 
 
 ivec3 wsgi_getFrameOffset(const in float snapSize) {
@@ -602,7 +605,17 @@ vec3 trace_GI(const in vec3 traceOrigin, const in vec3 traceDir, const in int fa
 
 
 void main() {
-	ivec3 bufferPos = ivec3(gl_GlobalInvocationID);
+	int i_voxel = int(gl_LocalInvocationID.x);
+	int i_face = int(gl_LocalInvocationID.y);
+
+	ivec3 bufferPos;
+	bufferPos.z = i_voxel / (4*4);
+	bufferPos.y = (i_voxel - bufferPos.z) / 4;
+	bufferPos.x = i_voxel % 4;
+
+	bufferPos += ivec3(gl_WorkGroupID) * 4;
+
+	//ivec3 bufferPos = ivec3(gl_GlobalInvocationID);
 	//if (any(greaterThanEqual(bufferPos, WSGI_BufferSize))) return;
 
 	bool altFrame = ap.time.frames % 2 == 1;
@@ -622,40 +635,49 @@ void main() {
 		}
 	#endif
 
-	lpvShVoxel voxel_gi = voxel_empty;
+	//lpvShVoxel voxel_gi = voxel_empty;
+
+	if (i_face == 0) {
+		sharedVoxels[i_voxel] = voxel_empty;
+
+		if (!isFullBlock) {
+			ivec3 cellIndex_prev = bufferPos - wsgi_bufferOffset;
+
+			if (wsgi_isInBounds(cellIndex_prev)) {
+				int i_prev = wsgi_getBufferIndex(cellIndex_prev, WSGI_CASCADE);
+
+				if (altFrame) sharedVoxels[i_voxel] = SH_LPV[i_prev];
+				else sharedVoxels[i_voxel] = SH_LPV_alt[i_prev];
+			}
+			#if WSGI_CASCADE < (WSGI_CASCADE_COUNT-1)
+				// get previous value from parent if OOB
+				else {
+					vec3 localPos_prev = wsgi_getLocalPosition(bufferPos + 0.5, WSGI_VOXEL_SCALE);
+					vec3 wsgi_pos_prev = wsgi_getBufferPosition(localPos_prev, WSGI_VOXEL_SCALE+1);
+					ivec3 wsgi_pos_prev_n = ivec3(floor(wsgi_pos_prev));
+
+					int i_prev = wsgi_getBufferIndex(wsgi_pos_prev_n, WSGI_CASCADE+1);
+
+					if (altFrame) sharedVoxels[i_voxel] = SH_LPV[i_prev];
+					else sharedVoxels[i_voxel] = SH_LPV_alt[i_prev];
+				}
+			#endif
+		}
+	}
+
+	memoryBarrierShared();
+	barrier();
 
 	if (!isFullBlock) {
-		ivec3 cellIndex_prev = bufferPos - wsgi_bufferOffset;
-		if (wsgi_isInBounds(cellIndex_prev)) {
-			int i_prev = wsgi_getBufferIndex(cellIndex_prev, WSGI_CASCADE);
-
-			if (altFrame) voxel_gi = SH_LPV[i_prev];
-			else voxel_gi = SH_LPV_alt[i_prev];
-		}
-		#if WSGI_CASCADE < (WSGI_CASCADE_COUNT-1)
-			// get previous value from parent if OOB
-			else {
-				vec3 localPos_prev = wsgi_getLocalPosition(bufferPos + 0.5, WSGI_VOXEL_SCALE);
-				vec3 wsgi_pos_prev = wsgi_getBufferPosition(localPos_prev, WSGI_VOXEL_SCALE+1);
-				ivec3 wsgi_pos_prev_n = ivec3(floor(wsgi_pos_prev));
-
-				int i_prev = wsgi_getBufferIndex(wsgi_pos_prev_n, WSGI_CASCADE+1);
-
-				if (altFrame) voxel_gi = SH_LPV[i_prev];
-				else voxel_gi = SH_LPV_alt[i_prev];
-			}
-		#endif
-
-		//float seed_pos = hash13(bufferPos);
-
-		for (int dir = 0; dir < 6; dir++) {
+		//int dir = i_face;
+		//for (int dir = 0; dir < 6; dir++) {
 			vec3 face_color;
 			float face_counter;
-			decode_shVoxel_dir(voxel_gi.data[dir], face_color, face_counter);
+			decode_shVoxel_dir(sharedVoxels[i_voxel].data[i_face], face_color, face_counter);
 
-			vec3 noise_dir = GetRandomFaceNormal(bufferPos, shVoxel_dir[dir]);
+			vec3 noise_dir = GetRandomFaceNormal(bufferPos, shVoxel_dir[i_face]);
 
-			float faceF = dot(shVoxel_dir[dir], noise_dir);
+			float faceF = dot(shVoxel_dir[i_face], noise_dir);
 
 			//vec3 noise_offset = sample_blueNoise(hash23(bufferPos));
 //			vec3 noise_offset = hash33(bufferPos + ap.time.frames);
@@ -683,14 +705,14 @@ void main() {
 				//tracePos = offsetBufferPos * voxelSize + wsgiVoxelOffset + 0.05 * noise_dir;
 			#endif
 
-			vec3 traceSample = trace_GI(tracePos, noise_dir, dir);
+			vec3 traceSample = trace_GI(tracePos, noise_dir, i_face);
 
 //			if (iris_hasFluid(blockId)) {
 //				traceSample *= exp(-3.0 * VL_WaterTransmit * VL_WaterDensity);
 //			}
 
 //			const float radius = 0.5;
-//			float sampleWeight = PI * sphereContribution(shVoxel_dir[dir], noise_dir * traceDist, radius);
+//			float sampleWeight = PI * sphereContribution(shVoxel_dir[i_face], noise_dir * traceDist, radius);
 			float sampleWeight = max(faceF, 0.0);// / (3.0 + traceDist);
 
 			face_counter = clamp(face_counter + sampleWeight, 0.0, VOXEL_GI_MAXFRAMES);
@@ -700,12 +722,20 @@ void main() {
 			float mixF = 1.0 / (1.0 + face_counter);
 			face_color = mix(face_color, traceSample, mixF * sampleWeight);// * max(faceF, 0.0);
 
-			voxel_gi.data[dir] = encode_shVoxel_dir(face_color, face_counter);
-		}
+			sharedVoxels[i_voxel].data[i_face] = encode_shVoxel_dir(face_color, face_counter);
+//		}
+	}
+	else {
+//		sharedVoxels[i_voxel].data[i_face] = uvec2(0u);
 	}
 
-	int writeIndex = wsgi_getBufferIndex(bufferPos, WSGI_CASCADE);
+	memoryBarrierShared();
+	barrier();
 
-	if (altFrame) SH_LPV_alt[writeIndex] = voxel_gi;
-	else SH_LPV[writeIndex] = voxel_gi;
+	if (i_face == 0) {
+		int writeIndex = wsgi_getBufferIndex(bufferPos, WSGI_CASCADE);
+
+		if (altFrame) SH_LPV_alt[writeIndex] = sharedVoxels[i_voxel];
+		else SH_LPV[writeIndex] = sharedVoxels[i_voxel];
+	}
 }

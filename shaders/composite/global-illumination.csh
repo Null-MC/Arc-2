@@ -80,6 +80,10 @@ uniform sampler2D texBlueNoise;
 #include "/lib/light/volumetric.glsl"
 
 #ifdef SHADOWS_ENABLED
+	#ifdef SHADOW_DISTORTION_ENABLED
+		#include "/lib/shadow/distorted.glsl"
+	#endif
+
 	#include "/lib/shadow/csm.glsl"
 	#include "/lib/shadow/sample.glsl"
 #endif
@@ -477,16 +481,17 @@ vec3 trace_GI(const in vec3 traceOrigin, const in vec3 traceDir, const in int fa
 
 				//if (NoLm > 0.0 && dot(hitNormal, lightDir) > 0.0) {
 					float NoVm = max(dot(hitNormal, -traceDir), 0.0);
-
-					float D = SampleLightDiffuse(NoVm, NoLm, LoHm, hit_roughL);
-					vec3 sampleDiffuse = lightColor * lightAtt * D;//(NoLm * lightAtt * D) * lightColor;
-
 					float NoHm = max(dot(hitNormal, H), 0.0);
+					float VoHm = max(dot(-traceDir, H), 0.0);
 
 					const bool hit_isUnderWater = false;
-					vec3 F = material_fresnel(albedo, hit_f0_metal, hit_roughL, NoVm, hit_isUnderWater);
-					float S = SampleLightSpecular(NoLm, NoHm, NoVm, hit_roughL);
-					vec3 sampleSpecular = lightAtt * S * F * lightColor;
+					vec3 F = material_fresnel(albedo, hit_f0_metal, hit_roughL, VoHm, hit_isUnderWater);
+					vec3 D = SampleLightDiffuse(NoVm, NoLm, LoHm, hit_roughL) * (1.0 - F);
+					vec3 S = SampleLightSpecular(NoLm, NoHm, NoVm, F, hit_roughL);
+
+					vec3 lightFinal = NoLm * lightColor * lightAtt;
+					vec3 sampleDiffuse = D * lightFinal;
+					vec3 sampleSpecular = S * lightFinal;
 
 					vec3 traceStart = light_voxelPos;
 					vec3 traceEnd = voxelPos_out;

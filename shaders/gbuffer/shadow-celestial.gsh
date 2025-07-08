@@ -61,22 +61,22 @@ out VertexData2 {
 
 #include "/lib/common.glsl"
 
-#if defined(VOXEL_BLOCK_FACE) || defined(VOXEL_TRI_ENABLED)
-    #ifdef RENDER_TERRAIN
-        #ifndef VOXEL_PROVIDED
-            #include "/lib/buffers/voxel-block.glsl"
-        #endif
+#if !defined(VOXEL_PROVIDED) || defined(VOXEL_BLOCK_FACE) || defined(VOXEL_TRI_ENABLED)
+    #include "/lib/voxel/voxel-common.glsl"
 
-        #ifdef VOXEL_BLOCK_FACE
-            #include "/lib/buffers/voxel-block-face.glsl"
-        #endif
+    #if defined(RENDER_TERRAIN) && !defined(VOXEL_PROVIDED)
+        #include "/lib/buffers/voxel-block.glsl"
+    #endif
+#endif
+
+#if defined(VOXEL_BLOCK_FACE) || defined(VOXEL_TRI_ENABLED)
+    #if defined(RENDER_TERRAIN) && defined(VOXEL_BLOCK_FACE)
+        #include "/lib/buffers/voxel-block-face.glsl"
     #endif
 
     #ifdef VOXEL_TRI_ENABLED
         #include "/lib/buffers/quad-list.glsl"
     #endif
-
-    #include "/lib/voxel/voxel-common.glsl"
 
     #ifdef VOXEL_TRI_ENABLED
         #include "/lib/voxel/quad-list.glsl"

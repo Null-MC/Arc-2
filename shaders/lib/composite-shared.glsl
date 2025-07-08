@@ -62,19 +62,16 @@ void GetHandLight(inout vec3 diffuse, inout vec3 specular, const in uint blockId
 
         float LoHm = max(dot(lightDir, H), 0.0);
         float NoVm = max(dot(localTexNormal, localViewDir), 0.0);
-
-        float D = SampleLightDiffuse(NoVm, NoLm, LoHm, roughL);
-
-        vec3 lightColorAtt = BLOCK_LUX * lightAtt * lightColor;
-        diffuse += (NoLm * D) * lightColorAtt;
-
-
-        // TODO: specular
         float NoHm = max(dot(localTexNormal, H), 0.0);
+        float VoHm = max(dot(localViewDir, H), 0.0);
 
         const bool isUnderWater = false;
-        vec3 F = material_fresnel(albedo, f0_metal, roughL, NoVm, isUnderWater);
-        float S = SampleLightSpecular(NoLm, NoHm, NoVm, roughL);
-        specular += S * F * lightColorAtt;
+        vec3 F = material_fresnel(albedo, f0_metal, roughL, VoHm, isUnderWater);
+        vec3 D = SampleLightDiffuse(NoVm, NoLm, LoHm, roughL) * (1.0 - F);
+        vec3 S = SampleLightSpecular(NoLm, NoHm, NoVm, F, roughL);
+
+        vec3 lightFinal = NoLm * BLOCK_LUX * lightAtt * lightColor;
+        diffuse += D * lightFinal;
+        specular += S * lightFinal;
     }
 }

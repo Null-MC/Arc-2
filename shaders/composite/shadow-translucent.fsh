@@ -24,6 +24,10 @@ uniform usampler2D texDeferredTrans_Data;
 #include "/lib/sampling/depth.glsl"
 #include "/lib/light/volumetric.glsl"
 
+#ifdef SHADOW_DISTORTION_ENABLED
+    #include "/lib/shadow/distorted.glsl"
+#endif
+
 #include "/lib/shadow/csm.glsl"
 #include "/lib/shadow/sample.glsl"
 

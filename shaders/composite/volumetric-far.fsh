@@ -59,6 +59,10 @@ uniform sampler2D texSkyMultiScatter;
 //#include "/lib/utility/blackbody.glsl"
 
 #ifdef SHADOWS_ENABLED
+    #ifdef SHADOW_DISTORTION_ENABLED
+        #include "/lib/shadow/distorted.glsl"
+    #endif
+
     #include "/lib/shadow/csm.glsl"
     #include "/lib/shadow/sample.glsl"
 #endif

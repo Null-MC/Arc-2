@@ -71,6 +71,10 @@ uniform sampler3D texFogNoise;
 #include "/lib/lightmap/sample.glsl"
 
 #ifdef SHADOWS_ENABLED
+    #ifdef SHADOW_DISTORTION_ENABLED
+        #include "/lib/shadow/distorted.glsl"
+    #endif
+
     #include "/lib/shadow/csm.glsl"
     #include "/lib/shadow/sample.glsl"
 #endif

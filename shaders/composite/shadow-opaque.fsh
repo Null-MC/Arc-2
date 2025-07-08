@@ -27,6 +27,10 @@ uniform usampler2D texDeferredOpaque_Data;
 #include "/lib/sampling/depth.glsl"
 #include "/lib/light/volumetric.glsl"
 
+#ifdef SHADOW_DISTORTION_ENABLED
+    #include "/lib/shadow/distorted.glsl"
+#endif
+
 #include "/lib/shadow/csm.glsl"
 #include "/lib/shadow/sample.glsl"
 
@@ -34,10 +38,6 @@ uniform usampler2D texDeferredOpaque_Data;
     #include "/lib/voxel/voxel-common.glsl"
     #include "/lib/voxel/voxel-sample.glsl"
     #include "/lib/voxel/dda.glsl"
-#endif
-
-#ifdef SHADOW_DISTORTION_ENABLED
-    #include "/lib/shadow/distorted.glsl"
 #endif
 
 #ifdef EFFECT_TAA_ENABLED
@@ -111,11 +111,11 @@ void main() {
         int shadowCascade;
         vec3 shadowPos = GetShadowSamplePos(shadowViewPos, Shadow_MaxPcfSize, shadowCascade);
 
-        #ifdef SHADOW_DISTORTION_ENABLED
-            shadowPos = shadowPos * 2.0 - 1.0;
-            shadowPos = shadowDistort(shadowPos);
-            shadowPos = shadowPos * 0.5 + 0.5;
-        #endif
+//        #ifdef SHADOW_DISTORTION_ENABLED
+//            shadowPos = shadowPos * 2.0 - 1.0;
+//            shadowPos = shadowDistort(shadowPos);
+//            shadowPos = shadowPos * 0.5 + 0.5;
+//        #endif
 
         float dither = GetShadowDither();
         
@@ -157,11 +157,11 @@ void main() {
 
                 shadowPos = GetShadowSamplePos(shadowViewPos, sssRadius, shadowCascade);
 
-                #ifdef SHADOW_DISTORTION_ENABLED
-                    shadowPos = shadowPos * 2.0 - 1.0;
-                    shadowPos = shadowDistort(shadowPos);
-                    shadowPos = shadowPos * 0.5 + 0.5;
-                #endif
+//                #ifdef SHADOW_DISTORTION_ENABLED
+//                    shadowPos = shadowPos * 2.0 - 1.0;
+//                    shadowPos = shadowDistort(shadowPos);
+//                    shadowPos = shadowPos * 0.5 + 0.5;
+//                #endif
 
                 vec2 sssRadiusFinal = GetPixelRadius(sssRadius, shadowCascade);
                 sssFinal = SampleShadow_PCF(shadowPos, shadowCascade, minOf(sssRadiusFinal), sss);

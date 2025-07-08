@@ -143,6 +143,10 @@ in vec2 uv;
     #endif
 
     #ifdef SHADOWS_ENABLED
+        #ifdef SHADOW_DISTORTION_ENABLED
+            #include "/lib/shadow/distorted.glsl"
+        #endif
+
         #include "/lib/shadow/csm.glsl"
         #include "/lib/shadow/sample.glsl"
     #endif
@@ -297,15 +301,17 @@ void main() {
 //                    float NoVm = max(dot(localTexNormal, localViewDir), 0.0);
 
                     if (NoLm == 0.0 || dot(localGeoNormal, lightDir) <= 0.0) continue;
-                    float D = SampleLightDiffuse(NoVm, NoLm, LoHm, roughL);
-                    vec3 sampleDiffuse = (NoLm * D) * lightColorAtt * 3.0;
 
                     float NoHm = max(dot(localTexNormal, H), 0.0);
 
                     const bool isUnderWater = false;
-                    vec3 F = material_fresnel(albedo.rgb, f0_metal, roughL, NoVm, isUnderWater);
-                    float S = SampleLightSpecular(NoLm, NoHm, NoVm, roughL);
-                    vec3 sampleSpecular = S * F * lightColorAtt;
+                    float VoHm = max(dot(localViewDir, H), 0.0);
+                    vec3 F = material_fresnel(albedo.rgb, f0_metal, roughL, VoHm, isUnderWater);
+                    float D = SampleLightDiffuse(NoVm, NoLm, LoHm, roughL) * (1.0 - F);
+                    vec3 S = SampleLightSpecular(NoLm, NoHm, NoVm, F, roughL);
+
+                    vec3 sampleDiffuse = NoLm * D * lightColorAtt;
+                    vec3 sampleSpecular = NoLm * S * lightColorAtt;
 
                     vec3 traceStart = light_voxelPos;
                     vec3 traceEnd = voxelPos_out;
@@ -629,15 +635,18 @@ void main() {
                         //                    float NoVm = max(dot(localTexNormal, localViewDir), 0.0);
 
                         if (NoLm == 0.0 || dot(reflect_geoNormal, lightDir) <= 0.0) continue;
-                        float D = SampleLightDiffuse(NoVm, NoLm, LoHm, reflect_roughL);
-                        vec3 sampleDiffuse = (NoLm * lightAtt * D) * lightColor;
 
                         float NoHm = max(dot(localTexNormal, H), 0.0);
+                        float VoHm = max(dot(reflectLocalDir, H), 0.0);
 
                         const bool reflect_isUnderWater = false;
-                        vec3 F = material_fresnel(albedo.rgb, f0_metal, reflect_roughL, NoVm, reflect_isUnderWater);
-                        float S = SampleLightSpecular(NoLm, NoHm, NoVm, reflect_roughL);
-                        vec3 sampleSpecular = lightAtt * S * F * lightColor;
+                        vec3 F = material_fresnel(albedo.rgb, f0_metal, reflect_roughL, VoHm, reflect_isUnderWater);
+                        vec3 D = SampleLightDiffuse(NoVm, NoLm, LoHm, reflect_roughL) * (1.0 - F);
+                        vec3 S = SampleLightSpecular(NoLm, NoHm, NoVm, F, reflect_roughL);
+
+                        vec3 lightFinal = NoLm * lightAtt * lightColor;
+                        vec3 sampleDiffuse = D * lightFinal;
+                        vec3 sampleSpecular = S * lightFinal;
 
                         vec3 traceStart = light_voxelPos;
                         vec3 traceEnd = voxelPos_out;
@@ -687,18 +696,19 @@ void main() {
                     //}
                 #endif
 
-                const bool reflect_isWet = false;
-                float reflect_VoHm = max(dot(-reflectLocalDir, reflect_H), 0.0);
-                vec3 reflect_view_F = material_fresnel(reflection.rgb, reflect_f0_metal, reflect_roughL, reflect_VoHm, reflect_isWet);
-
                 float reflect_NoHm = max(dot(reflect_localTexNormal, reflect_H), 0.0);
-                float reflect_sunS = SampleLightSpecular(reflect_NoLm, reflect_NoHm, reflect_NoVm, reflect_roughL);
+                float reflect_VoHm = max(dot(-reflectLocalDir, reflect_H), 0.0);
+
+                const bool reflect_isWet = false;
+                vec3 reflect_F = material_fresnel(reflection.rgb, reflect_f0_metal, reflect_roughL, reflect_VoHm, reflect_isWet);
+                vec3 reflect_sunS = SampleLightSpecular(reflect_NoLm, reflect_NoHm, reflect_NoVm, reflect_F, reflect_roughL);
+
+                // TODO: move reflect_diffuse here?
+                reflect_diffuse *= 1.0 - reflect_F;
                 reflect_specular += reflect_skyLight * reflect_shadow * reflect_sunS;// * vec3(1,0,0);
 
                 float smoothness = 1.0 - reflect_roughness;
                 reflect_specular *= GetMetalTint(reflection.rgb, reflect_f0_metal) * _pow2(smoothness);
-
-                //reflect_diffuse *= 1.0 - reflect_view_F;
 
                 #ifdef DEBUG_WHITE_WORLD
                     reflection.rgb = WhiteWorld_Value;
@@ -706,8 +716,8 @@ void main() {
 
                 ApplyWetness_albedo(reflection.rgb, reflect_porosity, reflect_wetness);
 
-                //skyReflectColor = fma(reflection.rgb, reflect_diffuse, reflect_specular);
-                skyReflectColor = mix(reflection.rgb * reflect_diffuse, reflect_specular, reflect_view_F);
+                skyReflectColor = fma(reflection.rgb, reflect_diffuse, reflect_specular);
+                //skyReflectColor = mix(reflection.rgb * reflect_diffuse, reflect_specular, reflect_view_F);
             }
             else {
                 // SSR fallback

@@ -467,7 +467,8 @@ void main() {
 
         float NoHm = max(dot(localTexNormal, H), 0.0);
 
-        specular += skyLightFinal * shadow_sss.rgb * SampleLightSpecular(NoLm, NoHm, NoVm, roughL);
+        vec3 S = SampleLightSpecular(NoLm, NoHm, NoVm, view_F, roughL);
+        specular += S * skyLightFinal * shadow_sss.rgb;
         specular += skyReflectColor;
 
         #ifdef ACCUM_ENABLED

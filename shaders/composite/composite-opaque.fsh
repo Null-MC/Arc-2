@@ -24,7 +24,7 @@ uniform sampler2D texParticleOpaque;
 uniform sampler3D texFogNoise;
 uniform sampler2D texBlueNoise;
 
-#ifdef SHADOWS_ENABLED
+#if defined(SHADOWS_ENABLED) || defined(SHADOWS_SS_FALLBACK)
     uniform sampler2D TEX_SHADOW;
 #endif
 
@@ -247,7 +247,7 @@ void main() {
         float NoVm = max(dot(localTexNormal, -localViewDir), 0.0);
 
         vec4 shadow_sss = vec4(lmCoord.y);
-        #ifdef SHADOWS_ENABLED
+        #if defined(SHADOWS_ENABLED) || defined(SHADOWS_SS_FALLBACK)
             shadow_sss = textureLod(TEX_SHADOW, uv, 0);
         #endif
 

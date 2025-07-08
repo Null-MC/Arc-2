@@ -593,7 +593,7 @@ export function setupShader(dimension : NamespacedId) {
 
     let texShadow: BuiltTexture | null = null;
     let texShadow_final: BuiltTexture | null = null;
-    if (settings.Shadow_Enabled) {
+    if (settings.Shadow_Enabled || settings.Shadow_SS_Fallback) {
         texShadow = new Texture("texShadow")
             .format(Format.RGBA16F)
             .clear(false)
@@ -1308,7 +1308,7 @@ export function setupShader(dimension : NamespacedId) {
         }
     }
 
-    if (settings.Shadow_Enabled) {
+    if (settings.Shadow_Enabled || settings.Shadow_SS_Fallback) {
         new ShaderBuilder(new Composite('shadow-opaque')
                 .vertex('shared/bufferless.vsh')
                 .fragment('composite/shadow-opaque.fsh')

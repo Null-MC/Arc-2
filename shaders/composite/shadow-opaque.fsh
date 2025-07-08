@@ -8,11 +8,14 @@ layout(location = 0) out vec4 outShadowSSS;
 in vec2 uv;
 
 uniform sampler2D solidDepthTex;
-uniform sampler2DArray shadowMap;
-uniform sampler2DArray solidShadowMap;
-uniform sampler2DArray texShadowColor;
-uniform sampler2DArray texShadowBlocker;
 uniform usampler2D texDeferredOpaque_Data;
+
+#ifdef SHADOWS_ENABLED
+    uniform sampler2DArray shadowMap;
+    uniform sampler2DArray solidShadowMap;
+    uniform sampler2DArray texShadowColor;
+    uniform sampler2DArray texShadowBlocker;
+#endif
 
 #include "/lib/common.glsl"
 #include "/lib/buffers/scene.glsl"
@@ -27,12 +30,14 @@ uniform usampler2D texDeferredOpaque_Data;
 #include "/lib/sampling/depth.glsl"
 #include "/lib/light/volumetric.glsl"
 
-#ifdef SHADOW_DISTORTION_ENABLED
-    #include "/lib/shadow/distorted.glsl"
-#endif
+#ifdef SHADOWS_ENABLED
+    #ifdef SHADOW_DISTORTION_ENABLED
+        #include "/lib/shadow/distorted.glsl"
+    #endif
 
-#include "/lib/shadow/csm.glsl"
-#include "/lib/shadow/sample.glsl"
+    #include "/lib/shadow/csm.glsl"
+    #include "/lib/shadow/sample.glsl"
+#endif
 
 #ifdef SHADOW_VOXEL_TEST
     #include "/lib/voxel/voxel-common.glsl"
@@ -75,98 +80,98 @@ void main() {
 
         shadowFinal *= step(0.0, dot(localGeoNormal, Scene_LocalLightDir));
 
+        #ifdef SHADOWS_ENABLED
+            bool voxelHit = false;
+            #ifdef SHADOW_VOXEL_TEST
+                vec3 sampleLocalPos = localPos + 0.08 * localGeoNormal;
+                vec3 voxelPos = voxel_GetBufferPosition(sampleLocalPos);
 
-        bool voxelHit = false;
-        #ifdef SHADOW_VOXEL_TEST
-            vec3 sampleLocalPos = localPos + 0.08 * localGeoNormal;
-            vec3 voxelPos = voxel_GetBufferPosition(sampleLocalPos);
+                vec3 stepSizes, nextDist, stepAxis;
+                dda_init(stepSizes, nextDist, voxelPos, Scene_LocalLightDir);
 
-            vec3 stepSizes, nextDist, stepAxis;
-            dda_init(stepSizes, nextDist, voxelPos, Scene_LocalLightDir);
+                vec3 currPos = voxelPos;
+                for (int i = 0; i < 4; i++) {
+                    vec3 step = dda_step(stepAxis, nextDist, stepSizes, Scene_LocalLightDir);
 
-            vec3 currPos = voxelPos;
-            for (int i = 0; i < 4; i++) {
-                vec3 step = dda_step(stepAxis, nextDist, stepSizes, Scene_LocalLightDir);
+                    ivec3 traceVoxelPos = ivec3(floor(currPos + 0.5*step));
+                    if (!voxel_isInBounds(traceVoxelPos)) break;
 
-                ivec3 traceVoxelPos = ivec3(floor(currPos + 0.5*step));
-                if (!voxel_isInBounds(traceVoxelPos)) break;
+                    uint blockId = SampleVoxelBlock(traceVoxelPos);
+                    if (blockId != -1u) {
+                        bool isFullBlock = iris_isFullBlock(blockId);
+                        if (isFullBlock) {
+                            voxelHit = true;
+                            shadowFinal = vec3(0.0);
+                            break;
+                        }
+                    }
 
-                uint blockId = SampleVoxelBlock(traceVoxelPos);
-                if (blockId != -1u) {
-                    bool isFullBlock = iris_isFullBlock(blockId);
-                    if (isFullBlock) {
-                        voxelHit = true;
-                        shadowFinal = vec3(0.0);
-                        break;
+                    currPos += step;
+                }
+            #endif
+
+//            float dither = GetShadowDither();
+
+            vec3 shadowViewPos = mul3(ap.celestial.view, localPos);
+
+            int shadowCascade;
+            vec3 shadowPos = GetShadowSamplePos(shadowViewPos, Shadow_MaxPcfSize, shadowCascade);
+
+    //        #ifdef SHADOW_DISTORTION_ENABLED
+    //            shadowPos = shadowPos * 2.0 - 1.0;
+    //            shadowPos = shadowDistort(shadowPos);
+    //            shadowPos = shadowPos * 0.5 + 0.5;
+    //        #endif
+
+            if (saturate(shadowPos) == shadowPos && !voxelHit) {
+                if (lengthSq(shadowFinal) > 0.0) {
+                    #ifdef SHADOW_PCSS_ENABLED
+                        shadowFinal *= SampleShadowColor_PCSS(shadowPos, shadowCascade);
+                    #else
+                        float bias = GetShadowBias(shadowCascade);
+                        shadowPos.z -= bias;
+
+                        shadowFinal *= SampleShadowColor(shadowPos, shadowCascade);
+                    #endif
+
+                    float shadowRange = GetShadowRange(shadowCascade);
+                    vec3 shadowCoord = vec3(shadowPos.xy, shadowCascade);
+                    float depthOpaque = textureLod(solidShadowMap, shadowCoord, 0).r;
+                    float depthTrans = textureLod(shadowMap, shadowCoord, 0).r;
+                    float waterDepth = max(depthOpaque - depthTrans, 0.0) * shadowRange;
+
+                    if (waterDepth > 0.0) {
+                        // TODO: add a water mask to shadows
+                        shadowFinal *= exp(-waterDepth * VL_WaterTransmit * VL_WaterDensity);
                     }
                 }
 
-                currPos += step;
-            }
-        #endif
+                // SSS
+                vec4 data_a = unpackUnorm4x8(data.g);
+                float sss = data_a.a;
 
+                if (sss > 0.0) {
+                    //float NoLm = max(dot(localGeoNormal, Scene_LocalLightDir), 0.0);
 
-        vec3 shadowViewPos = mul3(ap.celestial.view, localPos);
+                    //float sss_2 = _pow3(sss);
+                    float sssRadius = _pow3(sss) * MATERIAL_SSS_RADIUS;
+                    //float sssDist = sss_2 * MATERIAL_SSS_DISTANCE * pow5(dither);
 
-        int shadowCascade;
-        vec3 shadowPos = GetShadowSamplePos(shadowViewPos, Shadow_MaxPcfSize, shadowCascade);
+    //                shadowViewPos.z += sssDist;
 
-//        #ifdef SHADOW_DISTORTION_ENABLED
-//            shadowPos = shadowPos * 2.0 - 1.0;
-//            shadowPos = shadowDistort(shadowPos);
-//            shadowPos = shadowPos * 0.5 + 0.5;
-//        #endif
+                    shadowPos = GetShadowSamplePos(shadowViewPos, sssRadius, shadowCascade);
 
-        float dither = GetShadowDither();
-        
-        if (saturate(shadowPos) == shadowPos && !voxelHit) {
-            if (lengthSq(shadowFinal) > 0.0) {
-                #ifdef SHADOW_PCSS_ENABLED
-                    shadowFinal *= SampleShadowColor_PCSS(shadowPos, shadowCascade);
-                #else
-                    float bias = GetShadowBias(shadowCascade);
-                    shadowPos.z -= bias;
+    //                #ifdef SHADOW_DISTORTION_ENABLED
+    //                    shadowPos = shadowPos * 2.0 - 1.0;
+    //                    shadowPos = shadowDistort(shadowPos);
+    //                    shadowPos = shadowPos * 0.5 + 0.5;
+    //                #endif
 
-                    shadowFinal *= SampleShadowColor(shadowPos, shadowCascade);
-                #endif
-
-                float shadowRange = GetShadowRange(shadowCascade);
-                vec3 shadowCoord = vec3(shadowPos.xy, shadowCascade);
-                float depthOpaque = textureLod(solidShadowMap, shadowCoord, 0).r;
-                float depthTrans = textureLod(shadowMap, shadowCoord, 0).r;
-                float waterDepth = max(depthOpaque - depthTrans, 0.0) * shadowRange;
-
-                if (waterDepth > 0.0) {
-                    // TODO: add a water mask to shadows
-                    shadowFinal *= exp(-waterDepth * VL_WaterTransmit * VL_WaterDensity);
+                    vec2 sssRadiusFinal = GetPixelRadius(sssRadius, shadowCascade);
+                    sssFinal = SampleShadow_PCF(shadowPos, shadowCascade, minOf(sssRadiusFinal), sss);
                 }
             }
-
-            // SSS
-            vec4 data_a = unpackUnorm4x8(data.g);
-            float sss = data_a.a;
-
-            if (sss > 0.0) {
-                //float NoLm = max(dot(localGeoNormal, Scene_LocalLightDir), 0.0);
-
-                //float sss_2 = _pow3(sss);
-                float sssRadius = _pow3(sss) * MATERIAL_SSS_RADIUS;
-                //float sssDist = sss_2 * MATERIAL_SSS_DISTANCE * pow5(dither);
-
-//                shadowViewPos.z += sssDist;
-
-                shadowPos = GetShadowSamplePos(shadowViewPos, sssRadius, shadowCascade);
-
-//                #ifdef SHADOW_DISTORTION_ENABLED
-//                    shadowPos = shadowPos * 2.0 - 1.0;
-//                    shadowPos = shadowDistort(shadowPos);
-//                    shadowPos = shadowPos * 0.5 + 0.5;
-//                #endif
-
-                vec2 sssRadiusFinal = GetPixelRadius(sssRadius, shadowCascade);
-                sssFinal = SampleShadow_PCF(shadowPos, shadowCascade, minOf(sssRadiusFinal), sss);
-            }
-        }
+        #endif
 
         #ifdef SHADOWS_SS_FALLBACK
             float viewDist = length(viewPos);
@@ -182,7 +187,9 @@ void main() {
                 clipPosEnd = clipPosEnd * 0.5 + 0.5;
             #endif
 
-            vec3 traceScreenDir = normalize(clipPosEnd - clipPos);
+            vec3 traceScreenDir = clipPosEnd - clipPos;
+            float lenXY = length(traceScreenDir.xy);
+            traceScreenDir /= lenXY;
 
             // #ifdef EFFECT_TAA_ENABLED
             //     clipPos.xy += jitterOffset;
@@ -190,22 +197,28 @@ void main() {
 
             vec2 pixelSize = 1.0 / ap.game.screenSize;
 
-            vec3 traceScreenStep = traceScreenDir * pixelSize.y;
-            vec2 traceScreenDirAbs = abs(traceScreenDir.xy);
-            // traceScreenStep /= (traceScreenDirAbs.y > 0.5 * aspectRatio ? traceScreenDirAbs.y : traceScreenDirAbs.x);
-            traceScreenStep /= mix(traceScreenDirAbs.x, traceScreenDirAbs.y, traceScreenDirAbs.y);
+            vec3 traceScreenStep = traceScreenDir * max(pixelSize.x, pixelSize.y);
+//            vec2 traceScreenDirAbs = abs(traceScreenDir.xy);
+//            // traceScreenStep /= (traceScreenDirAbs.y > 0.5 * aspectRatio ? traceScreenDirAbs.y : traceScreenDirAbs.x);
+//            traceScreenStep /= mix(traceScreenDirAbs.x, traceScreenDirAbs.y, traceScreenDirAbs.y);
 
-            traceScreenStep *= 2.0;
+            traceScreenStep *= 4.0;
+
+            #ifdef EFFECT_TAA_ENABLED
+                float dither = InterleavedGradientNoiseTime(gl_FragCoord.xy);
+            #else
+                float dither = InterleavedGradientNoise(gl_FragCoord.xy);
+            #endif
 
             vec3 traceScreenPos = traceScreenStep * dither + clipPos;
 
-            int stepCount = 4;
-            if (saturate(shadowPos) != shadowPos) {
-                stepCount = 16;
-                traceScreenStep *= 2.0;
-            }
+            int stepCount = 8;
+//            if (saturate(shadowPos) != shadowPos) {
+//                stepCount = 16;
+//                traceScreenStep *= 2.0;
+//            }
 
-            float traceDist = 0.0;
+            //float traceDist = 0.0;
             float shadowTrace = 1.0;
             for (uint i = 0; i < stepCount; i++) {
                 if (shadowTrace < EPSILON) break;
@@ -222,13 +235,19 @@ void main() {
 
                 float traceDepthL = linearizeDepth(traceScreenPos.z, ap.camera.near, ap.camera.far);
 
-                float sampleDiff = traceDepthL - sampleDepthL;
-                if (sampleDiff > 0.001 * viewDist) {
-                    vec3 traceViewPos = unproject(ap.camera.projectionInv, traceScreenPos * 2.0 - 1.0);
+                //float sampleDiff = traceDepthL - sampleDepthL;
+                //if (sampleDiff > 0.001 * viewDist) {
+                vec3 traceViewPos = unproject(ap.camera.projectionInv, traceScreenPos * 2.0 - 1.0);
+                float traceDist = length(traceViewPos - viewPos);
+                float thickness = 0.25 + 0.25 * traceDist;
 
-                    traceDist = length(traceViewPos - viewPos);
-                    shadowTrace *= step(traceDist, sampleDiff * ShadowScreenSlope);
+//                if (traceDepthL > sampleDepthL) {
+                if (traceDepthL > sampleDepthL && traceDepthL <= sampleDepthL + thickness) {
+                    shadowTrace *= 0.0;//step(traceDist, sampleDiff * ShadowScreenSlope);
+                    break;
                 }
+
+                //traceScreenStep *= 1.25;
             }
 
             shadowFinal *= shadowTrace;

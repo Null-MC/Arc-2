@@ -29,7 +29,7 @@ in vec2 uv;
 
 #define EFFECT_SSAO_RT
 #define SSAO_TRACE_ENABLED
-const int SSAO_TRACE_SAMPLES = 3;
+const int SSAO_TRACE_SAMPLES = 6;
 
 
 void main() {
@@ -161,8 +161,10 @@ void main() {
                 #ifdef SSAO_TRACE_ENABLED
                     float sampleNoLm = 0.0;
 
-                    const float traceStepSize = 1.0/SSAO_TRACE_SAMPLES;
-                    vec3 traceStep = (sampleClipPos - clipPos) * traceStepSize;
+                    //const float traceStepSize = 1.0/SSAO_TRACE_SAMPLES;
+                    //vec3 traceStep = (sampleClipPos - clipPos) * traceStepSize;
+                    float traceStepSize = 0.01;
+                    vec3 traceStep = normalize(sampleClipPos - clipPos) * traceStepSize;
                     vec3 traceClipPos = clipPos + dither*traceStep;
 
                     for (int i = 0; i < SSAO_TRACE_SAMPLES; i++) {
@@ -176,6 +178,7 @@ void main() {
                             && traceDepthL < sampleDepthL + thickness) sampleNoLm = 1.0;
 
                         traceClipPos += traceStep;
+                        traceStep *= 1.5;
                     }
 
                     // TODO: decrease occlusion based on sample distance to avoid shadowing distant objects

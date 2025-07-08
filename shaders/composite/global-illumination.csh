@@ -635,8 +635,6 @@ void main() {
 		}
 	#endif
 
-	//lpvShVoxel voxel_gi = voxel_empty;
-
 	if (i_face == 0) {
 		sharedVoxels[i_voxel] = voxel_empty;
 
@@ -669,43 +667,41 @@ void main() {
 	barrier();
 
 	if (!isFullBlock) {
-		//int dir = i_face;
-		//for (int dir = 0; dir < 6; dir++) {
-			vec3 face_color;
-			float face_counter;
-			decode_shVoxel_dir(sharedVoxels[i_voxel].data[i_face], face_color, face_counter);
+		vec3 face_color;
+		float face_counter;
+		decode_shVoxel_dir(sharedVoxels[i_voxel].data[i_face], face_color, face_counter);
 
-			vec3 noise_dir = GetRandomFaceNormal(bufferPos, shVoxel_dir[i_face]);
+		vec3 noise_dir = GetRandomFaceNormal(bufferPos, shVoxel_dir[i_face]);
 
-			float faceF = dot(shVoxel_dir[i_face], noise_dir);
+		float faceF = dot(shVoxel_dir[i_face], noise_dir);
 
-			//vec3 noise_offset = sample_blueNoise(hash23(bufferPos));
+		//vec3 noise_offset = sample_blueNoise(hash23(bufferPos));
 //			vec3 noise_offset = hash33(bufferPos + ap.time.frames);
 //			noise_offset = noise_offset - 0.5;
 
-			//float traceDist;
+		//float traceDist;
 
-			// TODO: step out of intitial wsgi voxel
-			vec3 tracePos = voxelPos;
-			#if WSGI_VOXEL_SCALE > 1
-				vec3 offsetBufferPos = bufferPos+0.5;// + noise_offset;
+		// TODO: step out of intitial wsgi voxel
+		vec3 tracePos = voxelPos;
+		#if WSGI_VOXEL_SCALE > 1
+			vec3 offsetBufferPos = bufferPos+0.5;// + noise_offset;
 
-				vec3 stepSizes, nextDist;
-				dda_init(stepSizes, nextDist, offsetBufferPos, noise_dir);
+			vec3 stepSizes, nextDist;
+			dda_init(stepSizes, nextDist, offsetBufferPos, noise_dir);
 
-				vec3 stepAxisNext;
-				vec3 step = dda_step(stepAxisNext, nextDist, stepSizes, noise_dir);
-				//stepAxis = stepAxisNext;
-				offsetBufferPos += step;
+			vec3 stepAxisNext;
+			vec3 step = dda_step(stepAxisNext, nextDist, stepSizes, noise_dir);
+			//stepAxis = stepAxisNext;
+			offsetBufferPos += step;
 
-				vec3 traceLocalPos = wsgi_getLocalPosition(offsetBufferPos, WSGI_CASCADE);
-				tracePos = voxel_GetBufferPosition(traceLocalPos);
+			vec3 traceLocalPos = wsgi_getLocalPosition(offsetBufferPos, WSGI_CASCADE);
+			tracePos = voxel_GetBufferPosition(traceLocalPos);
 
-				tracePos += 0.05 * noise_dir;
-				//tracePos = offsetBufferPos * voxelSize + wsgiVoxelOffset + 0.05 * noise_dir;
-			#endif
+			tracePos += 0.05 * noise_dir;
+			//tracePos = offsetBufferPos * voxelSize + wsgiVoxelOffset + 0.05 * noise_dir;
+		#endif
 
-			vec3 traceSample = trace_GI(tracePos, noise_dir, i_face);
+		vec3 traceSample = trace_GI(tracePos, noise_dir, i_face);
 
 //			if (iris_hasFluid(blockId)) {
 //				traceSample *= exp(-3.0 * VL_WaterTransmit * VL_WaterDensity);
@@ -713,20 +709,16 @@ void main() {
 
 //			const float radius = 0.5;
 //			float sampleWeight = PI * sphereContribution(shVoxel_dir[i_face], noise_dir * traceDist, radius);
-			float sampleWeight = max(faceF, 0.0);// / (3.0 + traceDist);
+		float sampleWeight = max(faceF, 0.0);// / (3.0 + traceDist);
 
-			face_counter = clamp(face_counter + sampleWeight, 0.0, VOXEL_GI_MAXFRAMES);
+		face_counter = clamp(face_counter + sampleWeight, 0.0, VOXEL_GI_MAXFRAMES);
 
-			traceSample = clamp(traceSample * 0.001, 0.0, 65000.0);
+		traceSample = clamp(traceSample * 0.001, 0.0, 65000.0);
 
-			float mixF = 1.0 / (1.0 + face_counter);
-			face_color = mix(face_color, traceSample, mixF * sampleWeight);// * max(faceF, 0.0);
+		float mixF = 1.0 / (1.0 + face_counter);
+		face_color = mix(face_color, traceSample, mixF * sampleWeight);// * max(faceF, 0.0);
 
-			sharedVoxels[i_voxel].data[i_face] = encode_shVoxel_dir(face_color, face_counter);
-//		}
-	}
-	else {
-//		sharedVoxels[i_voxel].data[i_face] = uvec2(0u);
+		sharedVoxels[i_voxel].data[i_face] = encode_shVoxel_dir(face_color, face_counter);
 	}
 
 	memoryBarrierShared();

@@ -366,6 +366,7 @@ export function setupShader(dimension : NamespacedId) {
         new NamespacedId("pink_stained_glass"),
         new NamespacedId("pink_stained_glass_pane")));
 
+    setLightColorEx('#8053d1', 'amethyst_cluster');
     setLightColorEx('#362b21', 'brown_mushroom');
     setLightColorEx('#f39849', 'campfire');
     setLightColorEx('#935b2c', 'cave_vines', "cave_vines_plant");

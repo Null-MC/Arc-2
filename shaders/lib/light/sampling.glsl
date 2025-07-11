@@ -108,7 +108,7 @@ vec3 SampleLightSpecular(float NoL, float NoH, float NoV, vec3 F_VoH, float roug
     vec3 numerator = D * G * F_VoH;
     // TODO: was suggested to remove NoL from denominator
     float denominator = 4.0 * NoL * NoV + 0.0001; // Add a small epsilon to prevent division by zero
-    return numerator / denominator;
+    return saturate(numerator / denominator);
 }
 
 //float SampleLightSpecular(const in float NoL, const in float NoH, const in float NoV, const in float roughL) {

@@ -104,6 +104,9 @@ function applySettings(settings : ShaderSettings, internal) {
 
     defineGlobally('MATERIAL_EMISSION_FORMAT', getChannelFormat(settings.Material_Emission_Format));
 
+    if (settings.Material_EntityTessellationEnabled)
+        defineGlobally1('MATERIAL_ENTITY_TESSELLATION');
+
     if (settings.Material_FancyLava) {
         defineGlobally1('FANCY_LAVA');
         defineGlobally('FANCY_LAVA_RES', settings.Material_FancyLavaResolution);
@@ -367,7 +370,7 @@ export function setupShader(dimension : NamespacedId) {
         new NamespacedId("pink_stained_glass_pane")));
 
     setLightColorEx('#8053d1', 'amethyst_cluster');
-    setLightColorEx('#362b21', 'brown_mushroom');
+    setLightColorEx('#3e2d1f', 'brown_mushroom');
     setLightColorEx('#f39849', 'campfire');
     setLightColorEx('#935b2c', 'cave_vines', "cave_vines_plant");
     setLightColorEx('#d39f6d', 'copper_bulb', 'waxed_copper_bulb');
@@ -1218,14 +1221,26 @@ export function setupShader(dimension : NamespacedId) {
 
     mainShaderOpaque('entity-solid', Usage.ENTITY_SOLID)
         .with(s => s.define('RENDER_ENTITY', '1'))
+        .if(settings.Material_EntityTessellationEnabled, builder => builder
+            .with(shader => shader
+                .control('gbuffer/main.tcs')
+                .eval('gbuffer/main.tes')))
         .build();
 
     mainShaderOpaque('entity-cutout', Usage.ENTITY_CUTOUT)
         .with(s => s.define('RENDER_ENTITY', '1'))
+        .if(settings.Material_EntityTessellationEnabled, builder => builder
+            .with(shader => shader
+                .control('gbuffer/main.tcs')
+                .eval('gbuffer/main.tes')))
         .build();
 
     mainShaderTranslucent('entity-translucent', Usage.ENTITY_TRANSLUCENT)
         .with(s => s.define('RENDER_ENTITY', '1'))
+        .if(settings.Material_EntityTessellationEnabled, builder => builder
+            .with(shader => shader
+                .control('gbuffer/main.tcs')
+                .eval('gbuffer/main.tes')))
         .build();
 
     function particleShader(name: string, usage: ProgramUsage) : ShaderBuilder<ObjectShader> {
@@ -1758,7 +1773,7 @@ function setupSky(sceneBuffer) {
         .format(Format.RGB16F)
         .clear(false)
         .width(256)
-        .height(128)
+        .height(64)
         .build();
 
     const texSkyMultiScatter = new Texture("texSkyMultiScatter")

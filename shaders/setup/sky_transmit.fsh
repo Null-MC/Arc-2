@@ -7,16 +7,20 @@ layout(location = 0) out vec4 outColor;
 
 in vec2 uv;
 
+uniform sampler2D texSkyTransmit;
+
 #include "/lib/common.glsl"
 
 #include "/lib/hg.glsl"
 #include "/lib/sky/common.glsl"
 
 
-const float sunTransmittanceSteps = 40.0;
+const int sunTransmittanceSteps = 40;
 
 
 void main() {
+    vec2 uv = gl_FragCoord.xy / textureSize(texSkyTransmit, 0);
+
     float sunCosTheta = 2.0*uv.x - 1.0;
     float sunTheta = safeacos(sunCosTheta);
     float height = mix(groundRadiusMM, atmosphereRadiusMM, uv.y);
@@ -31,7 +35,7 @@ void main() {
         
         transmittance = vec3(1.0);
 
-        for (float i = 0.0; i < sunTransmittanceSteps; i += 1.0) {
+        for (int i = 0; i < sunTransmittanceSteps; i++) {
             float newT = ((i + 0.3)/sunTransmittanceSteps)*atmoDist;
             float dt = newT - t;
             t = newT;

@@ -1,5 +1,5 @@
-const float CloudShadowDepth = 200.0;
-const float CloudShadowMinF = 0.0;
+const float CloudShadowDepth = 80.0;
+const float CloudShadowMinF = 0.3;
 
 
 float SampleCloudShadows(const in vec3 localPos) {
@@ -15,7 +15,7 @@ float SampleCloudShadows(const in vec3 localPos) {
     float horizonF = smoothstep(0.15, 0.30, Scene_LocalLightDir.y);
     cloudShadowF = mix(0.0, cloudShadowF, horizonF);
 
-    //cloudShadowF = CloudShadowMinF + (1.0 - CloudShadowMinF) * cloudShadowF;
+    cloudShadowF = CloudShadowMinF + (1.0 - CloudShadowMinF) * cloudShadowF;
 
     return cloudShadowF;
 }

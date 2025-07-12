@@ -29,6 +29,7 @@ uniform sampler2D TEX_SRC;
         uniform sampler2D texAccumSpecular_opaque;
     #endif
 #elif DEBUG_VIEW == DEBUG_VIEW_SKY_IRRADIANCE
+    uniform sampler2D texSkyTransmit;
     uniform sampler2D texSkyView;
     uniform sampler2D texSkyIrradiance;
 #elif DEBUG_VIEW == DEBUG_VIEW_SHADOWMAP_COLOR
@@ -80,13 +81,14 @@ in vec2 uv;
 void main() {
     ivec2 iuv = ivec2(gl_FragCoord.xy);
     vec3 color = texelFetch(TEX_SRC, iuv, 0).rgb;
-    vec2 previewCoord, previewCoord2, previewCoordSq;
+    vec2 previewCoord, previewCoord2, previewCoord3, previewCoordSq;
     
     if (!ap.game.guiHidden) {
         float aspect = ap.game.screenSize.y / ap.game.screenSize.x;
 
         previewCoord = (uv - 0.01) / vec2(0.25);
         previewCoord2 = (uv - vec2(0.27, 0.01)) / vec2(0.25);
+        previewCoord3 = (uv - vec2(0.53, 0.01)) / vec2(0.25);
         previewCoordSq = (uv - 0.01) / vec2(0.25 * aspect, 0.25);
 
         if (saturate(previewCoord) == previewCoord) {
@@ -107,9 +109,7 @@ void main() {
                     color = textureLod(texAccumDiffuse_opaque, previewCoord, 0).rgb;
                 #endif
             #elif DEBUG_VIEW == DEBUG_VIEW_SKY_IRRADIANCE
-                color = textureLod(texSkyView, previewCoord, 0).rgb;
-                //ApplyAutoExposure(color, Scene_AvgExposure);
-                color = tonemap_jodieReinhard(color);
+                color = textureLod(texSkyTransmit, previewCoord, 0).rgb;
             #elif DEBUG_VIEW == DEBUG_VIEW_PARTICLES
                 #ifdef DEBUG_TRANSLUCENT
                     color = textureLod(texParticleTranslucent, previewCoord, 0).rgb * 0.001;
@@ -165,8 +165,14 @@ void main() {
                     color = textureLod(texAccumSpecular_opaque, previewCoord2, 0).rgb;
                 #endif
             #elif DEBUG_VIEW == DEBUG_VIEW_SKY_IRRADIANCE
-                color = textureLod(texSkyIrradiance, previewCoord2, 0).rgb;
-                //ApplyAutoExposure(color, Scene_AvgExposure);
+                color = textureLod(texSkyView, previewCoord2, 0).rgb;
+                color = tonemap_jodieReinhard(color);
+            #endif
+        }
+
+        if (saturate(previewCoord3) == previewCoord3) {
+            #if DEBUG_VIEW == DEBUG_VIEW_SKY_IRRADIANCE
+                color = textureLod(texSkyIrradiance, previewCoord3, 0).rgb;
                 color = tonemap_jodieReinhard(color);
             #endif
         }

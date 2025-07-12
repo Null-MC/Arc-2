@@ -61,6 +61,7 @@ export class ShaderSettings {
     get Material_SSS_MaxRadius(): number {return this.getCachedFloatSetting('MATERIAL_SSS_RADIUS');}
     get Material_FancyLava(): boolean {return this.getCachedBoolSetting('FANCY_LAVA');}
     get Material_FancyLavaResolution(): number {return this.getCachedIntSetting('FANCY_LAVA_RES');}
+    get Material_EntityTessellationEnabled(): boolean {return false;}
 
     get Lighting_Mode(): number {return this.getCachedSetting<number>('LIGHTING_MODE', k => parseInt(getStringSetting(k)));}
     get Lighting_BlockTemp(): number {return this.getCachedIntSetting('BLOCKLIGHT_TEMP');}

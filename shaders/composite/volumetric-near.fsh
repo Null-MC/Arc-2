@@ -289,16 +289,15 @@ void main() {
 
             vec3 sunTransmit, moonTransmit;
             GetSkyLightTransmission(sampleLocalPos, sunTransmit, moonTransmit);
-            float skyLightF = 1.0;//smoothstep(0.0, 0.2, Scene_LocalLightDir.y);
+            float skyLightF = smoothstep(0.0, 0.08, Scene_LocalLightDir.y);
             vec3 sunSkyLight = skyLightF * SUN_LUX * sunTransmit * Scene_SunColor;
             vec3 moonSkyLight = skyLightF * MOON_LUX * moonTransmit;
 
-            float cloudShadow = 1.0;
+            //float cloudShadow = 1.0;
             #if defined(SKY_CLOUDS_ENABLED) && defined(SHADOWS_CLOUD_ENABLED)
                 // Cloud Shadows
                 if (sampleLocalPos.y+ap.camera.pos.y < cloudHeight) {
-                    cloudShadow = SampleCloudShadows(sampleLocalPos);
-                    shadowSample *= cloudShadow;
+                    shadowSample *= SampleCloudShadows(sampleLocalPos);
                 }
             #endif
 

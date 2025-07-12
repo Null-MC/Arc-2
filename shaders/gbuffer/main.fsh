@@ -11,7 +11,7 @@ layout(location = 2) out uvec4 outData;
     layout(location = 3) out float outDepth;
 #endif
 
-#if defined RENDER_PARALLAX && defined MATERIAL_PARALLAX_DEPTHWRITE
+#if defined(RENDER_PARALLAX) && defined(MATERIAL_PARALLAX_DEPTHWRITE) && defined(RENDER_TERRAIN)
     layout (depth_greater) out float gl_FragDepth;
 #endif
 
@@ -23,22 +23,25 @@ in VertexData2 {
     vec3 localOffset;
     vec3 localNormal;
     vec4 localTangent;
-    flat uint blockId;
 
     #ifdef RENDER_ENTITY
         vec4 overlayColor;
     #endif
 
-    #if defined(RENDER_TERRAIN) && defined(RENDER_TRANSLUCENT)
-        //#ifdef WATER_TESSELLATION_ENABLED
-            vec3 surfacePos;
-        //#endif
+    #ifdef RENDER_TERRAIN
+        flat uint blockId;
+    #endif
 
+    #if defined(RENDER_TERRAIN) && defined(RENDER_TRANSLUCENT)
+        vec3 surfacePos;
         float waveStrength;
     #endif
 
-    #if defined(RENDER_PARALLAX) || defined(MATERIAL_NORMAL_SMOOTH)
+    #if defined(RENDER_PARALLAX) && defined(RENDER_TERRAIN)
         vec3 tangentViewPos;
+    #endif
+
+    #if defined(RENDER_PARALLAX) || defined(MATERIAL_NORMAL_SMOOTH) || defined(MATERIAL_ENTITY_TESSELLATION)
         flat vec2 atlasCoordMin;
         flat vec2 atlasCoordSize;
     #endif
@@ -86,7 +89,7 @@ void iris_emitFragment() {
 
     float mLOD = textureQueryLod(irisInt_BaseTex, mUV).y;
 
-    #ifdef RENDER_PARALLAX
+    #if defined(RENDER_PARALLAX) && defined(RENDER_TERRAIN)
         float texDepth = 1.0;
         vec3 traceCoordDepth = vec3(1.0);
 
@@ -276,6 +279,14 @@ void iris_emitFragment() {
         ApplyDirectionalLightmap(lmcoord.x, viewPos, viewGeoNormal, viewTexNormal);
     #endif
 
+    uint blockId = -1u;
+
+    #ifdef RENDER_TERRAIN
+        blockId = vIn.blockId;
+    #elif defined(RENDER_HAND)
+        blockId = BLOCK_HAND;
+    #endif
+
     outColor = albedo;
 
     outTexNormal = vec4((localTexNormal * 0.5 + 0.5), 1.0);
@@ -283,7 +294,7 @@ void iris_emitFragment() {
     outData.r = packUnorm4x8(vec4((localGeoNormal * 0.5 + 0.5), 0.0));
     outData.g = packUnorm4x8(vec4(roughness, f0_metal, emission, sss));
     outData.b = packUnorm4x8(vec4(lmcoord, occlusion, porosity));
-    outData.a = vIn.blockId;
+    outData.a = blockId;
 
     #ifdef RENDER_TRANSLUCENT
         outDepth = gl_FragCoord.z;

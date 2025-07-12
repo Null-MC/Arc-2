@@ -11,10 +11,13 @@ out VertexData2 {
 	vec3 localOffset;
 	vec3 localNormal;
 	vec4 localTangent;
-	flat uint blockId;
 
 	#ifdef RENDER_ENTITY
 		vec4 overlayColor;
+	#endif
+
+	#ifdef RENDER_TERRAIN
+		flat uint blockId;
 	#endif
 
 	#if defined(RENDER_TERRAIN) && defined(RENDER_TRANSLUCENT)
@@ -25,8 +28,11 @@ out VertexData2 {
 		float waveStrength;
 	#endif
 
-	#if defined(RENDER_PARALLAX) || defined(MATERIAL_NORMAL_SMOOTH)
+	#if defined(RENDER_PARALLAX) && defined(RENDER_TERRAIN)
 		vec3 tangentViewPos;
+	#endif
+
+	#if defined(RENDER_PARALLAX) || defined(MATERIAL_NORMAL_SMOOTH) || defined(MATERIAL_ENTITY_TESSELLATION)
 		flat vec2 atlasCoordMin;
 		flat vec2 atlasCoordSize;
 	#endif
@@ -51,6 +57,10 @@ out VertexData2 {
 
 #ifdef RENDER_PARALLAX
 	#include "/lib/utility/tbn.glsl"
+#endif
+
+#if defined(RENDER_PARALLAX) || defined(MATERIAL_NORMAL_SMOOTH) || defined(MATERIAL_ENTITY_TESSELLATION)
+	#include "/lib/utility/atlas.glsl"
 #endif
 
 #ifdef EFFECT_TAA_ENABLED
@@ -114,17 +124,14 @@ void iris_sendParameters(in VertexData data) {
     vOut.uv = data.uv;
     vOut.light = data.light;
     vOut.color = data.color;
-    vOut.blockId = data.blockId;
 
-	#ifdef RENDER_HAND
-		vOut.blockId = BLOCK_HAND;
+	#ifdef RENDER_TERRAIN
+	    vOut.blockId = data.blockId;
 	#endif
 
 	#ifdef RENDER_ENTITY
 		vOut.overlayColor = data.overlayColor;
 	#endif
-
-	//vOut.light = saturate(unmix(vOut.light, (0.5/16.0), (15.5/16.0)));
 
 	vec3 viewNormal = mat3(iris_modelViewMatrix) * data.normal;
 	vOut.localNormal = mat3(ap.camera.viewInv) * viewNormal;
@@ -133,10 +140,10 @@ void iris_sendParameters(in VertexData data) {
 	vOut.localTangent.xyz = mat3(ap.camera.viewInv) * viewTangent;
 	vOut.localTangent.w = data.tangent.w;
 
-	#if defined(RENDER_PARALLAX) || defined(MATERIAL_NORMAL_SMOOTH)
-		// TODO: These are wrong! replace with old midcoord derived version
-		vOut.atlasCoordMin = iris_getTexture(data.textureId).minCoord;
-		vOut.atlasCoordSize = iris_getTexture(data.textureId).maxCoord - vOut.atlasCoordMin;
+	#if defined(RENDER_PARALLAX) || defined(MATERIAL_NORMAL_SMOOTH) || defined(MATERIAL_ENTITY_TESSELLATION)
+//		vOut.atlasCoordMin = iris_getTexture(data.textureId).minCoord;
+//		vOut.atlasCoordSize = iris_getTexture(data.textureId).maxCoord - vOut.atlasCoordMin;
+		GetAtlasBounds(vOut.uv, data.midCoord, vOut.atlasCoordMin, vOut.atlasCoordSize);
 
 		#ifdef RENDER_PARALLAX
 			mat3 matViewTBN = GetTBN(viewNormal, viewTangent, data.tangent.w);

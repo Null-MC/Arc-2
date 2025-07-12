@@ -1,7 +1,6 @@
-//vec2 GetAtlasCoord(const in vec2 localCoord, const in vec2 atlasMinCoord, const in vec2 atlasMaxCoord) {
-//    return fract(localCoord) * (atlasMaxCoord - atlasMinCoord) + atlasMinCoord;
-//}
-//
-//vec2 GetLocalCoord(const in vec2 atlasCoord, const in vec2 atlasMinCoord, const in vec2 atlasMaxCoord) {
-//    return (atlasCoord - atlasMinCoord) / (atlasMaxCoord - atlasMinCoord);
-//}
+void GetAtlasBounds(const in vec2 texcoord, const in vec2 midTexCoord, out vec2 atlasTileMin, out vec2 atlasTileSize) {
+    vec2 coordNMid = texcoord - midTexCoord;
+
+    atlasTileMin = min(texcoord, midTexCoord - coordNMid);
+    atlasTileSize = abs(coordNMid) * 2.0;
+}

@@ -16,6 +16,12 @@ void sample_AllPointLights(inout vec3 diffuse, inout vec3 specular, const in vec
         const uint maxLightCount = LIGHTING_SHADOW_MAX_COUNT;
     #endif
 
+    #ifdef RENDER_COMPUTE
+        vec2 fragCoord = gl_GlobalInvocationID.xy;
+    #else
+        vec2 fragCoord = gl_FragCoord.xy;
+    #endif
+
     for (uint i = 0u; i < maxLightCount; i++) {
         #ifdef LIGHTING_SHADOW_BIN_ENABLED
             uint lightIndex = LightBinMap[lightBinIndex].lightList[i].shadowIndex;
@@ -29,7 +35,7 @@ void sample_AllPointLights(inout vec3 diffuse, inout vec3 specular, const in vec
             if (light.block == -1) continue;
         #endif
 
-        float dither = InterleavedGradientNoiseTime(ivec2(gl_FragCoord.xy + vec2(23.7, 37.1)*i));
+        float dither = InterleavedGradientNoiseTime(ivec2(fragCoord + vec2(23.7, 37.1)*i));
 
         float lightRange = iris_getEmission(light.block);
         lightRange *= (LIGHTING_SHADOW_RANGE * 0.01);

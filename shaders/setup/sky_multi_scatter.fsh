@@ -55,7 +55,7 @@ void getMulScattValues(vec3 pos, vec3 sunDir, out vec3 lumTotal, out vec3 fms) {
 
             float VoL_moon = -VoL_sun;
             float miePhase_moon = getMiePhase(VoL_moon);
-            float rayleighPhase_moon = getRayleighPhase(-VoL_sun);
+            float rayleighPhase_moon = getRayleighPhase(-VoL_moon);
 
             vec3 lum = vec3(0.0), lumFactor = vec3(0.0), transmittance = vec3(1.0);
 

@@ -13,15 +13,27 @@ in VertexData2 {
     vec3 localOffset;
     vec3 localNormal;
     vec4 localTangent;
-    flat uint blockId;
 
-    float waveStrength;
+    #ifdef RENDER_ENTITY
+        vec4 overlayColor;
+    #endif
 
-    #if defined(RENDER_PARALLAX) || defined(MATERIAL_NORMAL_SMOOTH)
-		vec3 tangentViewPos;
-		flat vec2 atlasCoordMin;
-		flat vec2 atlasCoordSize;
-	#endif
+    #ifdef RENDER_TERRAIN
+        flat uint blockId;
+    #endif
+
+    #if defined(RENDER_TERRAIN) && defined(RENDER_TRANSLUCENT)
+        float waveStrength;
+    #endif
+
+    #if defined(RENDER_PARALLAX) && defined(RENDER_TERRAIN)
+        vec3 tangentViewPos;
+    #endif
+
+    #if defined(RENDER_PARALLAX) || defined(MATERIAL_NORMAL_SMOOTH) || defined(MATERIAL_ENTITY_TESSELLATION)
+        flat vec2 atlasCoordMin;
+        flat vec2 atlasCoordSize;
+    #endif
 } vIn[];
 
 out VertexData2 {
@@ -32,16 +44,28 @@ out VertexData2 {
     vec3 localOffset;
     vec3 localNormal;
     vec4 localTangent;
-    flat uint blockId;
 
-    vec3 surfacePos;
-    float waveStrength;
+    #ifdef RENDER_ENTITY
+        vec4 overlayColor;
+    #endif
 
-    #if defined(RENDER_PARALLAX) || defined(MATERIAL_NORMAL_SMOOTH)
-		vec3 tangentViewPos;
-		flat vec2 atlasCoordMin;
-		flat vec2 atlasCoordSize;
-	#endif
+    #ifdef RENDER_TERRAIN
+        flat uint blockId;
+    #endif
+
+    #if defined(RENDER_TERRAIN) && defined(RENDER_TRANSLUCENT)
+        vec3 surfacePos;
+        float waveStrength;
+    #endif
+
+    #if defined(RENDER_PARALLAX) && defined(RENDER_TERRAIN)
+        vec3 tangentViewPos;
+    #endif
+
+    #if defined(RENDER_PARALLAX) || defined(MATERIAL_NORMAL_SMOOTH) || defined(MATERIAL_ENTITY_TESSELLATION)
+        flat vec2 atlasCoordMin;
+        flat vec2 atlasCoordSize;
+    #endif
 } vOut[];
 
 #include "/lib/common.glsl"
@@ -64,22 +88,37 @@ void main() {
     vOut[gl_InvocationID].localNormal = vIn[gl_InvocationID].localNormal;
     vOut[gl_InvocationID].localTangent = vIn[gl_InvocationID].localTangent;
 
-    vOut[gl_InvocationID].blockId = vIn[gl_InvocationID].blockId;
+    #ifdef RENDER_ENTITY
+        vOut[gl_InvocationID].overlayColor = vIn[gl_InvocationID].overlayColor;
+    #endif
 
-    vOut[gl_InvocationID].surfacePos = vIn[gl_InvocationID].localPos;
-    vOut[gl_InvocationID].waveStrength = vIn[gl_InvocationID].waveStrength;
+    #ifdef RENDER_TERRAIN
+        vOut[gl_InvocationID].blockId = vIn[gl_InvocationID].blockId;
+    #endif
 
-    #if defined(RENDER_PARALLAX) || defined(MATERIAL_NORMAL_SMOOTH)
+    #if defined(RENDER_TERRAIN) && defined(RENDER_TRANSLUCENT)
+        vOut[gl_InvocationID].surfacePos = vIn[gl_InvocationID].localPos;
+        vOut[gl_InvocationID].waveStrength = vIn[gl_InvocationID].waveStrength;
+    #endif
+
+    #if defined(RENDER_PARALLAX) && defined(RENDER_TERRAIN)
         vOut[gl_InvocationID].tangentViewPos = vIn[gl_InvocationID].tangentViewPos;
+    #endif
+
+    #if defined(RENDER_PARALLAX) || defined(MATERIAL_NORMAL_SMOOTH) || defined(MATERIAL_ENTITY_TESSELLATION)
         vOut[gl_InvocationID].atlasCoordMin = vIn[gl_InvocationID].atlasCoordMin;
         vOut[gl_InvocationID].atlasCoordSize = vIn[gl_InvocationID].atlasCoordSize;
     #endif
 
     if (gl_InvocationID == 0) {
-        // bool isWater = bitfieldExtract(vIn[gl_InvocationID].material, 6, 1) != 0;
-        bool is_fluid = iris_hasFluid(vIn[gl_InvocationID].blockId);
+        float maxQuality = 1.0;
 
-        float maxQuality = is_fluid ? Water_TessellationLevel : 1.0;
+        #ifdef RENDER_TERRAIN
+            bool is_fluid = iris_hasFluid(vIn[gl_InvocationID].blockId);
+            if (is_fluid) maxQuality = Water_TessellationLevel;
+        #elif defined(RENDER_ENTITY)
+            maxQuality = 24;
+        #endif
 
         vec3 viewZ = vec3(
             length(vIn[0].localPos),

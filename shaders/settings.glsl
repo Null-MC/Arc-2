@@ -13,6 +13,7 @@
 
 #define HANDLIGHT_TRACE
 
+//#define VL_SOFT_SHADOW
 //#define VL_SELF_SHADOW
 #define VL_STEP_POW 100
 

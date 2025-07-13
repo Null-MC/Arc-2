@@ -273,11 +273,13 @@ void main() {
                 vec3 shadowPos = GetShadowSamplePos(shadowViewPos, shadowRadius, shadowCascade);
 
                 if (shadowCascade >= 0) {
-                    float avg_depth = textureLod(texShadowBlocker, vec3(shadowPos.xy, shadowCascade), 0).r;
-                    float blockerDistance = max(shadowPos.z - avg_depth, 0.0) * GetShadowRange(shadowCascade);
-                    vec2 pixelRadius = GetPixelRadius(blockerDistance / SHADOW_PENUMBRA_SCALE, shadowCascade);
-                    //pixelRadius = clamp(pixelRadius, vec2(minShadowPixelRadius), maxPixelRadius);
-                    shadowPos.xy += (hash23(vec3(gl_FragCoord.xy, i + ap.time.frames)) - 0.5) * pixelRadius;
+                    #ifdef VL_SOFT_SHADOW
+                        float avg_depth = textureLod(texShadowBlocker, vec3(shadowPos.xy, shadowCascade), 0).r;
+                        float blockerDistance = max(shadowPos.z - avg_depth, 0.0) * GetShadowRange(shadowCascade);
+                        vec2 pixelRadius = GetPixelRadius(blockerDistance / SHADOW_PENUMBRA_SCALE, shadowCascade);
+                        //pixelRadius = clamp(pixelRadius, vec2(minShadowPixelRadius), maxPixelRadius);
+                        shadowPos.xy += (hash23(vec3(gl_FragCoord.xy, i + ap.time.frames)) - 0.5) * pixelRadius;
+                    #endif
 
                     shadowSample *= SampleShadowColor(shadowPos, shadowCascade, waterDepth);
                     waterDepth = max(waterDepth, EPSILON);

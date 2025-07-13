@@ -44,6 +44,7 @@ export class ShaderSettings {
     get Shadow_CloudEnabled(): boolean {return this.getCachedBoolSetting('SHADOWS_CLOUD_ENABLED');}
     get Shadow_Filter(): boolean {return true;}
     get Shadow_SS_Fallback(): boolean {return this.getCachedBoolSetting('SHADOWS_SS_FALLBACK');}
+    get Shadow_BlockerTexEnabled(): boolean {return false;}
 
     get Material_Format(): number {return this.getCachedSetting<number>('MATERIAL_FORMAT', k => parseInt(getStringSetting(k)));}
     get Material_ParallaxEnabled(): boolean {return this.getCachedBoolSetting('MATERIAL_PARALLAX_ENABLED');}

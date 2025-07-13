@@ -9,7 +9,6 @@
 
 //#define REFRACTION_SNELL
 
-//#define SHADOW_BLOCKER_TEX
 #define SHADOW_VOXEL_TEST
 
 #define HANDLIGHT_TRACE

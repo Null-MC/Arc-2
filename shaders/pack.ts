@@ -14,46 +14,52 @@ let SceneSettingsBuffer: BuiltStreamingBuffer;
 let BlockMappings: BlockMap;
 
 
-export function initShader(dimension : NamespacedId) {
+// TODO: temp workaround
+let renderConfig: RendererConfig = null;
+
+export function configureRenderer(renderer : RendererConfig) {
     const settings = new ShaderSettings();
     const internal = settings.BuildInternalSettings();
 
-    worldSettings.disableShade = true;
-    worldSettings.ambientOcclusionLevel = 0.0;
-    worldSettings.shadow.resolution = settings.Shadow_Resolution;
-    worldSettings.shadow.cascades = settings.Shadow_CascadeCount;
-    worldSettings.render.waterOverlay = false;
-    worldSettings.render.stars = false;
-    worldSettings.render.moon = false;
-    worldSettings.render.sun = false;
+    renderConfig = renderer;
+
+    renderer.disableShade = true;
+    renderer.ambientOcclusionLevel = 0.0;
+    renderer.shadow.resolution = settings.Shadow_Resolution;
+    renderer.shadow.cascades = settings.Shadow_CascadeCount;
+    renderer.render.waterOverlay = false;
+    renderer.render.stars = false;
+    renderer.render.moon = false;
+    renderer.render.sun = false;
 
     // TODO: fix hands later, for now just unbreak them
-    worldSettings.mergedHandDepth = true;
+    renderer.mergedHandDepth = true;
 
-    worldSettings.pointLight.nearPlane = internal.PointLightNear;
-    worldSettings.pointLight.farPlane = internal.PointLightFar;
-    worldSettings.pointLight.maxCount = settings.Lighting_Shadow_MaxCount;
-    worldSettings.pointLight.resolution = settings.Lighting_Shadow_Resolution;
-    worldSettings.pointLight.cacheRealTimeTerrain = false;
+    renderer.pointLight.nearPlane = internal.PointLightNear;
+    renderer.pointLight.farPlane = internal.PointLightFar;
+    renderer.pointLight.maxCount = settings.Lighting_Shadow_MaxCount;
+    renderer.pointLight.resolution = settings.Lighting_Shadow_Resolution;
+    renderer.pointLight.cacheRealTimeTerrain = false;
+
+    applySettings(settings, internal);
 }
 
 function applySettings(settings : ShaderSettings, internal) {
-    worldSettings.shadow.distance = settings.Shadow_Distance;
+    renderConfig.shadow.distance = settings.Shadow_Distance;
 
-    worldSettings.pointLight.maxUpdates = settings.Lighting_Shadow_UpdateCount;
-    worldSettings.pointLight.realTimeCount = settings.Lighting_Shadow_RealtimeCount;
-    worldSettings.pointLight.updateThreshold = settings.Lighting_Shadow_UpdateThreshold * 0.01;
+    renderConfig.pointLight.maxUpdates = settings.Lighting_Shadow_UpdateCount;
+    renderConfig.pointLight.realTimeCount = settings.Lighting_Shadow_RealtimeCount;
+    renderConfig.pointLight.updateThreshold = settings.Lighting_Shadow_UpdateThreshold * 0.01;
 
+    renderConfig.shadow.enabled = settings.Shadow_Enabled;
     if (settings.Shadow_Enabled) {
-        worldSettings.shadow.enable();
-
         if (settings.Shadow_CascadeCount == 1) {
-            worldSettings.shadow.near = -200;
-            worldSettings.shadow.far = 200;
+            renderConfig.shadow.near = -200;
+            renderConfig.shadow.far = 200;
         }
 
         if (!settings.Voxel_UseProvided || internal.VoxelizeBlockFaces || internal.VoxelizeTriangles)
-            worldSettings.shadow.safeZone[0] = settings.Voxel_Size / 2;
+            renderConfig.shadow.safeZone[0] = settings.Voxel_Size / 2;
     }
 
     defineGlobally1("EFFECT_VL_ENABLED");
@@ -77,6 +83,8 @@ function applySettings(settings : ShaderSettings, internal) {
     if (settings.Shadow_SS_Fallback) defineGlobally1('SHADOWS_SS_FALLBACK');
     defineGlobally('SHADOW_RESOLUTION', settings.Shadow_Resolution);
     defineGlobally('SHADOW_CASCADE_COUNT', settings.Shadow_CascadeCount);
+    if (settings.Shadow_BlockerTexEnabled)
+        defineGlobally1('SHADOW_BLOCKER_TEX');
 
     function getChannelFormat(channelFormat: number) {
         return (channelFormat >= 0) ? channelFormat : settings.Material_Format;
@@ -131,7 +139,7 @@ function applySettings(settings : ShaderSettings, internal) {
         if (settings.Lighting_Shadow_VoxelFill)
             defineGlobally1('LIGHTING_SHADOW_VOXEL_FILL');
 
-        if (worldSettings.cascadeCount == 1)
+        if (renderConfig.shadow.cascades == 1)
             defineGlobally1('SHADOW_DISTORTION_ENABLED');
     }
 
@@ -227,8 +235,9 @@ function applySettings(settings : ShaderSettings, internal) {
 //     defineGlobally(name, index);
 // }
 
-export function setupShader(dimension : NamespacedId) {
-    print(`Setting up shader [DIM: ${dimension.getPath()}]`);
+export function configurePipeline(pipeline : PipelineConfig) {
+    const renderer = pipeline.getRendererConfig();
+    print(`Setting up shader [DIM: ${renderer.dimension.getPath()}]`);
 
     BlockMappings = new BlockMap();
     BlockMappings.map('grass_block', 'BLOCK_GRASS');
@@ -238,14 +247,14 @@ export function setupShader(dimension : NamespacedId) {
     const internal = settings.BuildInternalSettings();
     applySettings(settings, internal);
 
-    const blockTags = new TagBuilder()
+    const blockTags = new TagBuilder(pipeline)
         //.map("TAG_FOLIAGE", new NamespacedId("aperture", "foliage"))
         .map("TAG_LEAVES", new NamespacedId("minecraft", "leaves"))
         .map("TAG_STAIRS", new NamespacedId("minecraft", "stairs"))
         .map("TAG_SLABS", new NamespacedId("minecraft", "slabs"))
         .map("TAG_SNOW", new NamespacedId("minecraft", "snow"));
 
-    blockTags.map('TAG_FOLIAGE_GROUND', createTag(new NamespacedId('arc', 'foliage_ground'),
+    blockTags.map('TAG_FOLIAGE_GROUND', pipeline.createTag(new NamespacedId('arc', 'foliage_ground'),
         new NamespacedId('acacia_sapling'),
         new NamespacedId('birch_sapling'),
         new NamespacedId('cherry_sapling'),
@@ -297,7 +306,7 @@ export function setupShader(dimension : NamespacedId) {
     // blockTags.map('TAG_WAVING_TOP', createTag(new NamespacedId('arc', 'waving_top'),
     //     new NamespacedId('lantern')));
 
-    blockTags.map('TAG_WAVING_FULL', createTag(new NamespacedId('arc', 'waving_full'),
+    blockTags.map('TAG_WAVING_FULL', pipeline.createTag(new NamespacedId('arc', 'waving_full'),
         new NamespacedId('birch_leaves'),
         new NamespacedId('cherry_leaves'),
         new NamespacedId('jungle_leaves'),
@@ -307,7 +316,7 @@ export function setupShader(dimension : NamespacedId) {
         new NamespacedId('pale_oak_leaves'),
         new NamespacedId('spruce_leaves')));
 
-    blockTags.map("TAG_CARPET", createTag(new NamespacedId("arc", "carpets"),
+    blockTags.map("TAG_CARPET", pipeline.createTag(new NamespacedId("arc", "carpets"),
         //new NamespacedId("minecraft", "wool_carpets"),
         new NamespacedId("white_carpet"),
         new NamespacedId("light_gray_carpet"),
@@ -328,12 +337,12 @@ export function setupShader(dimension : NamespacedId) {
         new NamespacedId("pale_moss_carpet"),
         new NamespacedId("moss_carpet")));
 
-    blockTags.map("TAG_NON_POINT_LIGHT", createTag(new NamespacedId("arc", "non_point_lights"),
+    blockTags.map("TAG_NON_POINT_LIGHT", pipeline.createTag(new NamespacedId("arc", "non_point_lights"),
         new NamespacedId("firefly_bush"),
         new NamespacedId("lava"),
         new NamespacedId("magma_block")));
 
-    blockTags.map("TAG_TINTS_LIGHT", createTag(new NamespacedId("arc", "tints_light"),
+    blockTags.map("TAG_TINTS_LIGHT", pipeline.createTag(new NamespacedId("arc", "tints_light"),
         new NamespacedId("minecraft", "glass_blocks"),
         new NamespacedId("tinted_glass"),
         new NamespacedId("white_stained_glass"),
@@ -936,9 +945,9 @@ export function setupShader(dimension : NamespacedId) {
         )
         .stage(Stage.SCREEN_SETUP)
         .ssbo(SSBO.Scene, sceneBuffer)
-        .build();
+        .build(pipeline);
 
-    registerShader(Stage.SCREEN_SETUP, new Compute('histogram-clear')
+    pipeline.registerPostPass(Stage.SCREEN_SETUP, new Compute('histogram-clear')
         .location('setup/histogram-clear.csh')
         .workGroups(1, 1, 1)
         .build());
@@ -951,7 +960,7 @@ export function setupShader(dimension : NamespacedId) {
             .stage(Stage.SCREEN_SETUP)
             .ssbo(SSBO.VxGI, vxgiBuffer)
             .ssbo(SSBO.VxGI_alt, vxgiBuffer_alt)
-            .build();
+            .build(pipeline);
     }
 
     if (internal.LightListsEnabled) {
@@ -966,7 +975,7 @@ export function setupShader(dimension : NamespacedId) {
             )
             .stage(Stage.PRE_RENDER)
             .ssbo(SSBO.LightList, lightListBuffer)
-            .build();
+            .build(pipeline);
     }
 
     new ShaderBuilder(new Compute('scene-prepare')
@@ -978,14 +987,14 @@ export function setupShader(dimension : NamespacedId) {
         .ssbo(SSBO.LightList, lightListBuffer)
         .ssbo(SSBO.QuadList, quadListBuffer)
         .ubo(UBO.SceneSettings, SceneSettingsBuffer)
-        .build();
+        .build(pipeline);
 
     // IMAGE_BIT | SSBO_BIT | UBO_BIT | FETCH_BIT
-    registerBarrier(Stage.PRE_RENDER, new MemoryBarrier(SSBO_BIT));
+    pipeline.addBarrier(Stage.PRE_RENDER, SSBO_BIT);
 
-    setupSky(sceneBuffer);
+    setupSky(pipeline, sceneBuffer);
 
-    registerBarrier(Stage.PRE_RENDER, new TextureBarrier());
+    //pipeline.addBarrier(Stage.PRE_RENDER, IMAGE_BIT);
 
     new ShaderBuilder(new Compute('scene-begin')
             .location('setup/scene-begin.csh')
@@ -993,9 +1002,9 @@ export function setupShader(dimension : NamespacedId) {
         )
         .stage(Stage.PRE_RENDER)
         .ssbo(SSBO.Scene, sceneBuffer)
-        .build();
+        .build(pipeline);
 
-    registerBarrier(Stage.PRE_RENDER, new MemoryBarrier(SSBO_BIT));
+    pipeline.addBarrier(Stage.PRE_RENDER, SSBO_BIT);
 
     function shadowShader(name: string, usage: ProgramUsage) : ShaderBuilder<ObjectShader> {
         return new ShaderBuilder(new ObjectShader(name, usage)
@@ -1039,28 +1048,37 @@ export function setupShader(dimension : NamespacedId) {
     }
 
     if (settings.Shadow_Enabled) {
-        shadowShader('shadow', Usage.SHADOW).build();
+        shadowShader('shadow', Usage.SHADOW)
+            .build(pipeline);
 
-        shadowTerrainShader('shadow-terrain-solid', Usage.SHADOW_TERRAIN_SOLID).build();
+        shadowTerrainShader('shadow-terrain-solid', Usage.SHADOW_TERRAIN_SOLID)
+            .build(pipeline);
 
-        shadowTerrainShader('shadow-terrain-cutout', Usage.SHADOW_TERRAIN_CUTOUT).build();
+        shadowTerrainShader('shadow-terrain-cutout', Usage.SHADOW_TERRAIN_CUTOUT)
+            .build(pipeline);
 
         shadowTerrainShader('shadow-terrain-translucent', Usage.SHADOW_TERRAIN_TRANSLUCENT)
             .with(s => s.define('RENDER_TRANSLUCENT', '1'))
-            .build();
+            .build(pipeline);
 
-        shadowEntityShader('shadow-entity-solid', Usage.SHADOW_ENTITY_SOLID).build();
-        shadowEntityShader('shadow-entity-cutout', Usage.SHADOW_ENTITY_CUTOUT).build();
+        shadowEntityShader('shadow-entity-solid', Usage.SHADOW_ENTITY_SOLID)
+            .build(pipeline);
+
+        shadowEntityShader('shadow-entity-cutout', Usage.SHADOW_ENTITY_CUTOUT)
+            .build(pipeline);
+
         shadowEntityShader('shadow-entity-translucent', Usage.SHADOW_ENTITY_TRANSLUCENT)
             .with(s => s.define('RENDER_TRANSLUCENT', '1'))
-            .build();
+            .build(pipeline);
 
-        for (let l = 0; l < settings.Shadow_CascadeCount; l++)
-            registerShader(Stage.POST_SHADOW, shadowBlockerShader(l).build());
+        if (settings.Shadow_BlockerTexEnabled) {
+            for (let l = 0; l < settings.Shadow_CascadeCount; l++)
+                pipeline.registerPostPass(Stage.POST_SHADOW, shadowBlockerShader(l).build());
+        }
     }
 
     if (settings.Lighting_Mode == LightingModes.ShadowMaps) {
-        registerShader(new ObjectShader('block-shadow', Usage.POINT)
+        pipeline.registerObjectShader(new ObjectShader('block-shadow', Usage.POINT)
             .vertex("gbuffer/shadow-point.vsh")
             .fragment("gbuffer/shadow-point.fsh")
             .build());
@@ -1076,9 +1094,9 @@ export function setupShader(dimension : NamespacedId) {
             )
             .stage(Stage.POST_SHADOW)
             .ssbo(SSBO.LightList, lightListBuffer)
-            .build();
+            .build(pipeline);
 
-        registerBarrier(Stage.POST_SHADOW, new MemoryBarrier(SSBO_BIT));
+        pipeline.addBarrier(Stage.POST_SHADOW, SSBO_BIT);
 
         new ShaderBuilder(new Compute('light-list-neighbors')
                 .location('composite/light-list-shadow-neighbors.csh')
@@ -1086,10 +1104,10 @@ export function setupShader(dimension : NamespacedId) {
             )
             .stage(Stage.POST_SHADOW)
             .ssbo(SSBO.LightList, lightListBuffer)
-            .build();
+            .build(pipeline);
 
         if (settings.Lighting_Shadow_VoxelFill) {
-            registerBarrier(Stage.POST_SHADOW, new MemoryBarrier(SSBO_BIT));
+            pipeline.addBarrier(Stage.POST_SHADOW, SSBO_BIT);
 
             new ShaderBuilder(new Compute('light-list-voxel')
                     .location('composite/light-list-voxel.csh')
@@ -1097,9 +1115,9 @@ export function setupShader(dimension : NamespacedId) {
                 )
                 .stage(Stage.POST_SHADOW)
                 .ssbo(SSBO.LightList, lightListBuffer)
-                .build();
+                .build(pipeline);
 
-            registerBarrier(Stage.POST_SHADOW, new MemoryBarrier(SSBO_BIT));
+            pipeline.addBarrier(Stage.POST_SHADOW, SSBO_BIT);
 
             new ShaderBuilder(new Compute('light-list-voxel-neighbors')
                     .location('composite/light-list-voxel-neighbors.csh')
@@ -1107,7 +1125,7 @@ export function setupShader(dimension : NamespacedId) {
                 )
                 .stage(Stage.POST_SHADOW)
                 .ssbo(SSBO.LightList, lightListBuffer)
-                .build();
+                .build(pipeline);
         }
     }
     else if (settings.Lighting_Mode == LightingModes.RayTraced) {
@@ -1120,7 +1138,7 @@ export function setupShader(dimension : NamespacedId) {
             .stage(Stage.POST_SHADOW)
             .ssbo(SSBO.Scene, sceneBuffer)
             .ssbo(SSBO.LightList, lightListBuffer)
-            .build();
+            .build(pipeline);
     }
 
     function DiscardObjectShader(name: string, usage: ProgramUsage) {
@@ -1130,15 +1148,15 @@ export function setupShader(dimension : NamespacedId) {
             .define("RENDER_GBUFFER", "1");
     }
 
-    registerShader(DiscardObjectShader("skybox", Usage.SKYBOX)
+    pipeline.registerObjectShader(DiscardObjectShader("skybox", Usage.SKYBOX)
         .target(0, texFinalA)
         .build());
 
-    registerShader(DiscardObjectShader("skybox", Usage.SKY_TEXTURES)
+    pipeline.registerObjectShader(DiscardObjectShader("skybox", Usage.SKY_TEXTURES)
         .target(0, texFinalA)
         .build());
 
-    registerShader(DiscardObjectShader("clouds", Usage.CLOUDS)
+    pipeline.registerObjectShader(DiscardObjectShader("clouds", Usage.CLOUDS)
         .target(0, texFinalA)
         .build());
 
@@ -1171,7 +1189,7 @@ export function setupShader(dimension : NamespacedId) {
             .define('RENDER_TRANSLUCENT', '1'));
     }
 
-    registerShader(new ObjectShader('crumbling', Usage.CRUMBLING)
+    pipeline.registerObjectShader(new ObjectShader('crumbling', Usage.CRUMBLING)
         .vertex('gbuffer/crumbling.vsh')
         .fragment('gbuffer/crumbling.fsh')
         .target(0, texDeferredOpaque_Color)
@@ -1190,17 +1208,18 @@ export function setupShader(dimension : NamespacedId) {
 
     mainShaderOpaque('emissive', Usage.EMISSIVE)
         .with(s => s.define('RENDER_EMISSIVE', '1'))
-        .build();
+        .build(pipeline);
 
-    mainShaderOpaque('basic', Usage.BASIC).build();
+    mainShaderOpaque('basic', Usage.BASIC)
+        .build(pipeline);
 
     mainShaderOpaque('terrain-solid', Usage.TERRAIN_SOLID)
         .with(s => s.define('RENDER_TERRAIN', '1'))
-        .build();
+        .build(pipeline);
 
     mainShaderOpaque('terrain-cutout', Usage.TERRAIN_CUTOUT)
         .with(s => s.define('RENDER_TERRAIN', '1'))
-        .build();
+        .build(pipeline);
 
     mainShaderTranslucent('terrain-translucent', Usage.TERRAIN_TRANSLUCENT)
         .with(s => s.define('RENDER_TERRAIN', '1'))
@@ -1209,15 +1228,15 @@ export function setupShader(dimension : NamespacedId) {
                 .control('gbuffer/main.tcs')
                 .eval('gbuffer/main.tes')))
         .ubo(UBO.SceneSettings, SceneSettingsBuffer)
-        .build();
+        .build(pipeline);
 
     mainShaderOpaque('hand-solid', Usage.HAND)
         .with(s => s.define('RENDER_HAND', '1'))
-        .build();
+        .build(pipeline);
 
     mainShaderTranslucent('hand-translucent', Usage.TRANSLUCENT_HAND)
         .with(s => s.define('RENDER_HAND', '1'))
-        .build();
+        .build(pipeline);
 
     mainShaderOpaque('entity-solid', Usage.ENTITY_SOLID)
         .with(s => s.define('RENDER_ENTITY', '1'))
@@ -1225,7 +1244,7 @@ export function setupShader(dimension : NamespacedId) {
             .with(shader => shader
                 .control('gbuffer/main.tcs')
                 .eval('gbuffer/main.tes')))
-        .build();
+        .build(pipeline);
 
     mainShaderOpaque('entity-cutout', Usage.ENTITY_CUTOUT)
         .with(s => s.define('RENDER_ENTITY', '1'))
@@ -1233,7 +1252,7 @@ export function setupShader(dimension : NamespacedId) {
             .with(shader => shader
                 .control('gbuffer/main.tcs')
                 .eval('gbuffer/main.tes')))
-        .build();
+        .build(pipeline);
 
     mainShaderTranslucent('entity-translucent', Usage.ENTITY_TRANSLUCENT)
         .with(s => s.define('RENDER_ENTITY', '1'))
@@ -1241,7 +1260,7 @@ export function setupShader(dimension : NamespacedId) {
             .with(shader => shader
                 .control('gbuffer/main.tcs')
                 .eval('gbuffer/main.tes')))
-        .build();
+        .build(pipeline);
 
     function particleShader(name: string, usage: ProgramUsage) : ShaderBuilder<ObjectShader> {
         return new ShaderBuilder(new ObjectShader(name, usage)
@@ -1261,14 +1280,14 @@ export function setupShader(dimension : NamespacedId) {
         .with(shader => shader
             .target(0, texParticleOpaque)
             .blendOff(0))
-        .build();
+        .build(pipeline);
 
     particleShader('particle-translucent', Usage.PARTICLES_TRANSLUCENT)
         .with(shader => shader
             .target(0, texParticleTranslucent)
             .blendOff(0)
             .define('RENDER_TRANSLUCENT', '1'))
-        .build();
+        .build(pipeline);
 
     new ShaderBuilder(new ObjectShader('weather', Usage.WEATHER)
             .vertex('gbuffer/weather.vsh')
@@ -1279,7 +1298,7 @@ export function setupShader(dimension : NamespacedId) {
         .if(internal.LightListsEnabled, builder => builder
             .ssbo(SSBO.LightList, lightListBuffer))
         .ubo(UBO.SceneSettings, SceneSettingsBuffer)
-        .build();
+        .build(pipeline);
 
     if (internal.FloodFillEnabled) {
         const groupCount = Math.ceil(settings.Voxel_Size / 8);
@@ -1292,7 +1311,7 @@ export function setupShader(dimension : NamespacedId) {
             .stage(Stage.POST_RENDER)
             .ssbo(SSBO.Scene, sceneBuffer)
             .ubo(UBO.SceneSettings, SceneSettingsBuffer)
-            .build();
+            .build(pipeline);
     }
 
     if (settings.Lighting_VxGI_Enabled) {
@@ -1303,7 +1322,7 @@ export function setupShader(dimension : NamespacedId) {
             //     registerBarrier(Stage.POST_RENDER, new MemoryBarrier(SSBO_BIT));
             // }
 
-            registerBarrier(Stage.POST_RENDER, new MemoryBarrier(SSBO_BIT));
+            pipeline.addBarrier(Stage.POST_RENDER, SSBO_BIT);
 
             new ShaderBuilder(new Compute(`global-illumination-${i+1}`)
                     .location('composite/global-illumination.csh')
@@ -1320,7 +1339,7 @@ export function setupShader(dimension : NamespacedId) {
                 .if(internal.LightListsEnabled, builder => builder
                     .ssbo(SSBO.LightList, lightListBuffer))
                 .ubo(UBO.SceneSettings, SceneSettingsBuffer)
-                .build();
+                .build(pipeline);
         }
     }
 
@@ -1332,7 +1351,7 @@ export function setupShader(dimension : NamespacedId) {
             )
             .stage(Stage.POST_RENDER)
             .ssbo(SSBO.Scene, sceneBuffer)
-            .build();
+            .build(pipeline);
 
         if (settings.Shadow_Filter) {
             new ShaderBuilder(new Compute('shadow-opaque-filter')
@@ -1340,7 +1359,7 @@ export function setupShader(dimension : NamespacedId) {
                     .workGroups(Math.ceil(screenWidth / 16.0), Math.ceil(screenHeight / 16.0), 1)
                 )
                 .stage(Stage.POST_RENDER)
-                .build();
+                .build(pipeline);
 
             //registerBarrier(Stage.POST_RENDER, new MemoryBarrier(IMAGE_BIT));
         }
@@ -1349,7 +1368,7 @@ export function setupShader(dimension : NamespacedId) {
     const texShadow_src = settings.Shadow_Filter ? "texShadow_final" : "texShadow";
 
     if (settings.Lighting_Mode == LightingModes.RayTraced || settings.Lighting_ReflectionMode == ReflectionModes.WorldSpace) {
-        registerBarrier(Stage.POST_RENDER, new MemoryBarrier(SSBO_BIT));
+        pipeline.addBarrier(Stage.POST_RENDER, SSBO_BIT);
 
         new ShaderBuilder(new Composite('rt-opaque')
                 .vertex('shared/bufferless.vsh')
@@ -1372,7 +1391,7 @@ export function setupShader(dimension : NamespacedId) {
                 .ssbo(SSBO.VxGI, vxgiBuffer)
                 .ssbo(SSBO.VxGI_alt, vxgiBuffer_alt))
             .ubo(UBO.SceneSettings, SceneSettingsBuffer)
-            .build();
+            .build(pipeline);
     }
 
     if (settings.Effect_SSAO_Enabled) {
@@ -1383,7 +1402,7 @@ export function setupShader(dimension : NamespacedId) {
             )
             .stage(Stage.POST_RENDER)
             .ubo(UBO.SceneSettings, SceneSettingsBuffer)
-            .build();
+            .build(pipeline);
 
         // registerShader(Stage.POST_RENDER, new Compute("ssao-filter-opaque")
         //     // .barrier(true)
@@ -1393,7 +1412,7 @@ export function setupShader(dimension : NamespacedId) {
     }
 
     if (internal.Accumulation) {
-        registerShader(Stage.POST_RENDER, new Compute("accumulation-opaque")
+        pipeline.registerPostPass(Stage.POST_RENDER, new Compute("accumulation-opaque")
             .location("composite/accumulation.csh")
             .workGroups(Math.ceil(screenWidth / 16.0), Math.ceil(screenHeight / 16.0), 1)
             .define("TEX_DEPTH", "solidDepthTex")
@@ -1429,9 +1448,9 @@ export function setupShader(dimension : NamespacedId) {
         .if(internal.LightListsEnabled, builder => builder
             .ssbo(SSBO.LightList, lightListBuffer))
         .ubo(UBO.SceneSettings, SceneSettingsBuffer)
-        .build();
+        .build(pipeline);
 
-    registerBarrier(Stage.POST_RENDER, new MemoryBarrier(SSBO_BIT | IMAGE_BIT));
+    pipeline.addBarrier(Stage.POST_RENDER, SSBO_BIT | IMAGE_BIT);
 
     new ShaderBuilder(new Composite('composite-opaque')
             .vertex('shared/bufferless.vsh')
@@ -1450,12 +1469,12 @@ export function setupShader(dimension : NamespacedId) {
             .ssbo(SSBO.VxGI, vxgiBuffer)
             .ssbo(SSBO.VxGI_alt, vxgiBuffer_alt))
         .ubo(UBO.SceneSettings, SceneSettingsBuffer)
-        .build();
+        .build(pipeline);
 
     finalFlipper.flip();
 
     if (settings.Lighting_Mode == LightingModes.RayTraced || settings.Lighting_ReflectionMode == ReflectionModes.WorldSpace) {
-        registerBarrier(Stage.POST_RENDER, new MemoryBarrier(SSBO_BIT));
+        pipeline.addBarrier(Stage.POST_RENDER, SSBO_BIT);
 
         new ShaderBuilder(new Composite('rt-translucent')
                 .vertex('shared/bufferless.vsh')
@@ -1477,11 +1496,11 @@ export function setupShader(dimension : NamespacedId) {
             .ssbo(SSBO.QuadList, quadListBuffer)
             .ssbo(SSBO.BlockFace, blockFaceBuffer)
             .ubo(UBO.SceneSettings, SceneSettingsBuffer)
-            .build();
+            .build(pipeline);
     }
 
     if (internal.Accumulation) {
-        registerShader(Stage.POST_RENDER, new Compute('accumulation-translucent')
+        pipeline.registerPostPass(Stage.POST_RENDER, new Compute('accumulation-translucent')
             .location('composite/accumulation.csh')
             .workGroups(Math.ceil(screenWidth / 16.0), Math.ceil(screenHeight / 16.0), 1)
             .define('RENDER_TRANSLUCENT', '1')
@@ -1518,17 +1537,17 @@ export function setupShader(dimension : NamespacedId) {
         .if(internal.LightListsEnabled, builder => builder
             .ssbo(SSBO.LightList, lightListBuffer))
         .ubo(UBO.SceneSettings, SceneSettingsBuffer)
-        .build();
+        .build(pipeline);
 
     if (settings.Lighting_VolumetricResolution > 0) {
-        registerShader(Stage.POST_RENDER, new Compute('volumetric-near-filter')
+        pipeline.registerPostPass(Stage.POST_RENDER, new Compute('volumetric-near-filter')
             .location('composite/volumetric-filter.csh')
             .workGroups(Math.ceil(screenWidth / 16.0), Math.ceil(screenHeight / 16.0), 1)
             .define('TEX_DEPTH', 'mainDepthTex')
             .build());
     }
 
-    registerShader(Stage.POST_RENDER, new GenerateMips(finalFlipper.getReadTexture()));
+    pipeline.registerPostPass(Stage.POST_RENDER, new GenerateMips(finalFlipper.getReadTexture()));
 
     if (settings.Shadow_Enabled) {
         new ShaderBuilder(new Composite('shadow-translucent')
@@ -1538,7 +1557,7 @@ export function setupShader(dimension : NamespacedId) {
             )
             .stage(Stage.POST_RENDER)
             .ssbo(SSBO.Scene, sceneBuffer)
-            .build();
+            .build(pipeline);
 
         // if (snapshot.Shadow_Filter) {
         //     registerShader(Stage.POST_RENDER, new Compute("shadow-translucent-filter")
@@ -1567,7 +1586,7 @@ export function setupShader(dimension : NamespacedId) {
             .ssbo(SSBO.VxGI, vxgiBuffer)
             .ssbo(SSBO.VxGI_alt, vxgiBuffer_alt))
         .ubo(UBO.SceneSettings, SceneSettingsBuffer)
-        .build();
+        .build(pipeline);
 
     finalFlipper.flip();
 
@@ -1583,13 +1602,13 @@ export function setupShader(dimension : NamespacedId) {
     //     finalFlipper.flip();
     // }
 
-    registerShader(Stage.POST_RENDER, new TextureCopy(finalFlipper.getReadTexture(), texFinalPrevious)
+    pipeline.registerPostPass(Stage.POST_RENDER, new TextureCopy(finalFlipper.getReadTexture(), texFinalPrevious)
         .size(screenWidth, screenHeight)
         .build());
 
-    registerShader(Stage.POST_RENDER, new GenerateMips(texFinalPrevious));
+    pipeline.registerPostPass(Stage.POST_RENDER, new GenerateMips(texFinalPrevious));
 
-    registerShader(Stage.POST_RENDER, new Composite('blur-near')
+    pipeline.registerPostPass(Stage.POST_RENDER, new Composite('blur-near')
         .vertex('shared/bufferless.vsh')
         .fragment('post/blur-near.fsh')
         .target(0, finalFlipper.getWriteTexture())
@@ -1599,7 +1618,7 @@ export function setupShader(dimension : NamespacedId) {
     finalFlipper.flip();
 
     if (settings.Effect_DOF_Enabled) {
-        registerShader(Stage.POST_RENDER, new GenerateMips(finalFlipper.getReadTexture()));
+        pipeline.registerPostPass(Stage.POST_RENDER, new GenerateMips(finalFlipper.getReadTexture()));
 
         new ShaderBuilder(new Composite('depth-of-field')
                 .vertex('shared/bufferless.vsh')
@@ -1610,7 +1629,7 @@ export function setupShader(dimension : NamespacedId) {
             .stage(Stage.POST_RENDER)
             .ssbo(SSBO.Scene, sceneBuffer)
             .ubo(UBO.SceneSettings, SceneSettingsBuffer)
-            .build();
+            .build(pipeline);
 
         finalFlipper.flip();
     }
@@ -1623,9 +1642,9 @@ export function setupShader(dimension : NamespacedId) {
         .stage(Stage.POST_RENDER)
         .ssbo(SSBO.Scene, sceneBuffer)
         .ubo(UBO.SceneSettings, SceneSettingsBuffer)
-        .build();
+        .build(pipeline);
 
-    registerBarrier(Stage.POST_RENDER, new MemoryBarrier(IMAGE_BIT));
+    pipeline.addBarrier(Stage.POST_RENDER, IMAGE_BIT);
 
     new ShaderBuilder(new Compute('exposure')
             .location('post/exposure.csh')
@@ -1634,10 +1653,10 @@ export function setupShader(dimension : NamespacedId) {
         .stage(Stage.POST_RENDER)
         .ssbo(SSBO.Scene, sceneBuffer)
         .ubo(UBO.SceneSettings, SceneSettingsBuffer)
-        .build();
+        .build(pipeline);
 
     if (settings.Effect_Bloom_Enabled) {
-        setupBloom(finalFlipper.getReadName(), finalFlipper.getWriteTexture());
+        setupBloom(pipeline, finalFlipper.getReadName(), finalFlipper.getWriteTexture());
 
         finalFlipper.flip();
     }
@@ -1651,14 +1670,14 @@ export function setupShader(dimension : NamespacedId) {
         .stage(Stage.POST_RENDER)
         .ssbo(SSBO.Scene, sceneBuffer)
         .ubo(UBO.SceneSettings, SceneSettingsBuffer)
-        .build();
+        .build(pipeline);
 
     finalFlipper.flip();
 
     if (settings.Post_TAA_Enabled) {
-        registerBarrier(Stage.POST_RENDER, new MemoryBarrier(FETCH_BIT));
+        pipeline.addBarrier(Stage.POST_RENDER, FETCH_BIT);
 
-        registerShader(Stage.POST_RENDER, new Composite('TAA')
+        pipeline.registerPostPass(Stage.POST_RENDER, new Composite('TAA')
             .vertex('shared/bufferless.vsh')
             .fragment('post/taa.fsh')
             .target(0, texTaaPrev)
@@ -1667,7 +1686,7 @@ export function setupShader(dimension : NamespacedId) {
             .define('TEX_SRC', finalFlipper.getReadName())
             .build());
 
-        registerBarrier(Stage.POST_RENDER, new MemoryBarrier(FETCH_BIT));
+        pipeline.addBarrier(Stage.POST_RENDER, FETCH_BIT);
 
         finalFlipper.flip();
     }
@@ -1700,7 +1719,7 @@ export function setupShader(dimension : NamespacedId) {
             .ssbo(SSBO.LightList, lightListBuffer)
             .ssbo(SSBO.QuadList, quadListBuffer)
             .ubo(UBO.SceneSettings, SceneSettingsBuffer)
-            .build();
+            .build(pipeline);
 
         finalFlipper.flip();
     }
@@ -1708,22 +1727,23 @@ export function setupShader(dimension : NamespacedId) {
     // TODO: temp workaround
     //defineGlobally('FINAL_TEX_SRC', finalFlipper.getReadName());
 
-    setCombinationPass(new CombinationPass("post/final.fsh")
+    pipeline.setCombinationPass(new CombinationPass("post/final.fsh")
         .define('TEX_SRC', finalFlipper.getReadName())
         .build());
 
-    onSettingsChanged(null);
+    onSettingsChanged(pipeline);
     //setupFrame(null);
 }
 
-export function onSettingsChanged(state : WorldState) {
+export function onSettingsChanged(pipeline: PipelineConfig) {
     const settings = new ShaderSettings();
 
-    worldSettings.sunPathRotation = settings.Sky_SunAngle;
+    //const renderer = pipeline.getRendererConfig();
+    renderConfig.sunPathRotation = settings.Sky_SunAngle;
 
-    worldSettings.pointLight.realTimeCount = settings.Lighting_Shadow_RealtimeCount;
-    worldSettings.pointLight.maxUpdates = settings.Lighting_Shadow_UpdateCount;
-    worldSettings.pointLight.updateThreshold = settings.Lighting_Shadow_UpdateThreshold * 0.01;
+    renderConfig.pointLight.realTimeCount = settings.Lighting_Shadow_RealtimeCount;
+    renderConfig.pointLight.maxUpdates = settings.Lighting_Shadow_UpdateCount;
+    renderConfig.pointLight.updateThreshold = settings.Lighting_Shadow_UpdateThreshold * 0.01;
 
     const d = settings.Fog_Density * 0.01;
 
@@ -1752,7 +1772,7 @@ export function onSettingsChanged(state : WorldState) {
         .appendFloat(settings.Post_ToneMap_Black);
 }
 
-export function setupFrame(state : WorldState) {
+export function beginFrame(state : WorldState) {
     // if (isKeyDown(Keys.G)) testVal += 0.07;
     // if (isKeyDown(Keys.F)) testVal -= 0.07;
     // TEST_UBO.setFloat(0, testVal);
@@ -1760,7 +1780,7 @@ export function setupFrame(state : WorldState) {
     SceneSettingsBuffer.uploadData();
 }
 
-export function getBlockId(block : BlockState) : number {
+export function getBlockId(block: BlockState) : number {
     const name = block.getName();
     const meta = BlockMappings.get(name);
     if (meta != undefined) return meta.index;
@@ -1768,7 +1788,7 @@ export function getBlockId(block : BlockState) : number {
     return 0;
 }
 
-function setupSky(sceneBuffer) {
+function setupSky(pipeline: PipelineConfig, sceneBuffer) {
     const texSkyTransmit = new Texture("texSkyTransmit")
         .format(Format.RGB16F)
         .clear(false)
@@ -1804,7 +1824,7 @@ function setupSky(sceneBuffer) {
         )
         .stage(Stage.SCREEN_SETUP)
         .ubo(UBO.SceneSettings, SceneSettingsBuffer)
-        .build();
+        .build(pipeline);
 
     new ShaderBuilder(new Composite('sky-multi-scatter')
             .vertex('shared/bufferless.vsh')
@@ -1814,7 +1834,7 @@ function setupSky(sceneBuffer) {
         .stage(Stage.SCREEN_SETUP)
         .ssbo(SSBO.Scene, sceneBuffer)
         .ubo(UBO.SceneSettings, SceneSettingsBuffer)
-        .build();
+        .build(pipeline);
 
     new ShaderBuilder(new Composite('sky-view')
             .vertex('shared/bufferless.vsh')
@@ -1824,7 +1844,7 @@ function setupSky(sceneBuffer) {
         .stage(Stage.PRE_RENDER)
         .ssbo(SSBO.Scene, sceneBuffer)
         .ubo(UBO.SceneSettings, SceneSettingsBuffer)
-        .build();
+        .build(pipeline);
 
     new ShaderBuilder(new Composite('sky-irradiance')
             .vertex("shared/bufferless.vsh")
@@ -1835,10 +1855,10 @@ function setupSky(sceneBuffer) {
         .stage(Stage.PRE_RENDER)
         .ssbo(SSBO.Scene, sceneBuffer)
         .ubo(UBO.SceneSettings, SceneSettingsBuffer)
-        .build();
+        .build(pipeline);
 }
 
-function setupBloom(src: string, target: BuiltTexture) {
+function setupBloom(pipeline: PipelineConfig, src: string, target: BuiltTexture) {
     const screenWidth_half = Math.ceil(screenWidth / 2.0);
     const screenHeight_half = Math.ceil(screenHeight / 2.0);
 
@@ -1857,7 +1877,7 @@ function setupBloom(src: string, target: BuiltTexture) {
         .build();
 
     for (let i = 0; i < maxLod; i++) {
-        registerShader(Stage.POST_RENDER, new Composite(`bloom-down-${i}`)
+        pipeline.registerPostPass(Stage.POST_RENDER, new Composite(`bloom-down-${i}`)
             .vertex('shared/bufferless.vsh')
             .fragment('post/bloom/down.fsh')
             .target(0, texBloom, i)
@@ -1885,7 +1905,7 @@ function setupBloom(src: string, target: BuiltTexture) {
                 .target(0, texBloom, i-1)
                 .blendFunc(0, Func.ONE, Func.ONE, Func.ONE, Func.ONE)))
             .ubo(UBO.SceneSettings, SceneSettingsBuffer)
-            .build();
+            .build(pipeline);
     }
 }
 

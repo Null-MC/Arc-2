@@ -17,31 +17,59 @@ declare var screenHeight: number;
 /**
  * The world settings. These control fixed rendering parameters of the pipeline.
  */
-declare class WorldSettings {
-    /**
-     * Default: 1024
-     */
-  shadowMapResolution: number;
-  cascadeCount: number;
-  cascadeSafeZones: number[];
-  shadowMapDistance: number;
-  shadowNearPlane: number;
-  shadowFarPlane: number;
+declare class RendererConfig {
   sunPathRotation: number;
   ambientOcclusionLevel: number;
-  renderSun: boolean;
-  renderWaterOverlay: boolean;
   mergedHandDepth: boolean;
-  renderMoon: boolean;
-  renderStars: boolean;
-  renderEntityShadow: boolean;
   disableShade: boolean;
+  dimension : NamespacedId;
+
+  shadow : ShadowSettings;
+  pointLight : PointShadowSettings;
+  render : RenderSettings;
 }
 
-/**
- * For details, read {@link WorldSettings}.
- */
-declare var worldSettings: WorldSettings;
+declare class PointShadowSettings {
+    resolution : number;
+
+    maxCount : number;
+
+    maxUpdates : number;
+
+    realTimeCount : number;
+
+    cacheRealTimeTerrain : boolean;
+
+    updateThreshold : number;
+
+    nearPlane : number;
+
+    farPlane : number;
+}
+
+declare class ShadowSettings {
+    resolution : number;
+    cascades : number;
+    entityCascadeCount : number;
+    distance : number;
+    near : number;
+    far : number;
+
+    safeZone : number[];
+
+    enabled : boolean;
+}
+
+declare class RenderSettings {
+    sun : boolean;
+    moon : boolean;
+    stars : boolean;
+    horizon : boolean;
+    clouds : boolean;
+    vignette : boolean;
+    waterOverlay : boolean;
+    entityShadow : boolean;
+}
 
 // Formats/stages/usages
 
@@ -173,9 +201,7 @@ declare function setLightColor(name: NamespacedId, hex: number): void;
 
 // Uniforms
 
-declare function addTag(index : number, tag : NamespacedId) : void;
 
-declare function createTag(tag : NamespacedId, ...blocks : NamespacedId[]) : NamespacedId;
 
 /**
  * Registers a define for all future shaders. Behavior for shaders already made is undefined.
@@ -190,54 +216,47 @@ interface BuiltObjectShader {}
 interface PostPass {}
 
 /**
- * Registers an object shader.
- * @param s The object shader
- */
-declare function registerShader(s: BuiltObjectShader): BuiltObjectShader;
-
-/**
- * Registers a post pass/composite shader. This is ordered.
- * @param stage The stage to register in
- * @param s The shader to register
- */
-declare function registerShader(stage: ProgramStage, s: PostPass): PostPass;
-
-/**
- * Sets the combination pass. This is required.
- * @param s Combination pass to set
- */
-declare function setCombinationPass(
-  s: BuiltCombinationPass,
-): BuiltCombinationPass;
-
-/**
- * For {@link MemoryBarrier}. Indicates all SSBO operations must be visible in the next pass.
+ * For {@link addBarrier}. Indicates all SSBO operations must be visible in the next pass.
  */
 declare var SSBO_BIT: number;
 
 /**
- * For {@link MemoryBarrier}. Indicates all UBO operations must be visible in the next pass.
+ * For {@link addBarrier}. Indicates all UBO operations must be visible in the next pass.
  */
 declare var UBO_BIT: number;
 
 /**
- * For {@link MemoryBarrier}. Indicates all imageStore operations must be visible in the next pass.
+ * For {@link addBarrier}. Indicates all imageStore operations must be visible in the next pass.
  */
 declare var IMAGE_BIT: number;
 
 /**
- * For {@link MemoryBarrier}. Indicates all texture fetch operations must reflect data set in past passes.
+ * For {@link addBarrier}. Indicates all texture fetch operations must reflect data set in past passes.
  */
 declare var FETCH_BIT: number;
 
-interface Barrier {}
-
 /**
- * Registers either a {@link TextureBarrier} or {@link MemoryBarrier}.
- * @param stage The program stage to register
- * @param b The barrier to register
+ * For a memory barrier. Indicates a "texture barrier", a special operation in OpenGL.
  */
-declare function registerBarrier(stage: ProgramStage, b: Barrier): Barrier;
+declare var GL_TEXTURE_BARRIER: number;
+
+declare class PipelineConfig {
+    registerPostPass(stage: ProgramStage, ...pass: PostPass[]) : void;
+
+    registerObjectShader(shader: BuiltObjectShader) : BuiltObjectShader;
+
+    addBarrier(stage: ProgramStage, barrier: number) : void;
+
+    glTextureBarrier(stage: ProgramStage) : void;
+
+    getRendererConfig() : RendererConfig;
+
+    addTag(index : number, tag : NamespacedId) : void;
+
+    createTag(tag : NamespacedId, ...blocks : NamespacedId[]) : NamespacedId;
+
+    setCombinationPass(pass: BuiltCombinationPass) : void;
+}
 
 /**
  * A built-in pass to copy textures. Register with {@link registerShader}.
@@ -270,26 +289,6 @@ declare class TextureCopy {
    * Builds the texture copy pass.
    */
   build(): PostPass;
-}
-
-declare function enableShadows(resolution : number, cascadeCount: number): void;
-
-/**
- * A memory barrier, to be registered with {@link registerBarrier}.
- */
-declare class MemoryBarrier implements Barrier {
-  /**
-   * The barriers to run.
-   * @param flags A bitmask of {@link SSBO_BIT}, {@link UBO_BIT}, {@link IMAGE_BIT}, and {@link FETCH_BIT} depending on usage.
-   */
-  constructor(flags: number);
-}
-
-/**
- * A texture barrier. This is <b>not</b> a memory barrier, and is only useful for specific conditions.
- */
-declare class TextureBarrier implements Barrier {
-  constructor();
 }
 
 interface Shader<T> {
@@ -359,9 +358,9 @@ declare class Compute implements Shader<Compute> {
 
   location(loc: string): Compute;
   workGroups(x: number, y: number, z: number): Compute;
-  ssbo(index: number, buf: BuiltBuffer | undefined): Composite;
-  ubo(index: number, buf: BuiltBuffer | undefined): Composite;
-  define(key: string, value: string): Composite;
+  ssbo(index: number, buf: BuiltBuffer | undefined): Compute;
+  ubo(index: number, buf: BuiltBuffer | undefined): Compute;
+  define(key: string, value: string): Compute;
 
   build(): PostPass;
 }
@@ -395,7 +394,7 @@ interface BuiltBuffer {}
 /**
  * The result of a {@link StreamingBuffer}.
  */
-class BuiltStreamingBuffer implements BuiltBuffer {
+declare class BuiltStreamingBuffer implements BuiltBuffer {
     setInt(offset : number, value: number): void;
     setFloat(offset : number, value: number): void;
     setBool(offset : number, value: boolean): void;
@@ -693,6 +692,13 @@ declare class ArrayTexture {
  */
 declare class PNGTexture implements BuiltTexture {
   constructor(name: string, loc: string, blur: boolean, clamp: boolean);
+
+    readBack(): ArrayBuffer;
+    name(): string;
+    imageName(): string;
+    width(): number;
+    height(): number;
+    depth(): number;
 }
 
 // The auto-generated stuff goes here
@@ -834,9 +840,10 @@ declare namespace Usage {
   let SHADOW_BLOCK_ENTITY_TRANSLUCENT: ProgramUsage;
   let SHADOW_PARTICLES: ProgramUsage;
   let SHADOW_PARTICLES_TRANSLUCENT: ProgramUsage;
+  let POINT : ProgramUsage;
 }
 
 
-declare class GenerateMips extends PostPass {
+declare class GenerateMips implements PostPass {
     constructor(texture: BuiltTexture);
 }

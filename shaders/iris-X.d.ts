@@ -22,12 +22,16 @@ declare class WorldSettings {
      * Default: 1024
      */
   shadowMapResolution: number;
+  cascadeCount: number;
+  cascadeSafeZones: number[];
   shadowMapDistance: number;
   shadowNearPlane: number;
   shadowFarPlane: number;
   sunPathRotation: number;
   ambientOcclusionLevel: number;
   renderSun: boolean;
+  renderWaterOverlay: boolean;
+  mergedHandDepth: boolean;
   renderMoon: boolean;
   renderStars: boolean;
   renderEntityShadow: boolean;
@@ -46,6 +50,22 @@ declare var worldSettings: WorldSettings;
  */
 interface ProgramStage {}
 
+declare class NamespacedId {
+    /**
+     * Creates a new NamespacedId from a combined string. If the string is in the format `namespace:path`, the NamespacedId will be created accordingly, otherwise it will use the `minecraft` namespace.
+     * @param combined The combined `namespace:path`, or `path` if `minecraft` is the desired namespace
+     */
+    constructor(combined : string);
+
+    /**
+     * Creates a new NamespacedId from a separate namespace and path.
+     */
+    constructor(namespace : string, path : string);
+
+    getNamespace() : string;
+    getPath() : string;
+}
+
 /**
  * The possible program stages for post passes.
  */
@@ -54,6 +74,11 @@ declare namespace Stage {
     * Runs before any rendering takes place.
     */
   let PRE_RENDER: ProgramStage;
+
+    /**
+    * Runs after the shadow pass is drawn.
+    */
+  let POST_SHADOW: ProgramStage;
 
     /**
      * Runs after all main rendering takes place.
@@ -87,6 +112,7 @@ interface BlendModeFunction {}
 declare function getStringSetting(name: string): string;
 declare function getBoolSetting(name: string): boolean;
 declare function getIntSetting(name: string): number;
+declare function getFloatSetting(name: string): number;
 
 declare class IntSetting {
   needsReload(reload: boolean): IntSetting;
@@ -112,6 +138,8 @@ declare class BuiltPage {}
 
 declare function asInt(name: string, ...values: number[]): IntSetting;
 declare function asFloat(name: string, ...values: number[]): FloatSetting;
+declare function putTextLabel(id : string, text : string) : BuiltSetting
+declare function putTranslationLabel(id : string, text : string) : BuiltSetting
 declare function asString(name: string, ...values: string[]): StringSetting;
 declare function asBool(name: string, defaultValue: boolean, reload: boolean): BuiltSetting;
 
@@ -128,7 +156,7 @@ declare var EMPTY: BuiltPage;
  * @alpha
  */
 declare function setLightColor(
-  name: string,
+  name: NamespacedId,
   r: number,
   g: number,
   b: number,
@@ -141,24 +169,13 @@ declare function setLightColor(
  * @param hex The hex color to set
  * @alpha
  */
-declare function setLightColor(name: string, hex: number): void;
+declare function setLightColor(name: NamespacedId, hex: number): void;
 
 // Uniforms
 
-/**
- * Registers uniforms.
- *
- * @throws IllegalStateException
- * if {@link finalizeUniforms} has already been called
- *
- * @param uniforms A list of uniforms to register.
- */
-declare function registerUniforms(...uniforms: string[]): void;
+declare function addTag(index : number, tag : NamespacedId) : void;
 
-/**
- * Finalizes uniforms.
- */
-declare function finalizeUniforms(): void;
+declare function createTag(tag : NamespacedId, ...blocks : NamespacedId[]) : NamespacedId;
 
 /**
  * Registers a define for all future shaders. Behavior for shaders already made is undefined.
@@ -255,6 +272,8 @@ declare class TextureCopy {
   build(): PostPass;
 }
 
+declare function enableShadows(resolution : number, cascadeCount: number): void;
+
 /**
  * A memory barrier, to be registered with {@link registerBarrier}.
  */
@@ -273,7 +292,15 @@ declare class TextureBarrier implements Barrier {
   constructor();
 }
 
-declare class ObjectShader {
+interface Shader<T> {
+    ssbo(index: number, buf: BuiltBuffer | undefined): T;
+    ubo(index: number, buf: BuiltBuffer | undefined): T;
+    define(key: string, value: string): T;
+
+    build(): BuiltObjectShader;
+}
+
+declare class ObjectShader implements Shader<ObjectShader> {
   constructor(name: string, usage: ProgramUsage);
 
   vertex(loc: string): ObjectShader;
@@ -300,7 +327,7 @@ declare class ObjectShader {
   build(): BuiltObjectShader;
 }
 
-declare class Composite {
+declare class Composite implements Shader<Composite> {
   constructor(name: string);
 
   vertex(loc: string): Composite;
@@ -327,7 +354,7 @@ declare class Composite {
   build(): PostPass;
 }
 
-declare class Compute {
+declare class Compute implements Shader<Compute> {
   constructor(name: string);
 
   location(loc: string): Compute;
@@ -348,6 +375,7 @@ declare class CombinationPass {
   constructor(location: string);
   ssbo(index: number, buf: BuiltBuffer | undefined): ObjectShader;
   ubo(index: number, buf: BuiltBuffer | undefined): ObjectShader;
+  define(key: string, value: string): ObjectShader;
 
   build(): BuiltCombinationPass;
 }
@@ -566,7 +594,31 @@ interface InternalTextureFormat {}
  * A built texture. This is the result of making an {@link Texture} or {@link ArrayTexture}.
  * This is also automatically implemented by {@link PNGTexture} and {@link RawTexture}.
  */
-interface BuiltTexture {}
+interface BuiltTexture {
+    readBack() : ArrayBuffer;
+
+    name() : string;
+    imageName() : string;
+    width() : number;
+    height() : number;
+    depth() : number;
+}
+
+declare class TextureReference {
+    constructor(samplerName : string, imageName : string);
+
+    format(internalFormat: InternalTextureFormat): TextureReference;
+
+    width(width: number): TextureReference;
+    height(height: number): TextureReference;
+    depth(depth: number): TextureReference;
+
+    build() : ActiveTextureReference;
+}
+
+interface ActiveTextureReference extends BuiltTexture {
+    pointTo(t : BuiltTexture) : ActiveTextureReference;
+}
 
 /**
  * A basic, non-array read/write texture.
@@ -583,6 +635,7 @@ declare class Texture {
   width(width: number): Texture;
   height(height: number): Texture;
   depth(depth: number): Texture;
+  readBack(read: boolean): Texture;
 
   build(): BuiltTexture;
 }
@@ -783,14 +836,6 @@ declare namespace Usage {
   let SHADOW_PARTICLES_TRANSLUCENT: ProgramUsage;
 }
 
-
-
-// TODO: MISSING SHIT
-
-declare class CombinationPass {
-  ...
-  define(key: string, value: string): ObjectShader;
-}
 
 declare class GenerateMips extends PostPass {
     constructor(texture: BuiltTexture);

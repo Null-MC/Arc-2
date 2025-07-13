@@ -51,12 +51,12 @@ export class ShaderBuilder<T extends Shader<T>> {
         return this;
     }
 
-    build() {
+    build(pipeline: PipelineConfig) {
         if (this.shader instanceof ObjectShader) {
-            registerShader(this.shader.build());
+            pipeline.registerObjectShader(this.shader.build());
         }
         else {
-            registerShader(this.programStage, this.shader.build());
+            pipeline.registerPostPass(this.programStage, this.shader.build());
         }
     }
 }

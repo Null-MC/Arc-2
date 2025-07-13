@@ -57,6 +57,10 @@ function applySettings(settings : ShaderSettings, internal) {
             renderConfig.shadow.near = -200;
             renderConfig.shadow.far = 200;
         }
+        else {
+            renderConfig.shadow.near = -400;
+            renderConfig.shadow.far = 200;
+        }
 
         if (!settings.Voxel_UseProvided || internal.VoxelizeBlockFaces || internal.VoxelizeTriangles)
             renderConfig.shadow.safeZone[0] = settings.Voxel_Size / 2;

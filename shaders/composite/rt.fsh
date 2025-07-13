@@ -307,7 +307,7 @@ void main() {
                     const bool isUnderWater = false;
                     float VoHm = max(dot(localViewDir, H), 0.0);
                     vec3 F = material_fresnel(albedo.rgb, f0_metal, roughL, VoHm, isUnderWater);
-                    float D = SampleLightDiffuse(NoVm, NoLm, LoHm, roughL) * (1.0 - F);
+                    vec3 D = SampleLightDiffuse(NoVm, NoLm, LoHm, roughL) * (1.0 - F);
                     vec3 S = SampleLightSpecular(NoLm, NoHm, NoVm, F, roughL);
 
                     vec3 sampleDiffuse = NoLm * D * lightColorAtt;

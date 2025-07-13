@@ -125,20 +125,30 @@ void main() {
 
             if (saturate(shadowPos) == shadowPos && !voxelHit) {
                 if (lengthSq(shadowFinal) > 0.0) {
+                    float waterDepth;
                     #ifdef SHADOW_PCSS_ENABLED
+                        waterDepth = 0.0; // TODO
                         shadowFinal *= SampleShadowColor_PCSS(shadowPos, shadowCascade);
                     #else
                         float bias = GetShadowBias(shadowCascade);
                         shadowPos.z -= bias;
 
-                        shadowFinal *= SampleShadowColor(shadowPos, shadowCascade);
+                        shadowFinal *= SampleShadowColor(shadowPos, shadowCascade, waterDepth);
                     #endif
 
-                    float shadowRange = GetShadowRange(shadowCascade);
-                    vec3 shadowCoord = vec3(shadowPos.xy, shadowCascade);
-                    float depthOpaque = textureLod(solidShadowMap, shadowCoord, 0).r;
-                    float depthTrans = textureLod(shadowMap, shadowCoord, 0).r;
-                    float waterDepth = max(depthOpaque - depthTrans, 0.0) * shadowRange;
+                    #ifdef SHADOW_PCSS_ENABLED
+                        #ifdef SHADOW_DISTORTION_ENABLED
+                            shadowPos = shadowPos * 2.0 - 1.0;
+                            shadowPos = shadowDistort(shadowPos);
+                            shadowPos = shadowPos * 0.5 + 0.5;
+                        #endif
+
+                        float shadowRange = GetShadowRange(shadowCascade);
+                        vec3 shadowCoord = vec3(shadowPos.xy, shadowCascade);
+                        float depthOpaque = textureLod(solidShadowMap, shadowCoord, 0).r;
+                        float depthTrans = textureLod(shadowMap, shadowCoord, 0).r;
+                        waterDepth = max(depthOpaque - depthTrans, 0.0) * shadowRange;
+                    #endif
 
                     if (waterDepth > 0.0) {
                         // TODO: add a water mask to shadows

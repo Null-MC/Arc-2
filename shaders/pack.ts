@@ -20,40 +20,40 @@ export function initShader(dimension : NamespacedId) {
 
     worldSettings.disableShade = true;
     worldSettings.ambientOcclusionLevel = 0.0;
-    worldSettings.shadowMapResolution = settings.Shadow_Resolution;
-    worldSettings.cascadeCount = settings.Shadow_CascadeCount;
-    worldSettings.renderWaterOverlay = false;
-    worldSettings.renderStars = false;
-    worldSettings.renderMoon = false;
-    worldSettings.renderSun = false;
+    worldSettings.shadow.resolution = settings.Shadow_Resolution;
+    worldSettings.shadow.cascades = settings.Shadow_CascadeCount;
+    worldSettings.render.waterOverlay = false;
+    worldSettings.render.stars = false;
+    worldSettings.render.moon = false;
+    worldSettings.render.sun = false;
 
     // TODO: fix hands later, for now just unbreak them
     worldSettings.mergedHandDepth = true;
 
-    pointShadowSettings.nearPlane = internal.PointLightNear;
-    pointShadowSettings.farPlane = internal.PointLightFar;
-    pointShadowSettings.maxCount = settings.Lighting_Shadow_MaxCount;
-    pointShadowSettings.resolution = settings.Lighting_Shadow_Resolution;
-    pointShadowSettings.cacheRealTimeTerrain = false;
+    worldSettings.pointLight.nearPlane = internal.PointLightNear;
+    worldSettings.pointLight.farPlane = internal.PointLightFar;
+    worldSettings.pointLight.maxCount = settings.Lighting_Shadow_MaxCount;
+    worldSettings.pointLight.resolution = settings.Lighting_Shadow_Resolution;
+    worldSettings.pointLight.cacheRealTimeTerrain = false;
 }
 
 function applySettings(settings : ShaderSettings, internal) {
-    worldSettings.shadowMapDistance = settings.Shadow_Distance;
+    worldSettings.shadow.distance = settings.Shadow_Distance;
 
-    pointShadowSettings.maxUpdates = settings.Lighting_Shadow_UpdateCount;
-    pointShadowSettings.realTimeCount = settings.Lighting_Shadow_RealtimeCount;
-    pointShadowSettings.updateThreshold = settings.Lighting_Shadow_UpdateThreshold * 0.01;
+    worldSettings.pointLight.maxUpdates = settings.Lighting_Shadow_UpdateCount;
+    worldSettings.pointLight.realTimeCount = settings.Lighting_Shadow_RealtimeCount;
+    worldSettings.pointLight.updateThreshold = settings.Lighting_Shadow_UpdateThreshold * 0.01;
 
     if (settings.Shadow_Enabled) {
-        enableShadows(settings.Shadow_Resolution, settings.Shadow_CascadeCount);
+        worldSettings.shadow.enable();
 
         if (settings.Shadow_CascadeCount == 1) {
-            worldSettings.shadowNearPlane = -200;
-            worldSettings.shadowFarPlane = 200;
+            worldSettings.shadow.near = -200;
+            worldSettings.shadow.far = 200;
         }
 
         if (!settings.Voxel_UseProvided || internal.VoxelizeBlockFaces || internal.VoxelizeTriangles)
-            worldSettings.cascadeSafeZones[0] = settings.Voxel_Size / 2;
+            worldSettings.shadow.safeZone[0] = settings.Voxel_Size / 2;
     }
 
     defineGlobally1("EFFECT_VL_ENABLED");
@@ -1721,9 +1721,9 @@ export function onSettingsChanged(state : WorldState) {
 
     worldSettings.sunPathRotation = settings.Sky_SunAngle;
 
-    pointShadowSettings.realTimeCount = settings.Lighting_Shadow_RealtimeCount;
-    pointShadowSettings.maxUpdates = settings.Lighting_Shadow_UpdateCount;
-    pointShadowSettings.updateThreshold = settings.Lighting_Shadow_UpdateThreshold * 0.01;
+    worldSettings.pointLight.realTimeCount = settings.Lighting_Shadow_RealtimeCount;
+    worldSettings.pointLight.maxUpdates = settings.Lighting_Shadow_UpdateCount;
+    worldSettings.pointLight.updateThreshold = settings.Lighting_Shadow_UpdateThreshold * 0.01;
 
     const d = settings.Fog_Density * 0.01;
 

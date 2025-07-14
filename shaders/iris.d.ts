@@ -240,14 +240,27 @@ declare var FETCH_BIT: number;
  */
 declare var GL_TEXTURE_BARRIER: number;
 
+declare class Cubemap {
+    imageName(name: string): Cubemap;
+
+    width(width: number): Cubemap;
+    height(height: number): Cubemap;
+
+    format(internalFormat: InternalTextureFormat): Cubemap;
+
+    clear(clear: boolean): Cubemap;
+    clearColor(r: number, g: number, b: number, a: number): Cubemap;
+
+    mipmap(mipmap: boolean): Cubemap;
+    build(): BuiltTexture;
+}
+
 declare class PipelineConfig {
-    registerPostPass(stage: ProgramStage, ...pass: PostPass[]) : void;
+    createCommandList() : CommandList;
 
-    registerObjectShader(shader: BuiltObjectShader) : BuiltObjectShader;
+    setCommandList(stage : ProgramStage, cmd : BuiltCommandList) : void;
 
-    addBarrier(stage: ProgramStage, barrier: number) : void;
-
-    glTextureBarrier(stage: ProgramStage) : void;
+    createObjectShader(name : string, usage : ProgramUsage) : ObjectShader;
 
     getRendererConfig() : RendererConfig;
 
@@ -255,52 +268,83 @@ declare class PipelineConfig {
 
     createTag(tag : NamespacedId, ...blocks : NamespacedId[]) : NamespacedId;
 
-    setCombinationPass(pass: BuiltCombinationPass) : void;
+    createCombinationPass(location: string) : CombinationPass;
+
+    // Textures
+
+    createTexture(name : string) : Texture;
+    createImageTexture(sampler : string, image : string) : Texture;
+
+    createArrayTexture(name : string) : ArrayTexture;
+    createImageArrayTexture(sampler : string, image : string) : ArrayTexture;
+
+    createCubemapTexture(name : string) : Cubemap;
+    createImageCubemapTexture(sampler : string, image : string) : Cubemap;
+
+    /**
+     * Creates a reference to a texture that can change.
+     * @param sampler The sampler name
+     * @param image The image name (can be null)
+     * @param width The width
+     * @param height The height (or 1 if it's a 1D texture)
+     * @param depth The depth (or 1 if it's a 1D/2D texture, or 6 for a cubemap)
+     * @param format The internal format
+     */
+    createTextureReference(sampler : string, image : string | null, width : number, height : number, depth : number, format : InternalTextureFormat) : TextureReference;
+
+    importPNGTexture(name : string, location : string, linearFilter : boolean, clamp : boolean) : PNGTexture;
+
+    importRawTexture(name : string, location : string) : RawTexture;
+
+    createBuffer(size : number, clear : boolean) : BuiltBuffer;
+    createStreamingBuffer(size : number) : BuiltStreamingBuffer;
 }
 
-/**
- * A built-in pass to copy textures. Register with {@link registerShader}.
- */
-declare class TextureCopy {
-  constructor(src: BuiltTexture, dst: BuiltTexture);
+declare class StateReference {
+    constructor();
 
-  /**
-   * Required. Sets the size of the texture copy.
-   * @param width The width of the texture copy
-   * @param height The height of the texture copy
-   */
-  size(width: number, height: number): TextureCopy;
+    enable() : void;
 
-  /**
-   * Optional operation. Offsets the source texture copy position.
-   * @param x The X coordinate to start copying from
-   * @param y The Y coordinate to start copying from
-   */
-  srcPos(x: number, y: number): TextureCopy;
+    disable() : void;
 
-  /**
-   * Optional operation. Offsets the destination texture copy position.
-   * @param x The X coordinate to copy to
-   * @param y The Y coordinate to copy to
-   */
-  dstPos(x: number, y: number): TextureCopy;
+    setEnabled(enabled : boolean) : void;
 
-  /**
-   * Builds the texture copy pass.
-   */
-  build(): PostPass;
+    isEnabled() : boolean;
 }
 
-interface Shader<T> {
+declare class CommandList {
+    pass(cmd : Command) : CommandList;
+
+    createComposite(name : string) : Composite;
+
+    createCompute(name : string) : Compute;
+
+    barrier(barrier : number, state? : StateReference) : CommandList;
+
+    generateMips(...tex : BuiltTexture[]) : CommandList;
+
+    copy(src : BuiltTexture, dst : BuiltTexture, width : number, height : number) : CommandList;
+
+    end() : BuiltCommandList;
+}
+
+declare interface BuiltCommandList {}
+
+
+interface Shader<T, X> {
     ssbo(index: number, buf: BuiltBuffer | undefined): T;
     ubo(index: number, buf: BuiltBuffer | undefined): T;
     define(key: string, value: string): T;
 
-    build(): BuiltObjectShader;
+    compile(): X;
 }
 
-declare class ObjectShader implements Shader<ObjectShader> {
-  constructor(name: string, usage: ProgramUsage);
+interface PostShader<T> extends Shader<T, PostPass> {
+    state(state: StateReference): T;
+}
+
+declare class ObjectShader implements Shader<ObjectShader, BuiltObjectShader> {
+  private constructor(name: string, usage: ProgramUsage);
 
   vertex(loc: string): ObjectShader;
   geometry(loc: string): ObjectShader;
@@ -323,20 +367,21 @@ declare class ObjectShader implements Shader<ObjectShader> {
   ubo(index: number, buf: BuiltBuffer | undefined): ObjectShader;
   define(key: string, value: string): ObjectShader;
 
-  build(): BuiltObjectShader;
+  compile(): BuiltObjectShader;
 }
 
-declare class Composite implements Shader<Composite> {
-  constructor(name: string);
+interface Command {}
 
+declare class Composite implements PostShader<Composite>, Command {
   vertex(loc: string): Composite;
   geometry(loc: string): Composite;
   control(loc: string): Composite;
   eval(loc: string): Composite;
   fragment(loc: string): Composite;
 
+  state(state: StateReference): Composite;
+
   target(index: number, tex: BuiltTexture | undefined): Composite;
-  generateMips(tex: BuiltTexture): Composite;
   target(index: number, tex: BuiltTexture | undefined, mip: number): Composite;
   ssbo(index: number, buf: BuiltBuffer | undefined): Composite;
   ubo(index: number, buf: BuiltBuffer | undefined): Composite;
@@ -350,19 +395,18 @@ declare class Composite implements Shader<Composite> {
     dstA: BlendModeFunction,
   ): Composite;
 
-  build(): PostPass;
+  compile(): PostPass;
 }
 
-declare class Compute implements Shader<Compute> {
-  constructor(name: string);
-
+declare class Compute implements PostShader<Compute>, Command {
   location(loc: string): Compute;
   workGroups(x: number, y: number, z: number): Compute;
   ssbo(index: number, buf: BuiltBuffer | undefined): Compute;
   ubo(index: number, buf: BuiltBuffer | undefined): Compute;
   define(key: string, value: string): Compute;
+  state(state: StateReference): Compute;
 
-  build(): PostPass;
+  compile(): PostPass;
 }
 
 /**
@@ -376,7 +420,7 @@ declare class CombinationPass {
   ubo(index: number, buf: BuiltBuffer | undefined): ObjectShader;
   define(key: string, value: string): ObjectShader;
 
-  build(): BuiltCombinationPass;
+  compile(): BuiltCombinationPass;
 }
 
 // Buffers
@@ -391,6 +435,8 @@ interface BuiltGPUBuffer extends BuiltBuffer {}
  */
 interface BuiltBuffer {}
 
+declare function isKeyDown(keyCode : number) : boolean;
+
 /**
  * The result of a {@link StreamingBuffer}.
  */
@@ -401,15 +447,6 @@ declare class BuiltStreamingBuffer implements BuiltBuffer {
     uploadData() : void;
 }
 
-/**
- * A GPU buffer, to be bound as either an SSBO or UBO. Cannot be modified at all on the CPU.
- */
-declare class GPUBuffer {
-  constructor(size: number);
-  clear(c: boolean): GPUBuffer;
-
-  build(): BuiltBuffer;
-}
 
 declare class Vector2f {
     /**
@@ -570,6 +607,8 @@ declare class WorldState {
      * Return the current frame (ap.time.frames).
      */
     currentFrame() : number;
+
+    rendererConfig() : RendererConfig;
 }
 
 /**
@@ -577,7 +616,7 @@ declare class WorldState {
  * Automatically cleared
  */
 declare class StreamingBuffer {
-  constructor(size: number);
+  private constructor(size: number);
 
   build(): BuiltStreamingBuffer;
 }
@@ -624,12 +663,11 @@ interface ActiveTextureReference extends BuiltTexture {
  * @see ArrayTexture
  */
 declare class Texture {
-  constructor(name: string);
+  private constructor(name: string);
 
   format(internalFormat: InternalTextureFormat): Texture;
   clearColor(r: number, g: number, b: number, a: number): Texture;
   clear(clear: boolean): Texture;
-  imageName(name: string): Texture;
   mipmap(mipmap: boolean): Texture;
   width(width: number): Texture;
   height(height: number): Texture;
@@ -649,21 +687,17 @@ interface PType {}
  * @see PNGTexture
  */
 declare class RawTexture {
-  constructor(name: string, location: string);
+  private constructor(name: string, location: string);
 
   format(internalFormat: InternalTextureFormat): RawTexture;
   type(pixel: PType): RawTexture;
   blur(b: boolean): RawTexture;
   clamp(b: boolean): RawTexture;
-  clearColor(r: number, g: number, b: number, a: number): RawTexture;
-  clear(clear: boolean): RawTexture;
-  imageName(name: string): RawTexture;
-  mipmap(mipmap: boolean): RawTexture;
   width(width: number): RawTexture;
   height(height: number): RawTexture;
   depth(depth: number): RawTexture;
 
-  build(): BuiltTexture;
+  load(): BuiltTexture;
 }
 
 /**
@@ -671,7 +705,7 @@ declare class RawTexture {
  * @see Texture
  */
 declare class ArrayTexture {
-  constructor(name: string);
+    private constructor(name: string);
 
   format(internalFormat: InternalTextureFormat): ArrayTexture;
   clearColor(r: number, g: number, b: number, a: number): ArrayTexture;
@@ -691,7 +725,7 @@ declare class ArrayTexture {
  * @see RawTexture
  */
 declare class PNGTexture implements BuiltTexture {
-  constructor(name: string, loc: string, blur: boolean, clamp: boolean);
+    private constructor(name: string, loc: string, blur: boolean, clamp: boolean);
 
     readBack(): ArrayBuffer;
     name(): string;
@@ -843,7 +877,34 @@ declare namespace Usage {
   let POINT : ProgramUsage;
 }
 
-
-declare class GenerateMips implements PostPass {
-    constructor(texture: BuiltTexture);
+/**
+ * Even if a key is not in this list, it can still be used with {@link isKeyDown}. This is just a convenience enum.
+ */
+declare enum Keys {
+    A,
+    B,
+    C,
+    D,
+    E,
+    F,
+    G,
+    H,
+    I,
+    J,
+    K,
+    L,
+    M,
+    N,
+    O,
+    P,
+    Q,
+    R,
+    S,
+    T,
+    U,
+    V,
+    W,
+    X,
+    Y,
+    Z,
 }

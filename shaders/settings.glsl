@@ -1,4 +1,4 @@
-#define FOG_CAVE_DENSITY 0.4
+#define FOG_CAVE_DENSITY 0.18
 
 #define FOG_NIGHT_MUL 6.0
 

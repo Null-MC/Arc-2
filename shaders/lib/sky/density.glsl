@@ -49,7 +49,7 @@ float GetSkyDensity(const in vec3 localPos) {
 
         if (viewDist < 32.0) {
             vec3 samplePos = skyPos * 0.25;
-            float fogNoise = 1.0 - textureLod(texFogNoise, samplePos, 0).r * 2.0;
+            float fogNoise = 1.0 - textureLod(texFogNoise, samplePos, 0).r;
             density *= max(3.0 - 2.8*fogNoise, 0.0);
         }
 

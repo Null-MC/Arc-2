@@ -1,17 +1,16 @@
 import type {} from '../iris'
 
 
-interface ShaderBuilderIf<T extends Shader<T>> {
-    (shader: ShaderBuilder<T>): void;
+interface ShaderBuilderIf<T extends Shader<T, X>, X> {
+    (shader: ShaderBuilder<T, X>): void;
 }
 
-interface ShaderBuilderWithShader<T extends Shader<T>> {
+interface ShaderBuilderWithShader<T extends Shader<T, X>, X> {
     (shader: T): void;
 }
 
-export class ShaderBuilder<T extends Shader<T>> {
+export class ShaderBuilder<T extends Shader<T, X>, X> {
     shader: T;
-    programStage: ProgramStage;
     ssbo_index: number = 0;
     ubo_index: number = 0;
 
@@ -20,12 +19,7 @@ export class ShaderBuilder<T extends Shader<T>> {
         this.shader = shader;
     }
 
-    stage(programStage: ProgramStage) : ShaderBuilder<T> {
-        this.programStage = programStage;
-        return this;
-    }
-
-    ssbo(name: string, buffer: BuiltBuffer) : ShaderBuilder<T> {
+    ssbo(name: string, buffer: BuiltBuffer) : ShaderBuilder<T, X> {
         this.shader.define(name, this.ssbo_index.toString());
         this.shader.ssbo(this.ssbo_index, buffer);
         this.ssbo_index++;
@@ -33,7 +27,7 @@ export class ShaderBuilder<T extends Shader<T>> {
         return this;
     }
 
-    ubo(name: string, buffer: BuiltBuffer) : ShaderBuilder<T> {
+    ubo(name: string, buffer: BuiltBuffer) : ShaderBuilder<T, X> {
         this.shader.define(name, this.ubo_index.toString());
         this.shader.ubo(this.ubo_index, buffer);
         this.ubo_index++;
@@ -41,22 +35,17 @@ export class ShaderBuilder<T extends Shader<T>> {
         return this;
     }
 
-    if(condition: boolean, callback: ShaderBuilderIf<T>) : ShaderBuilder<T> {
+    if(condition: boolean, callback: ShaderBuilderIf<T, X>) : ShaderBuilder<T, X> {
         if (condition) callback(this);
         return this;
     }
 
-    with(callback: ShaderBuilderWithShader<T>) : ShaderBuilder<T> {
+    with(callback: ShaderBuilderWithShader<T, X>) : ShaderBuilder<T, X> {
         callback(this.shader);
         return this;
     }
 
-    build(pipeline: PipelineConfig) {
-        if (this.shader instanceof ObjectShader) {
-            pipeline.registerObjectShader(this.shader.build());
-        }
-        else {
-            pipeline.registerPostPass(this.programStage, this.shader.build());
-        }
+    compile(): void {
+        this.shader.compile();
     }
 }

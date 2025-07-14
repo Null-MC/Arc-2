@@ -770,6 +770,20 @@ export function configurePipeline(pipeline : PipelineConfig) {
         .clear(false)
         .build();
 
+    pipeline.createImageTexture('texScatterFiltered', 'imgScatterFiltered')
+        .format(Format.RGBA16F)
+        .width(vlWidth)
+        .height(vlHeight)
+        .clear(false)
+        .build();
+
+    pipeline.createImageTexture('texTransmitFiltered', 'imgTransmitFiltered')
+        .format(Format.RGBA16F)
+        .width(vlWidth)
+        .height(vlHeight)
+        .clear(false)
+        .build();
+
     if (settings.Lighting_VolumetricResolution > 0) {
         pipeline.createImageTexture('texScatterFinal', 'imgScatterFinal')
             .format(Format.RGBA16F)
@@ -1469,12 +1483,26 @@ export function configurePipeline(pipeline : PipelineConfig) {
         .ubo(UBO.SceneSettings, SceneSettingsBuffer)
         .compile();
 
+    postRenderQueue.createCompute('volumetric-near-filter')
+        .location('composite/volumetric-filter.csh')
+        .workGroups(Math.ceil(screenWidth / 16.0), Math.ceil(screenHeight / 16.0), 1)
+        .define('TEX_SCATTER', 'texScatterVL')
+        .define('TEX_TRANSMIT', 'texTransmitVL')
+        .define('TEX_DEPTH', 'mainDepthTex')
+        .compile();
+
+    postRenderQueue.barrier(IMAGE_BIT | FETCH_BIT);
+
     if (settings.Lighting_VolumetricResolution > 0) {
-        postRenderQueue.createCompute('volumetric-near-filter')
-            .location('composite/volumetric-filter.csh')
+        postRenderQueue.createCompute('volumetric-near-upscale')
+            .location('composite/volumetric-upscale.csh')
             .workGroups(Math.ceil(screenWidth / 16.0), Math.ceil(screenHeight / 16.0), 1)
+            .define('TEX_SCATTER', 'texScatterFiltered')
+            .define('TEX_TRANSMIT', 'texTransmitFiltered')
             .define('TEX_DEPTH', 'mainDepthTex')
             .compile();
+
+        postRenderQueue.barrier(IMAGE_BIT | FETCH_BIT);
     }
 
     postRenderQueue.generateMips(finalFlipper.getReadTexture());

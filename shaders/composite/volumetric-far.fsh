@@ -322,9 +322,9 @@ void main() {
                 if (floodfill_isInBounds(voxelPos)) {
                     vec3 blockLight = floodfill_sample(voxelPos);
 
-                    #if LIGHTING_MODE != LIGHT_MODE_LPV
-                        blockLight *= (1.0/15.0);
-                    #endif
+//                    #if LIGHTING_MODE != LIGHT_MODE_LPV
+//                        blockLight *= (1.0/15.0);
+//                    #endif
 
                     sampleLit += phaseIso * blockLight;
                 }

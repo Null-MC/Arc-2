@@ -365,7 +365,7 @@ vec3 trace_GI(const in vec3 traceOrigin, const in vec3 traceDir, const in int fa
 
 		float hit_roughL = _pow2(hit_roughness);
 		//vec3 hit_localPos = voxel_getLocalPosition(tracePos);
-		float hit_NoL = dot(-traceDir, hitNormal);
+		//float hit_NoL = dot(-traceDir, hitNormal);
 
 		float wetness = float(iris_hasFluid(blockId));
 
@@ -571,7 +571,7 @@ vec3 trace_GI(const in vec3 traceOrigin, const in vec3 traceDir, const in int fa
 
 		ApplyWetness_albedo(albedo, hit_porosity, wetness);
 
-		color = albedo * hit_diffuse * max(hit_NoL, 0.0);
+		color = albedo * hit_diffuse;// * max(hit_NoL, 0.0);
 
 		// apply attenuation
 		//color *= GetLightAttenuation(traceDist);

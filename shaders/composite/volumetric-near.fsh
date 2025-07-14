@@ -109,8 +109,10 @@ uniform sampler2D texSkyMultiScatter;
 
 void main() {
     const float stepScale = 1.0 / VL_maxSamples_near;
+    const int uv_scale = int(exp2(LIGHTING_VL_RES));
 
-    float depth = textureLod(mainDepthTex, uv, 0).r;
+    ivec2 iuv = ivec2(gl_FragCoord.xy) * uv_scale;
+    float depth = texelFetch(mainDepthTex, iuv, 0).r;
 
     #ifdef EFFECT_TAA_ENABLED
         //float dither = InterleavedGradientNoiseTime(gl_FragCoord.xy);
@@ -405,9 +407,9 @@ void main() {
                         vec3 blockLight = floodfill_sample(voxelPos);
     //                #endif
 
-                    #if LIGHTING_MODE != LIGHT_MODE_LPV
-                        blockLight *= (1.0/15.0);
-                    #endif
+//                    #if LIGHTING_MODE != LIGHT_MODE_LPV
+//                        blockLight *= (1.0/15.0);
+//                    #endif
 
                     sampleLit += phaseIso * blockLight;
                 }

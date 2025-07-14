@@ -1,10 +1,6 @@
 vec2 GetPixelRadius(const in float blockRadius, const in int cascade) {
-    vec2 cascadeSize = 2.0 / vec2(ap.celestial.projection[cascade][0].x, ap.celestial.projection[cascade][1].y);
-    // vec2 cascadeSize = shadowProjectionSize[cascade];
-
-    // return vec2(8.0 * shadowPixelSize);
-    return blockRadius * (shadowMapResolution / cascadeSize) * shadowPixelSize;
-    // return (blockRadius / cascadeSize);// * shadowPixelSize;
+    vec2 cascadeScale = vec2(ap.celestial.projection[cascade][0].x, ap.celestial.projection[cascade][1].y);
+    return blockRadius * (cascadeScale * 0.5);
 }
 
 float GetShadowBias(const in int shadowCascade) {

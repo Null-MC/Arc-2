@@ -5,11 +5,11 @@
 
 layout (local_size_x = 16, local_size_y = 16) in;
 
-layout(rgba16f) uniform image2D imgScatterFinal;
-layout(rgba16f) uniform image2D imgTransmitFinal;
+layout(rgba16f) uniform image2D imgScatterFiltered;
+layout(rgba16f) uniform image2D imgTransmitFiltered;
 
-uniform sampler2D texScatterVL;
-uniform sampler2D texTransmitVL;
+uniform sampler2D TEX_SCATTER;
+uniform sampler2D TEX_TRANSMIT;
 uniform sampler2D TEX_DEPTH;
 
 #include "/lib/common.glsl"
@@ -24,8 +24,11 @@ shared vec3 sharedScatterBuffer[sharedBufferSize];
 shared vec3 sharedTransmitBuffer[sharedBufferSize];
 shared float sharedDepthBuffer[sharedBufferSize];
 
-const float g_sigmaXY = 9.0;
-const float g_sigmaV = 0.02;
+const float g_sigmaXY = 5.0;
+const float g_sigmaV = 2.0;
+
+const int uv_scale = int(exp2(LIGHTING_VL_RES));
+
 
 void populateSharedBuffer() {
     if (gl_LocalInvocationIndex < 5)
@@ -36,7 +39,7 @@ void populateSharedBuffer() {
 
     ivec2 uv_base = ivec2(gl_WorkGroupID.xy * gl_WorkGroupSize.xy) - 2;
 
-    const int uv_scale = int(exp2(LIGHTING_VL_RES));
+    ivec2 viewSize = ivec2(ap.game.screenSize / uv_scale);
 
     for (uint i = 0u; i < 2u; i++) {
 	    uint i_shared = i_base + i;
@@ -53,11 +56,11 @@ void populateSharedBuffer() {
 	    vec3 scatterFinal = vec3(0.0);
         vec3 transmitFinal = vec3(1.0);
 
-	    if (all(greaterThanEqual(uv, ivec2(0))) && all(lessThan(uv, ivec2(ap.game.screenSize + 0.5)))) {
-            scatterFinal = texelFetch(texScatterVL, uv/uv_scale, 0).rgb;
-            transmitFinal = texelFetch(texTransmitVL, uv/uv_scale, 0).rgb;
+	    if (all(greaterThanEqual(uv, ivec2(0))) && all(lessThan(uv, viewSize))) {
+            scatterFinal = texelFetch(TEX_SCATTER, uv, 0).rgb;
+            transmitFinal = texelFetch(TEX_TRANSMIT, uv, 0).rgb;
 
-	    	float depth = texelFetch(TEX_DEPTH, uv, 0).r;
+	    	float depth = texelFetch(TEX_DEPTH, uv*uv_scale, 0).r;
 	    	depthL = linearizeDepth(depth, ap.camera.near, ap.camera.far);
 	    }
 
@@ -117,7 +120,8 @@ void main() {
     populateSharedBuffer();
     barrier();
 
-	if (any(greaterThanEqual(uv, ivec2(ap.game.screenSize)))) return;
+    ivec2 viewSize = ivec2(ap.game.screenSize / uv_scale);
+	if (any(greaterThanEqual(uv, viewSize))) return;
 
     ivec2 uv_shared = ivec2(gl_LocalInvocationID.xy) + 2;
     int i_shared = uv_shared.y * sharedBufferRes + uv_shared.x;
@@ -126,6 +130,6 @@ void main() {
     vec3 scatterFinal, transmitFinal;
 	sampleSharedBuffer(depthL, scatterFinal, transmitFinal);
 
-	imageStore(imgScatterFinal, uv, vec4(scatterFinal, 1.0));
-    imageStore(imgTransmitFinal, uv, vec4(transmitFinal, 1.0));
+	imageStore(imgScatterFiltered, uv, vec4(scatterFinal, 1.0));
+    imageStore(imgTransmitFiltered, uv, vec4(transmitFinal, 1.0));
 }

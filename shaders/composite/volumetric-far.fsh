@@ -107,6 +107,8 @@ uniform sampler2D texSkyMultiScatter;
     #include "/lib/voxel/floodfill-sample.glsl"
 #endif
 
+#include "/lib/vl-shared.glsl"
+
 
 void main() {
     const float stepScale = 1.0 / VL_maxSamples_far;
@@ -119,7 +121,7 @@ void main() {
     vec3 scattering = vec3(0.0);
     vec3 transmittance = vec3(1.0);
 
-    if (depthTrans < depthOpaque) {
+    //if (depthTrans < depthOpaque) {
         uint blockId = texelFetch(texDeferredTrans_Data, iuv, 0).a;
 
         #ifdef EFFECT_TAA_ENABLED
@@ -146,7 +148,7 @@ void main() {
         vec3 ndcPos = fma(vec3(uv, depthOpaque), vec3(2.0), vec3(-1.0));
         vec3 viewPos = unproject(ap.camera.projectionInv, ndcPos);
         vec3 localPosOpaque = mul3(ap.camera.viewInv, viewPos);
-        
+
         float len = length(localPosOpaque);
         float far = 256.0;//ap.camera.far * 0.5;
 
@@ -159,10 +161,6 @@ void main() {
         viewPos = unproject(ap.camera.projectionInv, ndcPos);
         vec3 localPosTrans = mul3(ap.camera.viewInv, viewPos);
 
-        vec3 localRay = localPosOpaque - localPosTrans;
-        vec3 stepLocal = localRay * stepScale;
-        float stepDist = length(stepLocal);
-
         vec3 localViewDir = normalize(localPosOpaque);
 //        float VoL = dot(localViewDir, Scene_LocalLightDir);
 //        float phase = HG(VoL, phase_g);
@@ -171,13 +169,23 @@ void main() {
         float VoL_moon = dot(localViewDir, -Scene_LocalSunDir);
         float phase_moon = DHG(VoL_moon, VL_WaterPhaseB, VL_WaterPhaseF, VL_WaterPhaseM);
 
-        vec3 shadowViewStart = mul3(ap.celestial.view, localPosTrans);
-        vec3 shadowViewEnd = mul3(ap.celestial.view, localPosOpaque);
-        vec3 shadowViewStep = (shadowViewEnd - shadowViewStart) * stepScale;
-
         float miePhase_sun = getMiePhase(VoL_sun, 0.2);
         float miePhase_moon = getMiePhase(VoL_moon, 0.2);
 
+        #ifdef SKY_CLOUDS_ENABLED
+            vec3 cloud_localPos;
+            float cloudDensity, cloud_shadowSun, cloud_shadowMoon;
+            vl_sampleClouds(localViewDir, cloud_localPos, cloudDensity, cloud_shadowSun, cloud_shadowMoon);
+        #endif
+
+    if (depthTrans < depthOpaque) {
+        vec3 localRay = localPosOpaque - localPosTrans;
+        vec3 stepLocal = localRay * stepScale;
+        float stepDist = length(stepLocal);
+
+        vec3 shadowViewStart = mul3(ap.celestial.view, localPosTrans);
+        vec3 shadowViewEnd = mul3(ap.celestial.view, localPosOpaque);
+        vec3 shadowViewStep = (shadowViewEnd - shadowViewStart) * stepScale;
 
         // int material = int(unpackUnorm4x8(data_r).w * 255.0 + 0.5);
         // bool isWater = bitfieldExtract(material, 6, 1) != 0
@@ -329,7 +337,7 @@ void main() {
 
             vec3 scatteringIntegral, sampleTransmittance, inScattering, extinction;
 
-            sampleLit *= 15.0;
+            //sampleLit *= 8.0;
 
             if (!isFluid) {
                 vec3 skyPos = getSkyPosition(sampleLocalPos);
@@ -371,9 +379,17 @@ void main() {
             scattering += scatteringIntegral * transmittance;
             transmittance *= sampleTransmittance;
         }
-
-//        scattering = vec3(10.0);
     }
+
+    #ifdef SKY_CLOUDS_ENABLED
+        if (depthOpaque == 1.0) {
+            float endWorldY = localPosOpaque.y + ap.camera.pos.y;
+            //endWorldY -= (1.0-dither) * stepLocal.y;
+
+            if (endWorldY < cloudHeight && cloudDensity > 0.0)
+                vl_renderClouds(transmittance, scattering, miePhase_sun, miePhase_moon, cloud_localPos, cloudDensity, cloud_shadowSun, cloud_shadowMoon);
+        }
+    #endif
 
     outScatter = scattering * 0.001;
     outTransmit = transmittance;

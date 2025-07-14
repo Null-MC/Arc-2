@@ -197,6 +197,34 @@ vec3 GetRandomFaceNormal(const in ivec3 cellPos, const in vec3 face_dir) {
 	return worldSpaceSample;
 }
 
+#ifdef SHADOWS_ENABLED
+	float traceSkyShadows(const in vec3 origin, const in vec3 direction) {
+		vec3 currPos = origin;
+		float shadow = 1.0;
+
+		vec3 stepSizes, nextDist, stepAxis;
+		dda_init(stepSizes, nextDist, origin, direction);
+
+		for (int i = 0; i < 64; i++) {
+			vec3 step = dda_step(stepAxis, nextDist, stepSizes, direction);
+
+			//vec3 nextPos = currPos + step;
+			ivec3 voxelPos = ivec3(floor(currPos + 0.5*step));
+			if (!voxel_isInBounds(voxelPos)) break;
+
+			uint blockId = SampleVoxelBlock(voxelPos);
+			if (blockId != -1u && iris_isFullBlock(blockId)) {
+				shadow = 0.0;
+				break;
+			}
+
+			currPos += step;
+		}
+
+		return shadow;
+	}
+#endif
+
 
 vec3 trace_GI(const in vec3 traceOrigin, const in vec3 traceDir, const in int face_dir) {
 	vec3 color = vec3(0.0);
@@ -345,15 +373,20 @@ vec3 trace_GI(const in vec3 traceOrigin, const in vec3 traceDir, const in int fa
 		wetness = max(wetness, sky_wetness);
 
 		#ifdef SHADOWS_ENABLED
+			// TODO: voxel-trace sky shadow
+			vec3 shadowVoxelSamplePos = tracePos + 0.02 * hitNormal;
+			vec3 hit_shadow = vec3(traceSkyShadows(shadowVoxelSamplePos, Scene_LocalLightDir));
+
+
 			int hit_shadowCascade;
 			vec3 hit_shadowViewPos = mul3(ap.celestial.view, hit_localPos);
 			vec3 hit_shadowPos = GetShadowSamplePos_LPV(hit_shadowViewPos, hit_shadowCascade);
 			hit_shadowPos.z -= GetShadowBias(hit_shadowCascade);
 
 			float shadowWaterDepth = 0.0;
-			vec3 hit_shadow = vec3(0.0);// vec3(Scene_SkyBrightnessSmooth);
+			//vec3 hit_shadow = vec3(0.0);// vec3(Scene_SkyBrightnessSmooth);
 			if (hit_shadowCascade >= 0)
-				hit_shadow = SampleShadowColor(hit_shadowPos, hit_shadowCascade, shadowWaterDepth);
+				hit_shadow *= SampleShadowColor(hit_shadowPos, hit_shadowCascade, shadowWaterDepth);
 
 			// TODO: add a water mask to shadow buffers!
 //			if (shadowWaterDepth > 0.0)

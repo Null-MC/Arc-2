@@ -10,8 +10,8 @@ float GetSkyDensity(const in vec3 localPos) {
     ground_density *= 1.0 / (1.0 + max(worldPos.y - Scene_SkyFogSeaLevel, 0.0));
 
     float weather_density = 0.0;
-    weather_density = mix(weather_density, 0.09, ap.world.rain);
-    weather_density = mix(weather_density, 0.22, ap.world.thunder);
+    weather_density = mix(weather_density, 0.04, ap.world.rain);
+    weather_density = mix(weather_density, 0.07, ap.world.thunder);
     weather_density *= step(worldPos.y, cloudHeight);
 
     float density = Scene_SkyFogDensityF * (ground_density + weather_density);
@@ -43,14 +43,14 @@ float GetSkyDensity(const in vec3 localPos) {
 
         if (viewDist < 128.0) {
             vec3 samplePos = skyPos * 0.0625;
-            float fogNoise = textureLod(texFogNoise, samplePos, 0).r;
-            density *= max(1.0 - 1.2*fogNoise, 0.0);
+            float fogNoise = 1.0 - textureLod(texFogNoise, samplePos, 0).r;
+            density *= max(2.0 - 1.8*fogNoise, 0.0);
         }
 
         if (viewDist < 32.0) {
             vec3 samplePos = skyPos * 0.25;
-            float fogNoise = textureLod(texFogNoise, samplePos, 0).r;
-            density *= max(1.0 - 1.6*fogNoise, 0.0);
+            float fogNoise = 1.0 - textureLod(texFogNoise, samplePos, 0).r * 2.0;
+            density *= max(3.0 - 2.8*fogNoise, 0.0);
         }
 
         return density;

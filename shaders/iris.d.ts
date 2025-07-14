@@ -256,9 +256,7 @@ declare class Cubemap {
 }
 
 declare class PipelineConfig {
-    createCommandList() : CommandList;
-
-    setCommandList(stage : ProgramStage, cmd : BuiltCommandList) : void;
+    forStage(stage : ProgramStage) : CommandList;
 
     createObjectShader(name : string, usage : ProgramUsage) : ObjectShader;
 
@@ -324,6 +322,8 @@ declare class CommandList {
     generateMips(...tex : BuiltTexture[]) : CommandList;
 
     copy(src : BuiltTexture, dst : BuiltTexture, width : number, height : number) : CommandList;
+
+    subList(name : string) : CommandList;
 
     end() : BuiltCommandList;
 }

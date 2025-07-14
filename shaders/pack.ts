@@ -895,7 +895,7 @@ export function configurePipeline(pipeline : PipelineConfig) {
         quadListBuffer = pipeline.createBuffer(quadListBufferSize, true);
     }
 
-    const screenSetupQueue = pipeline.createCommandList();
+    const screenSetupQueue = pipeline.forStage(Stage.SCREEN_SETUP);
 
     new ShaderBuilder(screenSetupQueue.createCompute('scene-setup')
             .location('setup/scene-setup.csh')
@@ -919,7 +919,7 @@ export function configurePipeline(pipeline : PipelineConfig) {
             .compile();
     }
 
-    const preRenderQueue = pipeline.createCommandList();
+    const preRenderQueue = pipeline.forStage(Stage.PRE_RENDER);
 
     if (internal.LightListsEnabled) {
         const binCount = Math.ceil(settings.Voxel_Size / LIGHT_BIN_SIZE);
@@ -948,7 +948,7 @@ export function configurePipeline(pipeline : PipelineConfig) {
     // IMAGE_BIT | SSBO_BIT | UBO_BIT | FETCH_BIT
     preRenderQueue.barrier(SSBO_BIT);
 
-    setupSky(pipeline, screenSetupQueue, preRenderQueue, sceneBuffer);
+    setupSky(pipeline, sceneBuffer);
 
     //pipeline.addBarrier(Stage.PRE_RENDER, IMAGE_BIT);
 
@@ -961,8 +961,8 @@ export function configurePipeline(pipeline : PipelineConfig) {
 
     preRenderQueue.barrier(SSBO_BIT);
 
-    pipeline.setCommandList(Stage.SCREEN_SETUP, screenSetupQueue.end());
-    pipeline.setCommandList(Stage.PRE_RENDER, preRenderQueue.end());
+    screenSetupQueue.end();
+    preRenderQueue.end();
 
     function shadowShader(name: string, usage: ProgramUsage) : ShaderBuilder<ObjectShader, BuiltObjectShader> {
         return new ShaderBuilder(pipeline.createObjectShader(name, usage)
@@ -1023,7 +1023,7 @@ export function configurePipeline(pipeline : PipelineConfig) {
             .compile();
     }
 
-    const postShadowQueue = pipeline.createCommandList();
+    const postShadowQueue = pipeline.forStage(Stage.POST_SHADOW);
 
     function shadowBlockerShader(layer: number) {
         const blockerGroupSize = settings.Shadow_Resolution/32;
@@ -1091,7 +1091,7 @@ export function configurePipeline(pipeline : PipelineConfig) {
             .compile();
     }
 
-    pipeline.setCommandList(Stage.POST_SHADOW, postShadowQueue.end());
+    postShadowQueue.end();
 
     function DiscardObjectShader(name: string, usage: ProgramUsage) {
         return pipeline.createObjectShader(name, usage)
@@ -1252,7 +1252,7 @@ export function configurePipeline(pipeline : PipelineConfig) {
         .ubo(UBO.SceneSettings, SceneSettingsBuffer)
         .compile();
 
-    const postRenderQueue = pipeline.createCommandList();
+    const postRenderQueue = pipeline.forStage(Stage.POST_RENDER);
 
     if (internal.FloodFillEnabled) {
         const groupCount = Math.ceil(settings.Voxel_Size / 8);
@@ -1471,7 +1471,9 @@ export function configurePipeline(pipeline : PipelineConfig) {
             .compile();
     }
 
-    new ShaderBuilder(postRenderQueue.createComposite('volumetric-near')
+    const vlNearStage = postRenderQueue.subList('VL-near');
+
+    new ShaderBuilder(vlNearStage.createComposite('volumetric-near')
             .vertex('shared/bufferless.vsh')
             .fragment('composite/volumetric-near.fsh')
             .target(0, texScatterVL)
@@ -1483,7 +1485,7 @@ export function configurePipeline(pipeline : PipelineConfig) {
         .ubo(UBO.SceneSettings, SceneSettingsBuffer)
         .compile();
 
-    postRenderQueue.createCompute('volumetric-near-filter')
+    vlNearStage.createCompute('volumetric-near-filter')
         .location('composite/volumetric-filter.csh')
         .workGroups(Math.ceil(screenWidth / 16.0), Math.ceil(screenHeight / 16.0), 1)
         .define('TEX_SCATTER', 'texScatterVL')
@@ -1491,10 +1493,10 @@ export function configurePipeline(pipeline : PipelineConfig) {
         .define('TEX_DEPTH', 'mainDepthTex')
         .compile();
 
-    postRenderQueue.barrier(IMAGE_BIT | FETCH_BIT);
+    vlNearStage.barrier(IMAGE_BIT | FETCH_BIT);
 
     if (settings.Lighting_VolumetricResolution > 0) {
-        postRenderQueue.createCompute('volumetric-near-upscale')
+        vlNearStage.createCompute('volumetric-near-upscale')
             .location('composite/volumetric-upscale.csh')
             .workGroups(Math.ceil(screenWidth / 16.0), Math.ceil(screenHeight / 16.0), 1)
             .define('TEX_SCATTER', 'texScatterFiltered')
@@ -1502,8 +1504,10 @@ export function configurePipeline(pipeline : PipelineConfig) {
             .define('TEX_DEPTH', 'mainDepthTex')
             .compile();
 
-        postRenderQueue.barrier(IMAGE_BIT | FETCH_BIT);
+        vlNearStage.barrier(IMAGE_BIT | FETCH_BIT);
     }
+
+    vlNearStage.end();
 
     postRenderQueue.generateMips(finalFlipper.getReadTexture());
 
@@ -1607,7 +1611,7 @@ export function configurePipeline(pipeline : PipelineConfig) {
         .compile();
 
     if (settings.Effect_Bloom_Enabled) {
-        setupBloom(pipeline, postRenderQueue, finalFlipper.getReadName(), finalFlipper.getWriteTexture());
+        setupBloom(pipeline, finalFlipper.getReadName(), finalFlipper.getWriteTexture());
 
         finalFlipper.flip();
     }
@@ -1673,7 +1677,7 @@ export function configurePipeline(pipeline : PipelineConfig) {
         finalFlipper.flip();
     }
 
-    pipeline.setCommandList(Stage.POST_RENDER, postRenderQueue.end());
+    postRenderQueue.end();
 
     pipeline.createCombinationPass('post/final.fsh')
         .define('TEX_SRC', finalFlipper.getReadName())
@@ -1736,7 +1740,7 @@ export function getBlockId(block: BlockState) : number {
     return 0;
 }
 
-function setupSky(pipeline: PipelineConfig, setupStage: CommandList, preRenderStage: CommandList, sceneBuffer) {
+function setupSky(pipeline: PipelineConfig, sceneBuffer) {
     const texSkyTransmit = pipeline.createTexture('texSkyTransmit')
         .format(Format.RGB16F)
         .width(256)
@@ -1764,6 +1768,9 @@ function setupSky(pipeline: PipelineConfig, setupStage: CommandList, preRenderSt
         .height(32)
         .clear(false)
         .build();
+
+    const setupStage = pipeline.forStage(Stage.SCREEN_SETUP);
+    const preRenderStage = pipeline.forStage(Stage.PRE_RENDER);
 
     new ShaderBuilder(setupStage.createComposite('sky-transmit')
             .vertex('shared/bufferless.vsh')
@@ -1802,7 +1809,7 @@ function setupSky(pipeline: PipelineConfig, setupStage: CommandList, preRenderSt
         .compile();
 }
 
-function setupBloom(pipeline: PipelineConfig, postRenderStage: CommandList, src: string, target: BuiltTexture) {
+function setupBloom(pipeline: PipelineConfig, src: string, target: BuiltTexture) {
     const screenWidth_half = Math.ceil(screenWidth / 2.0);
     const screenHeight_half = Math.ceil(screenHeight / 2.0);
 
@@ -1820,8 +1827,11 @@ function setupBloom(pipeline: PipelineConfig, postRenderStage: CommandList, src:
         .clear(false)
         .build();
 
+    const postRenderStage = pipeline.forStage(Stage.POST_RENDER);
+    const bloomStage = postRenderStage.subList('Bloom');
+
     for (let i = 0; i < maxLod; i++) {
-        postRenderStage.createComposite(`bloom-down-${i}`)
+        bloomStage.createComposite(`bloom-down-${i}`)
             .vertex('shared/bufferless.vsh')
             .fragment('post/bloom/down.fsh')
             .target(0, texBloom, i)
@@ -1833,7 +1843,7 @@ function setupBloom(pipeline: PipelineConfig, postRenderStage: CommandList, src:
     }
 
     for (let i = maxLod-1; i >= 0; i--) {
-        new ShaderBuilder(postRenderStage.createComposite(`bloom-up-${i}`)
+        new ShaderBuilder(bloomStage.createComposite(`bloom-up-${i}`)
                 .vertex('shared/bufferless.vsh')
                 .fragment('post/bloom/up.fsh')
                 .define('TEX_SRC', src)
@@ -1850,6 +1860,8 @@ function setupBloom(pipeline: PipelineConfig, postRenderStage: CommandList, src:
             .ubo(UBO.SceneSettings, SceneSettingsBuffer)
             .compile();
     }
+
+    bloomStage.end();
 }
 
 function defineGlobally1(name: string) {defineGlobally(name, "1");}

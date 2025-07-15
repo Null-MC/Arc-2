@@ -36,19 +36,19 @@ const float SUN_LUMINANCE = 1000000;//1.6e9;
 const float SUN_LUX = 130000.0;
 
 const float MOON_SIZE = 3.4;
-const float MOON_LUMINANCE = 80.00;
+const float MOON_LUMINANCE = 360.00;
 const float MOON_LUX = 12.0;
 
-const float STAR_LUMINANCE = 32.00;
+const float STAR_LUMINANCE = 48.00;
 
 const float BLOCKLIGHT_LUMINANCE = 32000.0;
-const float BLOCK_LUX = 24000.0;
+const float BLOCK_LUX = 12000.0;
 
 const float SKY_AMBIENT = 1.0;
 
 const int SHADOW_PCF_SAMPLES = 8;
 const int SHADOW_PCSS_SAMPLES = 6;
-const float SHADOW_PENUMBRA_SCALE = 64.0;
+const float SHADOW_PENUMBRA_SCALE = 128.0;
 const float Shadow_MaxPcfSize = 0.6;
 
 const int SHADOW_SCREEN_STEPS = 12;

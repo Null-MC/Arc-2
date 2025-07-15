@@ -57,7 +57,8 @@ void main() {
 		if (ap.time.frames != 0) {
 			float timeF = 1.0 - exp(-max(Scene_PostExposureSpeed * ap.time.delta, 1.0e-12));
 
-			float lumLastFrame = clamp(Scene_AvgExposure, 0.0, 999.0);
+//			float lumLastFrame = clamp(Scene_AvgExposure, 0.0, 99999.0);
+			float lumLastFrame = max(Scene_AvgExposure, 0.0);
 			adaptedLum = lumLastFrame + (weightedAvgLum - lumLastFrame) * timeF;
 		}
 

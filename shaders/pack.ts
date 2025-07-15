@@ -1333,14 +1333,16 @@ export function configurePipeline(pipeline : PipelineConfig) {
     if (settings.Lighting_VxGI_Enabled) {
         const groupCount = Math.ceil(settings.Lighting_VxGI_BufferSize / 4);
 
+        const giQueue = postRenderQueue.subList('global-illumination');
+
         for (let i = settings.Lighting_VxGI_CascadeCount-1; i >= 0; i--) {
             // if (internal.LightListsEnabled) {
             //     registerBarrier(Stage.POST_RENDER, new MemoryBarrier(SSBO_BIT));
             // }
 
-            postRenderQueue.barrier(SSBO_BIT);
+            giQueue.barrier(SSBO_BIT);
 
-            new ShaderBuilder(postRenderQueue.createCompute(`global-illumination-${i+1}`)
+            new ShaderBuilder(giQueue.createCompute(`global-illumination-${i+1}`)
                     .location('composite/global-illumination.csh')
                     .workGroups(groupCount, groupCount, groupCount)
                     .define('RENDER_COMPUTE', '1')
@@ -1356,6 +1358,8 @@ export function configurePipeline(pipeline : PipelineConfig) {
                 .ubo(UBO.SceneSettings, SceneSettingsBuffer)
                 .compile();
         }
+
+        giQueue.end();
     }
 
     if (settings.Shadow_Enabled || settings.Shadow_SS_Fallback) {
@@ -1654,7 +1658,9 @@ export function configurePipeline(pipeline : PipelineConfig) {
         finalFlipper.flip();
     }
 
-    new ShaderBuilder(postRenderQueue.createCompute('histogram')
+    const postProcessQueue = postRenderQueue.subList('post-processing');
+
+    new ShaderBuilder(postProcessQueue.createCompute('histogram')
             .location('post/histogram.csh')
             .workGroups(Math.ceil(screenWidth / 16.0), Math.ceil(screenHeight / 16.0), 1)
             .define('TEX_SRC', finalFlipper.getReadName())
@@ -1663,9 +1669,9 @@ export function configurePipeline(pipeline : PipelineConfig) {
         .ubo(UBO.SceneSettings, SceneSettingsBuffer)
         .compile();
 
-    postRenderQueue.barrier(IMAGE_BIT);
+    postProcessQueue.barrier(IMAGE_BIT);
 
-    new ShaderBuilder(postRenderQueue.createCompute('exposure')
+    new ShaderBuilder(postProcessQueue.createCompute('exposure')
             .location('post/exposure.csh')
             .workGroups(1, 1, 1)
         )
@@ -1674,12 +1680,12 @@ export function configurePipeline(pipeline : PipelineConfig) {
         .compile();
 
     if (settings.Effect_Bloom_Enabled) {
-        setupBloom(pipeline, postRenderQueue, finalFlipper.getReadName(), finalFlipper.getWriteTexture());
+        setupBloom(pipeline, postProcessQueue, finalFlipper.getReadName(), finalFlipper.getWriteTexture());
 
         finalFlipper.flip();
     }
 
-    new ShaderBuilder(postRenderQueue.createComposite('tone-map')
+    new ShaderBuilder(postProcessQueue.createComposite('tone-map')
             .vertex('shared/bufferless.vsh')
             .fragment('post/tonemap.fsh')
             .target(0, finalFlipper.getWriteTexture())
@@ -1692,9 +1698,9 @@ export function configurePipeline(pipeline : PipelineConfig) {
     finalFlipper.flip();
 
     if (settings.Post_TAA_Enabled) {
-        postRenderQueue.barrier(FETCH_BIT);
+        postProcessQueue.barrier(FETCH_BIT);
 
-        postRenderQueue.createComposite('TAA')
+        postProcessQueue.createComposite('TAA')
             .vertex('shared/bufferless.vsh')
             .fragment('post/taa.fsh')
             .target(0, texTaaPrev)
@@ -1703,10 +1709,12 @@ export function configurePipeline(pipeline : PipelineConfig) {
             .define('TEX_SRC', finalFlipper.getReadName())
             .compile();
 
-        postRenderQueue.barrier(FETCH_BIT);
+        postProcessQueue.barrier(FETCH_BIT);
 
         finalFlipper.flip();
     }
+
+    postProcessQueue.end();
 
     if (internal.DebugEnabled) {
         new ShaderBuilder(postRenderQueue.createComposite('debug')

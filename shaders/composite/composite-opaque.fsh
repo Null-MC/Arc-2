@@ -581,16 +581,51 @@ void main() {
         colorFinal = getValFromSkyLUT(texSkyView, skyPos, localViewDir, Scene_LocalSunDir);
 
         if (rayIntersectSphere(skyPos, localViewDir, groundRadiusMM) < 0.0) {
-            float sunLum = SUN_LUMINANCE * sun(localViewDir, Scene_LocalSunDir);
-            float moonLum = MOON_LUMINANCE * moon(localViewDir, -Scene_LocalSunDir);
+            vec3 skyLight = vec3(0.0);
 
             vec3 starViewDir = getStarViewDir(localViewDir);
-            vec3 starLight = STAR_LUMINANCE * GetStarLight(starViewDir);
-            starLight *= step(sunLum + moonLum, EPSILON);
+            vec3 starColor = GetStarLight(starViewDir);
+            float starLum = STAR_LUMINANCE;
+
+            float sunF = sun(localViewDir, Scene_LocalSunDir);
+            skyLight += sunF * SUN_LUMINANCE * Scene_SunColor;
+            starLum *= step(sunF, EPSILON);
+
+            vec3 skyLightPos = 100.0 * Scene_LocalSunDir;
+            float moonDist = rayIntersectSphere(skyLightPos, localViewDir, 8.0);
+            if (moonDist > 0.0) {
+                vec3 hitPos = localViewDir * -moonDist;
+                vec3 hitNormal = normalize(skyLightPos - hitPos);
+
+                //float noise = hash13((skyLightPos - hitPos));
+                vec3 samplePos = 0.09 * (skyLightPos - hitPos);
+                float noise = 1.0 - textureLod(texFogNoise, samplePos, 0).r;
+                hitPos += 0.6 * noise * hitNormal;
+
+                vec3 dX = dFdx(hitPos);
+                vec3 dY = dFdy(hitPos);
+                vec3 moonNormal = cross(dX, dY);
+                if (lengthSq(moonNormal) > EPSILON)
+                    moonNormal = normalize(moonNormal);
+                else
+                    moonNormal = hitNormal;
+
+
+                //vec3 moonNormal = normalize(skyLightPos - hitPos);
+                vec3 moon_color = RgbToLinear(vec3(0.922, 0.918, 0.847)); //moonNormal * 0.5 + 0.5;
+
+                vec3 fakeSunDir = normalize(vec3(0.4, -1.0, 0.2));
+                float moon_lit = MOON_LUMINANCE * max(dot(fakeSunDir, moonNormal), 0.0);
+                skyLight += moon_lit * moon_color * Scene_SunColor;
+
+                starLum = 0.0;
+            }
+
+            skyLight += starLum * starColor;
 
             vec3 skyTransmit = getValFromTLUT(texSkyTransmit, skyPos, localViewDir);
 
-            colorFinal += (sunLum*Scene_SunColor + moonLum + starLight) * skyTransmit;
+            colorFinal += skyLight * skyTransmit;
         }
     }
 

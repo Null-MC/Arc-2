@@ -520,9 +520,9 @@ void main() {
         diffuse *= 1.0 - metalness * (1.0 - roughL);
 
         #if MATERIAL_EMISSION_POWER != 1
-            diffuse += pow(emission, MATERIAL_EMISSION_POWER) * Material_EmissionBrightness * BLOCK_LUX;
+            diffuse += pow(emission, MATERIAL_EMISSION_POWER) * Material_EmissionBrightness * BLOCKLIGHT_LUMINANCE;
         #else
-            diffuse += emission * Material_EmissionBrightness * BLOCK_LUX;
+            diffuse += emission * Material_EmissionBrightness * BLOCKLIGHT_LUMINANCE;
         #endif
 
         float smoothness = 1.0 - roughness;

@@ -680,9 +680,9 @@ void main() {
                 reflect_diffuse *= 1.0 - reflect_metalness * (1.0 - reflect_roughL);
 
                 #if MATERIAL_EMISSION_POWER != 1
-                    reflect_diffuse += pow(reflect_emission, MATERIAL_EMISSION_POWER) * Material_EmissionBrightness * BLOCK_LUX;
+                    reflect_diffuse += pow(reflect_emission, MATERIAL_EMISSION_POWER) * Material_EmissionBrightness * BLOCKLIGHT_LUMINANCE;
                 #else
-                    reflect_diffuse += reflect_emission * Material_EmissionBrightness * BLOCK_LUX;
+                    reflect_diffuse += reflect_emission * Material_EmissionBrightness * BLOCKLIGHT_LUMINANCE;
                 #endif
 
                 #ifdef LIGHTING_GI_ENABLED

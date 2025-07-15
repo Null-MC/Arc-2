@@ -567,9 +567,9 @@ vec3 trace_GI(const in vec3 traceOrigin, const in vec3 traceDir, const in int fa
 		hit_diffuse *= 1.0 - hit_metalness * (1.0 - hit_roughL);
 
 		#if MATERIAL_EMISSION_POWER != 1
-			hit_diffuse += pow(hit_emission, MATERIAL_EMISSION_POWER) * Material_EmissionBrightness * BLOCK_LUX;
+			hit_diffuse += pow(hit_emission, MATERIAL_EMISSION_POWER) * Material_EmissionBrightness * BLOCKLIGHT_LUMINANCE;
 		#else
-			hit_diffuse += hit_emission * Material_EmissionBrightness * BLOCK_LUX;
+			hit_diffuse += hit_emission * Material_EmissionBrightness * BLOCKLIGHT_LUMINANCE;
 		#endif
 
 		ApplyWetness_albedo(albedo, hit_porosity, wetness);

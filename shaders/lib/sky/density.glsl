@@ -5,7 +5,7 @@ float GetSkyDensity(const in vec3 localPos) {
 
     const float humidity = 0.15; // TODO: ask IMS for uniform
     float ground_density = mix(0.0, 0.08, humidity);
-    ground_density = mix(ground_density, 1.8, saturate(-nightF));
+    ground_density = mix(ground_density, 1.1, saturate(-nightF));
 
     ground_density *= 1.0 / (1.0 + max(worldPos.y - Scene_SkyFogSeaLevel, 0.0));
 

@@ -102,14 +102,13 @@ void sampleSharedBuffer(const in float depthL, out vec3 scatterFinal, out vec3 t
         }
     }
 
-
     if (total <= EPSILON) {
         scatterFinal = vec3(0.0);
         transmitFinal = vec3(1.0);
     }
     else {
-        scatterFinal = accumScatter / total;
-        transmitFinal = accumTransmit / total;
+        scatterFinal = max(accumScatter / total, 0.0);
+        transmitFinal = saturate(accumTransmit / total);
     }
 }
 
@@ -118,6 +117,8 @@ void main() {
 	ivec2 uv = ivec2(gl_GlobalInvocationID.xy);
 
     populateSharedBuffer();
+
+    memoryBarrierShared();
     barrier();
 
     ivec2 viewSize = ivec2(ap.game.screenSize / uv_scale);
@@ -129,6 +130,10 @@ void main() {
 
     vec3 scatterFinal, transmitFinal;
 	sampleSharedBuffer(depthL, scatterFinal, transmitFinal);
+//    scatterFinal = sharedScatterBuffer[i_shared];
+//    transmitFinal = sharedTransmitBuffer[i_shared];
+//    scatterFinal = vec3(800.0, 300.0, 0.0);
+//    transmitFinal = vec3(0.8, 0.3, 0.0);
 
 	imageStore(imgScatterFiltered, uv, vec4(scatterFinal, 1.0));
     imageStore(imgTransmitFiltered, uv, vec4(transmitFinal, 1.0));

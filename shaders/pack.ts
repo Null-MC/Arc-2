@@ -479,6 +479,8 @@ export function configurePipeline(pipeline : PipelineConfig) {
 
     const texBlueNoise = pipeline.importPNGTexture('texBlueNoise', 'textures/blue_noise.png', true, false);
 
+    const texMoon = pipeline.importPNGTexture('texMoon', 'textures/moon.png', true, false);
+
     const texShadowColor = pipeline.createArrayTexture('texShadowColor')
         .format(Format.RGBA8)
         .width(settings.Shadow_Resolution)
@@ -802,14 +804,14 @@ export function configurePipeline(pipeline : PipelineConfig) {
         .format(Format.RGBA16F)
         .width(vlWidth)
         .height(vlHeight)
-        .clear(false)
+        .clear(true)
         .build();
 
     pipeline.createImageTexture('texTransmitFiltered', 'imgTransmitFiltered')
         .format(Format.RGBA16F)
         .width(vlWidth)
         .height(vlHeight)
-        .clear(false)
+        .clear(true)
         .build();
 
     if (settings.Lighting_VolumetricResolution > 0) {
@@ -1552,15 +1554,17 @@ export function configurePipeline(pipeline : PipelineConfig) {
         .ubo(UBO.SceneSettings, SceneSettingsBuffer)
         .compile();
 
+    vlNearStage.barrier(IMAGE_BIT);
+
     vlNearStage.createCompute('volumetric-near-filter')
         .location('composite/volumetric-filter.csh')
-        .workGroups(Math.ceil(screenWidth / 16.0), Math.ceil(screenHeight / 16.0), 1)
+        .workGroups(Math.ceil(vlWidth / 16.0), Math.ceil(vlHeight / 16.0), 1)
         .define('TEX_SCATTER', 'texScatterVL')
         .define('TEX_TRANSMIT', 'texTransmitVL')
         .define('TEX_DEPTH', 'mainDepthTex')
         .compile();
 
-    vlNearStage.barrier(IMAGE_BIT | FETCH_BIT);
+    vlNearStage.barrier(IMAGE_BIT);
 
     if (settings.Lighting_VolumetricResolution > 0) {
         vlNearStage.createCompute('volumetric-near-upscale')

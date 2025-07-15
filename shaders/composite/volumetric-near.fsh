@@ -154,7 +154,7 @@ void main() {
 //    vec3 localViewDir = normalize(localPos);
     float VoL_sun = dot(localViewDir, Scene_LocalSunDir);
     float phase_sun = DHG(VoL_sun, VL_WaterPhaseB, VL_WaterPhaseF, VL_WaterPhaseM);
-    float VoL_moon = dot(localViewDir, -Scene_LocalSunDir);
+    float VoL_moon = -VoL_sun;//dot(localViewDir, -Scene_LocalSunDir);
     float phase_moon = DHG(VoL_moon, VL_WaterPhaseB, VL_WaterPhaseF, VL_WaterPhaseM);
 
     float miePhase_sun = getMiePhase(VoL_sun, 0.2);

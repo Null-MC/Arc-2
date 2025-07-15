@@ -1,4 +1,5 @@
 #version 430 core
+#extension GL_ARB_derivative_control: enable
 
 #include "/settings.glsl"
 #include "/lib/constants.glsl"
@@ -23,6 +24,7 @@ uniform sampler2D texParticleOpaque;
 
 uniform sampler3D texFogNoise;
 uniform sampler2D texBlueNoise;
+uniform sampler2D texMoon;
 
 #if defined(SHADOWS_ENABLED) || defined(SHADOWS_SS_FALLBACK)
     uniform sampler2D TEX_SHADOW;
@@ -595,28 +597,40 @@ void main() {
             float moonDist = rayIntersectSphere(skyLightPos, localViewDir, 8.0);
             if (moonDist > 0.0) {
                 vec3 hitPos = localViewDir * -moonDist;
-                vec3 hitNormal = normalize(skyLightPos - hitPos);
+                vec3 hitNormal = normalize(hitPos - skyLightPos);
 
-                //float noise = hash13((skyLightPos - hitPos));
-                vec3 samplePos = 0.09 * (skyLightPos - hitPos);
-                float noise = 1.0 - textureLod(texFogNoise, samplePos, 0).r;
-                hitPos += 0.6 * noise * hitNormal;
+                vec2 moon_uv = DirectionToUV(hitNormal);
+                moon_uv += vec2(0.0064, 0.0002) * ap.time.elapsed;
+                vec4 moonData = textureLod(texMoon, moon_uv, 0);
+                vec3 moon_color = RgbToLinear(moonData.rgb);
 
-                vec3 dX = dFdx(hitPos);
-                vec3 dY = dFdy(hitPos);
+                hitPos += 0.6 * moonData.a * hitNormal;
+
+                vec3 dX = dFdxFine(hitPos);
+                vec3 dY = dFdyFine(hitPos);
                 vec3 moonNormal = cross(dX, dY);
                 if (lengthSq(moonNormal) > EPSILON)
                     moonNormal = normalize(moonNormal);
                 else
-                    moonNormal = hitNormal;
+                    moonNormal = -hitNormal;
 
+                //moon_color = moonNormal * 0.5 + 0.5;
 
-                //vec3 moonNormal = normalize(skyLightPos - hitPos);
-                vec3 moon_color = RgbToLinear(vec3(0.922, 0.918, 0.847)); //moonNormal * 0.5 + 0.5;
+                const vec3 fakeSunDir = normalize(vec3(0.4, -1.0, 0.2));
+                const float roughL = 0.92;
 
-                vec3 fakeSunDir = normalize(vec3(0.4, -1.0, 0.2));
-                float moon_lit = MOON_LUMINANCE * max(dot(fakeSunDir, moonNormal), 0.0);
-                skyLight += moon_lit * moon_color * Scene_SunColor;
+                vec3 H = normalize(localViewDir + fakeSunDir);
+
+                float NoLm = max(dot(moonNormal, fakeSunDir), 0.0);
+                float NoVm = max(dot(moonNormal, localViewDir), 0.0);
+                float LoHm = max(dot(fakeSunDir, H), 0.0);
+                float VoHm = max(dot(localViewDir, H), 0.0);
+
+                vec3 F = material_fresnel(moon_color, 0.04, roughL, VoHm, false);
+                vec3 D = SampleLightDiffuse(NoVm, NoLm, LoHm, roughL) * (1.0 - F);
+                //vec3 S = SampleLightSpecular(NoLm, NoHm, NoVm, F, roughL);
+
+                skyLight += MOON_LUMINANCE * NoLm * D * moon_color * Scene_SunColor;
 
                 starLum = 0.0;
             }

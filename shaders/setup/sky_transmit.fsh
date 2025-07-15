@@ -49,6 +49,6 @@ void main() {
             transmittance *= exp(-dt*extinction);
         }
     }
-    
+
     outColor = vec4(transmittance, 1.0);
 }

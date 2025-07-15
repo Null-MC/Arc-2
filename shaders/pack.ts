@@ -493,6 +493,34 @@ export function configurePipeline(pipeline : PipelineConfig) {
         .clear(false)
         .build();
 
+    const texSkyTransmit = pipeline.createTexture('texSkyTransmit')
+        .format(Format.RGB16F)
+        .width(256)
+        .height(64)
+        .clear(false)
+        .build();
+
+    const texSkyMultiScatter = pipeline.createTexture('texSkyMultiScatter')
+        .format(Format.RGB16F)
+        .width(32)
+        .height(32)
+        .clear(false)
+        .build();
+
+    const texSkyView = pipeline.createTexture('texSkyView')
+        .format(Format.RGB16F)
+        .width(256)
+        .height(256)
+        .clear(false)
+        .build();
+
+    const texSkyIrradiance = pipeline.createTexture('texSkyIrradiance')
+        .format(Format.RGB16F)
+        .width(32)
+        .height(32)
+        .clear(false)
+        .build();
+
     const texFinalA = pipeline.createTexture('texFinalA')
         .format(Format.RGB16F)
         .width(screenWidth)
@@ -919,6 +947,25 @@ export function configurePipeline(pipeline : PipelineConfig) {
             .compile();
     }
 
+    new ShaderBuilder(screenSetupQueue.createComposite('sky-transmit')
+            .vertex('shared/bufferless.vsh')
+            .fragment('setup/sky_transmit.fsh')
+            .target(0, texSkyTransmit)
+        )
+        .ubo(UBO.SceneSettings, SceneSettingsBuffer)
+        .compile();
+
+    new ShaderBuilder(screenSetupQueue.createComposite('sky-multi-scatter')
+            .vertex('shared/bufferless.vsh')
+            .fragment('setup/sky_multi_scatter.fsh')
+            .target(0, texSkyMultiScatter)
+        )
+        .ssbo(SSBO.Scene, sceneBuffer)
+        .ubo(UBO.SceneSettings, SceneSettingsBuffer)
+        .compile();
+
+    screenSetupQueue.end();
+
     const preRenderQueue = pipeline.forStage(Stage.PRE_RENDER);
 
     if (internal.LightListsEnabled) {
@@ -948,7 +995,24 @@ export function configurePipeline(pipeline : PipelineConfig) {
     // IMAGE_BIT | SSBO_BIT | UBO_BIT | FETCH_BIT
     preRenderQueue.barrier(SSBO_BIT);
 
-    setupSky(pipeline, sceneBuffer);
+    new ShaderBuilder(preRenderQueue.createComposite('sky-view')
+            .vertex('shared/bufferless.vsh')
+            .fragment('setup/sky_view.fsh')
+            .target(0, texSkyView)
+        )
+        .ssbo(SSBO.Scene, sceneBuffer)
+        .ubo(UBO.SceneSettings, SceneSettingsBuffer)
+        .compile();
+
+    new ShaderBuilder(preRenderQueue.createComposite('sky-irradiance')
+            .vertex("shared/bufferless.vsh")
+            .fragment("setup/sky_irradiance.fsh")
+            .target(0, texSkyIrradiance)
+            .blendFunc(0, Func.SRC_ALPHA, Func.ONE_MINUS_SRC_ALPHA, Func.ONE, Func.ZERO)
+        )
+        .ssbo(SSBO.Scene, sceneBuffer)
+        .ubo(UBO.SceneSettings, SceneSettingsBuffer)
+        .compile();
 
     //pipeline.addBarrier(Stage.PRE_RENDER, IMAGE_BIT);
 
@@ -961,7 +1025,6 @@ export function configurePipeline(pipeline : PipelineConfig) {
 
     preRenderQueue.barrier(SSBO_BIT);
 
-    screenSetupQueue.end();
     preRenderQueue.end();
 
     function shadowShader(name: string, usage: ProgramUsage) : ShaderBuilder<ObjectShader, BuiltObjectShader> {
@@ -1611,7 +1674,7 @@ export function configurePipeline(pipeline : PipelineConfig) {
         .compile();
 
     if (settings.Effect_Bloom_Enabled) {
-        setupBloom(pipeline, finalFlipper.getReadName(), finalFlipper.getWriteTexture());
+        setupBloom(pipeline, postRenderQueue, finalFlipper.getReadName(), finalFlipper.getWriteTexture());
 
         finalFlipper.flip();
     }
@@ -1740,76 +1803,7 @@ export function getBlockId(block: BlockState) : number {
     return 0;
 }
 
-function setupSky(pipeline: PipelineConfig, sceneBuffer) {
-    const texSkyTransmit = pipeline.createTexture('texSkyTransmit')
-        .format(Format.RGB16F)
-        .width(256)
-        .height(64)
-        .clear(false)
-        .build();
-
-    const texSkyMultiScatter = pipeline.createTexture('texSkyMultiScatter')
-        .format(Format.RGB16F)
-        .width(32)
-        .height(32)
-        .clear(false)
-        .build();
-
-    const texSkyView = pipeline.createTexture('texSkyView')
-        .format(Format.RGB16F)
-        .width(256)
-        .height(256)
-        .clear(false)
-        .build();
-
-    const texSkyIrradiance = pipeline.createTexture('texSkyIrradiance')
-        .format(Format.RGB16F)
-        .width(32)
-        .height(32)
-        .clear(false)
-        .build();
-
-    const setupStage = pipeline.forStage(Stage.SCREEN_SETUP);
-    const preRenderStage = pipeline.forStage(Stage.PRE_RENDER);
-
-    new ShaderBuilder(setupStage.createComposite('sky-transmit')
-            .vertex('shared/bufferless.vsh')
-            .fragment('setup/sky_transmit.fsh')
-            .target(0, texSkyTransmit)
-        )
-        .ubo(UBO.SceneSettings, SceneSettingsBuffer)
-        .compile();
-
-    new ShaderBuilder(setupStage.createComposite('sky-multi-scatter')
-            .vertex('shared/bufferless.vsh')
-            .fragment('setup/sky_multi_scatter.fsh')
-            .target(0, texSkyMultiScatter)
-        )
-        .ssbo(SSBO.Scene, sceneBuffer)
-        .ubo(UBO.SceneSettings, SceneSettingsBuffer)
-        .compile();
-
-    new ShaderBuilder(preRenderStage.createComposite('sky-view')
-            .vertex('shared/bufferless.vsh')
-            .fragment('setup/sky_view.fsh')
-            .target(0, texSkyView)
-        )
-        .ssbo(SSBO.Scene, sceneBuffer)
-        .ubo(UBO.SceneSettings, SceneSettingsBuffer)
-        .compile();
-
-    new ShaderBuilder(preRenderStage.createComposite('sky-irradiance')
-            .vertex("shared/bufferless.vsh")
-            .fragment("setup/sky_irradiance.fsh")
-            .target(0, texSkyIrradiance)
-            .blendFunc(0, Func.SRC_ALPHA, Func.ONE_MINUS_SRC_ALPHA, Func.ONE, Func.ZERO)
-        )
-        .ssbo(SSBO.Scene, sceneBuffer)
-        .ubo(UBO.SceneSettings, SceneSettingsBuffer)
-        .compile();
-}
-
-function setupBloom(pipeline: PipelineConfig, src: string, target: BuiltTexture) {
+function setupBloom(pipeline: PipelineConfig, postRenderStage: CommandList, src: string, target: BuiltTexture) {
     const screenWidth_half = Math.ceil(screenWidth / 2.0);
     const screenHeight_half = Math.ceil(screenHeight / 2.0);
 
@@ -1827,7 +1821,7 @@ function setupBloom(pipeline: PipelineConfig, src: string, target: BuiltTexture)
         .clear(false)
         .build();
 
-    const postRenderStage = pipeline.forStage(Stage.POST_RENDER);
+    //const postRenderStage = pipeline.forStage(Stage.POST_RENDER);
     const bloomStage = postRenderStage.subList('Bloom');
 
     for (let i = 0; i < maxLod; i++) {

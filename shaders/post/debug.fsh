@@ -191,6 +191,14 @@ void main() {
             if (saturate(previewCoord) == previewCoord) {
                 uint sampleVal = textureLod(texHistogram_debug, previewCoord, 0).r;
                 color = vec3(step(previewCoord.y*previewCoord.y, sampleVal / (ap.game.screenSize.x*ap.game.screenSize.y)));
+
+                float shit = saturate(unmix(Scene_PostExposureMin, Scene_PostExposureMax, log2(Scene_AvgExposure)));
+                if (abs(previewCoord.x - shit) < 0.008)
+                    color.g = 1.0 - color.g;
+
+                float shit2 = saturate(unmix(Scene_PostExposureMin, Scene_PostExposureMax, log2(Scene_AvgExposure) + Post_ExposureOffset));
+                if (abs(previewCoord.x - shit2) < 0.008)
+                    color.b = 1.0 - color.b;
             }
 
 //            previewCoord = (uv - vec2(0.27, 0.01)) / vec2(0.04, 0.1);

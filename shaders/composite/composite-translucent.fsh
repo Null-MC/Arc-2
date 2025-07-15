@@ -104,20 +104,21 @@ uniform sampler2D texBlueNoise;
 #include "/lib/noise/hash.glsl"
 #include "/lib/noise/blue.glsl"
 
-#include "/lib/light/hcm.glsl"
-#include "/lib/light/fresnel.glsl"
-
-#include "/lib/material/material.glsl"
-#include "/lib/material/material_fresnel.glsl"
-#include "/lib/material/wetness.glsl"
-
 #include "/lib/utility/blackbody.glsl"
 #include "/lib/utility/matrix.glsl"
 #include "/lib/utility/hsv.glsl"
 #include "/lib/utility/tbn.glsl"
 
+#include "/lib/light/hcm.glsl"
+#include "/lib/light/fresnel.glsl"
 #include "/lib/light/sampling.glsl"
 #include "/lib/light/volumetric.glsl"
+#include "/lib/light/brdf.glsl"
+
+#include "/lib/material/material.glsl"
+#include "/lib/material/material_fresnel.glsl"
+#include "/lib/material/wetness.glsl"
+
 #include "/lib/lightmap/sample.glsl"
 
 #include "/lib/sky/common.glsl"
@@ -144,6 +145,8 @@ uniform sampler2D texBlueNoise;
 #endif
 
 #if LIGHTING_MODE == LIGHT_MODE_SHADOWS
+    #include "/lib/light/meta.glsl"
+
     #include "/lib/shadow-point/common.glsl"
     #include "/lib/shadow-point/sample-common.glsl"
     #include "/lib/shadow-point/sample-geo.glsl"
@@ -465,20 +468,28 @@ void main() {
             skyReflectColor = mix(skyReflectColor, reflectColor, reflection.a);
         #endif
 
+        const float skyLightDist = 100.0;
+        const float skyLightSize = 8.0;
+        vec3 skyLightAreaDir = GetAreaLightDir(localTexNormal, localViewDir, Scene_LocalLightDir, skyLightDist, skyLightSize);
+
+        H = normalize(skyLightAreaDir + -localViewDir);
+
+        NoLm = max(dot(localTexNormal, skyLightAreaDir), 0.0);
+        NoVm = max(dot(localTexNormal, -localViewDir), 0.0);
         float NoHm = max(dot(localTexNormal, H), 0.0);
 
         vec3 S = SampleLightSpecular(NoLm, NoHm, NoVm, view_F, roughL);
         specular += S * skyLightFinal * shadow_sss.rgb;
-        specular += skyReflectColor;
+        specular += view_F * skyReflectColor;
 
         #ifdef ACCUM_ENABLED
             vec3 accumSpecular;
             if (altFrame) accumSpecular = textureLod(texAccumSpecular_translucent_alt, uv, 0).rgb;
             else accumSpecular = textureLod(texAccumSpecular_translucent, uv, 0).rgb;
 
-            specular += accumSpecular * 1000.0;
+            specular += view_F * accumSpecular * 1000.0;
         #elif LIGHTING_MODE == LIGHT_MODE_RT || LIGHTING_REFLECT_MODE == REFLECT_MODE_WSR
-            specular += textureLod(texSpecularRT, uv, 0).rgb * 1000.0;
+            specular += view_F * textureLod(texSpecularRT, uv, 0).rgb * 1000.0;
         #endif
 
         if (ap.game.mainHand != 0u) {
@@ -518,7 +529,8 @@ void main() {
 
         ApplyWetness_albedo(albedo.rgb, porosity, wetness);
 
-        finalColor.rgb = mix(albedo.rgb * diffuse * albedo.a, specular, view_F);
+        finalColor.rgb = fma(diffuse, albedo.rgb * albedo.a, specular);
+        //finalColor.rgb = mix(albedo.rgb * diffuse * albedo.a, specular, view_F);
         //finalColor.a = min(finalColor.a + maxOf(specular), 1.0);
         //finalColor.a = mix(finalColor.a, 1.0, maxOf(view_F));
 

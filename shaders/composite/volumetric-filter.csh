@@ -130,10 +130,6 @@ void main() {
 
     vec3 scatterFinal, transmitFinal;
 	sampleSharedBuffer(depthL, scatterFinal, transmitFinal);
-//    scatterFinal = sharedScatterBuffer[i_shared];
-//    transmitFinal = sharedTransmitBuffer[i_shared];
-//    scatterFinal = vec3(800.0, 300.0, 0.0);
-//    transmitFinal = vec3(0.8, 0.3, 0.0);
 
 	imageStore(imgScatterFiltered, uv, vec4(scatterFinal, 1.0));
     imageStore(imgTransmitFiltered, uv, vec4(transmitFinal, 1.0));

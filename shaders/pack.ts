@@ -804,14 +804,14 @@ export function configurePipeline(pipeline : PipelineConfig) {
         .format(Format.RGBA16F)
         .width(vlWidth)
         .height(vlHeight)
-        .clear(true)
+        .clear(true) // TODO: shouldn't need clearing but avoids bug
         .build();
 
     pipeline.createImageTexture('texTransmitFiltered', 'imgTransmitFiltered')
         .format(Format.RGBA16F)
         .width(vlWidth)
         .height(vlHeight)
-        .clear(true)
+        .clear(true) // TODO: shouldn't need clearing but avoids bug
         .build();
 
     if (settings.Lighting_VolumetricResolution > 0) {

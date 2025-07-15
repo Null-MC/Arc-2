@@ -45,13 +45,15 @@
         vec3 sunTransmit, moonTransmit;
         GetSkyLightTransmission(cloud_localPos, sunTransmit, moonTransmit);
 
-        vec3 sunSkyLight = SUN_LUX * sunTransmit * Scene_SunColor * cloud_shadowSun;
-        vec3 moonSkyLight = MOON_LUX * moonTransmit * cloud_shadowMoon;
+        float skyLightF = smoothstep(0.0, 0.08, Scene_LocalLightDir.y);
+        vec3 sunSkyLight = skyLightF * SUN_LUX * sunTransmit * Scene_SunColor * cloud_shadowSun;
+        vec3 moonSkyLight = skyLightF * MOON_LUX * moonTransmit * cloud_shadowMoon;
 
         vec3 skyPos = getSkyPosition(cloud_localPos);
 
-        float mieScattering = mieScatteringF * cloudDensity;
-        float mieAbsorption = mieAbsorptionF * cloudDensity;
+        float mieDensity = cloudDensity + EPSILON;
+        float mieScattering = mieScatteringF * mieDensity;
+        float mieAbsorption = mieAbsorptionF * mieDensity;
         vec3 extinction = vec3(mieScattering + mieAbsorption);
 
         const float stepDist = 10.0;
@@ -60,7 +62,8 @@
         vec3 psiMS = getValFromMultiScattLUT(texSkyMultiScatter, skyPos, Scene_LocalSunDir);
         vec3 ambient = psiMS * Scene_SkyBrightnessSmooth + VL_MinLight;
 
-        vec3 mieInScattering = mieScattering * (miePhase_sun * sunSkyLight + miePhase_moon * moonSkyLight + ambient);
+        vec3 mieSkyLight = miePhase_sun * sunSkyLight + miePhase_moon * moonSkyLight;
+        vec3 mieInScattering = mieScattering * (mieSkyLight + ambient);
         vec3 inScattering = mieInScattering;//rayleighInScattering; // + mieInScattering
 
         vec3 scatteringIntegral = (inScattering - inScattering * sampleTransmittance) / extinction;

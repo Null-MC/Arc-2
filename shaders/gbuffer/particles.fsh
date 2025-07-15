@@ -100,6 +100,7 @@ uniform sampler3D texFogNoise;
 
 #if LIGHTING_MODE == LIGHT_MODE_SHADOWS
     #include "/lib/light/sampling.glsl"
+    #include "/lib/light/meta.glsl"
 
     #include "/lib/shadow-point/common.glsl"
     #include "/lib/shadow-point/sample-common.glsl"

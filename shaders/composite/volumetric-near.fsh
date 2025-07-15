@@ -85,6 +85,7 @@ uniform sampler2D texSkyMultiScatter;
 #if LIGHTING_MODE == LIGHT_MODE_RT || LIGHTING_MODE == LIGHT_MODE_SHADOWS
     #include "/lib/light/fresnel.glsl"
     #include "/lib/light/sampling.glsl"
+    #include "/lib/light/meta.glsl"
 #endif
 
 #if LIGHTING_MODE == LIGHT_MODE_SHADOWS && defined(LIGHTING_VL_SHADOWS)
@@ -108,7 +109,7 @@ uniform sampler2D texSkyMultiScatter;
 
 
 void main() {
-    const float stepScale = 1.0 / VL_maxSamples_near;
+    //const float stepScale = 1.0 / VL_maxSamples_near;
     const int uv_scale = int(exp2(LIGHTING_VL_RES));
 
     ivec2 iuv = ivec2(gl_FragCoord.xy) * uv_scale;
@@ -172,9 +173,9 @@ void main() {
     vec3 scattering = vec3(0.0);
     vec3 transmittance = vec3(1.0);
 
-    traceEnd = max(len - bias, 0.0) * localViewDir;
-    if (len > far)
-        traceEnd = traceEnd * (far / len);
+    traceEnd = clamp(len - bias, 0.0, far) * localViewDir;
+//    if (len > far)
+//        traceEnd = traceEnd * (far / len);
 
     if (isInFluid || Scene_SkyFogDensityF > 0.0) {
         vec3 shadowViewStart = mul3(ap.celestial.view, vec3(0.0));
@@ -259,7 +260,7 @@ void main() {
                 }
             #endif
 
-            float vs_shadowF = 1.0;
+            //float vs_shadowF = 1.0;
             float sampleDensity = VL_WaterDensity;
             if (!isInFluid) {
                 sampleDensity = GetSkyDensity(sampleLocalPos);
@@ -269,32 +270,18 @@ void main() {
                 #endif
 
                 #ifdef SKY_CLOUDS_ENABLED
-                    //float last_iF = max(iF - 1.0, 0.0);
-                    //float stepLastF = pow(last_iF / VL_maxSamples_near-1, 1.0);
-
-                    //float sampleLocalPosLastY = mix(localPosStart.y, traceEnd.y, stepLastF);
-                    float sampleHeightLast = sampleLocalPosLast.y+ap.camera.pos.y;
-
-                    float sampleHeight = sampleLocalPos.y+ap.camera.pos.y;
-                    //float heightLast = sampleHeight - stepLocal.y;
+                    float sampleHeightLast = sampleLocalPosLast.y + ap.camera.pos.y;
+                    float sampleHeight = sampleLocalPos.y + ap.camera.pos.y;
 
                     // Clouds
                     if (sign(sampleHeight - cloudHeight) != sign(sampleHeightLast - cloudHeight)) {
-                        sampleDensity += cloudDensity;
+                        sampleDensity = cloudDensity;
+                        shadowSample = vec3(1.0);
+                        stepDist = 10.0;
 
                         sunSkyLight *= cloud_shadowSun;
                         moonSkyLight *= cloud_shadowMoon;
-
-    //                    if (cloudDensity > EPSILON)
-    //                        vs_shadowF *= exp(-cloudDensity);
                     }
-
-    //                if (sign(sampleHeight - cloudHeight2) != sign(heightLast - cloudHeight2)) {
-    //                    sampleDensity += cloudDensity2;
-    //
-    //                    //sunSkyLight *= cloud_shadowSun;
-    //                    //moonSkyLight *= cloud_shadowMoon;
-    //                }
                 #endif
 
                 #ifdef VL_SELF_SHADOW
@@ -319,7 +306,7 @@ void main() {
                     }
 
                     if (shadowDensity > 0.0) {
-                        vs_shadowF *= exp(-VL_ShadowTransmit * shadowDensity);
+                        float vs_shadowF = exp(-VL_ShadowTransmit * shadowDensity);
                         shadowSample *= vs_shadowF;
                     }
                 #endif
@@ -475,10 +462,11 @@ void main() {
 
     #ifdef SKY_CLOUDS_ENABLED
         if (depth == 1.0 && ap.camera.fluid == 0) {
-            float endWorldY = traceEnd.y + ap.camera.pos.y;
+            float endWorldY = sampleLocalPosLast.y + ap.camera.pos.y;
             //endWorldY -= (1.0-dither) * stepLocal.y;
 
-            if (endWorldY < cloudHeight && cloudDensity > 0.0)
+            //if (endWorldY <= cloudHeight && cloudDensity > 0.0)
+            if (sign(endWorldY - cloudHeight) != sign(ap.camera.pos - cloudHeight) && cloudDensity > 0.0)
                 vl_renderClouds(transmittance, scattering, miePhase_sun, miePhase_moon, cloud_localPos, cloudDensity, cloud_shadowSun, cloud_shadowMoon);
         }
     #endif

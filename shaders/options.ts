@@ -110,7 +110,7 @@ export function setupOptions() {
             .add(asIntRange('LIGHTING_SHADOW_UPDATE_THRESHOLD', 10, 1, 99, 1, false))
             .build())
         .add(new Page('LIGHTING_VOLUMETRIC')
-            .add(asInt('LIGHTING_VL_RES', 0, 1, 2).build(1))
+            .add(asInt('LIGHTING_VL_RES', 2, 1, 0).build(2))
             .add(asBool('LIGHTING_VL_SHADOWS', false, true))
             .build())
         .add(asIntRange('BLOCKLIGHT_TEMP', 3400, 1000, 8500, 100, false))

@@ -94,20 +94,21 @@ uniform sampler2D texMoon;
 #include "/lib/noise/hash.glsl"
 #include "/lib/noise/blue.glsl"
 
-#include "/lib/light/hcm.glsl"
-#include "/lib/light/fresnel.glsl"
-
-#include "/lib/material/material.glsl"
-#include "/lib/material/material_fresnel.glsl"
-#include "/lib/material/wetness.glsl"
-
 #include "/lib/utility/blackbody.glsl"
 #include "/lib/utility/matrix.glsl"
 #include "/lib/utility/hsv.glsl"
 #include "/lib/utility/tbn.glsl"
 
+#include "/lib/light/hcm.glsl"
+#include "/lib/light/fresnel.glsl"
 #include "/lib/light/sampling.glsl"
 #include "/lib/light/volumetric.glsl"
+#include "/lib/light/brdf.glsl"
+
+#include "/lib/material/material.glsl"
+#include "/lib/material/material_fresnel.glsl"
+#include "/lib/material/wetness.glsl"
+
 #include "/lib/lightmap/sample.glsl"
 
 #include "/lib/sky/common.glsl"
@@ -135,6 +136,8 @@ uniform sampler2D texMoon;
 #endif
 
 #if LIGHTING_MODE == LIGHT_MODE_SHADOWS
+    #include "/lib/light/meta.glsl"
+
     #include "/lib/shadow-point/common.glsl"
     #include "/lib/shadow-point/sample-common.glsl"
     #include "/lib/shadow-point/sample-geo.glsl"

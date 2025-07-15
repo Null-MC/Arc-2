@@ -72,14 +72,14 @@ vec3 CalculateIrradiance(const in vec3 normal) {
 
             vec3 skyColor = getValFromSkyLUT(texSkyView, skyPos, sampleVec, Scene_LocalSunDir);
 
-            if (rayIntersectSphere(skyPos, sampleVec, groundRadiusMM) < 0.0) {
-                float sunLum = SUN_LUMINANCE * sun(sampleVec, Scene_LocalSunDir);
-                float moonLum = MOON_LUMINANCE * moon(sampleVec, -Scene_LocalSunDir);
-
-                vec3 skyTransmit = getValFromTLUT(texSkyTransmit, skyPos, sampleVec);
-
-                skyColor += (sunLum * Scene_SunColor + moonLum) * skyTransmit;
-            }
+//            if (rayIntersectSphere(skyPos, sampleVec, groundRadiusMM) < 0.0) {
+//                float sunLum = SUN_LUMINANCE * sun(sampleVec, Scene_LocalSunDir);
+//                float moonLum = MOON_LUMINANCE * moon(sampleVec, -Scene_LocalSunDir);
+//
+//                vec3 skyTransmit = getValFromTLUT(texSkyTransmit, skyPos, sampleVec);
+//
+//                skyColor += (sunLum * Scene_SunColor + moonLum) * skyTransmit;
+//            }
 
             irradiance += skyColor * (cos_theta * sin_theta);
             nrSamples++;

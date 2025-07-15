@@ -84,6 +84,7 @@ in vec2 uv;
 #include "/lib/light/hcm.glsl"
 #include "/lib/light/fresnel.glsl"
 #include "/lib/light/sampling.glsl"
+#include "/lib/light/brdf.glsl"
 
 #include "/lib/material/material_fresnel.glsl"
 
@@ -110,6 +111,8 @@ in vec2 uv;
 //#elif LIGHTING_MODE == LIGHT_MODE_RT
 //    //#include "/lib/voxel/light-list.glsl"
 //#endif
+
+#include "/lib/light/meta.glsl"
 
 #if LIGHTING_MODE == LIGHT_MODE_RT || defined(HANDLIGHT_TRACE)
     #include "/lib/voxel/light-trace.glsl"

@@ -88,6 +88,7 @@ uniform sampler2D texSkyMultiScatter;
 #if LIGHTING_MODE == LIGHT_MODE_RT || LIGHTING_MODE == LIGHT_MODE_SHADOWS
     #include "/lib/light/fresnel.glsl"
     #include "/lib/light/sampling.glsl"
+    #include "/lib/light/meta.glsl"
 #endif
 
 #if LIGHTING_MODE == LIGHT_MODE_SHADOWS && defined(LIGHTING_VL_SHADOWS)

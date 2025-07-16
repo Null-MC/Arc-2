@@ -223,9 +223,6 @@ void main() {
 
         float roughL = roughness*roughness;
 
-        vec3 voxelPos = voxel_GetBufferPosition(localPos);
-        vec3 voxelPos_in = voxelPos - 0.02*localGeoNormal;
-
         #if LIGHTING_REFLECT_MODE == REFLECT_MODE_WSR
             vec4 data_b = unpackUnorm4x8(data.b);
             vec2 lmCoord = data_b.rg;
@@ -234,16 +231,19 @@ void main() {
 
         float NoVm = max(dot(localTexNormal, localViewDir), 0.0);
 
-        if (voxel_isInBounds(voxelPos_in)) {
-            #if defined EFFECT_TAA_ENABLED || defined ACCUM_ENABLED
-                float dither = InterleavedGradientNoiseTime(ivec2(gl_FragCoord.xy));
-            #else
-                float dither = InterleavedGradientNoise(ivec2(gl_FragCoord.xy));
-            #endif
+        albedo.rgb = RgbToLinear(albedo.rgb);
 
-            albedo.rgb = RgbToLinear(albedo.rgb);
+        #if LIGHTING_MODE == LIGHT_MODE_RT
+            vec3 voxelPos = voxel_GetBufferPosition(localPos);
+            vec3 voxelPos_in = voxelPos - 0.02*localGeoNormal;
 
-            #if LIGHTING_MODE == LIGHT_MODE_RT
+            if (voxel_isInBounds(voxelPos_in)) {
+//                #if defined EFFECT_TAA_ENABLED || defined ACCUM_ENABLED
+//                    float dither = InterleavedGradientNoiseTime(ivec2(gl_FragCoord.xy));
+//                #else
+//                    float dither = InterleavedGradientNoise(ivec2(gl_FragCoord.xy));
+//                #endif
+
                 ivec3 lightBinPos = ivec3(floor(voxelPos_in / LIGHT_BIN_SIZE));
                 int lightBinIndex = GetLightBinIndex(lightBinPos);
                 uint binLightCount = LightBinMap[lightBinIndex].lightCount;
@@ -342,8 +342,8 @@ void main() {
                     diffuseFinal += sampleDiffuse * shadow_color * bright_scale;
                     specularFinal += sampleSpecular * shadow_color * bright_scale;
                 }
-            #endif
-        }
+            }
+        #endif
 
         //diffuseFinal = vec3(10.0,0.0,0.0);
 

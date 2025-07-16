@@ -104,6 +104,7 @@ uniform sampler2D texMoon;
 #include "/lib/light/sampling.glsl"
 #include "/lib/light/volumetric.glsl"
 #include "/lib/light/brdf.glsl"
+#include "/lib/light/meta.glsl"
 
 #include "/lib/material/material.glsl"
 #include "/lib/material/material_fresnel.glsl"
@@ -136,8 +137,6 @@ uniform sampler2D texMoon;
 #endif
 
 #if LIGHTING_MODE == LIGHT_MODE_SHADOWS
-    #include "/lib/light/meta.glsl"
-
     #include "/lib/shadow-point/common.glsl"
     #include "/lib/shadow-point/sample-common.glsl"
     #include "/lib/shadow-point/sample-geo.glsl"

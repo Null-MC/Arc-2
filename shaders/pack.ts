@@ -89,6 +89,8 @@ function applySettings(settings : ShaderSettings, internal) {
     defineGlobally('SHADOW_CASCADE_COUNT', settings.Shadow_CascadeCount);
     if (settings.Shadow_BlockerTexEnabled)
         defineGlobally1('SHADOW_BLOCKER_TEX');
+    if (renderConfig.shadow.cascades == 1)
+        defineGlobally1('SHADOW_DISTORTION_ENABLED');
 
     function getChannelFormat(channelFormat: number) {
         return (channelFormat >= 0) ? channelFormat : settings.Material_Format;
@@ -142,9 +144,6 @@ function applySettings(settings : ShaderSettings, internal) {
             defineGlobally1('LIGHTING_SHADOW_BIN_ENABLED');
         if (settings.Lighting_Shadow_VoxelFill)
             defineGlobally1('LIGHTING_SHADOW_VOXEL_FILL');
-
-        if (renderConfig.shadow.cascades == 1)
-            defineGlobally1('SHADOW_DISTORTION_ENABLED');
     }
 
     if (settings.Lighting_VxGI_Enabled) {

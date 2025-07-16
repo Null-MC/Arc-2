@@ -19,7 +19,7 @@ let renderConfig: RendererConfig = null;
 
 export function configureRenderer(renderer : RendererConfig) {
     const settings = new ShaderSettings();
-    const internal = settings.BuildInternalSettings();
+    const internal = settings.BuildInternalSettings(renderer);
 
     renderConfig = renderer;
 
@@ -51,8 +51,8 @@ function applySettings(settings : ShaderSettings, internal) {
     renderConfig.pointLight.realTimeCount = settings.Lighting_Shadow_RealtimeCount;
     renderConfig.pointLight.updateThreshold = settings.Lighting_Shadow_UpdateThreshold * 0.01;
 
-    renderConfig.shadow.enabled = settings.Shadow_Enabled;
-    if (settings.Shadow_Enabled) {
+    renderConfig.shadow.enabled = (settings.Shadow_Enabled && internal.WorldHasSky) || !settings.Voxel_UseProvided;
+    if (renderConfig.shadow.enabled) {
         if (settings.Shadow_CascadeCount == 1) {
             renderConfig.shadow.near = -200;
             renderConfig.shadow.far = 200;
@@ -263,7 +263,7 @@ export function configurePipeline(pipeline : PipelineConfig) {
     BlockMappings.map('lava', 'BLOCK_LAVA');
 
     const settings = new ShaderSettings();
-    const internal = settings.BuildInternalSettings();
+    const internal = settings.BuildInternalSettings(renderer);
     applySettings(settings, internal);
 
     const blockTags = new TagBuilder(pipeline)
@@ -499,11 +499,14 @@ export function configurePipeline(pipeline : PipelineConfig) {
 
     pipeline.importPNGTexture('texBlueNoise', 'textures/blue_noise.png', true, false);
 
-    if (dimension == 'overworld')
-        pipeline.importPNGTexture('texMoon', 'textures/moon.png', true, false);
-    else if (dimension == 'the_end') {
-        pipeline.importPNGTexture('texEarth', 'textures/earth.png', true, false);
-        pipeline.importPNGTexture('texEarthSpecular', 'textures/earth-specular.png', true, false);
+    switch (dimension) {
+        case 'overworld':
+            pipeline.importPNGTexture('texMoon', 'textures/moon.png', true, false);
+            break;
+        case 'the_end':
+            pipeline.importPNGTexture('texEarth', 'textures/earth.png', true, false);
+            pipeline.importPNGTexture('texEarthSpecular', 'textures/earth-specular.png', true, false);
+            break;
     }
 
     const texShadowColor = pipeline.createArrayTexture('texShadowColor')
@@ -555,7 +558,7 @@ export function configurePipeline(pipeline : PipelineConfig) {
         .width(screenWidth)
         .height(screenHeight)
         .mipmap(true)
-        .clear(false)
+        .clear(!internal.WorldHasSky)
         .build();
 
     const texFinalB = pipeline.createTexture('texFinalB')
@@ -563,7 +566,7 @@ export function configurePipeline(pipeline : PipelineConfig) {
         .width(screenWidth)
         .height(screenHeight)
         .mipmap(true)
-        .clear(false)
+        .clear(!internal.WorldHasSky)
         .build();
 
     const finalFlipper = new BufferFlipper(
@@ -1024,24 +1027,26 @@ export function configurePipeline(pipeline : PipelineConfig) {
     // IMAGE_BIT | SSBO_BIT | UBO_BIT | FETCH_BIT
     preRenderQueue.barrier(SSBO_BIT);
 
-    new ShaderBuilder(preRenderQueue.createComposite('sky-view')
-            .vertex('shared/bufferless.vsh')
-            .fragment('setup/sky_view.fsh')
-            .target(0, texSkyView)
-        )
-        .ssbo(SSBO.Scene, sceneBuffer)
-        .ubo(UBO.SceneSettings, SceneSettingsBuffer)
-        .compile();
+    if (internal.WorldHasSky) {
+        new ShaderBuilder(preRenderQueue.createComposite('sky-view')
+                .vertex('shared/bufferless.vsh')
+                .fragment('setup/sky_view.fsh')
+                .target(0, texSkyView)
+            )
+            .ssbo(SSBO.Scene, sceneBuffer)
+            .ubo(UBO.SceneSettings, SceneSettingsBuffer)
+            .compile();
 
-    new ShaderBuilder(preRenderQueue.createComposite('sky-irradiance')
-            .vertex("shared/bufferless.vsh")
-            .fragment("setup/sky_irradiance.fsh")
-            .target(0, texSkyIrradiance)
-            .blendFunc(0, Func.SRC_ALPHA, Func.ONE_MINUS_SRC_ALPHA, Func.ONE, Func.ZERO)
-        )
-        .ssbo(SSBO.Scene, sceneBuffer)
-        .ubo(UBO.SceneSettings, SceneSettingsBuffer)
-        .compile();
+        new ShaderBuilder(preRenderQueue.createComposite('sky-irradiance')
+                .vertex("shared/bufferless.vsh")
+                .fragment("setup/sky_irradiance.fsh")
+                .target(0, texSkyIrradiance)
+                .blendFunc(0, Func.SRC_ALPHA, Func.ONE_MINUS_SRC_ALPHA, Func.ONE, Func.ZERO)
+            )
+            .ssbo(SSBO.Scene, sceneBuffer)
+            .ubo(UBO.SceneSettings, SceneSettingsBuffer)
+            .compile();
+    }
 
     //pipeline.addBarrier(Stage.PRE_RENDER, IMAGE_BIT);
 
@@ -1391,7 +1396,7 @@ export function configurePipeline(pipeline : PipelineConfig) {
         giQueue.end();
     }
 
-    if (settings.Shadow_Enabled || settings.Shadow_SS_Fallback) {
+    if (internal.WorldHasSky && (settings.Shadow_Enabled || settings.Shadow_SS_Fallback)) {
         new ShaderBuilder(postRenderQueue.createComposite('shadow-opaque')
                 .vertex('shared/bufferless.vsh')
                 .fragment('composite/shadow-opaque.fsh')
@@ -1495,14 +1500,16 @@ export function configurePipeline(pipeline : PipelineConfig) {
 
     postRenderQueue.barrier(SSBO_BIT | IMAGE_BIT);
 
-    new ShaderBuilder(postRenderQueue.createComposite('sky')
-            .vertex('shared/bufferless.vsh')
-            .fragment('composite/sky.fsh')
-            .target(0, finalFlipper.getWriteTexture())
-        )
-        .ssbo(SSBO.Scene, sceneBuffer)
-        .ubo(UBO.SceneSettings, SceneSettingsBuffer)
-        .compile();
+    if (internal.WorldHasSky) {
+        new ShaderBuilder(postRenderQueue.createComposite('sky')
+                .vertex('shared/bufferless.vsh')
+                .fragment('composite/sky.fsh')
+                .target(0, finalFlipper.getWriteTexture())
+            )
+            .ssbo(SSBO.Scene, sceneBuffer)
+            .ubo(UBO.SceneSettings, SceneSettingsBuffer)
+            .compile();
+    }
 
     // finalFlipper.flip();
 
@@ -1621,7 +1628,7 @@ export function configurePipeline(pipeline : PipelineConfig) {
 
     postRenderQueue.generateMips(finalFlipper.getReadTexture());
 
-    if (settings.Shadow_Enabled) {
+    if (internal.WorldHasSky && (settings.Shadow_Enabled || settings.Shadow_SS_Fallback)) {
         new ShaderBuilder(postRenderQueue.createComposite('shadow-translucent')
                 .vertex('shared/bufferless.vsh')
                 .fragment('composite/shadow-translucent.fsh')

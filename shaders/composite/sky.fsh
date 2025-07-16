@@ -36,9 +36,6 @@ uniform sampler3D texFogNoise;
 #include "/lib/light/sampling.glsl"
 #include "/lib/light/brdf.glsl"
 
-//#include "/lib/material/material.glsl"
-//#include "/lib/material/material_fresnel.glsl"
-
 #include "/lib/sky/common.glsl"
 #include "/lib/sky/view.glsl"
 #include "/lib/sky/sun.glsl"
@@ -55,8 +52,9 @@ const float moon_radiusKm = 1740.0;
 const float moon_distanceKm = 20000.0;
 const float moon_surfaceDepthKm = 80.0;
 const float moon_rotationSpeed = 0.0064;
-const float moon_axisTilt = 0.4;
+const float moon_axisTilt = -0.6;
 const float moon_roughL = 0.92;
+const float moon_f0 = 0.136;
 
 const float earth_radiusKm = 6378.0;
 const float earth_distanceKm = 40000.0;
@@ -99,20 +97,22 @@ void main() {
         vec3 localViewDir = normalize(localPos);
 
         vec3 skyPos = getSkyPosition(vec3(0.0));
-        colorFinal = getValFromSkyLUT(texSkyView, skyPos, localViewDir, Scene_LocalSunDir);
+        #ifdef WORLD_OVERWORLD
+            colorFinal = getValFromSkyLUT(texSkyView, skyPos, localViewDir, Scene_LocalSunDir);
+        #endif
 
-        if (rayIntersectSphere(skyPos, localViewDir, groundRadiusMM) < 0.0) {
-            vec3 skyLight = vec3(0.0);
+        vec3 skyLight = vec3(0.0);
+        float starLum = STAR_LUMINANCE;
+        vec3 starViewDir = getStarViewDir(localViewDir);
+        vec3 starColor = GetStarLight(starViewDir);
 
-            vec3 starViewDir = getStarViewDir(localViewDir);
-            vec3 starColor = GetStarLight(starViewDir);
-            float starLum = STAR_LUMINANCE;
+        #ifdef WORLD_OVERWORLD
+            bool intersectsPlanet = rayIntersectSphere(skyPos, localViewDir, groundRadiusMM) >= 0.0;
+            if (!intersectsPlanet) {
+                float sunF = sun(localViewDir, Scene_LocalSunDir);
+                skyLight += sunF * SUN_LUMINANCE * Scene_SunColor;
+                starLum *= step(sunF, EPSILON);
 
-            float sunF = sun(localViewDir, Scene_LocalSunDir);
-            skyLight += sunF * SUN_LUMINANCE * Scene_SunColor;
-            starLum *= step(sunF, EPSILON);
-
-            #ifdef WORLD_OVERWORLD
                 vec3 skyLightPos = moon_distanceKm * Scene_LocalSunDir;
                 float moonHitDist = rayIntersectSphere(skyLightPos, localViewDir, moon_radiusKm);
 
@@ -134,15 +134,15 @@ void main() {
 
                     const vec3 fakeSunDir = normalize(vec3(0.4, -1.0, 0.2));
 
-                    vec3 H = normalize(localViewDir + fakeSunDir);
+                    vec3 H = normalize(-localViewDir + fakeSunDir);
 
                     float NoLm = max(dot(moonNormal, fakeSunDir), 0.0);
-                    float NoVm = max(dot(moonNormal, localViewDir), 0.0);
+                    float NoVm = max(dot(moonNormal, -localViewDir), 0.0);
                     float NoHm = max(dot(moonNormal, H), 0.0);
                     float LoHm = max(dot(fakeSunDir, H), 0.0);
-                    float VoHm = max(dot(localViewDir, H), 0.0);
+                    float VoHm = max(dot(-localViewDir, H), 0.0);
 
-                    float F = F_schlickRough(VoHm, 0.136, moon_roughL);
+                    float F = F_schlickRough(VoHm, moon_f0, moon_roughL);
                     float D = SampleLightDiffuse(NoVm, NoLm, LoHm, moon_roughL) * (1.0 - F);
                     float S = SampleLightSpecular(NoLm, NoHm, NoVm, F, moon_roughL);
 
@@ -150,60 +150,71 @@ void main() {
 
                     starLum = 0.0;
                 }
-            #elif defined(WORLD_END)
-                vec3 skyLightPos = earth_distanceKm * Scene_LocalSunDir;
-                float earthHitDist = rayIntersectSphere(skyLightPos, localViewDir, earth_radiusKm);
+            }
+            else {
+                starLum = 0.0;
+            }
+        #endif
 
-                if (earthHitDist > 0.0) {
-                    vec3 hitPos = localViewDir * -earthHitDist;
-                    vec3 hitNormal = normalize(hitPos - skyLightPos);
+        #ifdef WORLD_END
+            vec3 skyLightPos = earth_distanceKm * Scene_LocalSunDir;
+            float earthHitDist = rayIntersectSphere(skyLightPos, localViewDir, earth_radiusKm);
 
-                    mat3 matEarthRot = rotateZ(earth_axisTilt);
-                    hitNormal = matEarthRot * hitNormal;
+            if (earthHitDist > 0.0) {
+                vec3 hitPos = localViewDir * -earthHitDist;
+                vec3 hitNormal = normalize(hitPos - skyLightPos);
 
-                    vec2 earth_uv = DirectionToUV(hitNormal);
-                    earth_uv.x += earth_rotationSpeed * ap.time.elapsed;
-                    vec4 earthColorHeight = textureLod(texEarth, earth_uv, 0);
-                    vec3 earthSmoothF0Emissive = textureLod(texEarthSpecular, earth_uv, 0).rgb;
-                    vec3 earth_color = RgbToLinear(earthColorHeight.rgb);
+                mat3 matEarthRot = rotateZ(earth_axisTilt);
+                hitNormal = matEarthRot * hitNormal;
 
-                    hitPos += earth_surfaceDepthKm * earthColorHeight.a * hitNormal;
+                vec2 earth_uv = DirectionToUV(hitNormal);
+                earth_uv.x += earth_rotationSpeed * ap.time.elapsed;
+                vec4 earthColorHeight = textureLod(texEarth, earth_uv, 0);
+                vec3 earthSmoothF0Emissive = textureLod(texEarthSpecular, earth_uv, 0).rgb;
+                vec3 earth_color = RgbToLinear(earthColorHeight.rgb);
 
-                    vec3 earthNormal = getSurfaceNormal(hitPos, -hitNormal);
+                hitPos += earth_surfaceDepthKm * earthColorHeight.a * hitNormal;
 
-                    const vec3 fakeSunDir = normalize(vec3(-0.8, -0.6, -0.2));
+                vec3 earthNormal = getSurfaceNormal(hitPos, -hitNormal);
 
-                    vec3 H = normalize(localViewDir + fakeSunDir);
+                const vec3 fakeSunDir = normalize(vec3(-0.8, -0.2, -0.2));
 
-                    float NoLm = max(dot(earthNormal, fakeSunDir), 0.0);
-                    float NoVm = max(dot(earthNormal, localViewDir), 0.0);
-                    float NoHm = max(dot(earthNormal, H), 0.0);
-                    float LoHm = max(dot(fakeSunDir, H), 0.0);
-                    float VoHm = max(dot(localViewDir, H), 0.0);
+                vec3 skyLightAreaDir = GetAreaLightDir(earthNormal, localViewDir, fakeSunDir, skyLight_AreaDist, skyLight_AreaSize);
 
-                    // TODO: replace f0/rough with spec map
-                    float earth_f0 = earthSmoothF0Emissive.g;
-                    float earth_rough = 1.0 - earthSmoothF0Emissive.r;
-                    float earth_emissive = _pow2(earthSmoothF0Emissive.b);
-                    float earth_roughL = _pow2(earth_rough);
+                vec3 H = normalize(-localViewDir + skyLightAreaDir);
 
-                    float F = F_schlickRough(VoHm, earth_f0, earth_roughL);
-                    float D = SampleLightDiffuse(NoVm, NoLm, LoHm, earth_roughL) * (1.0 - F);
-                    float S = SampleLightSpecular(NoLm, NoHm, NoVm, F, earth_roughL);
+                float NoLm = max(dot(earthNormal, skyLightAreaDir), 0.0);
+                float NoVm = max(dot(earthNormal, -localViewDir), 0.0);
+                float NoHm = max(dot(earthNormal, H), 0.0);
+                float LoHm = max(dot(skyLightAreaDir, H), 0.0);
+                float VoHm = max(dot(-localViewDir, H), 0.0);
 
-                    skyLight += MOON_LUMINANCE * NoLm * (D * earth_color + S) * Scene_SunColor;
-                    skyLight += earth_emissive * 800.0;
+                // TODO: replace f0/rough with spec map
+                float earth_f0 = earthSmoothF0Emissive.g;
+                float earth_rough = 1.0 - earthSmoothF0Emissive.r;
+                float earth_emissive = _pow2(earthSmoothF0Emissive.b);
+                float earth_roughL = _pow2(earth_rough);
+                earth_roughL = max(earth_roughL, 0.08);
 
-                    starLum = 0.0;
-                }
-            #endif
+                float F = F_schlickRough(VoHm, earth_f0, earth_roughL);
+                float D = SampleLightDiffuse(NoVm, NoLm, LoHm, earth_roughL) * (1.0 - F);
+                float S = SampleLightSpecular(NoLm, NoHm, NoVm, F, earth_roughL);
 
-            skyLight += starLum * starColor;
+                skyLight += MOON_LUMINANCE * NoLm * (D * earth_color + S) * Scene_SunColor;
+                skyLight += earth_emissive * 800.0;
 
-            vec3 skyTransmit = getValFromTLUT(texSkyTransmit, skyPos, localViewDir);
+                starLum = 0.0;
+            }
+        #endif
 
-            colorFinal += skyLight * skyTransmit;
-        }
+        skyLight += starLum * starColor;
+
+        #ifdef WORLD_OVERWORLD
+            if (!intersectsPlanet)
+                skyLight *= getValFromTLUT(texSkyTransmit, skyPos, localViewDir);
+        #endif
+
+        colorFinal += skyLight;
     }
 
     colorFinal = clamp(colorFinal * BufferLumScaleInv, 0.0, 65000.0);

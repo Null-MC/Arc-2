@@ -134,7 +134,7 @@ export class ShaderSettings {
     get Debug_RT(): boolean {return false;}
 
 
-    BuildInternalSettings() {
+    BuildInternalSettings(renderer : RendererConfig) {
         const settings = {
             Accumulation: false,
             LightListsEnabled: false,
@@ -144,7 +144,20 @@ export class ShaderSettings {
             PointLightNear: 0.1,
             PointLightFar: 16.0 * (this.Lighting_Shadow_Range * 0.01),
             DebugEnabled: false,
+
+            WorldHasSky: false,
         };
+
+        switch (renderer.dimension.getPath()) {
+            case 'overworld':
+                settings.WorldHasSky = true;
+                break;
+            case 'the_nether':
+                break;
+            case 'the_end':
+                settings.WorldHasSky = true;
+                break;
+        }
 
         if (this.Effect_SSAO_Enabled) settings.Accumulation = true;
 

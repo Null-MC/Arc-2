@@ -100,3 +100,5 @@ vec2 unmix(const in vec2 valueMin, const in vec2 valueMax, const in vec2 value) 
 
 #define _pow2(x) ((x)*(x))
 #define _pow3(x) ((x)*(x)*(x))
+
+#define _RgbToLinear(color) (pow((color), vec3(2.2)))

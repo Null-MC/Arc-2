@@ -504,6 +504,8 @@ export function configurePipeline(pipeline : PipelineConfig) {
             pipeline.importPNGTexture('texMoon', 'textures/moon.png', true, false);
             break;
         case 'the_end':
+            pipeline.importPNGTexture('texEndSun', 'textures/end-sun.png', true, false);
+
             pipeline.importPNGTexture('texEarth', 'textures/earth.png', true, false);
             pipeline.importPNGTexture('texEarthSpecular', 'textures/earth-specular.png', true, false);
             break;

@@ -610,7 +610,7 @@ void main() {
     colorFinal = mix(colorFinal, weather.rgb * BufferLumScale, saturate(weather.a));
 
     if (ap.camera.fluid == 2)
-        colorFinal = RgbToLinear(vec3(0.0));
+        colorFinal = vec3(0.0);//RgbToLinear(vec3(0.0));
 
     colorFinal = clamp(colorFinal * BufferLumScaleInv, 0.0, 65000.0);
 

@@ -459,7 +459,7 @@ void main() {
                             #endif
                         }
                         else {
-                            vec3 reflectColor = RgbToLinear(vec3(0.439, 0.404, 0.322));
+                            const vec3 reflectColor = _RgbToLinear(vec3(0.439, 0.404, 0.322));
 
                             reflect_tint = vec3(1.0);
                             reflect_lmcoord = vec2(0.0);

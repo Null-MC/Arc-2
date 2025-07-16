@@ -206,6 +206,16 @@ void iris_emitFragment() {
     #ifdef RENDER_TERRAIN
         bool is_fluid = iris_hasFluid(vIn.blockId);
         uint block_emission = iris_getEmission(vIn.blockId);
+
+//        const vec3 worldUp = vec3(0.0, 1.0, 0.0);
+//        float upF = max(dot(localTexNormal, worldUp), 0.0);
+//
+//        float sky_wetness = max(ap.world.rain, ap.world.thunder);
+//        sky_wetness *= smoothstep(0.90, 0.96, lmcoord.y) * upF;
+//
+//        roughness = mix(roughness, 0.02, sky_wetness);
+//        localTexNormal = mix(localTexNormal, localGeoNormal, sky_wetness);
+//        localTexNormal = normalize(localTexNormal);
     #endif
 
     #if defined(RENDER_TERRAIN) && defined(RENDER_TRANSLUCENT)

@@ -2,8 +2,7 @@ void dda_init(out vec3 stepSizes, out vec3 nextDist, const in vec3 currPos, cons
     vec3 stepDir = sign(localDir);
     stepSizes = 1.0 / abs(localDir);
 
-//    nextDist = stepDir * 0.5 + 0.5;
-    nextDist = fma(stepDir, vec3(0.5), vec3(0.5));
+    nextDist = stepDir * 0.5 + 0.5;
     nextDist = (nextDist - fract(currPos)) / localDir;
 }
 

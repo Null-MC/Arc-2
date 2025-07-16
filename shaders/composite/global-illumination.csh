@@ -12,6 +12,7 @@ uniform sampler2D texSkyIrradiance;
 uniform sampler2D texSkyTransmit;
 uniform sampler2D texSkyView;
 uniform sampler2D texBlueNoise;
+uniform sampler3D texFogNoise;
 
 #if LIGHTING_MODE == LIGHT_MODE_SHADOWS
 	uniform samplerCubeArrayShadow pointLightFiltered;
@@ -31,10 +32,6 @@ uniform sampler2D texBlueNoise;
 	uniform sampler2DArray solidShadowMap;
 	uniform sampler2DArray texShadowBlocker;
 	uniform sampler2DArray texShadowColor;
-#endif
-
-#if defined(SKY_CLOUDS_ENABLED) && defined(SHADOWS_CLOUD_ENABLED)
-	uniform sampler3D texFogNoise;
 #endif
 
 #include "/lib/common.glsl"

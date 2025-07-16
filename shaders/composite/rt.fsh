@@ -13,13 +13,10 @@ uniform usampler2D TEX_DEFERRED_DATA;
 uniform sampler2D TEX_DEFERRED_NORMAL;
 
 uniform sampler2D texBlueNoise;
+uniform sampler3D texFogNoise;
 
 #if LIGHTING_REFLECT_MODE == REFLECT_MODE_WSR || (LIGHTING_MODE == LIGHT_MODE_RT && defined(RT_TRI_ENABLED))
     uniform sampler2D blockAtlas;
-#endif
-
-#if defined(SKY_CLOUDS_ENABLED) && defined(SHADOWS_CLOUD_ENABLED)
-    uniform sampler3D texFogNoise;
 #endif
 
 #if LIGHTING_REFLECT_MODE == REFLECT_MODE_WSR
@@ -221,17 +218,38 @@ void main() {
         // float emission = data_g.z;
         // float sss = data_g.w;
 
+        vec4 data_b = unpackUnorm4x8(data.b);
+        vec2 lmCoord = data_b.rg;
+        //float texOcclusion = data_b.b;
+        float porosity = data_b.a;
+
         float roughL = roughness*roughness;
 
-        #if LIGHTING_REFLECT_MODE == REFLECT_MODE_WSR
-            vec4 data_b = unpackUnorm4x8(data.b);
-            vec2 lmCoord = data_b.rg;
-            //float texOcclusion = data_b.b;
-        #endif
+        albedo.rgb = RgbToLinear(albedo.rgb);
+
+//        bool is_trans_fluid = iris_hasFluid(trans_blockId);
+//
+        bool isUnderWater = false;//ap.camera.fluid == 1
+//            ? (depthTrans >= depthOpaque)
+//            : (depthTrans < depthOpaque && is_trans_fluid);
+
+        float wetness = float(isUnderWater);
+
+        if (!isUnderWater) {
+            float sky_wetness = GetSkyWetness(localPos, localTexNormal, lmCoord.y);
+
+            wetness = max(wetness, sky_wetness);
+
+            // only apply puddles out of water
+            ApplyWetness_roughness(roughL, porosity, wetness);
+            ApplyWetness_texNormal(localTexNormal, localGeoNormal, porosity, wetness);
+
+            roughness = sqrt(roughL);
+        }
+
+        bool isWet = wetness > 0.2;
 
         float NoVm = max(dot(localTexNormal, localViewDir), 0.0);
-
-        albedo.rgb = RgbToLinear(albedo.rgb);
 
         #if LIGHTING_MODE == LIGHT_MODE_RT
             vec3 voxelPos = voxel_GetBufferPosition(localPos);
@@ -307,9 +325,9 @@ void main() {
 
                     float NoHm = max(dot(localTexNormal, H), 0.0);
 
-                    const bool isUnderWater = false;
+                    //const bool isUnderWater = false;
                     float VoHm = max(dot(localViewDir, H), 0.0);
-                    vec3 F = material_fresnel(albedo.rgb, f0_metal, roughL, VoHm, isUnderWater);
+                    vec3 F = material_fresnel(albedo.rgb, f0_metal, roughL, VoHm, isWet);
                     vec3 D = SampleLightDiffuse(NoVm, NoLm, LoHm, roughL) * (1.0 - F);
                     vec3 S = SampleLightSpecular(NoLm, NoHm, NoVm, F, roughL);
 
@@ -486,7 +504,7 @@ void main() {
                 float sky_wetness = smoothstep(0.9, 1.0, reflect_lmcoord.y) * ap.world.rain;
                 reflect_wetness = max(reflect_wetness, sky_wetness);
 
-                ApplyWetness_roughL(reflect_roughL, reflect_porosity, reflect_wetness);
+                ApplyWetness_roughness(reflect_roughL, reflect_porosity, reflect_wetness);
                 reflect_roughness = sqrt(reflect_roughL);
 
                 #ifdef SHADOWS_ENABLED
@@ -741,7 +759,7 @@ void main() {
                 skyReflectColor = mix(skyReflectColor, reflectColor, reflection.a);
             }
 
-            const bool isWet = false;
+            //const bool isWet = false;
             float smoothness = 1.0 - roughness;
             //vec3 reflectTint = GetMetalTint(albedo.rgb, f0_metal);
             //vec3 view_F = material_fresnel(albedo.rgb, f0_metal, roughL, NoVm, isWet);

@@ -168,7 +168,7 @@ void main() {
     ivec2 iuv = ivec2(gl_FragCoord.xy);
     float depthTrans = texelFetch(mainDepthTex, iuv, 0).r;
     vec4 albedo = texelFetch(texDeferredOpaque_Color, iuv, 0);
-    vec3 colorFinal;
+    vec4 colorFinal = vec4(0.0);
 
     float depthOpaque = 1.0;
     if (albedo.a > EPSILON) {
@@ -225,23 +225,32 @@ void main() {
 
         bool is_trans_fluid = iris_hasFluid(trans_blockId);
 
-        float wetness = ap.camera.fluid == 1
-            ? step(depthOpaque, depthTrans)
-            : step(depthTrans, depthOpaque-EPSILON) * float(is_trans_fluid);
-
-        float sky_wetness = smoothstep(0.9, 1.0, lmCoord.y) * ap.world.rain;
-        wetness = max(wetness, sky_wetness);
-
-        bool isWet = ap.camera.fluid == 1
+        bool isUnderWater = ap.camera.fluid == 1
             ? (depthTrans >= depthOpaque)
             : (depthTrans < depthOpaque && is_trans_fluid);
+
+        float wetness = float(isUnderWater);
+
+        if (!isUnderWater) {
+            float sky_wetness = GetSkyWetness(localPos, localTexNormal, lmCoord.y);
+
+            wetness = max(wetness, sky_wetness);
+        }
+
+        bool isWet = wetness > 0.2;
 
         //lmCoord = _pow3(lmCoord);
 
         float roughL = _pow2(roughness);
 
-        ApplyWetness_roughL(roughL, porosity, wetness);
-        roughness = sqrt(roughL);
+        if (!isUnderWater && wetness > 0.0) {
+            // only apply puddles out of water
+
+            ApplyWetness_roughness(roughL, porosity, wetness);
+            ApplyWetness_texNormal(localTexNormal, localGeoNormal, porosity, wetness);
+
+            roughness = sqrt(roughL);
+        }
 
         // Lighting
         vec3 skyLightAreaDir = GetAreaLightDir(localTexNormal, localViewDir, Scene_LocalLightDir, skyLight_AreaDist, skyLight_AreaSize);
@@ -575,88 +584,25 @@ void main() {
 
         ApplyWetness_albedo(albedo.rgb, porosity, wetness);
 
-        colorFinal = fma(diffuse, albedo.rgb, specular);
+        colorFinal.rgb = fma(diffuse, albedo.rgb, specular);
         //colorFinal = mix(albedo.rgb * diffuse, specular, view_F);
+        colorFinal.a = 1.0;
 
         // float viewDist = length(localPos);
         // float fogF = smoothstep(fogStart, fogEnd, viewDist);
         // colorFinal = mix(colorFinal, fogColor.rgb, fogF);
     }
-    else {
-        vec3 skyPos = getSkyPosition(vec3(0.0));
-        colorFinal = getValFromSkyLUT(texSkyView, skyPos, localViewDir, Scene_LocalSunDir);
-
-        if (rayIntersectSphere(skyPos, localViewDir, groundRadiusMM) < 0.0) {
-            vec3 skyLight = vec3(0.0);
-
-            vec3 starViewDir = getStarViewDir(localViewDir);
-            vec3 starColor = GetStarLight(starViewDir);
-            float starLum = STAR_LUMINANCE;
-
-            float sunF = sun(localViewDir, Scene_LocalSunDir);
-            skyLight += sunF * SUN_LUMINANCE * Scene_SunColor;
-            starLum *= step(sunF, EPSILON);
-
-            vec3 skyLightPos = 100.0 * Scene_LocalSunDir;
-            float moonDist = rayIntersectSphere(skyLightPos, localViewDir, 8.0);
-            if (moonDist > 0.0) {
-                vec3 hitPos = localViewDir * -moonDist;
-                vec3 hitNormal = normalize(hitPos - skyLightPos);
-
-                vec2 moon_uv = DirectionToUV(hitNormal);
-                moon_uv += vec2(0.0064, 0.0002) * ap.time.elapsed;
-                vec4 moonData = textureLod(texMoon, moon_uv, 0);
-                vec3 moon_color = RgbToLinear(moonData.rgb);
-
-                hitPos += 0.6 * moonData.a * hitNormal;
-
-                vec3 dX = dFdxFine(hitPos);
-                vec3 dY = dFdyFine(hitPos);
-                vec3 moonNormal = cross(dX, dY);
-                if (lengthSq(moonNormal) > EPSILON)
-                    moonNormal = normalize(moonNormal);
-                else
-                    moonNormal = -hitNormal;
-
-                //moon_color = moonNormal * 0.5 + 0.5;
-
-                const vec3 fakeSunDir = normalize(vec3(0.4, -1.0, 0.2));
-                const float roughL = 0.92;
-
-                vec3 H = normalize(localViewDir + fakeSunDir);
-
-                float NoLm = max(dot(moonNormal, fakeSunDir), 0.0);
-                float NoVm = max(dot(moonNormal, localViewDir), 0.0);
-                float LoHm = max(dot(fakeSunDir, H), 0.0);
-                float VoHm = max(dot(localViewDir, H), 0.0);
-
-                vec3 F = material_fresnel(moon_color, 0.04, roughL, VoHm, false);
-                vec3 D = SampleLightDiffuse(NoVm, NoLm, LoHm, roughL) * (1.0 - F);
-                //vec3 S = SampleLightSpecular(NoLm, NoHm, NoVm, F, roughL);
-
-                skyLight += MOON_LUMINANCE * NoLm * D * moon_color * Scene_SunColor;
-
-                starLum = 0.0;
-            }
-
-            skyLight += starLum * starColor;
-
-            vec3 skyTransmit = getValFromTLUT(texSkyTransmit, skyPos, localViewDir);
-
-            colorFinal += skyLight * skyTransmit;
-        }
-    }
 
     #ifdef EFFECT_VL_ENABLED
         vec3 vlScatter = textureLod(texScatterVL, uv, 0).rgb;
         vec3 vlTransmit = textureLod(texTransmitVL, uv, 0).rgb;
-        colorFinal = fma(colorFinal, vlTransmit, vlScatter * BufferLumScale);
+        colorFinal.rgb = fma(colorFinal.rgb, vlTransmit, vlScatter * BufferLumScale);
     #endif
 
     vec4 particles = textureLod(texParticleOpaque, uv, 0);
-    colorFinal = mix(colorFinal, particles.rgb * BufferLumScale, saturate(particles.a));
+    colorFinal.rgb = mix(colorFinal.rgb, particles.rgb * BufferLumScale, saturate(particles.a));
 
-    colorFinal = clamp(colorFinal * BufferLumScaleInv, 0.0, 65000.0);
+    colorFinal.rgb = clamp(colorFinal.rgb * BufferLumScaleInv, 0.0, 65000.0);
 
-    outColor = vec4(colorFinal, 1.0);
+    outColor = colorFinal;
 }

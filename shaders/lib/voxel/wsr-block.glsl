@@ -8,7 +8,7 @@ bool TraceReflection(const in vec3 localPos, const in vec3 localDir, out vec3 ti
 
     float waterDist = 0.0;
 
-    vec3 voxel_offset = GetVoxelCenter(ap.camera.pos, ap.camera.viewInv[2].xyz);
+    //vec3 voxel_offset = GetVoxelCenter(ap.camera.pos, ap.camera.viewInv[2].xyz);
 
     vec3 stepSizes, nextDist;
     dda_init(stepSizes, nextDist, currPos, localDir);
@@ -16,8 +16,10 @@ bool TraceReflection(const in vec3 localPos, const in vec3 localDir, out vec3 ti
     for (int i = 0; i < LIGHTING_REFLECT_MAXSTEP && !hit; i++) {
         #ifdef VOXEL_SKIP_EMPTY
             #ifdef VOXEL_SKIP_SECTIONS
-                vec3 ap_blockPos = voxelPos - voxel_offset + ap.camera.pos;
-                ivec3 ap_voxelPos = ivec3(floor(ap_blockPos));
+                vec3 voxelWorldPos = voxel_getLocalPosition(voxelPos) + ap.camera.pos;
+                vec3 ap_blockPos = voxelWorldPos;//voxelPos - voxel_offset + ap.camera.pos;
+
+                ivec3 ap_voxelPos = ivec3(floor(voxelWorldPos));;
                 bool isSectionLoaded = iris_isSectionLoaded(ap_voxelPos);
 
                 if (!isSectionLoaded) {
@@ -32,12 +34,13 @@ bool TraceReflection(const in vec3 localPos, const in vec3 localDir, out vec3 ti
                     vec3 section_stepAxisNext;
                     vec3 section_step = dda_step(section_stepAxisNext, section_nextDist, section_stepSizes, localDir);
 
-                    section_pos += section_step;
+//                    section_pos += section_step;
                     //section_stepAxis = section_stepAxisNext;
+                    currPos += section_step * 16.0;
 
-                    section_pos.y -= ap.world.internal_chunkDiameter.z;
-                    ap_blockPos = section_pos * 16.0;
-                    currPos = ap_blockPos + voxel_offset - ap.camera.pos;
+//                    section_pos.y -= ap.world.internal_chunkDiameter.z;
+//                    ap_blockPos = section_pos * 16.0;
+//                    currPos = ap_blockPos + voxel_offset - ap.camera.pos;
 
                     dda_init(stepSizes, nextDist, currPos, localDir);
                 }
@@ -78,7 +81,7 @@ bool TraceReflection(const in vec3 localPos, const in vec3 localDir, out vec3 ti
 
         if (!voxel_isInBounds(voxelPos)) break;
 
-        if (blockId > 0u) {
+        if (blockId != -1u) {
             if (iris_isFullBlock(blockId)) hit = true;
 
             uint blockTags = iris_blockInfo.blocks[blockId].z;

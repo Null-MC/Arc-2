@@ -59,21 +59,21 @@ float V_SmithGGXCorrelated(float NdotL, float NdotV, float roughness) {
 //    return numerator / denominator;
 //}
 
-vec3 SampleLightSpecular(float NoL, float NoH, float NoV, vec3 F_VoH, float roughL) {
-//    vec3 halfDir = normalize(lightDir + viewDir);
-//    float NoL = saturate(dot(normal, lightDir));
-//    float NoV = saturate(dot(normal, viewDir));
-//    float NoH = saturate(dot(normal, halfDir));
-//    float VoH = saturate(dot(viewDir, halfDir));
-
+float SampleLightSpecular(float NoL, float NoH, float NoV, float F_VoH, float roughL) {
     float D = D_GGX(NoH, roughL);
     float G = V_SmithGGXCorrelated(NoL, NoV, roughL);
-    //float F = SchlickFresnel(albedo, VoH);
-    //vec3 F = material_fresnel(albedo, f0_metal, roughL, VoH, isWet);
+
+    float numerator = D * G * F_VoH;
+    float denominator = 4.0 * NoL * NoV + 0.0001;
+    return saturate(numerator / denominator);
+}
+
+vec3 SampleLightSpecular(float NoL, float NoH, float NoV, vec3 F_VoH, float roughL) {
+    float D = D_GGX(NoH, roughL);
+    float G = V_SmithGGXCorrelated(NoL, NoV, roughL);
 
     vec3 numerator = D * G * F_VoH;
-    // TODO: was suggested to remove NoL from denominator
-    float denominator = 4.0 * NoL * NoV + 0.0001; // Add a small epsilon to prevent division by zero
+    float denominator = 4.0 * NoL * NoV + 0.0001;
     return saturate(numerator / denominator);
 }
 

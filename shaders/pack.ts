@@ -66,6 +66,22 @@ function applySettings(settings : ShaderSettings, internal) {
             renderConfig.shadow.safeZone[0] = settings.Voxel_Size / 2;
     }
 
+    // define world-specific constants
+    switch (renderConfig.dimension.getPath()) {
+        case 'overworld':
+            defineGlobally1('WORLD_OVERWORLD');
+            defineGlobally1('WORLD_SKY_ENABLED');
+            defineGlobally1('WORLD_SKYLIGHT_ENABLED');
+            break;
+        case 'the_nether':
+            defineGlobally1('WORLD_NETHER');
+            break;
+        case 'the_end':
+            defineGlobally1('WORLD_END');
+            defineGlobally1('WORLD_SKY_ENABLED');
+            break;
+    }
+
     defineGlobally1("EFFECT_VL_ENABLED");
     if (internal.Accumulation) defineGlobally1('ACCUM_ENABLED');
 
@@ -391,6 +407,8 @@ export function configurePipeline(pipeline : PipelineConfig) {
     setLightColorEx('#87480b', 'oxidized_copper_bulb', 'waxed_oxidized_copper_bulb');
     setLightColorEx('#7f17a8', 'crying_obsidian', 'respawn_anchor');
     setLightColorEx('#371559', 'enchanting_table');
+    setLightColorEx('#ac9833', 'end_gateway');
+    setLightColorEx('#5f33ac', 'end_portal');
     setLightColorEx('#bea935', 'firefly_bush');
     setLightColorEx('#5f9889', 'glow_lichen');
     setLightColorEx('#d3b178', 'glowstone');
@@ -404,6 +422,7 @@ export function configurePipeline(pipeline : PipelineConfig) {
     setLightColorEx('#e0ba42', 'redstone_lamp');
     setLightColorEx('#f9321c', 'redstone_ore', 'deepslate_redstone_ore');
     setLightColorEx('#8bdff8', 'sea_lantern');
+    setLightColorEx('#4d9a76', 'sea_pickle');
     setLightColorEx('#918f34', 'shroomlight');
     setLightColorEx('#28aaeb', 'soul_torch', 'soul_wall_torch', 'soul_campfire');
     setLightColorEx('#f3b549', 'torch', 'wall_torch');
@@ -466,7 +485,9 @@ export function configurePipeline(pipeline : PipelineConfig) {
 
     SceneSettingsBuffer = pipeline.createStreamingBuffer(SceneSettingsBufferSize);
 
-    const texFogNoise = pipeline.importRawTexture('texFogNoise', 'textures/fog.dat')
+    const dimension = renderConfig.dimension.getPath();
+
+    pipeline.importRawTexture('texFogNoise', 'textures/fog.dat')
         .type(PixelType.UNSIGNED_BYTE)
         .format(Format.R8_SNORM)
         .width(256)
@@ -476,9 +497,14 @@ export function configurePipeline(pipeline : PipelineConfig) {
         .blur(true)
         .load();
 
-    const texBlueNoise = pipeline.importPNGTexture('texBlueNoise', 'textures/blue_noise.png', true, false);
+    pipeline.importPNGTexture('texBlueNoise', 'textures/blue_noise.png', true, false);
 
-    const texMoon = pipeline.importPNGTexture('texMoon', 'textures/moon.png', true, false);
+    if (dimension == 'overworld')
+        pipeline.importPNGTexture('texMoon', 'textures/moon.png', true, false);
+    else if (dimension == 'the_end') {
+        pipeline.importPNGTexture('texEarth', 'textures/earth.png', true, false);
+        pipeline.importPNGTexture('texEarthSpecular', 'textures/earth-specular.png', true, false);
+    }
 
     const texShadowColor = pipeline.createArrayTexture('texShadowColor')
         .format(Format.RGBA8)
@@ -487,12 +513,14 @@ export function configurePipeline(pipeline : PipelineConfig) {
         .clear(false)
         .build();
 
-    const texShadowBlocker = pipeline.createImageArrayTexture('texShadowBlocker', 'imgShadowBlocker')
-        .format(Format.R16F)
-        .width(settings.Shadow_Resolution/2)
-        .height(settings.Shadow_Resolution/2)
-        .clear(false)
-        .build();
+    if (settings.Shadow_BlockerTexEnabled) {
+        const texShadowBlocker = pipeline.createImageArrayTexture('texShadowBlocker', 'imgShadowBlocker')
+            .format(Format.R16F)
+            .width(settings.Shadow_Resolution / 2)
+            .height(settings.Shadow_Resolution / 2)
+            .clear(false)
+            .build();
+    }
 
     const texSkyTransmit = pipeline.createTexture('texSkyTransmit')
         .format(Format.RGB16F)
@@ -1168,7 +1196,7 @@ export function configurePipeline(pipeline : PipelineConfig) {
         .target(0, texFinalA)
         .compile();
 
-    DiscardObjectShader("skybox", Usage.SKY_TEXTURES)
+    DiscardObjectShader("sky-texture", Usage.SKY_TEXTURES)
         .target(0, texFinalA)
         .compile();
 
@@ -1467,10 +1495,22 @@ export function configurePipeline(pipeline : PipelineConfig) {
 
     postRenderQueue.barrier(SSBO_BIT | IMAGE_BIT);
 
+    new ShaderBuilder(postRenderQueue.createComposite('sky')
+            .vertex('shared/bufferless.vsh')
+            .fragment('composite/sky.fsh')
+            .target(0, finalFlipper.getWriteTexture())
+        )
+        .ssbo(SSBO.Scene, sceneBuffer)
+        .ubo(UBO.SceneSettings, SceneSettingsBuffer)
+        .compile();
+
+    // finalFlipper.flip();
+
     new ShaderBuilder(postRenderQueue.createComposite('composite-opaque')
             .vertex('shared/bufferless.vsh')
             .fragment('composite/composite-opaque.fsh')
             .target(0, finalFlipper.getWriteTexture())
+            .blendFunc(0, Func.SRC_ALPHA, Func.ONE_MINUS_SRC_ALPHA, Func.ONE, Func.ZERO)
             .define('TEX_SHADOW', texShadow_src)
             .define('TEX_SSAO', 'texSSAO_final')
         )

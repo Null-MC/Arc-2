@@ -25,6 +25,7 @@ uniform sampler2D texSkyTransmit;
 uniform sampler2D texSkyIrradiance;
 
 uniform sampler2D texBlueNoise;
+uniform sampler3D texFogNoise;
 
 //uniform sampler2DArray shadowMap;
 //uniform sampler2DArray solidShadowMap;
@@ -75,10 +76,6 @@ uniform sampler2D texBlueNoise;
 #ifdef FLOODFILL_ENABLED
     uniform sampler3D texFloodFill;
     uniform sampler3D texFloodFill_alt;
-#endif
-
-#if defined(SKY_CLOUDS_ENABLED) && defined(SHADOWS_CLOUD_ENABLED)
-    uniform sampler3D texFogNoise;
 #endif
 
 #include "/lib/common.glsl"

@@ -57,6 +57,11 @@ const float ShadowScreenSlope = 0.85;
 const float WaterTintMinDist = 0.0;
 const float cloudHeight = 320.0;
 
+const int VL_maxSamples_near = 32;
+const int VL_maxSamples_far = 16;
+
+const float BufferLumScale = 1000.0;
+
 const vec3 WhiteWorld_Value = vec3(0.8);
 
 
@@ -64,8 +69,7 @@ const vec3 WhiteWorld_Value = vec3(0.8);
 const float shadowMapResolution = float(SHADOW_RESOLUTION);
 const float shadowPixelSize = 1.0 / shadowMapResolution;
 
-const int VL_maxSamples_near = 32;
-const int VL_maxSamples_far = 16;
+const float BufferLumScaleInv = 1.0 / BufferLumScale;
 
 #if defined MATERIAL_PARALLAX_ENABLED && defined RENDER_TERRAIN && MATERIAL_FORMAT != MAT_NONE
 	#define RENDER_PARALLAX

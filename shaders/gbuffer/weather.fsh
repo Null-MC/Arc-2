@@ -201,10 +201,10 @@ void iris_emitFragment() {
     float lod = 6.0 / (viewDist*0.1 + 1.0);
 
     vec2 uv = gl_FragCoord.xy / ap.game.screenSize;
-    finalColor.rgb = textureLod(texFinalPrevious, uv, lod).rgb * 1000.0 * 0.8;
+    finalColor.rgb = textureLod(texFinalPrevious, uv, lod).rgb * BufferLumScale * 0.8;
     finalColor.a = 1.0;
 
-    finalColor.rgb += textureLod(texBloom, uv, 0).rgb * 1000.0 * 0.02;
+    finalColor.rgb += textureLod(texBloom, uv, 0).rgb * BufferLumScale * 0.02;
 
     vec3 localViewDir = normalize(vIn.localPos);
     float VoL_sun = dot(localViewDir, Scene_LocalSunDir);
@@ -254,6 +254,6 @@ void iris_emitFragment() {
     //float fogF = smoothstep(fogStart, fogEnd, viewDist);
     //finalColor.rgb = mix(finalColor.rgb, fogColor.rgb, fogF);
 
-    finalColor.rgb *= 0.001;
+    finalColor.rgb *= BufferLumScaleInv;
     outColor = finalColor;
 }

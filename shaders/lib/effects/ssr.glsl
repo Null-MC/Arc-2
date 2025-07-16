@@ -117,7 +117,7 @@ vec3 GetRelectColor(const in sampler2D tex, const in vec2 uv, inout float alpha,
         alpha = maxOf(alphaXY);
         alpha = 1.0 - pow(alpha, 4);
 
-        color = textureLod(tex, uv, lod).rgb * 1000.0;
+        color = textureLod(tex, uv, lod).rgb * BufferLumScale;
     }
 
     return color;

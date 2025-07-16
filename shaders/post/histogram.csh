@@ -32,7 +32,7 @@ void main() {
 
 	ivec2 uv = ivec2(gl_GlobalInvocationID.xy);
 	if (all(lessThan(uv, ivec2(ap.game.screenSize)))) {
-		vec3 hdrColor = texelFetch(TEX_SRC, ivec2(gl_GlobalInvocationID.xy), 0).rgb * 1000.0;
+		vec3 hdrColor = texelFetch(TEX_SRC, ivec2(gl_GlobalInvocationID.xy), 0).rgb * BufferLumScale;
 
 		// ignore if hand pixel
 		// TODO: FIX THIS LATER! false-positive in water

@@ -244,10 +244,12 @@ void main() {
         roughness = sqrt(roughL);
 
         // Lighting
-        vec3 H = normalize(Scene_LocalLightDir + -localViewDir);
+        vec3 skyLightAreaDir = GetAreaLightDir(localTexNormal, localViewDir, Scene_LocalLightDir, skyLight_AreaDist, skyLight_AreaSize);
 
-        float NoLm = max(dot(localTexNormal, Scene_LocalLightDir), 0.0);
-        float LoHm = max(dot(Scene_LocalLightDir, H), 0.0);
+        vec3 H = normalize(skyLightAreaDir + -localViewDir);
+
+        float NoLm = max(dot(localTexNormal, skyLightAreaDir), 0.0);
+        float LoHm = max(dot(skyLightAreaDir, H), 0.0);
         float NoVm = max(dot(localTexNormal, -localViewDir), 0.0);
 
         vec4 shadow_sss = vec4(lmCoord.y);
@@ -410,9 +412,9 @@ void main() {
             if (altFrame) accumDiffuse = textureLod(texAccumDiffuse_opaque_alt, uv, 0).rgb;
             else accumDiffuse = textureLod(texAccumDiffuse_opaque, uv, 0).rgb;
 
-            diffuse += accumDiffuse * 1000.0;
+            diffuse += accumDiffuse * BufferLumScale;
         #elif LIGHTING_MODE == LIGHT_MODE_RT || LIGHTING_REFLECT_MODE == REFLECT_MODE_WSR
-            diffuse += textureLod(texDiffuseRT, uv, 0).rgb * 1000.0;
+            diffuse += textureLod(texDiffuseRT, uv, 0).rgb * BufferLumScale;
         #endif
 
 //        vec3 view_F = vec3(0.0);
@@ -497,9 +499,9 @@ void main() {
                 if (altFrame) accumSpecular = textureLod(texAccumSpecular_opaque_alt, uv, 0).rgb;
                 else accumSpecular = textureLod(texAccumSpecular_opaque, uv, 0).rgb;
 
-                specular += view_F * accumSpecular * 1000.0;
+                specular += view_F * accumSpecular * BufferLumScale;
             #elif LIGHTING_MODE == LIGHT_MODE_RT || LIGHTING_REFLECT_MODE == REFLECT_MODE_WSR
-                specular += view_F * textureLod(texSpecularRT, uv, 0).rgb * 1000.0;
+                specular += view_F * textureLod(texSpecularRT, uv, 0).rgb * BufferLumScale;
             #endif
         }
 
@@ -561,7 +563,7 @@ void main() {
                 }
 
                 if (wsgi_cascade >= 0)
-                    diffuse = wsgi_sample_nearest(wsgi_bufferPos_n, localTexNormal, wsgi_cascade) * 1000.0;
+                    diffuse = wsgi_sample_nearest(wsgi_bufferPos_n, localTexNormal, wsgi_cascade) * BufferLumScale;
             }
 
             //diffuse = wsgi_sample(localPos + 0.1*localGeoNormal, localTexNormal);
@@ -648,13 +650,13 @@ void main() {
     #ifdef EFFECT_VL_ENABLED
         vec3 vlScatter = textureLod(texScatterVL, uv, 0).rgb;
         vec3 vlTransmit = textureLod(texTransmitVL, uv, 0).rgb;
-        colorFinal = fma(colorFinal, vlTransmit, vlScatter * 1000.0);
+        colorFinal = fma(colorFinal, vlTransmit, vlScatter * BufferLumScale);
     #endif
 
     vec4 particles = textureLod(texParticleOpaque, uv, 0);
-    colorFinal = mix(colorFinal, particles.rgb * 1000.0, saturate(particles.a));
+    colorFinal = mix(colorFinal, particles.rgb * BufferLumScale, saturate(particles.a));
 
-    colorFinal = clamp(colorFinal * 0.001, 0.0, 65000.0);
+    colorFinal = clamp(colorFinal * BufferLumScaleInv, 0.0, 65000.0);
 
     outColor = vec4(colorFinal, 1.0);
 }

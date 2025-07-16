@@ -1,6 +1,9 @@
 const float sunSolidAngle  = SUN_SIZE * (PI/180.0);
 const float moonSolidAngle = MOON_SIZE * (PI/180.0);
 
+const float skyLight_AreaDist = 100.0;
+const float skyLight_AreaSize = 8.0;
+
 
 float skyDisc(const in vec3 rayDir, const in vec3 lightDir, const in float solidAngle) {
     float minCosTheta = cos(solidAngle);

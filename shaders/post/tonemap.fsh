@@ -17,7 +17,7 @@ uniform sampler2D TEX_SRC;
 
 void main() {
     ivec2 iuv = ivec2(gl_FragCoord.xy);
-    vec3 color = texelFetch(TEX_SRC, iuv, 0).rgb * 1000.0;
+    vec3 color = texelFetch(TEX_SRC, iuv, 0).rgb * BufferLumScale;
 
     float exposureF = clamp(Scene_AvgExposure, Scene_PostExposureMin, Scene_PostExposureMax);
     ApplyAutoExposure(color, exposureF);

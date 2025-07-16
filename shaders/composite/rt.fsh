@@ -749,6 +749,6 @@ void main() {
         #endif
     }
 
-    outDiffuseRT = vec4(diffuseFinal * 0.001, 1.0);
-    outSpecularRT = vec4(specularFinal * 0.001, 1.0);
+    outDiffuseRT = vec4(diffuseFinal * BufferLumScaleInv, 1.0);
+    outSpecularRT = vec4(specularFinal * BufferLumScaleInv, 1.0);
 }

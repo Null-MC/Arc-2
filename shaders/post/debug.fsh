@@ -112,9 +112,9 @@ void main() {
                 color = textureLod(texSkyTransmit, previewCoord, 0).rgb;
             #elif DEBUG_VIEW == DEBUG_VIEW_PARTICLES
                 #ifdef DEBUG_TRANSLUCENT
-                    color = textureLod(texParticleTranslucent, previewCoord, 0).rgb * 0.001;
+                    color = textureLod(texParticleTranslucent, previewCoord, 0).rgb;
                 #else
-                    color = textureLod(texParticleSolid, previewCoord, 0).rgb * 0.001;
+                    color = textureLod(texParticleSolid, previewCoord, 0).rgb;
                 #endif
             #endif
 

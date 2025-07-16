@@ -315,7 +315,7 @@ vec3 trace_GI(const in vec3 traceOrigin, const in vec3 traceDir, const in int fa
 	if (pathSamples > 0)
 		pathLight = pathLight / pathSamples;
 
-	pathLight *= 1000.0;
+	pathLight *= BufferLumScale;
 
 	float traceDist = max(distance(traceOrigin, tracePos), EPSILON);
 	vec3 hit_localPos = voxel_getLocalPosition(tracePos);
@@ -455,7 +455,7 @@ vec3 trace_GI(const in vec3 traceOrigin, const in vec3 traceDir, const in int fa
 			vec3 hit_bufferPos = wsgi_getBufferPosition(hit_localPos, WSGI_VOXEL_SCALE);
 			ivec3 hit_bufferPos_n = ivec3(floor(hit_bufferPos));
 
-			hit_diffuse += wsgi_sample_nearest(hit_bufferPos_n, hitNormal, WSGI_CASCADE) * 1000.0;
+			hit_diffuse += wsgi_sample_nearest(hit_bufferPos_n, hitNormal, WSGI_CASCADE) * BufferLumScale;
 
 			//hit_diffuse += 0.0016;
 		#else
@@ -593,7 +593,7 @@ vec3 trace_GI(const in vec3 traceOrigin, const in vec3 traceDir, const in int fa
 			vec3 wsgi_pos = wsgi_getBufferPosition(localPos, WSGI_VOXEL_SCALE+1);
 			ivec3 wsgi_pos_n = ivec3(floor(wsgi_pos));
 
-			color = wsgi_sample_nearest(wsgi_pos_n, traceDir, WSGI_CASCADE+1) * 1000.0;
+			color = wsgi_sample_nearest(wsgi_pos_n, traceDir, WSGI_CASCADE+1) * BufferLumScale;
 			//color *= 1.0 - 1.0/(1.0 + _pow2(traceDist));
 			//color *= GetLightAttenuation(traceDist);
 		#else
@@ -749,7 +749,7 @@ void main() {
 
 		face_counter = clamp(face_counter + sampleWeight, 0.0, VOXEL_GI_MAXFRAMES);
 
-		traceSample = clamp(traceSample * 0.001, 0.0, 65000.0);
+		traceSample = clamp(traceSample * BufferLumScaleInv, 0.0, 65000.0);
 
 		float mixF = 1.0 / (1.0 + face_counter);
 		face_color = mix(face_color, traceSample, mixF * sampleWeight);// * max(faceF, 0.0);

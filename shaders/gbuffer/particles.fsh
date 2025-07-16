@@ -285,6 +285,6 @@ void iris_emitFragment() {
     //float fogF = smoothstep(fogStart, fogEnd, viewDist);
     //finalColor.rgb = mix(finalColor.rgb, fogColor.rgb, fogF);
 
-    finalColor.rgb *= 0.001;
+    finalColor.rgb *= BufferLumScaleInv;
     outColor = finalColor;
 }

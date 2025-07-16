@@ -25,5 +25,5 @@ vec3 getValFromSkyLUT(const in sampler2D texSkyView, vec3 skyPos, vec3 rayDir, v
     // uv *= skyLUTRes;
     // uv /= iChannelResolution[1].xy;
     
-    return textureLod(texSkyView, uv, 0).rgb * 1000.0;
+    return textureLod(texSkyView, uv, 0).rgb * BufferLumScale;
 }

@@ -175,7 +175,7 @@ uniform sampler2D texBlueNoise;
 
 void main() {
     ivec2 iuv = ivec2(gl_FragCoord.xy);
-    vec3 colorOpaque = texelFetch(TEX_SRC, iuv, 0).rgb * 1000.0;
+    vec3 colorOpaque = texelFetch(TEX_SRC, iuv, 0).rgb * BufferLumScale;
     vec4 albedo = texelFetch(texDeferredTrans_Color, iuv, 0);
 
     vec4 finalColor = vec4(0.0);
@@ -399,9 +399,9 @@ void main() {
             if (altFrame) accumDiffuse = textureLod(texAccumDiffuse_translucent_alt, uv, 0).rgb;
             else accumDiffuse = textureLod(texAccumDiffuse_translucent, uv, 0).rgb;
 
-            diffuse += accumDiffuse * 1000.0;
+            diffuse += accumDiffuse * BufferLumScale;
         #elif LIGHTING_MODE == LIGHT_MODE_RT || LIGHTING_REFLECT_MODE == REFLECT_MODE_WSR
-            diffuse += textureLod(texDiffuseRT, uv, 0).rgb * 1000.0;
+            diffuse += textureLod(texDiffuseRT, uv, 0).rgb * BufferLumScale;
         #endif
 
         //vec3 view_F = vec3(0.0);
@@ -467,9 +467,7 @@ void main() {
             skyReflectColor = mix(skyReflectColor, reflectColor, reflection.a);
         #endif
 
-        const float skyLightDist = 100.0;
-        const float skyLightSize = 8.0;
-        vec3 skyLightAreaDir = GetAreaLightDir(localTexNormal, localViewDir, Scene_LocalLightDir, skyLightDist, skyLightSize);
+        vec3 skyLightAreaDir = GetAreaLightDir(localTexNormal, localViewDir, Scene_LocalLightDir, skyLight_AreaDist, skyLight_AreaSize);
 
         H = normalize(skyLightAreaDir + -localViewDir);
 
@@ -486,9 +484,9 @@ void main() {
             if (altFrame) accumSpecular = textureLod(texAccumSpecular_translucent_alt, uv, 0).rgb;
             else accumSpecular = textureLod(texAccumSpecular_translucent, uv, 0).rgb;
 
-            specular += view_F * accumSpecular * 1000.0;
+            specular += view_F * accumSpecular * BufferLumScale;
         #elif LIGHTING_MODE == LIGHT_MODE_RT || LIGHTING_REFLECT_MODE == REFLECT_MODE_WSR
-            specular += view_F * textureLod(texSpecularRT, uv, 0).rgb * 1000.0;
+            specular += view_F * textureLod(texSpecularRT, uv, 0).rgb * BufferLumScale;
         #endif
 
         if (ap.game.mainHand != 0u) {
@@ -562,7 +560,7 @@ void main() {
             refractMip = 6.0 * pow(roughness, 0.5) * min(viewDistFar * 0.2, 1.0);
         #endif
 
-        colorOpaque = textureLod(TEX_SRC, refract_uv, refractMip).rgb * 1000.0;
+        colorOpaque = textureLod(TEX_SRC, refract_uv, refractMip).rgb * BufferLumScale;
 
         colorOpaque *= 1.0 - view_F;
 
@@ -608,16 +606,16 @@ void main() {
             vec3 vlTransmit = textureLod(texTransmitFinal, uv, 0).rgb;
         #endif
 
-        colorFinal = colorFinal * vlTransmit + vlScatter * 1000.0;
+        colorFinal = colorFinal * vlTransmit + vlScatter * BufferLumScale;
     #endif
 
     vec4 weather = textureLod(texParticleTranslucent, uv, 0);
-    colorFinal = mix(colorFinal, weather.rgb * 1000.0, saturate(weather.a));
+    colorFinal = mix(colorFinal, weather.rgb * BufferLumScale, saturate(weather.a));
 
     if (ap.camera.fluid == 2)
         colorFinal = RgbToLinear(vec3(0.0));
 
-    colorFinal = clamp(colorFinal * 0.001, 0.0, 65000.0);
+    colorFinal = clamp(colorFinal * BufferLumScaleInv, 0.0, 65000.0);
 
     outColor = vec4(colorFinal, 1.0);
 }

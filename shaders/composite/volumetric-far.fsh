@@ -392,6 +392,6 @@ void main() {
         }
     #endif
 
-    outScatter = scattering * 0.001;
+    outScatter = scattering * BufferLumScaleInv;
     outTransmit = transmittance;
 }

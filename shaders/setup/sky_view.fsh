@@ -47,7 +47,7 @@ vec3 raymarchScattering(vec3 pos, vec3 rayDir, vec3 sunDir, float tMax, float nu
         vec3 sampleTransmittance = exp(-dt*extinction);
 
         vec3 sunTransmittanceLux = getValFromTLUT(texSkyTransmit, newPos, sunDir) * SUN_LUX * Scene_SunColor;
-        vec3 moonTransmittanceLux = getValFromTLUT(texSkyTransmit, newPos, -sunDir) * MOON_LUX;
+        vec3 moonTransmittanceLux = getValFromTLUT(texSkyTransmit, newPos, -sunDir) * MOON_LUX * Scene_MoonColor;
 
         vec3 psiMS = getValFromMultiScattLUT(texSkyMultiScatter, newPos, sunDir) + Sky_MinLight;
         //vec3 psiMS_moon = getValFromMultiScattLUT(texSkyMultiScatter, newPos, sunDir);

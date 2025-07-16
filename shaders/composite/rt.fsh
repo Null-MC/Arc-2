@@ -389,7 +389,7 @@ void main() {
             vec3 skyReflectColor = lmCoord.y * getValFromSkyLUT(texSkyView, skyPos, reflectLocalDir, Scene_LocalSunDir);
 
             vec3 reflectSun = SUN_LUX * sun(reflectLocalDir, Scene_LocalSunDir) * sunTransmit * Scene_SunColor;
-            vec3 reflectMoon = MOON_LUX * moon(reflectLocalDir, -Scene_LocalSunDir) * moonTransmit;
+            vec3 reflectMoon = MOON_LUX * moon(reflectLocalDir, -Scene_LocalSunDir) * moonTransmit * Scene_MoonColor;
             skyReflectColor += shadow_sss.rgb * (reflectSun + reflectMoon);
 
             vec4 reflection = vec4(0.0);

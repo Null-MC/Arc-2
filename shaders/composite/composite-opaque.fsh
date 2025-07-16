@@ -266,12 +266,6 @@ void main() {
             shadow_sss = textureLod(TEX_SHADOW, uv, 0);
         #endif
 
-        float skyLightF = smoothstep(0.0, 0.1, Scene_LocalLightDir.y);
-
-        #if defined(SKY_CLOUDS_ENABLED) && defined(SHADOWS_CLOUD_ENABLED)
-            skyLightF *= SampleCloudShadows(localPos);
-        #endif
-
         float occlusion = texOcclusion;
 
         #ifdef EFFECT_SSAO_ENABLED
@@ -286,10 +280,23 @@ void main() {
             occlusion *= ssao_occlusion;
         #endif
 
-        vec3 sunTransmit, moonTransmit;
-        GetSkyLightTransmission(localPos, sunTransmit, moonTransmit);
+        #ifdef WORLD_END
+            float skyLightF = 1.0;
+            vec3 sunTransmit = vec3(1.0);
+            vec3 moonTransmit = vec3(1.0);
+        #elif defined(WORLD_SKY_ENABLED)
+            vec3 sunTransmit, moonTransmit;
+            GetSkyLightTransmission(localPos, sunTransmit, moonTransmit);
+
+            float skyLightF = smoothstep(0.0, 0.1, Scene_LocalLightDir.y);
+
+            #if defined(SKY_CLOUDS_ENABLED) && defined(SHADOWS_CLOUD_ENABLED)
+                skyLightF *= SampleCloudShadows(localPos);
+            #endif
+        #endif
+
         vec3 sunLight = skyLightF * SUN_LUX * sunTransmit * Scene_SunColor;
-        vec3 moonLight = skyLightF * MOON_LUX * moonTransmit;
+        vec3 moonLight = skyLightF * MOON_LUX * moonTransmit * Scene_MoonColor;
 
         float NoL_sun = dot(localTexNormal, Scene_LocalSunDir);
         float NoL_moon = -NoL_sun;
@@ -361,24 +368,25 @@ void main() {
 
         diffuse += 0.0016 * occlusion;
 
-        vec3 skyIrradiance = SampleSkyIrradiance(localTexNormal, lmCoord.y);
-        //skyIrradiance *= mix(2.0, 1.0, skyLightF);
+        #ifndef WORLD_END
+            vec3 skyIrradiance = SampleSkyIrradiance(localTexNormal, lmCoord.y);
+            //skyIrradiance *= mix(2.0, 1.0, skyLightF);
 
-        #ifdef LIGHTING_GI_ENABLED
-            vec3 wsgi_localPos = 0.5*localGeoNormal + localPos;
+            #ifdef LIGHTING_GI_ENABLED
+                vec3 wsgi_localPos = 0.5*localGeoNormal + localPos;
 
-            #ifdef LIGHTING_GI_SKYLIGHT
-                vec3 wsgi_bufferPos = wsgi_getBufferPosition(wsgi_localPos, WSGI_CASCADE_COUNT+WSGI_SCALE_BASE-1);
+                #ifdef LIGHTING_GI_SKYLIGHT
+                    vec3 wsgi_bufferPos = wsgi_getBufferPosition(wsgi_localPos, WSGI_CASCADE_COUNT+WSGI_SCALE_BASE-1);
 
-                if (wsgi_isInBounds(wsgi_bufferPos))
-                    skyIrradiance = vec3(0.0);
+                    if (wsgi_isInBounds(wsgi_bufferPos))
+                        skyIrradiance = vec3(0.0);
+                #endif
+
+                skyIrradiance += wsgi_sample(wsgi_localPos, localTexNormal);
             #endif
 
-            skyIrradiance += wsgi_sample(wsgi_localPos, localTexNormal);
+            diffuse += skyIrradiance * occlusion;
         #endif
-
-        diffuse += skyIrradiance * occlusion;
-//        skyLightDiffuse *= occlusion;
 
         vec3 blockLighting = GetVanillaBlockLight(lmCoord.x, occlusion);
         vec3 voxelPos = voxel_GetBufferPosition(localPos);

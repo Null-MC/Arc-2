@@ -301,7 +301,7 @@ void main() {
         vec3 sunTransmit, moonTransmit;
         GetSkyLightTransmission(localPosTrans, sunTransmit, moonTransmit);
         vec3 sunLight = skyLightF * SUN_LUX * sunTransmit * Scene_SunColor;
-        vec3 moonLight = skyLightF * MOON_LUX * moonTransmit;
+        vec3 moonLight = skyLightF * MOON_LUX * moonTransmit * Scene_MoonColor;
 
         float NoL_sun = dot(localTexNormal, Scene_LocalSunDir);
         float NoL_moon = -NoL_sun;

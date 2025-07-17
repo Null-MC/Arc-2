@@ -89,7 +89,7 @@ vec3 getSurfaceNormal(const in vec3 position, const in vec3 fallbackNormal) {
 
 #ifdef WORLD_END
     vec3 renderEndSun(const in vec3 viewLocalDir, const in vec3 endSunLocalPos, const in float endSunHitDist) {
-        vec3 hitPos = viewLocalDir * -endSunHitDist;
+        vec3 hitPos = viewLocalDir * endSunHitDist;
         vec3 hitNormal = normalize(hitPos - endSunLocalPos);
 
         mat3 matAxisRot = rotateZ(endSun_axisTilt);
@@ -105,7 +105,7 @@ vec3 getSurfaceNormal(const in vec3 position, const in vec3 fallbackNormal) {
     }
 
     vec3 renderEndEarth(const in vec3 viewLocalDir, const in vec3 endEarthLocalPos, const in float endEarthHitDist) {
-        vec3 hitPos = viewLocalDir * -endEarthHitDist;
+        vec3 hitPos = viewLocalDir * endEarthHitDist;
         vec3 hitNormal = normalize(hitPos - endEarthLocalPos);
 
         mat3 matAxisRot = rotateZ(endEarth_axisTilt);
@@ -119,9 +119,7 @@ vec3 getSurfaceNormal(const in vec3 position, const in vec3 fallbackNormal) {
 
         hitPos += endEarth_surfaceDepthKm * albedo_height.a * hitNormal;
 
-        vec3 normal = getSurfaceNormal(hitPos, -hitNormal);
-
-        //const vec3 fakeSunDir = normalize(vec3(-0.8, -0.2, -0.2));
+        vec3 normal = getSurfaceNormal(hitPos, hitNormal);
 
         vec3 skyLightAreaDir = GetAreaLightDir(normal, viewLocalDir, -Scene_LocalSunDir, skyLight_AreaDist, skyLight_AreaSize);
 
@@ -138,6 +136,8 @@ vec3 getSurfaceNormal(const in vec3 position, const in vec3 fallbackNormal) {
         float emissive = _pow2(smooth_f0_emissive.b);
 
         vec3 albedo = RgbToLinear(albedo_height.rgb);
+        //albedo = normal * 0.5 + 0.5;
+
         float roughL = _pow2(roughness);
         roughL = max(roughL, 0.08);
 
@@ -146,7 +146,7 @@ vec3 getSurfaceNormal(const in vec3 position, const in vec3 fallbackNormal) {
         float S = SampleLightSpecular(NoLm, NoHm, NoVm, F, roughL);
 
         vec3 skyLight = MOON_LUMINANCE * NoLm * (D * albedo + S) * Scene_MoonColor;
-        // TODO: add blackbody color?
+        // TODO: use blackbody color?
         const vec3 lightColor = _RgbToLinear(vec3(0.929, 0.855, 0.592));
         skyLight += emissive * endEarth_luminance * lightColor;
 
@@ -154,7 +154,7 @@ vec3 getSurfaceNormal(const in vec3 position, const in vec3 fallbackNormal) {
     }
 #elif defined(WORLD_SKY_ENABLED)
     vec3 renderMoon(const in vec3 viewLocalDir, const in vec3 moonLocalPos, const in float moonHitDist) {
-        vec3 hitPos = viewLocalDir * -moonHitDist;
+        vec3 hitPos = viewLocalDir * moonHitDist;
         vec3 hitNormal = normalize(hitPos - moonLocalPos);
 
         mat3 matAxisRot = rotateZ(moon_axisTilt);
@@ -168,7 +168,7 @@ vec3 getSurfaceNormal(const in vec3 position, const in vec3 fallbackNormal) {
 
         hitPos += moon_surfaceDepthKm * albedo_height.a * hitNormal;
 
-        vec3 normal = getSurfaceNormal(hitPos, -hitNormal);
+        vec3 normal = getSurfaceNormal(hitPos, hitNormal);
 
         const vec3 fakeSunDir = normalize(vec3(0.4, -1.0, 0.2));
 
@@ -224,8 +224,8 @@ void main() {
                 skyLight += sunF * SUN_LUMINANCE * Scene_SunColor;
                 starLum *= step(sunF, EPSILON);
 
-                vec3 moonLocalPos = moon_distanceKm * Scene_LocalSunDir;
-                float moonHitDist = rayIntersectSphere(moonLocalPos, localViewDir, moon_radiusKm);
+                vec3 moonLocalPos = moon_distanceKm * -Scene_LocalSunDir;
+                float moonHitDist = rayIntersectSphere(moonLocalPos, -localViewDir, moon_radiusKm);
 
                 if (moonHitDist > 0.0) {
                     skyLight += renderMoon(localViewDir, moonLocalPos, moonHitDist);
@@ -238,21 +238,21 @@ void main() {
         #endif
 
         #ifdef WORLD_END
-            vec3 endSunPos = endSun_distanceKm * Scene_LocalSunDir;
-            float endSunHitDist = rayIntersectSphere(endSunPos, localViewDir, endSun_radiusKm);
+            vec3 endSunPos = endSun_distanceKm * -Scene_LocalSunDir;
+            float endSunHitDist = rayIntersectSphere(endSunPos, -localViewDir, endSun_radiusKm);
 
             if (endSunHitDist > 0.0) {
                 skyLight += renderEndSun(localViewDir, endSunPos, endSunHitDist);
                 starLum = 0.0;
             }
 
-            vec3 endEarthLocalDir = normalize(vec3(0.3, 0.0, 0.7));
+            vec3 endEarthLocalDir = vec3(1.0, 0.0, 0.0);//normalize(vec3(0.3, 0.2, 0.7));
             mat3 matRot = rotateY(endEarth_orbitSpeed * TAU * ap.time.elapsed);
             matRot *= rotateX(0.8);
             endEarthLocalDir = normalize(endEarthLocalDir * matRot);
 
-            vec3 endEarthPos = endEarth_distanceKm * -endEarthLocalDir;
-            float endEarthHitDist = rayIntersectSphere(endEarthPos, localViewDir, endEarth_radiusKm);
+            vec3 endEarthPos = endEarth_distanceKm * endEarthLocalDir;
+            float endEarthHitDist = rayIntersectSphere(endEarthPos, -localViewDir, endEarth_radiusKm);
 
             if (endEarthHitDist > 0.0) {
                 skyLight += renderEndEarth(localViewDir, endEarthPos, endEarthHitDist);

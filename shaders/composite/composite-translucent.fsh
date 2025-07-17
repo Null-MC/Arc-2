@@ -440,18 +440,10 @@ void main() {
                 randomize_reflection(reflectLocalDir, localTexNormal, roughness);
             #endif
 
-            vec3 skyReflectColor = renderSky(localPosTrans, reflectLocalDir, true);// * shadow_sss.rgb;
+            vec3 skyReflectColor = renderSky(localPosTrans, reflectLocalDir, true);
 
-//            vec3 skyPos = getSkyPosition(vec3(0.0));
-//            vec3 skyReflectColor = lmCoord.y * getValFromSkyLUT(texSkyView, skyPos, reflectLocalDir, Scene_LocalSunDir);
-
-//            vec3 reflectSun = SUN_LUX * sun(reflectLocalDir, Scene_LocalSunDir) * sunTransmit;
-//            vec3 reflectMoon = MOON_LUX * moon(reflectLocalDir, -Scene_LocalSunDir) * moonTransmit;
-//            skyReflectColor += shadow_sss.rgb * (reflectSun + reflectMoon);
-
-            // vec3 starViewDir = getStarViewDir(reflectLocalDir);
-            // vec3 starLight = STAR_LUMINANCE * GetStarLight(starViewDir);
-            // skyReflectColor += starLight;
+            vec3 reflectIrraidance = SampleSkyIrradiance(reflectLocalDir, lmCoord.y);
+            skyReflectColor = mix(skyReflectColor, reflectIrraidance, roughL);
         #else
             vec3 skyReflectColor = vec3(0.0);
         #endif

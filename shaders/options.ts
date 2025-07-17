@@ -60,7 +60,7 @@ export function setupOptions() {
             .build())
         .add(new Page('MATERIAL_EMISSION')
             .add(asString('MATERIAL_EMISSION_FORMAT', '-1', '0', '1', '2').build('-1'))
-            .add(asIntRange('MATERIAL_EMISSION_BRIGHTNESS', 160, 0, 800, 5, false))
+            .add(asIntRange('MATERIAL_EMISSION_BRIGHTNESS', 100, 0, 600, 5, false))
             .build())
         .add(new Page('MATERIAL_SSS')
             .add(asString('MATERIAL_SSS_FORMAT', '-1', '0', '1').build('-1'))

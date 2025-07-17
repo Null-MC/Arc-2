@@ -413,6 +413,9 @@ void main() {
 
             vec3 skyReflectColor = renderSky(localPos, reflectLocalDir, true);
 
+            vec3 reflectIrraidance = SampleSkyIrradiance(reflectLocalDir, lmCoord.y);
+            skyReflectColor = mix(skyReflectColor, reflectIrraidance, roughL);
+
             vec4 reflection = vec4(0.0);
             vec3 reflect_tint = vec3(1.0);
 

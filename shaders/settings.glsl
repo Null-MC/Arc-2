@@ -41,7 +41,7 @@ const float MOON_LUX = 256.0;
 
 const float STAR_LUMINANCE = 64.00;
 
-const float BLOCKLIGHT_LUMINANCE = 128000.0;
+const float BLOCKLIGHT_LUMINANCE = 48000.0;
 const float BLOCK_LUX = 24000.0;
 
 const float SKY_AMBIENT = 1.0;

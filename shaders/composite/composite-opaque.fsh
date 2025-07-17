@@ -24,7 +24,6 @@ uniform sampler2D texParticleOpaque;
 
 uniform sampler3D texFogNoise;
 uniform sampler2D texBlueNoise;
-uniform sampler2D texMoon;
 
 #if defined(SHADOWS_ENABLED) || defined(SHADOWS_SS_FALLBACK)
     uniform sampler2D TEX_SHADOW;
@@ -32,6 +31,16 @@ uniform sampler2D texMoon;
 
 #if LIGHTING_REFLECT_MODE == REFLECT_MODE_SSR
     uniform sampler2D texFinalPrevious;
+#endif
+
+#if LIGHTING_REFLECT_MODE != REFLECT_MODE_WSR
+    #ifdef WORLD_END
+        uniform sampler2D texEndSun;
+        uniform sampler2D texEarth;
+        uniform sampler2D texEarthSpecular;
+    #elif defined(WORLD_SKY_ENABLED)
+        uniform sampler2D texMoon;
+    #endif
 #endif
 
 #ifdef EFFECT_SSAO_ENABLED
@@ -96,6 +105,7 @@ uniform sampler2D texMoon;
 
 #include "/lib/utility/blackbody.glsl"
 #include "/lib/utility/matrix.glsl"
+#include "/lib/utility/dfd-normal.glsl"
 #include "/lib/utility/hsv.glsl"
 #include "/lib/utility/tbn.glsl"
 
@@ -119,6 +129,16 @@ uniform sampler2D texMoon;
 #include "/lib/sky/density.glsl"
 #include "/lib/sky/irradiance.glsl"
 #include "/lib/sky/transmittance.glsl"
+
+#if LIGHTING_REFLECT_MODE != REFLECT_MODE_WSR
+    #ifdef WORLD_END
+        #include "/lib/sky/sky-end.glsl"
+    #elif defined(WORLD_SKY_ENABLED)
+        #include "/lib/sky/sky-overworld.glsl"
+    #endif
+
+    #include "/lib/sky/render.glsl"
+#endif
 
 #if LIGHTING_REFLECT_MODE == REFLECT_MODE_SSR
     #include "/lib/effects/ssr.glsl"
@@ -354,10 +374,10 @@ void main() {
 
             vec3 F = material_fresnel(albedo.rgb, f0_metal, roughL, VoHm, isWet);
             vec3 D = SampleLightDiffuse(NoVm, NoLm, LoHm, roughL) * (1.0 - F);
-            vec3 S = SampleLightSpecular(NoLm, NoHm, NoVm, F, roughL);
+            //vec3 S = SampleLightSpecular(NoLm, NoHm, NoVm, F, roughL);
 
             diffuse += D * (sunLight * sss_sun_NoLm + moonLight * max(NoL_moon, 0.0)) * sss_shadow;
-            specular += S * (sunLight * max(NoL_sun, 0.0) + moonLight * max(NoL_moon, 0.0)) * shadow;
+            //specular += S * (sunLight * max(NoL_sun, 0.0) + moonLight * max(NoL_moon, 0.0)) * shadow;
         #endif
 
         diffuse += 0.0016 * occlusion;
@@ -447,16 +467,10 @@ void main() {
                     randomize_reflection(reflectLocalDir, localTexNormal, roughness);
                 #endif
 
-                vec3 skyPos = getSkyPosition(vec3(0.0));
-                vec3 skyReflectColor = lmCoord.y * getValFromSkyLUT(texSkyView, skyPos, reflectLocalDir, Scene_LocalSunDir);
+                vec3 skyReflectColor = renderSky(localPos, reflectLocalDir, true);
 
-                vec3 reflectSun = SUN_LUMINANCE * sun(reflectLocalDir, Scene_LocalSunDir) * sunTransmit;
-                vec3 reflectMoon = MOON_LUMINANCE * moon(reflectLocalDir, -Scene_LocalSunDir) * moonTransmit;
-                skyReflectColor += shadow_sss.rgb * (reflectSun + reflectMoon);
-
-                // vec3 starViewDir = getStarViewDir(reflectLocalDir);
-                // vec3 starLight = STAR_LUMINANCE * GetStarLight(starViewDir);
-                // skyReflectColor += starLight;
+                vec3 reflectIrraidance = SampleSkyIrradiance(reflectLocalDir, lmCoord.y);
+                skyReflectColor = mix(skyReflectColor, reflectIrraidance, roughL);
             #else
                 vec3 skyReflectColor = vec3(0.0);
             #endif

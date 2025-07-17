@@ -45,6 +45,16 @@ uniform sampler3D texFogNoise;
     uniform sampler2D texFinalPrevious;
 #endif
 
+#if LIGHTING_REFLECT_MODE != REFLECT_MODE_WSR
+    #ifdef WORLD_END
+        uniform sampler2D texEndSun;
+        uniform sampler2D texEarth;
+        uniform sampler2D texEarthSpecular;
+    #elif defined(WORLD_SKY_ENABLED)
+        uniform sampler2D texMoon;
+    #endif
+#endif
+
 #ifdef EFFECT_VL_ENABLED
     #if LIGHTING_VL_RES == 0
         uniform sampler2D texScatterVL;
@@ -103,6 +113,7 @@ uniform sampler3D texFogNoise;
 
 #include "/lib/utility/blackbody.glsl"
 #include "/lib/utility/matrix.glsl"
+#include "/lib/utility/dfd-normal.glsl"
 #include "/lib/utility/hsv.glsl"
 #include "/lib/utility/tbn.glsl"
 
@@ -125,6 +136,16 @@ uniform sampler3D texFogNoise;
 #include "/lib/sky/stars.glsl"
 #include "/lib/sky/irradiance.glsl"
 #include "/lib/sky/transmittance.glsl"
+
+#if LIGHTING_REFLECT_MODE != REFLECT_MODE_WSR
+    #ifdef WORLD_END
+        #include "/lib/sky/sky-end.glsl"
+    #elif defined(WORLD_SKY_ENABLED)
+        #include "/lib/sky/sky-overworld.glsl"
+    #endif
+
+    #include "/lib/sky/render.glsl"
+#endif
 
 #if LIGHTING_REFLECT_MODE == REFLECT_MODE_SSR
     #include "/lib/effects/ssr.glsl"
@@ -419,12 +440,14 @@ void main() {
                 randomize_reflection(reflectLocalDir, localTexNormal, roughness);
             #endif
 
-            vec3 skyPos = getSkyPosition(vec3(0.0));
-            vec3 skyReflectColor = lmCoord.y * getValFromSkyLUT(texSkyView, skyPos, reflectLocalDir, Scene_LocalSunDir);
+            vec3 skyReflectColor = renderSky(localPosTrans, reflectLocalDir, true);// * shadow_sss.rgb;
 
-            vec3 reflectSun = SUN_LUX * sun(reflectLocalDir, Scene_LocalSunDir) * sunTransmit;
-            vec3 reflectMoon = MOON_LUX * moon(reflectLocalDir, -Scene_LocalSunDir) * moonTransmit;
-            skyReflectColor += shadow_sss.rgb * (reflectSun + reflectMoon);
+//            vec3 skyPos = getSkyPosition(vec3(0.0));
+//            vec3 skyReflectColor = lmCoord.y * getValFromSkyLUT(texSkyView, skyPos, reflectLocalDir, Scene_LocalSunDir);
+
+//            vec3 reflectSun = SUN_LUX * sun(reflectLocalDir, Scene_LocalSunDir) * sunTransmit;
+//            vec3 reflectMoon = MOON_LUX * moon(reflectLocalDir, -Scene_LocalSunDir) * moonTransmit;
+//            skyReflectColor += shadow_sss.rgb * (reflectSun + reflectMoon);
 
             // vec3 starViewDir = getStarViewDir(reflectLocalDir);
             // vec3 starLight = STAR_LUMINANCE * GetStarLight(starViewDir);
@@ -472,8 +495,8 @@ void main() {
         NoVm = max(dot(localTexNormal, -localViewDir), 0.0);
         float NoHm = max(dot(localTexNormal, H), 0.0);
 
-        vec3 S = SampleLightSpecular(NoLm, NoHm, NoVm, view_F, roughL);
-        specular += S * skyLightFinal * shadow_sss.rgb;
+        //vec3 S = SampleLightSpecular(NoLm, NoHm, NoVm, view_F, roughL);
+        //specular += S * skyReflectColor;// * shadow_sss.rgb;
         specular += view_F * skyReflectColor;
 
         #ifdef ACCUM_ENABLED

@@ -253,17 +253,22 @@ void main() {
         }
 
         // Lighting
-        vec3 skyLightAreaDir = GetAreaLightDir(localTexNormal, localViewDir, Scene_LocalLightDir, skyLight_AreaDist, skyLight_AreaSize);
-
-        vec3 H = normalize(skyLightAreaDir + -localViewDir);
-
-        float NoLm = max(dot(localTexNormal, skyLightAreaDir), 0.0);
-        float LoHm = max(dot(skyLightAreaDir, H), 0.0);
         float NoVm = max(dot(localTexNormal, -localViewDir), 0.0);
+        #ifdef WORLD_SKY_ENABLED
+            bool isDay = Scene_LocalSunDir.y > 0.0;
+            float skyLightDist = isDay ? skyLight_AreaDist : moon_distanceKm;
+            float skyLightSize = isDay ? skyLight_AreaSize : moon_radiusKm;
+            vec3 skyLightAreaDir = GetAreaLightDir(localTexNormal, localViewDir, Scene_LocalLightDir, skyLightDist, skyLightSize);
 
-        vec4 shadow_sss = vec4(lmCoord.y);
-        #if defined(SHADOWS_ENABLED) || defined(SHADOWS_SS_FALLBACK)
-            shadow_sss = textureLod(TEX_SHADOW, uv, 0);
+            vec3 H = normalize(skyLightAreaDir + -localViewDir);
+
+            float NoLm = max(dot(localTexNormal, skyLightAreaDir), 0.0);
+            float LoHm = max(dot(skyLightAreaDir, H), 0.0);
+
+            vec4 shadow_sss = vec4(lmCoord.y);
+            #if defined(SHADOWS_ENABLED) || defined(SHADOWS_SS_FALLBACK)
+                shadow_sss = textureLod(TEX_SHADOW, uv, 0);
+            #endif
         #endif
 
         float occlusion = texOcclusion;
@@ -280,26 +285,28 @@ void main() {
             occlusion *= ssao_occlusion;
         #endif
 
-        #ifdef WORLD_END
-            float skyLightF = 1.0;
-            vec3 sunTransmit = vec3(1.0);
-            vec3 moonTransmit = vec3(1.0);
-        #elif defined(WORLD_SKY_ENABLED)
-            vec3 sunTransmit, moonTransmit;
-            GetSkyLightTransmission(localPos, sunTransmit, moonTransmit);
+        #ifdef WORLD_SKY_ENABLED
+            #ifdef WORLD_END
+                float skyLightF = 1.0;
+                vec3 sunTransmit = vec3(1.0);
+                vec3 moonTransmit = vec3(1.0);
+            #elif defined(WORLD_SKY_ENABLED)
+                vec3 sunTransmit, moonTransmit;
+                GetSkyLightTransmission(localPos, sunTransmit, moonTransmit);
 
-            float skyLightF = smoothstep(0.0, 0.1, Scene_LocalLightDir.y);
+                float skyLightF = smoothstep(0.0, 0.1, Scene_LocalLightDir.y);
 
-            #if defined(SKY_CLOUDS_ENABLED) && defined(SHADOWS_CLOUD_ENABLED)
-                skyLightF *= SampleCloudShadows(localPos);
+                #if defined(SKY_CLOUDS_ENABLED) && defined(SHADOWS_CLOUD_ENABLED)
+                    skyLightF *= SampleCloudShadows(localPos);
+                #endif
             #endif
+
+            vec3 sunLight = skyLightF * SUN_LUX * sunTransmit * Scene_SunColor;
+            vec3 moonLight = skyLightF * MOON_LUX * moonTransmit * Scene_MoonColor;
+
+            float NoL_sun = dot(localTexNormal, Scene_LocalSunDir);
+            float NoL_moon = -NoL_sun;
         #endif
-
-        vec3 sunLight = skyLightF * SUN_LUX * sunTransmit * Scene_SunColor;
-        vec3 moonLight = skyLightF * MOON_LUX * moonTransmit * Scene_MoonColor;
-
-        float NoL_sun = dot(localTexNormal, Scene_LocalSunDir);
-        float NoL_moon = -NoL_sun;
 
         #ifdef VL_SELF_SHADOW
             #ifdef EFFECT_TAA_ENABLED
@@ -333,42 +340,29 @@ void main() {
             }
         #endif
 
-        vec3 shadow = shadow_sss.rgb * step(0.0, dot(localGeoNormal, Scene_LocalLightDir));
+        vec3 diffuse = vec3(0.0);
+        vec3 specular = vec3(0.0);
 
-        float NoHm = max(dot(localTexNormal, H), 0.0);
-        float VoHm = max(dot(-localViewDir, H), 0.0);
+        #ifdef WORLD_SKY_ENABLED
+            vec3 shadow = shadow_sss.rgb * step(0.0, dot(localGeoNormal, Scene_LocalLightDir));
 
-        float sss_sun_NoLm = max((NoL_sun + sss) / (1.0 + sss), 0.0);
-        vec3 sss_shadow = mix(shadow, vec3(shadow_sss.w), sss);
+            float NoHm = max(dot(localTexNormal, H), 0.0);
+            float VoHm = max(dot(-localViewDir, H), 0.0);
 
-        vec3 F = material_fresnel(albedo.rgb, f0_metal, roughL, VoHm, isWet);
-        vec3 D = SampleLightDiffuse(NoVm, NoLm, LoHm, roughL) * (1.0 - F);
-        vec3 S = SampleLightSpecular(NoLm, NoHm, NoVm, F, roughL);
+            float sss_sun_NoLm = max((NoL_sun + sss) / (1.0 + sss), 0.0);
+            vec3 sss_shadow = mix(shadow, vec3(shadow_sss.w), sss);
 
-        vec3 sky_diffuse = D * (sunLight * sss_sun_NoLm + moonLight * max(NoL_moon, 0.0)) * sss_shadow;
-        vec3 sky_specular = S * (sunLight * max(NoL_sun, 0.0) + moonLight * max(NoL_moon, 0.0)) * shadow;
+            vec3 F = material_fresnel(albedo.rgb, f0_metal, roughL, VoHm, isWet);
+            vec3 D = SampleLightDiffuse(NoVm, NoLm, LoHm, roughL) * (1.0 - F);
+            vec3 S = SampleLightSpecular(NoLm, NoHm, NoVm, F, roughL);
 
-        // SSS
-//        if (sss > EPSILON) {
-//            const float sss_G = 0.24;
-//
-//            vec3 sss_skyIrradiance = SampleSkyIrradiance(localTexNormal, lmCoord.y);
-//
-//            float VoL_sun = dot(localViewDir, Scene_LocalSunDir);
-//            vec3 sss_phase_sun = max(HG(VoL_sun, sss_G), 0.0) * abs(NoL_sun) * sunLight;
-//            vec3 sss_phase_moon = max(HG(-VoL_sun, sss_G), 0.0) * abs(NoL_moon) * moonLight;
-//            vec3 sss_skyLight = (2.0*PI) * sss_shadow * (sss_phase_sun + sss_phase_moon)
-//                              + sss_skyIrradiance * phaseIso;
-//
-//            skyLightDiffuse += sss * sss_skyLight * saturate(1.0 - NoL_sun);// * exp(-1.0 * (1.0 - albedo.rgb));
-//        }
-
-        vec3 diffuse = sky_diffuse;
-        vec3 specular = sky_specular;
+            diffuse += D * (sunLight * sss_sun_NoLm + moonLight * max(NoL_moon, 0.0)) * sss_shadow;
+            specular += S * (sunLight * max(NoL_sun, 0.0) + moonLight * max(NoL_moon, 0.0)) * shadow;
+        #endif
 
         diffuse += 0.0016 * occlusion;
 
-        #ifndef WORLD_END
+        #if defined(WORLD_SKY_ENABLED) && !defined(WORLD_END)
             vec3 skyIrradiance = SampleSkyIrradiance(localTexNormal, lmCoord.y);
             //skyIrradiance *= mix(2.0, 1.0, skyLightF);
 
@@ -467,7 +461,7 @@ void main() {
                 vec3 skyReflectColor = vec3(0.0);
             #endif
 
-            if (!hasTexNormal) NoVm = 1.0;
+//            if (!hasTexNormal) NoVm = 1.0;
 
 //            float NoHm = max(dot(localTexNormal, H), 0.0);
 //            float VoHm = max(dot(-localViewDir, H), 0.0);

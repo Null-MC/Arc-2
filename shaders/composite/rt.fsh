@@ -27,6 +27,14 @@ uniform sampler3D texFogNoise;
     uniform sampler2D texSkyTransmit;
     uniform sampler2D texSkyIrradiance;
 
+    #ifdef WORLD_END
+        uniform sampler2D texEndSun;
+        uniform sampler2D texEarth;
+        uniform sampler2D texEarthSpecular;
+    #elif defined(WORLD_SKY_ENABLED)
+        uniform sampler2D texMoon;
+    #endif
+
     uniform sampler2D TEX_SHADOW;
     uniform sampler2D texFinalPrevious;
 
@@ -123,16 +131,28 @@ in vec2 uv;
     #endif
 
     #include "/lib/sampling/erp.glsl"
+
+    #include "/lib/utility/blackbody.glsl"
+    #include "/lib/utility/matrix.glsl"
+    #include "/lib/utility/dfd-normal.glsl"
+
     #include "/lib/material/material.glsl"
     #include "/lib/material/wetness.glsl"
 
     #include "/lib/sky/common.glsl"
     #include "/lib/sky/view.glsl"
     #include "/lib/sky/sun.glsl"
+    #include "/lib/sky/stars.glsl"
     #include "/lib/sky/irradiance.glsl"
     #include "/lib/sky/transmittance.glsl"
 
-    #include "/lib/utility/blackbody.glsl"
+    #ifdef WORLD_END
+        #include "/lib/sky/sky-end.glsl"
+    #elif defined(WORLD_SKY_ENABLED)
+        #include "/lib/sky/sky-overworld.glsl"
+    #endif
+
+    #include "/lib/sky/render.glsl"
 
     #include "/lib/light/volumetric.glsl"
 
@@ -381,16 +401,17 @@ void main() {
                 shadow_sss = textureLod(TEX_SHADOW, uv, 0);
             #endif
 
-            vec3 sunTransmit, moonTransmit;
-            GetSkyLightTransmission(localPos, sunTransmit, moonTransmit);
+//            vec3 sunTransmit, moonTransmit;
+//            GetSkyLightTransmission(localPos, sunTransmit, moonTransmit);
 
-            // vec3 skyReflectColor = GetSkyColor(vec3(0.0), reflectLocalDir, shadow_sss.rgb, lmCoord.y);
-            vec3 skyPos = getSkyPosition(vec3(0.0));
-            vec3 skyReflectColor = lmCoord.y * getValFromSkyLUT(texSkyView, skyPos, reflectLocalDir, Scene_LocalSunDir);
+//            vec3 skyPos = getSkyPosition(vec3(0.0));
+//            vec3 skyReflectColor = lmCoord.y * getValFromSkyLUT(texSkyView, skyPos, reflectLocalDir, Scene_LocalSunDir);
+//
+//            vec3 reflectSun = SUN_LUX * sun(reflectLocalDir, Scene_LocalSunDir) * sunTransmit * Scene_SunColor;
+//            vec3 reflectMoon = MOON_LUX * moon(reflectLocalDir, -Scene_LocalSunDir) * moonTransmit * Scene_MoonColor;
+//            skyReflectColor += shadow_sss.rgb * (reflectSun + reflectMoon);
 
-            vec3 reflectSun = SUN_LUX * sun(reflectLocalDir, Scene_LocalSunDir) * sunTransmit * Scene_SunColor;
-            vec3 reflectMoon = MOON_LUX * moon(reflectLocalDir, -Scene_LocalSunDir) * moonTransmit * Scene_MoonColor;
-            skyReflectColor += shadow_sss.rgb * (reflectSun + reflectMoon);
+            vec3 skyReflectColor = renderSky(localPos, reflectLocalDir, true);
 
             vec4 reflection = vec4(0.0);
             vec3 reflect_tint = vec3(1.0);
@@ -567,7 +588,7 @@ void main() {
                 vec3 reflect_sunTransmit, reflect_moonTransmit;
                 GetSkyLightTransmission(reflect_localPos, reflect_sunTransmit, reflect_moonTransmit);
                 vec3 sunLight = skyLightF * SUN_LUX * reflect_sunTransmit * Scene_SunColor;
-                vec3 moonLight = skyLightF * MOON_LUX * reflect_moonTransmit;
+                vec3 moonLight = skyLightF * MOON_LUX * reflect_moonTransmit * Scene_MoonColor;
 
                 vec3 reflect_skyLight = sunLight * max(NoL_sun, 0.0)
                                       + moonLight * max(NoL_moon, 0.0);

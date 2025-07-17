@@ -502,6 +502,7 @@ export function configurePipeline(pipeline : PipelineConfig) {
     switch (dimension) {
         case 'overworld':
             pipeline.importPNGTexture('texMoon', 'textures/moon.png', true, false);
+            //pipeline.importPNGTexture('texMoonNormal', 'textures/moon-normal.png', true, false);
             break;
         case 'the_end':
             pipeline.importPNGTexture('texEndSun', 'textures/end-sun.png', true, false);

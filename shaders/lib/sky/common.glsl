@@ -13,6 +13,9 @@ const float mieAbsorptionBase = 4.4;
 
 const vec3 ozoneAbsorptionBase = vec3(0.850, 1.581, 0.285);
 
+const float moon_radiusKm = 1740.0;
+const float moon_distanceKm = 20000.0;
+
 const float Sky_MinLight = 0.0;
 
 

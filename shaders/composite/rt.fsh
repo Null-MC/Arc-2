@@ -780,15 +780,18 @@ void main() {
                 vec3 reflectRay = normalize(reflectClipPos - clipPos);
                 reflection = GetReflectionPosition(TEX_DEPTH, clipPos, reflectRay);
 
+                reflectDist = ap.camera.far;
+                if (reflection.a > EPSILON) {
+                    vec3 reflected_viewPos = unproject(ap.camera.projectionInv, reflection.xyz * 2.0 - 1.0);
+                    reflectDist = length(reflected_viewPos);
+                }
+
                 float maxLod = max(log2(minOf(ap.game.screenSize)) - 2.0, 0.0);
                 float screenDist = length((reflection.xy - uv) * (ap.game.screenSize/2.0));
                 float roughMip = min(roughness * min(log2(screenDist + 1.0), 6.0), maxLod);
                 vec3 reflectColor = GetRelectColor(texFinalPrevious, reflection.xy, reflection.a, roughMip);
 
                 skyReflectColor = mix(skyReflectColor, reflectColor, reflection.a);
-
-                // TODO: set actual value when SSR hit
-                reflectDist = ap.camera.far;
             }
 
             //const bool isWet = false;

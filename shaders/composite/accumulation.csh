@@ -74,7 +74,7 @@ void main() {
     float roughL = _pow2(roughness);
 
     vec4 specularLength = textureLod(texSpecularRT, uv, 0);
-    float parallaxOffset = specularLength.a;// * (1.0 - roughness);
+    float parallaxOffset = specularLength.a * (1.0 - roughness);
 
     // TODO: add velocity buffer
     vec3 velocity = vec3(0.0); //textureLod(BUFFER_VELOCITY, uv, 0).xyz;
@@ -136,6 +136,7 @@ void main() {
     float depthL = linearizeDepth(depth, ap.camera.near, ap.camera.far);
 
     float offsetThreshold = depthL * 0.02;
+    float offsetThresholdSpec = (depthL + parallaxOffset) * 0.02;
 
     float counterF = 1.0;
     if (saturate(uvLast) != uvLast) counterF = 0.0;
@@ -146,7 +147,7 @@ void main() {
     if (saturate(uvLastSpec) != uvLastSpec) counterSpecF = 0.0;
     vec3 viewPosLastSpec = mul3(ap.temporal.view, localPosLast);
     viewPosLastSpec += parallaxOffset * normalize(viewPosLastSpec);
-    if (distance(viewPosPrevSpec, viewPosLastSpec) > offsetThreshold * 4.0) counterSpecF = 0.0;
+    if (distance(viewPosPrevSpec, viewPosLastSpec) > offsetThresholdSpec) counterSpecF = 0.0;
     float counterSpec = previousSpecular.a * counterSpecF + 1.0;
 
     vec3 diffuse = vec3(0.0);
@@ -196,7 +197,7 @@ void main() {
     float diffuseCounter = clamp(counter, 1.0, 1.0 + AccumulationMax_Diffuse);
     vec3 diffuseFinal = mix(previousDiffuse.rgb, diffuse, 1.0 / diffuseCounter);
 
-    float specularCounter = clamp(counterSpec, 1.0, 1.0 + AccumulationMax_Specular);
+    float specularCounter = clamp(counterSpec, 1.0, 1.0 + AccumulationMax_Specular * roughL);
     vec3 specularFinal = mix(previousSpecular.rgb, specular, 1.0 / specularCounter);
 
     diffuseFinal = clamp(diffuseFinal, 0.0, 65000.0);

@@ -74,7 +74,7 @@ void main() {
     float roughL = _pow2(roughness);
 
     vec4 specularLength = textureLod(texSpecularRT, uv, 0);
-    float parallaxOffset = specularLength.a * (1.0 - roughness);
+    float parallaxOffset = specularLength.a;// * (1.0 - roughness);
 
     // TODO: add velocity buffer
     vec3 velocity = vec3(0.0); //textureLod(BUFFER_VELOCITY, uv, 0).xyz;
@@ -94,10 +94,10 @@ void main() {
     vec3 viewPosPrev = mul3(ap.temporal.view, localPosPrev);
     vec3 viewPosPrevSpec = mul3(ap.temporal.view, localPosPrevSpec);
 
-    localPosPrevSpec -= parallaxOffset * normalize(localPosPrevSpec);
+    vec3 viewPosPrevSpec2 = viewPosPrevSpec - parallaxOffset * normalize(viewPosPrevSpec);
 
     vec3 clipPosPrev = unproject(ap.temporal.projection, viewPosPrev);
-    vec3 clipPosPrevSpec = unproject(ap.temporal.projection, viewPosPrevSpec);
+    vec3 clipPosPrevSpec = unproject(ap.temporal.projection, viewPosPrevSpec2);
 
     vec2 uvLast = clipPosPrev.xy * 0.5 + 0.5;
     vec2 uvLastSpec = clipPosPrevSpec.xy * 0.5 + 0.5;
@@ -144,7 +144,9 @@ void main() {
 
     float counterSpecF = 1.0;
     if (saturate(uvLastSpec) != uvLastSpec) counterSpecF = 0.0;
-    //if (distance(localPosPrevSpec, localPosLast) > offsetThreshold) counterSpecF = 0.0;
+    vec3 viewPosLastSpec = mul3(ap.temporal.view, localPosLast);
+    viewPosLastSpec += parallaxOffset * normalize(viewPosLastSpec);
+    if (distance(viewPosPrevSpec, viewPosLastSpec) > offsetThreshold * 4.0) counterSpecF = 0.0;
     float counterSpec = previousSpecular.a * counterSpecF + 1.0;
 
     vec3 diffuse = vec3(0.0);

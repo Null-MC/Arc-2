@@ -70,6 +70,11 @@ void main() {
 
     float depth = texelFetch(TEX_DEPTH, iuv, 0).r;
     uint data_g = texelFetch(TEX_DEFERRED_DATA, iuv, 0).g;
+    float roughness = unpackUnorm4x8(data_g).x;
+    float roughL = _pow2(roughness);
+
+    vec4 specularLength = textureLod(texSpecularRT, uv, 0);
+    float parallaxOffset = specularLength.a * (1.0 - roughness);
 
     // TODO: add velocity buffer
     vec3 velocity = vec3(0.0); //textureLod(BUFFER_VELOCITY, uv, 0).xyz;
@@ -80,9 +85,13 @@ void main() {
 
     vec3 localPos = mul3(ap.camera.viewInv, viewPos);
 
+    localPos += parallaxOffset * normalize(localPos);
+
     vec3 localPosPrev = localPos - velocity + (ap.camera.pos - ap.temporal.pos);
 
-    vec3 viewPosPrev = mul3(ap.temporal.view, localPosPrev);
+    vec3 localPosPrev2 = localPosPrev - parallaxOffset * normalize(localPosPrev);
+
+    vec3 viewPosPrev = mul3(ap.temporal.view, localPosPrev2);
 
     vec3 clipPosPrev = unproject(ap.temporal.projection, viewPosPrev);
 
@@ -134,7 +143,7 @@ void main() {
 
     #if LIGHTING_MODE == LIGHT_MODE_RT || LIGHTING_REFLECT_MODE == REFLECT_MODE_WSR
         diffuse = textureLod(texDiffuseRT, uv, 0).rgb;
-        specular = textureLod(texSpecularRT, uv, 0).rgb;
+        specular = specularLength.rgb;// textureLod(texSpecularRT, uv, 0).rgb;
 
         //if (uv.x > 0.5) {
             vec2 rtPixelSize = 1.0 / rtBufferSize;
@@ -173,13 +182,10 @@ void main() {
         float occlusion = textureLod(TEX_SSAO, uv, 0).r;
     #endif
 
-    float roughness = unpackUnorm4x8(data_g).x;
-    float roughL = _pow2(roughness);
-
     float diffuseCounter = clamp(counter, 1.0, 1.0 + AccumulationMax_Diffuse);
     vec3 diffuseFinal = mix(previousDiffuse.rgb, diffuse, 1.0 / diffuseCounter);
 
-    float specularCounter = clamp(counter, 1.0, 1.0 + AccumulationMax_Specular * roughL);
+    float specularCounter = clamp(counter, 1.0, 1.0 + AccumulationMax_Specular);
     vec3 specularFinal = mix(previousSpecular.rgb, specular, 1.0 / specularCounter);
 
     diffuseFinal = clamp(diffuseFinal, 0.0, 65000.0);

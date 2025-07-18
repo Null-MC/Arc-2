@@ -688,7 +688,7 @@ export function configurePipeline(pipeline : PipelineConfig) {
             .build();
 
         texSpecularRT = pipeline.createTexture('texSpecularRT')
-            .format(Format.RGB16F)
+            .format(Format.RGBA16F)
             .width(screenWidth_half)
             .height(screenHeight_half)
             .clear(false)

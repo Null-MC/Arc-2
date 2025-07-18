@@ -21,7 +21,7 @@ vec3 DirectionFromUV(in vec2 uv) {
 }
 
 vec2 DirectionToUV(const in vec3 dir) {
-    vec2 uv = vec2(0.5, sign(dir.y));
+    vec2 uv = vec2(0.5, sign(-dir.y));
 
     if (abs(dir.y) < 0.9999) {
         uv = vec2(atan(dir.z, dir.x), acos(dir.y));

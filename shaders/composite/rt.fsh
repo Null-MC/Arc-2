@@ -211,6 +211,7 @@ void main() {
 
     vec3 diffuseFinal = vec3(0.0);
     vec3 specularFinal = vec3(0.0);
+    float reflectDist = 0.0;
 
     vec4 albedo = texelFetch(TEX_DEFERRED_COLOR, iuv, 0);
 
@@ -464,7 +465,11 @@ void main() {
                     vec2 reflect_uv;
                     vec3 reflect_traceTint;
                     VoxelBlockFace blockFace;
-                    if (TraceReflection(localPos + 0.1*localGeoNormal, reflectLocalDir, reflect_traceTint, reflect_voxelPos, reflect_geoNormal, reflect_uv, blockFace)) {
+                    vec3 traceStart = localPos + 0.1*localGeoNormal;
+                    if (TraceReflection(traceStart, reflectLocalDir, reflect_traceTint, reflect_voxelPos, reflect_geoNormal, reflect_uv, blockFace)) {
+                        vec3 reflect_localPos = voxel_getLocalPosition(reflect_voxelPos);
+                        reflectDist = distance(traceStart, reflect_localPos);
+
                         if (blockFace.tex_id != -1u) {
                             reflect_tint = GetBlockFaceTint(blockFace.data);
                             reflect_lmcoord = GetBlockFaceLightMap(blockFace.data);
@@ -781,6 +786,9 @@ void main() {
                 vec3 reflectColor = GetRelectColor(texFinalPrevious, reflection.xy, reflection.a, roughMip);
 
                 skyReflectColor = mix(skyReflectColor, reflectColor, reflection.a);
+
+                // TODO: set actual value when SSR hit
+                reflectDist = ap.camera.far;
             }
 
             //const bool isWet = false;
@@ -792,5 +800,5 @@ void main() {
     }
 
     outDiffuseRT = vec4(diffuseFinal * BufferLumScaleInv, 1.0);
-    outSpecularRT = vec4(specularFinal * BufferLumScaleInv, 1.0);
+    outSpecularRT = vec4(specularFinal * BufferLumScaleInv, reflectDist);
 }

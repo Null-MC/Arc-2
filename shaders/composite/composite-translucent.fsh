@@ -290,10 +290,12 @@ void main() {
         #endif
 
         // Lighting
-        vec3 H = normalize(Scene_LocalLightDir + -localViewDir);
+        vec3 skyLightAreaDir = GetAreaLightDir(localTexNormal, localViewDir, Scene_LocalLightDir, skyLight_AreaDist, skyLight_AreaSize);
 
-        float NoLm = max(dot(localTexNormal, Scene_LocalLightDir), 0.0);
-        float LoHm = max(dot(Scene_LocalLightDir, H), 0.0);
+        vec3 H = normalize(skyLightAreaDir + -localViewDir);
+
+        float NoLm = max(dot(localTexNormal, skyLightAreaDir), 0.0);
+        float LoHm = max(dot(skyLightAreaDir, H), 0.0);
         float NoVm = max(dot(localTexNormal, -localViewDir), 0.0);
 
         vec4 shadow_sss = vec4(vec3(1.0), 0.0);
@@ -329,12 +331,12 @@ void main() {
 
         // TODO: VL_SELF_SHADOW
 
-        float sss_diffuse = max((NoL_sun + sss) / (1.0 + sss), 0.0);
-        vec3 sss_shadow = mix(shadow_sss.rgb * step(0.0, dot(localGeoNormal, Scene_LocalLightDir)), vec3(shadow_sss.w), sss);
+//        float sss_diffuse = max((NoL_sun + sss) / (1.0 + sss), 0.0);
+//        vec3 sss_shadow = mix(shadow_sss.rgb * step(0.0, dot(localGeoNormal, Scene_LocalLightDir)), vec3(shadow_sss.w), sss);
 
-        vec3 skyLightFinal = sunLight * sss_diffuse + moonLight * max(NoL_moon, 0.0);
+//        vec3 skyLightFinal = sunLight * sss_diffuse + moonLight * max(NoL_moon, 0.0);
 
-        vec3 skyLightDiffuse = skyLightFinal * sss_shadow * SampleLightDiffuse(NoVm, NoLm, LoHm, roughL);
+//        vec3 skyLightDiffuse = skyLightFinal * sss_shadow * SampleLightDiffuse(NoVm, NoLm, LoHm, roughL);
 
 
         //vec3 skyLight_NoLm = sunLight * max(NoL_sun, 0.0) + moonLight * max(NoL_moon, 0.0);
@@ -342,19 +344,19 @@ void main() {
         //vec3 skyLightDiffuse = skyLight_NoLm * shadow_sss.rgb * SampleLightDiffuse(NoVm, NoLm, LoHm, roughL);
 
         // SSS
-        if (sss > EPSILON) {
-            const float sss_G = 0.24;
-
-            vec3 sss_skyIrradiance = SampleSkyIrradiance(localTexNormal, lmCoord.y);
-
-            float VoL_sun = dot(localViewDir, Scene_LocalSunDir);
-            vec3 sss_phase_sun = max(HG(VoL_sun, sss_G), 0.0) * abs(NoL_sun) * sunLight;
-            vec3 sss_phase_moon = max(HG(-VoL_sun, sss_G), 0.0) * abs(NoL_moon) * moonLight;
-            vec3 sss_skyLight = (2.0*PI) * sss_shadow * (sss_phase_sun + sss_phase_moon)
-                              + sss_skyIrradiance * phaseIso;
-
-            skyLightDiffuse += sss * sss_skyLight * saturate(1.0 - NoL_sun);// * exp(-1.0 * (1.0 - albedo.rgb));
-        }
+//        if (sss > EPSILON) {
+//            const float sss_G = 0.24;
+//
+//            vec3 sss_skyIrradiance = SampleSkyIrradiance(localTexNormal, lmCoord.y);
+//
+//            float VoL_sun = dot(localViewDir, Scene_LocalSunDir);
+//            vec3 sss_phase_sun = max(HG(VoL_sun, sss_G), 0.0) * abs(NoL_sun) * sunLight;
+//            vec3 sss_phase_moon = max(HG(-VoL_sun, sss_G), 0.0) * abs(NoL_moon) * moonLight;
+//            vec3 sss_skyLight = (2.0*PI) * sss_shadow * (sss_phase_sun + sss_phase_moon)
+//                              + sss_skyIrradiance * phaseIso;
+//
+//            skyLightDiffuse += sss * sss_skyLight * saturate(1.0 - NoL_sun);// * exp(-1.0 * (1.0 - albedo.rgb));
+//        }
 //        const float sss_G = 0.24;
 //
 //        vec3 sss_skyIrradiance = SampleSkyIrradiance(localViewDir, lmCoord.y);
@@ -367,7 +369,28 @@ void main() {
 //
 //        skyLightDiffuse = mix(skyLightDiffuse, sss_skyLight * PI, sss);
 
-        vec3 skyIrradiance = SampleSkyIrradiance(localTexNormal, lmCoord.y);
+        vec3 diffuse = vec3(0.0);
+        vec3 specular = vec3(0.0);
+
+        #ifdef WORLD_SKY_ENABLED
+            vec3 shadow = shadow_sss.rgb * step(0.0, dot(localGeoNormal, skyLightAreaDir));
+
+            float NoHm = max(dot(localTexNormal, H), 0.0);
+            float VoHm = max(dot(-localViewDir, H), 0.0);
+
+            float sss_sun_NoLm = max((NoL_sun + sss) / (1.0 + sss), 0.0);
+            vec3 sss_shadow = mix(shadow, vec3(shadow_sss.w), sss);
+
+            const bool isWet = false;
+            vec3 F = material_fresnel(albedo.rgb, f0_metal, roughL, VoHm, isWet);
+            vec3 D = SampleLightDiffuse(NoVm, NoLm, LoHm, roughL) * (1.0 - F);
+            vec3 S = SampleLightSpecular(NoLm, NoHm, NoVm, F, roughL);// * roughL;
+
+            diffuse += D * (sunLight * sss_sun_NoLm + moonLight * max(NoL_moon, 0.0)) * sss_shadow;
+            specular += S * (sunLight * max(NoL_sun, 0.0) + moonLight * max(NoL_moon, 0.0)) * shadow;
+        #endif
+
+        vec3 skyIrradiance = SampleSkyIrradiance(localTexNormal, lmCoord.y) * occlusion;
 
         #ifdef LIGHTING_GI_ENABLED
             vec3 wsgi_localPos = 0.5*localGeoNormal + localPosTrans;
@@ -376,14 +399,26 @@ void main() {
                 vec3 wsgi_bufferPos = wsgi_getBufferPosition(wsgi_localPos, WSGI_CASCADE_COUNT+WSGI_SCALE_BASE-1);
 
                 if (wsgi_isInBounds(wsgi_bufferPos))
-                    skyIrradiance = vec3(0.0);
+                skyIrradiance = vec3(0.0);
             #endif
 
             skyIrradiance += wsgi_sample(wsgi_localPos, localTexNormal);
         #endif
 
-        skyLightDiffuse += skyIrradiance;
-        skyLightDiffuse *= occlusion;
+        diffuse += skyIrradiance;
+        diffuse += 0.0016 * occlusion;
+
+        #ifdef ACCUM_ENABLED
+            bool altFrame = (ap.time.frames % 2) == 1;
+
+            vec3 accumDiffuse;
+            if (altFrame) accumDiffuse = textureLod(texAccumDiffuse_translucent_alt, uv, 0).rgb;
+            else accumDiffuse = textureLod(texAccumDiffuse_translucent, uv, 0).rgb;
+
+            diffuse += accumDiffuse * BufferLumScale;
+        #elif LIGHTING_MODE == LIGHT_MODE_RT || LIGHTING_REFLECT_MODE == REFLECT_MODE_WSR
+            diffuse += textureLod(texDiffuseRT, uv, 0).rgb * BufferLumScale;
+        #endif
 
         vec3 blockLighting = GetVanillaBlockLight(lmCoord.x, occlusion);
         vec3 voxelPos = voxel_GetBufferPosition(localPosTrans);
@@ -408,22 +443,7 @@ void main() {
             }
         #endif
 
-        vec3 diffuse = skyLightDiffuse + blockLighting + 0.0016 * occlusion;
-
-        #ifdef ACCUM_ENABLED
-            bool altFrame = (ap.time.frames % 2) == 1;
-
-            vec3 accumDiffuse;
-            if (altFrame) accumDiffuse = textureLod(texAccumDiffuse_translucent_alt, uv, 0).rgb;
-            else accumDiffuse = textureLod(texAccumDiffuse_translucent, uv, 0).rgb;
-
-            diffuse += accumDiffuse * BufferLumScale;
-        #elif LIGHTING_MODE == LIGHT_MODE_RT || LIGHTING_REFLECT_MODE == REFLECT_MODE_WSR
-            diffuse += textureLod(texDiffuseRT, uv, 0).rgb * BufferLumScale;
-        #endif
-
-        //vec3 view_F = vec3(0.0);
-        vec3 specular = vec3(0.0);
+        diffuse += blockLighting;
 
         #if LIGHTING_MODE == LIGHT_MODE_SHADOWS
             sample_AllPointLights(diffuse, specular, localPosTrans, localGeoNormal, localTexNormal, albedo.rgb, f0_metal, roughL, sss);
@@ -479,17 +499,7 @@ void main() {
             skyReflectColor = mix(skyReflectColor, reflectColor, reflection.a);
         #endif
 
-        vec3 skyLightAreaDir = GetAreaLightDir(localTexNormal, localViewDir, Scene_LocalLightDir, skyLight_AreaDist, skyLight_AreaSize);
-
-        H = normalize(skyLightAreaDir + -localViewDir);
-
-        NoLm = max(dot(localTexNormal, skyLightAreaDir), 0.0);
-        NoVm = max(dot(localTexNormal, -localViewDir), 0.0);
-        float NoHm = max(dot(localTexNormal, H), 0.0);
-
-        //vec3 S = SampleLightSpecular(NoLm, NoHm, NoVm, view_F, roughL);
-        //specular += S * skyReflectColor;// * shadow_sss.rgb;
-        specular += view_F * skyReflectColor;
+        specular += view_F * skyReflectColor * (1.0 - roughL);
 
         #ifdef ACCUM_ENABLED
             vec3 accumSpecular;
@@ -522,8 +532,8 @@ void main() {
             diffuse += emission * Material_EmissionBrightness * BLOCKLIGHT_LUMINANCE;
         #endif
 
-        float smoothness = 1.0 - roughness;
-        specular *= GetMetalTint(albedo.rgb, f0_metal) * _pow2(smoothness);
+        //float smoothness = 1.0 - roughness;
+        specular *= GetMetalTint(albedo.rgb, f0_metal);// * _pow2(smoothness);
 
         //diffuse *= 1.0 - view_F;
 

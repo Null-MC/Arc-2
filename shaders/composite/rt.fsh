@@ -414,8 +414,8 @@ void main() {
 
             vec3 skyReflectColor = renderSky(localPos, reflectLocalDir, true);
 
-            vec3 reflectIrraidance = SampleSkyIrradiance(reflectLocalDir, lmCoord.y);
-            skyReflectColor = mix(skyReflectColor, reflectIrraidance, roughL);
+//            vec3 reflectIrraidance = SampleSkyIrradiance(reflectLocalDir, lmCoord.y);
+//            skyReflectColor = mix(skyReflectColor, reflectIrraidance, roughL);
 
             vec4 reflection = vec4(0.0);
             vec3 reflect_tint = vec3(1.0);
@@ -795,10 +795,10 @@ void main() {
             }
 
             //const bool isWet = false;
-            float smoothness = 1.0 - roughness;
+            //float smoothness = 1.0 - roughness;
             //vec3 reflectTint = GetMetalTint(albedo.rgb, f0_metal);
             //vec3 view_F = material_fresnel(albedo.rgb, f0_metal, roughL, NoVm, isWet);
-            specularFinal += skyReflectColor;// * reflectTint * _pow2(smoothness);
+            specularFinal += skyReflectColor;// * smoothness;// * (1.0 - roughL);// * reflectTint * _pow2(smoothness);
         #endif
     }
 

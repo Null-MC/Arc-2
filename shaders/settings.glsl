@@ -32,7 +32,7 @@
 const float ATMOSPHERE_MAX = 4200.0;
 
 const float SUN_SIZE = 1.2;
-const float SUN_LUMINANCE = 1.6e7;//1.6e9;
+const float SUN_LUMINANCE = 1.6e6;//1.6e9;
 const float SUN_LUX = 130000.0;
 
 const float MOON_SIZE = 3.4;

@@ -374,10 +374,10 @@ void main() {
 
             vec3 F = material_fresnel(albedo.rgb, f0_metal, roughL, VoHm, isWet);
             vec3 D = SampleLightDiffuse(NoVm, NoLm, LoHm, roughL) * (1.0 - F);
-            //vec3 S = SampleLightSpecular(NoLm, NoHm, NoVm, F, roughL);
+            vec3 S = SampleLightSpecular(NoLm, NoHm, NoVm, F, roughL);// * roughL;
 
             diffuse += D * (sunLight * sss_sun_NoLm + moonLight * max(NoL_moon, 0.0)) * sss_shadow;
-            //specular += S * (sunLight * max(NoL_sun, 0.0) + moonLight * max(NoL_moon, 0.0)) * shadow;
+            specular += S * (sunLight * max(NoL_sun, 0.0) + moonLight * max(NoL_moon, 0.0)) * shadow;
         #endif
 
         diffuse += 0.0016 * occlusion;
@@ -517,7 +517,7 @@ void main() {
             #endif
 
             vec3 view_F = material_fresnel(albedo.rgb, f0_metal, roughL, NoVm, isWet);
-            specular += view_F * skyReflectColor;
+            specular += view_F * skyReflectColor * (1.0 - roughL);
 
             #ifdef ACCUM_ENABLED
                 vec3 accumSpecular;
@@ -551,8 +551,8 @@ void main() {
             diffuse += emission * Material_EmissionBrightness * BLOCKLIGHT_LUMINANCE;
         #endif
 
-        float smoothness = 1.0 - roughness;
-        specular *= GetMetalTint(albedo.rgb, f0_metal) * smoothness;
+        //float smoothness = 1.0 - roughness;
+        specular *= GetMetalTint(albedo.rgb, f0_metal);// * smoothness;
 
         //        if (!hasTexNormal) albedo.rgb = vec3(1.0,0.0,0.0);
 

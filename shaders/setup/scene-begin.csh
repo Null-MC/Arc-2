@@ -20,4 +20,7 @@ void main() {
     Scene_SkyIrradianceUp = textureLod(texSkyIrradiance, skyIrradianceCoord, 0).rgb;
 
     Scene_SkyBrightnessSmooth = mix(ap.camera.brightness.y, Scene_SkyBrightnessSmooth, exp(-2.0 * ap.time.delta));
+
+    //ap.world.precipitation
+    Scene_SkyPrecipitation = mix(step(1, ap.world.precipitation), Scene_SkyPrecipitation, exp(-0.4 * ap.time.delta));
 }

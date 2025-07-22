@@ -131,10 +131,12 @@ in vec2 uv;
     #endif
 
     #include "/lib/sampling/erp.glsl"
+    #include "/lib/sampling/vndf.glsl"
 
     #include "/lib/utility/blackbody.glsl"
     #include "/lib/utility/matrix.glsl"
     #include "/lib/utility/dfd-normal.glsl"
+    #include "/lib/utility/tbn.glsl"
 
     #include "/lib/material/material.glsl"
     #include "/lib/material/wetness.glsl"
@@ -389,12 +391,28 @@ void main() {
         #if LIGHTING_REFLECT_MODE == REFLECT_MODE_WSR
             // reflections
             vec3 viewDir = normalize(viewPos);
-            vec3 viewNormal = mat3(ap.camera.view) * localTexNormal;
-            vec3 reflectViewDir = reflect(viewDir, viewNormal);
-            vec3 reflectLocalDir = mat3(ap.camera.viewInv) * reflectViewDir;
 
             #ifdef MATERIAL_ROUGH_REFLECT_NOISE
+                vec3 viewNormal = mat3(ap.camera.view) * localTexNormal;
+                vec3 reflectViewDir = reflect(viewDir, viewNormal);
+                vec3 reflectLocalDir = mat3(ap.camera.viewInv) * reflectViewDir;
                 randomize_reflection(reflectLocalDir, localTexNormal, roughness);
+
+                // TODO: in/out must be in tangent space!
+////                vec3 up = localGeoNormal.y < 0.99 ? vec3(0.0, 1.0, 0.0) : vec3(0.0, 0.0, 1.0);
+////                vec3 tan = normalize(cross(localGeoNormal, up));
+////                mat3 tbn = GetTBN(localGeoNormal, tan, 1.0);
+//                mat3 tbn = generate_tbn(localGeoNormal);
+//
+//                vec2 noise = hash23(vec3(gl_FragCoord.xy, ap.time.frames));
+//                vec3 viewLocalDir = normalize(mat3(ap.camera.viewInv) * viewDir);
+//                vec3 vndfNormal = tbn * sample_vndf_isotropic(localTexNormal * tbn, viewLocalDir * tbn, roughL*0.01, noise);
+//                vec3 reflectLocalDir = reflect(viewLocalDir, vndfNormal);
+//                vec3 reflectViewDir = mat3(ap.camera.view) * reflectLocalDir;
+            #else
+                vec3 viewNormal = mat3(ap.camera.view) * localTexNormal;
+                vec3 reflectViewDir = reflect(viewDir, viewNormal);
+                vec3 reflectLocalDir = mat3(ap.camera.viewInv) * reflectViewDir;
             #endif
 
             vec4 shadow_sss = vec4(vec3(1.0), 0.0);
@@ -412,7 +430,7 @@ void main() {
 //            vec3 reflectMoon = MOON_LUX * moon(reflectLocalDir, -Scene_LocalSunDir) * moonTransmit * Scene_MoonColor;
 //            skyReflectColor += shadow_sss.rgb * (reflectSun + reflectMoon);
 
-            vec3 skyReflectColor = renderSky(localPos, reflectLocalDir, true);
+            vec3 skyReflectColor = renderSky(localPos, reflectLocalDir, true) * Scene_SkyBrightnessSmooth;
 
 //            vec3 reflectIrraidance = SampleSkyIrradiance(reflectLocalDir, lmCoord.y);
 //            skyReflectColor = mix(skyReflectColor, reflectIrraidance, roughL);

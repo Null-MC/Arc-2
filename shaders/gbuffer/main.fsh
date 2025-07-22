@@ -73,7 +73,7 @@ uniform sampler3D texFogNoise;
 #ifdef FANCY_LAVA
     #include "/lib/noise/hash.glsl"
     #include "/lib/utility/blackbody.glsl"
-    #include "/lib/lava.glsl"
+    #include "/lib/material/lava.glsl"
 #endif
 
 #if defined(RENDER_TERRAIN) && defined(RENDER_TRANSLUCENT)
@@ -162,25 +162,6 @@ void iris_emitFragment() {
     float emission = mat_emission(specularData);
     float occlusion = mat_occlusion(normalData.z);
 
-//    #if MATERIAL_FORMAT == MAT_LABPBR
-//        float occlusion = normalData.z;
-//    #elif MATERIAL_FORMAT == MAT_OLDPBR
-//        float occlusion = 1.0;
-//        //float sss = 0.0;
-//    #endif
-
-//    #if MATERIAL_FORMAT == MAT_NONE
-//        vec3 localTexNormal = localGeoNormal;
-//        float occlusion = 1.0;
-//        float roughness = 0.92;
-//        float f0_metal = 0.0;
-//        float porosity = 1.0;
-//        float sss = 0.0;
-//        float emission = iris_getEmission(vIn.blockId) / 15.0;
-//
-//        //emission *= lmcoord.x;
-//    #endif
-
     #ifdef RENDER_EMISSIVE
         emission = lmcoord.x * 0.06;
         lmcoord.x = 0.0;
@@ -205,17 +186,7 @@ void iris_emitFragment() {
 
     #ifdef RENDER_TERRAIN
         bool is_fluid = iris_hasFluid(vIn.blockId);
-        uint block_emission = iris_getEmission(vIn.blockId);
-
-//        const vec3 worldUp = vec3(0.0, 1.0, 0.0);
-//        float upF = max(dot(localTexNormal, worldUp), 0.0);
-//
-//        float sky_wetness = max(ap.world.rain, ap.world.thunder);
-//        sky_wetness *= smoothstep(0.90, 0.96, lmcoord.y) * upF;
-//
-//        roughness = mix(roughness, 0.02, sky_wetness);
-//        localTexNormal = mix(localTexNormal, localGeoNormal, sky_wetness);
-//        localTexNormal = normalize(localTexNormal);
+        //uint block_emission = iris_getEmission(vIn.blockId);
     #endif
 
     #if defined(RENDER_TERRAIN) && defined(RENDER_TRANSLUCENT)
@@ -246,12 +217,15 @@ void iris_emitFragment() {
         #else
             const float alphaThreshold = (0.5/255.0);
         #endif
+
+        if (albedo.a < alphaThreshold) {discard; return;}
     #else
-        const float alphaThreshold = 0.1;
+        //const float alphaThreshold = 0.1;
+        if (iris_discardFragment(albedo)) {discard; return;}
     #endif
 
     //if (iris_discardFragment(albedo)) {discard; return;}
-    if (albedo.a < alphaThreshold) {discard; return;}
+    //if (albedo.a < alphaThreshold) {discard; return;}
 
     albedo *= mColor;
 

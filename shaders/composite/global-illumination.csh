@@ -11,6 +11,7 @@ uniform sampler2D blockAtlasS;
 uniform sampler2D texSkyIrradiance;
 uniform sampler2D texSkyTransmit;
 uniform sampler2D texSkyView;
+
 uniform sampler2D texBlueNoise;
 uniform sampler3D texFogNoise;
 

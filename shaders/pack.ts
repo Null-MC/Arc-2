@@ -1262,6 +1262,16 @@ export function configurePipeline(pipeline : PipelineConfig) {
         .with(s => s.define('RENDER_EMISSIVE', '1'))
         .compile();
 
+    pipeline.createObjectShader('glint', Usage.ENTITY_GLINT)
+        .vertex("gbuffer/glint.vsh")
+        .fragment("gbuffer/glint.fsh")
+        .target(0, texDeferredOpaque_Color)
+        .blendFunc(0, Func.ONE, Func.ONE, Func.ZERO, Func.ONE)
+        //.define('RENDER_TRANSLUCENT', '1')
+        .define('RENDER_ENTITY', '1')
+        .define('RENDER_GLINT', '1')
+        .compile();
+
     mainShaderOpaque('basic', Usage.BASIC)
         .compile();
 

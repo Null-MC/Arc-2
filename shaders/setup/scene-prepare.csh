@@ -27,7 +27,14 @@ void main() {
 		Scene_SunColor = vec3(0.0);
 		Scene_MoonColor = blackbody(3800.0);
 	#elif defined (WORLD_SKY_ENABLED)
-		Scene_SunColor = blackbody(Sky_SunTemp);
+		float sunTemp = Sky_SunTemp;
+
+		#if 1 == 0
+			float tempF = unmix(0.0, 1.5, ap.world.temperature);
+			sunTemp = mix(7800, 4200, saturate(tempF));
+		#endif
+
+		Scene_SunColor = blackbody(sunTemp);
 		// fix for UBO having no/bad data first frame
 		if (Sky_SunTemp < EPSILON) Scene_SunColor = vec3(0.0);
 

@@ -13,6 +13,8 @@
 
 #define SHADOW_VOXEL_TEST
 
+//#define WSR_SRR_FALLBACK
+
 #define HANDLIGHT_TRACE
 
 //#define VL_SOFT_SHADOW

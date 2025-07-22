@@ -149,12 +149,12 @@ export class ShaderSettings {
         };
 
         switch (renderer.dimension.getPath()) {
-            case 'overworld':
-                settings.WorldHasSky = true;
-                break;
             case 'the_nether':
                 break;
             case 'the_end':
+                settings.WorldHasSky = true;
+                break;
+            default:
                 settings.WorldHasSky = true;
                 break;
         }

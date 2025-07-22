@@ -787,6 +787,7 @@ void main() {
                 skyReflectColor = fma(reflection.rgb, reflect_diffuse, reflect_specular);
                 //skyReflectColor = mix(reflection.rgb * reflect_diffuse, reflect_specular, reflect_view_F);
             }
+            #ifdef WSR_SRR_FALLBACK
             else {
                 // SSR fallback
                 float viewDist = length(localPos);
@@ -811,6 +812,7 @@ void main() {
 
                 skyReflectColor = mix(skyReflectColor, reflectColor, reflection.a);
             }
+            #endif
 
             //const bool isWet = false;
             //float smoothness = 1.0 - roughness;

@@ -15,7 +15,7 @@ let BlockMappings: BlockMap;
 
 
 // TODO: temp workaround
-let renderConfig: RendererConfig = null;
+let renderConfig: RendererConfig;
 
 export function configureRenderer(renderer : RendererConfig) {
     const settings = new ShaderSettings();
@@ -68,17 +68,17 @@ function applySettings(settings : ShaderSettings, internal) {
 
     // define world-specific constants
     switch (renderConfig.dimension.getPath()) {
-        case 'overworld':
-            defineGlobally1('WORLD_OVERWORLD');
-            defineGlobally1('WORLD_SKY_ENABLED');
-            defineGlobally1('WORLD_SKYLIGHT_ENABLED');
-            break;
         case 'the_nether':
             defineGlobally1('WORLD_NETHER');
             break;
         case 'the_end':
             defineGlobally1('WORLD_END');
             defineGlobally1('WORLD_SKY_ENABLED');
+            break;
+        default:
+            defineGlobally1('WORLD_OVERWORLD');
+            defineGlobally1('WORLD_SKY_ENABLED');
+            defineGlobally1('WORLD_SKYLIGHT_ENABLED');
             break;
     }
 
@@ -500,15 +500,15 @@ export function configurePipeline(pipeline : PipelineConfig) {
     pipeline.importPNGTexture('texBlueNoise', 'textures/blue_noise.png', true, false);
 
     switch (dimension) {
-        case 'overworld':
-            pipeline.importPNGTexture('texMoon', 'textures/moon.png', true, false);
-            //pipeline.importPNGTexture('texMoonNormal', 'textures/moon-normal.png', true, false);
-            break;
         case 'the_end':
             pipeline.importPNGTexture('texEndSun', 'textures/end-sun.png', true, false);
 
             pipeline.importPNGTexture('texEarth', 'textures/earth.png', true, false);
             pipeline.importPNGTexture('texEarthSpecular', 'textures/earth-specular.png', true, false);
+            break;
+        default:
+            pipeline.importPNGTexture('texMoon', 'textures/moon.png', true, false);
+            //pipeline.importPNGTexture('texMoonNormal', 'textures/moon-normal.png', true, false);
             break;
     }
 
@@ -649,8 +649,8 @@ export function configurePipeline(pipeline : PipelineConfig) {
         .clearColor(1.0, 1.0, 1.0, 1.0)
         .build();
 
-    let texShadow: BuiltTexture | null = null;
-    let texShadow_final: BuiltTexture | null = null;
+    let texShadow: BuiltTexture | undefined;
+    let texShadow_final: BuiltTexture | undefined;
     if (settings.Shadow_Enabled || settings.Shadow_SS_Fallback) {
         texShadow = pipeline.createTexture('texShadow')
             .format(Format.RGBA16F)
@@ -677,8 +677,8 @@ export function configurePipeline(pipeline : PipelineConfig) {
             .build();
     }
 
-    let texDiffuseRT: BuiltTexture | null = null;
-    let texSpecularRT: BuiltTexture | null = null;
+    let texDiffuseRT: BuiltTexture | undefined;
+    let texSpecularRT: BuiltTexture | undefined;
     if (settings.Lighting_Mode == LightingModes.RayTraced || settings.Lighting_ReflectionMode == ReflectionModes.WorldSpace) {
         texDiffuseRT = pipeline.createTexture('texDiffuseRT')
             .format(Format.RGB16F)
@@ -695,8 +695,8 @@ export function configurePipeline(pipeline : PipelineConfig) {
             .build();
     }
 
-    let texSSAO: BuiltTexture | null = null;
-    let texSSAO_final: BuiltTexture | null = null;
+    let texSSAO: BuiltTexture | undefined;
+    let texSSAO_final: BuiltTexture | undefined;
     if (settings.Effect_SSAO_Enabled) {
         texSSAO = pipeline.createTexture('texSSAO')
             .format(Format.R16F)
@@ -863,8 +863,8 @@ export function configurePipeline(pipeline : PipelineConfig) {
             .build();
     }
 
-    let vxgiBuffer: BuiltBuffer | null = null;
-    let vxgiBuffer_alt: BuiltBuffer | null = null;
+    let vxgiBuffer: BuiltBuffer | undefined;
+    let vxgiBuffer_alt: BuiltBuffer | undefined;
     if (settings.Lighting_VxGI_Enabled) {
         // f16vec4[3] * VoxelBufferSize^3
         const bufferSize = 48 * cubed(settings.Lighting_VxGI_BufferSize) * settings.Lighting_VxGI_CascadeCount;
@@ -908,7 +908,7 @@ export function configurePipeline(pipeline : PipelineConfig) {
             .build();
     }
 
-    let texTaaPrev: BuiltTexture|null = null;
+    let texTaaPrev: BuiltTexture | undefined;
     if (settings.Post_TAA_Enabled) {
         texTaaPrev = pipeline.createTexture("texTaaPrev")
             .format(Format.RGBA16F)
@@ -920,7 +920,7 @@ export function configurePipeline(pipeline : PipelineConfig) {
 
     const sceneBuffer = pipeline.createBuffer(1024, false);
 
-    let lightListBuffer: BuiltBuffer | null = null;
+    let lightListBuffer: BuiltBuffer | undefined;
     if (internal.LightListsEnabled) {
         const counterSize = settings.Lighting_Mode == LightingModes.ShadowMaps ? 2 : 1;
         const lightSize = settings.Lighting_Mode == LightingModes.ShadowMaps ? 2 : 1;
@@ -940,14 +940,14 @@ export function configurePipeline(pipeline : PipelineConfig) {
         lightListBuffer = pipeline.createBuffer(4, false);
     }
 
-    let blockFaceBuffer: BuiltBuffer | null = null;
+    let blockFaceBuffer: BuiltBuffer | undefined;
     if (internal.VoxelizeBlockFaces) {
         const bufferSize = 6 * 8 * cubed(settings.Voxel_Size);
 
         blockFaceBuffer = pipeline.createBuffer(bufferSize, false);
     }
 
-    let quadListBuffer: BuiltBuffer | null = null;
+    let quadListBuffer: BuiltBuffer | undefined;
     if (internal.VoxelizeTriangles) {
         const quadBinSize = 4 + 40*settings.Voxel_MaxQuadCount;
         const quadListBinCount = Math.ceil(settings.Voxel_Size / QUAD_BIN_SIZE);
@@ -1869,7 +1869,7 @@ export function beginFrame(state : WorldState) {
 export function getBlockId(block: BlockState) : number {
     const name = block.getName();
     const meta = BlockMappings.get(name);
-    if (meta != undefined) return meta.index;
+    if (meta) return meta.index;
 
     return 0;
 }

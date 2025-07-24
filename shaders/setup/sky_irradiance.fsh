@@ -89,7 +89,7 @@ vec3 CalculateIrradiance(const in vec3 normal) {
         phi += sampleDelta.x;
     }
 
-    return irradiance / nrSamples * PI;// * (2.0 / PI);
+    return irradiance / nrSamples * 2.0;// * PI;// * (2.0 / PI);
 }
 
 void main() {

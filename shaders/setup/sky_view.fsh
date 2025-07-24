@@ -109,5 +109,5 @@ void main() {
 
     vec3 lum = raymarchScattering(skyPos, rayDir, sunDirEx, tMax, numScatteringSteps);
 
-    outColor = vec4(lum * BufferLumScaleInv, 1.0);
+    outColor = vec4(lum * PI * BufferLumScaleInv, 1.0);
 }

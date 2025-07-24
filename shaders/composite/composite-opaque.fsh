@@ -383,7 +383,7 @@ void main() {
             // add SSS scattered light
             float VoL = dot(localViewDir, Scene_LocalLightDir);
             float sss_phase = max(HG(VoL, 0.6 * sss), 0.0);
-            diffuse += sunLight * sss_phase * shadow_sss.w * exp(-2.0 * (1.000001 - albedo.rgb));
+            diffuse += (1.0/PI) * sss_phase * shadow_sss.w * sunLight * exp(-2.0 * (1.000001 - albedo.rgb));
         #endif
 
         diffuse += 0.0016 * occlusion;

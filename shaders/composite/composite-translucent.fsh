@@ -379,6 +379,7 @@ void main() {
             float VoHm = max(dot(-localViewDir, H), 0.0);
 
             float sss_sun_NoLm = max((NoL_sun + sss) / (1.0 + sss), 0.0);
+            float sss_moon_NoLm = max((NoL_moon + sss) / (1.0 + sss), 0.0);
             vec3 sss_shadow = mix(shadow, vec3(shadow_sss.w), sss);
 
             const bool isWet = false;
@@ -386,8 +387,14 @@ void main() {
             vec3 D = SampleLightDiffuse(NoVm, NoLm, LoHm, roughL) * (1.0 - F);
             vec3 S = SampleLightSpecular(NoLm, NoHm, NoVm, F, roughL);// * roughL;
 
-            diffuse += D * (sunLight * sss_sun_NoLm + moonLight * max(NoL_moon, 0.0)) * sss_shadow;
+            diffuse += D * (sunLight * sss_sun_NoLm + moonLight * sss_moon_NoLm) * sss_shadow;
             specular += S * (sunLight * max(NoL_sun, 0.0) + moonLight * max(NoL_moon, 0.0)) * shadow;
+
+
+            // add SSS scattered light
+            float VoL = dot(localViewDir, Scene_LocalLightDir);
+            float sss_phase = max(HG(VoL, 0.6 * sss), 0.0);
+            diffuse += sunLight * sss_phase * shadow_sss.w * exp(-2.0 * (1.000001 - albedo.rgb));
         #endif
 
         vec3 skyIrradiance = SampleSkyIrradiance(localTexNormal, lmCoord.y) * occlusion;

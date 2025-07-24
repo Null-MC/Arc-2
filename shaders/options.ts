@@ -145,7 +145,7 @@ export function setupOptions() {
         .add(asBool("EFFECT_TAA_ENABLED", true, true))
         .add(new Page("POST_EXPOSURE")
             .add(asFloatRange("POST_EXPOSURE_MIN", -4.0, -8.0, 1.0, 0.5, false))
-            .add(asFloatRange("POST_EXPOSURE_MAX", 23.0, 1.0, 64.0, 0.5, false))
+            .add(asFloatRange("POST_EXPOSURE_MAX", 34.0, 1.0, 64.0, 0.5, false))
             .add(asFloatRange("POST_EXPOSURE_SPEED", 0.8, 0.05, 2.0, 0.05, false))
             .add(asFloatRange("POST_EXPOSURE_OFFSET", 4.8, -4.0, 12.0, 0.2, false))
             .build())

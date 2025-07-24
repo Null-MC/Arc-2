@@ -24,6 +24,7 @@ uniform sampler2D texSkyView;
 
 vec3 CalculateIrradiance(const in vec3 normal) {
     const vec2 sampleDelta = vec2(0.2, 0.1); //0.025;
+    const ivec2 stepCount = ivec2(PI * vec2(2.0, 0.5) / sampleDelta);
 
     vec3 up    = vec3(0.0, 1.0, 0.0);
 //    vec3 T = cross(normal, up);
@@ -38,8 +39,6 @@ vec3 CalculateIrradiance(const in vec3 normal) {
     mat3 tbn = mat3(right, up, normal);
 
     vec3 skyPos = getSkyPosition(vec3(0.0));
-
-    const ivec2 stepCount = ivec2(PI * vec2(2.0, 0.5) / sampleDelta);
 
     float dither1 = InterleavedGradientNoise(gl_FragCoord.xy + ap.time.frames*123.4) * sampleDelta.x;
     float dither2 = InterleavedGradientNoise(gl_FragCoord.xy+7.0 + ap.time.frames*234.5) * sampleDelta.y;

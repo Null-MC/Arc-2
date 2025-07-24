@@ -289,8 +289,8 @@ void main() {
 
                     float shadowStepDist = 1.0;
                     float shadowDensity = 0.0;
-                    for (float ii = shadow_dither; ii < 8.0; ii += 1.0) {
-                        vec3 fogShadow_localPos = (shadowStepDist * ii) * Scene_LocalLightDir + sampleLocalPos;
+                    for (int ii = 0; ii < 8; ii++) {
+                        vec3 fogShadow_localPos = (ii + shadow_dither) * shadowStepDist * Scene_LocalLightDir + sampleLocalPos;
 
                         float shadowSampleDensity = VL_WaterDensity;
                         if (ap.camera.fluid != 1) {
@@ -334,10 +334,10 @@ void main() {
                     jitter *= Lighting_PenumbraSize;
 
                     #if RT_MAX_SAMPLE_COUNT > 0
-                        uint maxSampleCount = min(binLightCount, RT_MAX_SAMPLE_COUNT);
+                        uint maxSampleCount = clamp(binLightCount, 0u, RT_MAX_SAMPLE_COUNT);
                         float bright_scale = binLightCount / float(RT_MAX_SAMPLE_COUNT);
                     #else
-                        uint maxSampleCount = binLightCount;
+                        uint maxSampleCount = clamp(binLightCount, 0u, RT_MAX_LIGHT_COUNT);
                         const float bright_scale = 1.0;
                     #endif
 

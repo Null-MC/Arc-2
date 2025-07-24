@@ -296,10 +296,10 @@ void main() {
                 jitter *= Lighting_PenumbraSize;
 
                 #if RT_MAX_SAMPLE_COUNT > 0
-                    uint maxSampleCount = min(binLightCount, RT_MAX_SAMPLE_COUNT);
+                    uint maxSampleCount = clamp(binLightCount, 0, RT_MAX_SAMPLE_COUNT);
                     float bright_scale = binLightCount / float(RT_MAX_SAMPLE_COUNT);
-                #else
-                    uint maxSampleCount = binLightCount;
+                #elseRT_MAX_LIGHT_COUNT
+                    uint maxSampleCount = clamp(binLightCount, 0, RT_MAX_LIGHT_COUNT);
                     const float bright_scale = 1.0;
                 #endif
 
@@ -659,10 +659,10 @@ void main() {
                     //vec3 jitter = vec3(0.0);//hash33(vec3(gl_FragCoord.xy, ap.time.frames)) - 0.5;
 
                     #if RT_MAX_SAMPLE_COUNT > 0
-                        uint maxSampleCount = min(binLightCount, RT_MAX_SAMPLE_COUNT);
+                        uint maxSampleCount = clamp(binLightCount, 0u, RT_MAX_SAMPLE_COUNT);
                         float bright_scale = ceil(binLightCount / float(RT_MAX_SAMPLE_COUNT));
                     #else
-                        uint maxSampleCount = binLightCount;
+                        uint maxSampleCount = clamp(binLightCount, 0u, RT_MAX_LIGHT_COUNT);
                         const float bright_scale = 1.0;
                     #endif
 

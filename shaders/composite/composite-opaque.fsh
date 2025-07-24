@@ -337,8 +337,8 @@ void main() {
 
             float shadowStepDist = 1.0;
             float shadowDensity = 0.0;
-            for (float ii = shadow_dither; ii < 8.0; ii += 1.0) {
-                vec3 fogShadow_localPos = (shadowStepDist * ii) * Scene_LocalLightDir + localPos;
+            for (int ii = 0; ii < 8; ii++) {
+                vec3 fogShadow_localPos = (ii + shadow_dither) * shadowStepDist * Scene_LocalLightDir + localPos;
 
                 float shadowSampleDensity = VL_WaterDensity;
                 if (ap.camera.fluid != 1) {
@@ -516,18 +516,18 @@ void main() {
                 skyReflectColor = mix(skyReflectColor, reflectColor, reflection.a);
             #endif
 
-            vec3 view_F = material_fresnel(albedo.rgb, f0_metal, roughL, NoVm, isWet);
-            specular += view_F * skyReflectColor * (1.0 - roughL);
-
             #ifdef ACCUM_ENABLED
                 vec3 accumSpecular;
                 if (altFrame) accumSpecular = textureLod(texAccumSpecular_opaque_alt, uv, 0).rgb;
                 else accumSpecular = textureLod(texAccumSpecular_opaque, uv, 0).rgb;
 
-                specular += view_F * accumSpecular * BufferLumScale;
+                skyReflectColor += accumSpecular * BufferLumScale;
             #elif LIGHTING_MODE == LIGHT_MODE_RT || LIGHTING_REFLECT_MODE == REFLECT_MODE_WSR
-                specular += view_F * textureLod(texSpecularRT, uv, 0).rgb * BufferLumScale;
+                skyReflectColor += textureLod(texSpecularRT, uv, 0).rgb * BufferLumScale;
             #endif
+
+            vec3 view_F = material_fresnel(albedo.rgb, f0_metal, roughL, NoVm, isWet);
+            specular += view_F * skyReflectColor * (1.0 - roughL);
         }
 
         vec3 handSampleLocalPos = localGeoNormal*0.02 + localPos;

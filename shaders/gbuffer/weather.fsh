@@ -161,8 +161,8 @@ void iris_emitFragment() {
 
         float shadowStepDist = 1.0;
         float shadowDensity = 0.0;
-        for (float ii = shadow_dither; ii < 8.0; ii += 1.0) {
-            vec3 fogShadow_localPos = (shadowStepDist * ii) * Scene_LocalLightDir + vIn.localPos;
+        for (int ii = 0; ii < 8; ii++) {
+            vec3 fogShadow_localPos = (ii + shadow_dither) * shadowStepDist * Scene_LocalLightDir + vIn.localPos;
 
             float shadowSampleDensity = VL_WaterDensity;
             if (ap.camera.fluid != 1) {

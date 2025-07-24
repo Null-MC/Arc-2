@@ -19,8 +19,9 @@ void main() {
 
 	int lightBinIndex = GetLightBinIndex(lightBinPos);
 	uint shadowLightCount = LightBinMap[lightBinIndex].shadowLightCount;
+	shadowLightCount = clamp(shadowLightCount, 0u, LIGHTING_SHADOW_BIN_MAX_COUNT);
 
-	for (uint i = 0u; i < min(shadowLightCount, LIGHTING_SHADOW_BIN_MAX_COUNT); i++) {
+	for (uint i = 0u; i < shadowLightCount; i++) {
 		uint lightIndex = LightBinMap[lightBinIndex].lightList[i].shadowIndex;
 
 		//uint lightBlockId = ap.point.block[lightIndex];

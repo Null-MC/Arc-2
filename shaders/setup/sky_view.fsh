@@ -20,7 +20,7 @@ uniform sampler2D texSkyMultiScatter;
 const int numScatteringSteps = 32;
 
 
-vec3 raymarchScattering(vec3 pos, vec3 rayDir, vec3 sunDir, float tMax, float numSteps) {
+vec3 raymarchScattering(vec3 pos, vec3 rayDir, vec3 sunDir, float tMax, int numSteps) {
     float cosTheta = dot(rayDir, sunDir);
     
 	float miePhaseValue_sun = getMiePhase(cosTheta);
@@ -33,7 +33,7 @@ vec3 raymarchScattering(vec3 pos, vec3 rayDir, vec3 sunDir, float tMax, float nu
     vec3 transmittance = vec3(1.0);
     float t = 0.0;// 0.00001*(0.25 * farPlane);
 
-    for (float i = 0.0; i < numSteps; i += 1.0) {
+    for (int i = 0; i < numSteps; i++) {
         float newT = ((i + 0.3)/numSteps)*tMax;
         float dt = newT - t;
         t = newT;
@@ -107,7 +107,7 @@ void main() {
     float groundDist = rayIntersectSphere(skyPos, rayDir, groundRadiusMM);
     float tMax = (groundDist < 0.0) ? atmoDist : groundDist;
 
-    vec3 lum = raymarchScattering(skyPos, rayDir, sunDirEx, tMax, float(numScatteringSteps));
+    vec3 lum = raymarchScattering(skyPos, rayDir, sunDirEx, tMax, numScatteringSteps);
 
     outColor = vec4(lum * BufferLumScaleInv, 1.0);
 }

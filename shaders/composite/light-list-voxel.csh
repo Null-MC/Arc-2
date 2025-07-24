@@ -27,6 +27,7 @@ void main() {
 	ivec3 voxelBinPos = ivec3(floor((voxelPos) / LIGHT_BIN_SIZE));
 	int voxelBinIndex = GetLightBinIndex(voxelBinPos);
 	uint shadowLightCount = LightBinMap[voxelBinIndex].shadowLightCount;
+	shadowLightCount = clamp(shadowLightCount, 0u, LIGHTING_SHADOW_BIN_MAX_COUNT);
 
 	bool exists = false;
 	for (int i = 0; i < shadowLightCount; i++) {

@@ -539,12 +539,12 @@ void main() {
         vec3 handSampleLocalPos = localGeoNormal*0.02 + localPos;
 
         if (ap.game.mainHand != 0u) {
-            vec3 lightLocalPos = GetHandLightPos(0.2);
+            vec3 lightLocalPos = GetHandLightPos(HandLightOffset_main);
             GetHandLight(diffuse, specular, ap.game.mainHand, lightLocalPos, handSampleLocalPos, -localViewDir, localTexNormal, localGeoNormal, albedo.rgb, f0_metal, roughL);
         }
 
         if (ap.game.offHand != 0u) {
-            vec3 lightLocalPos = GetHandLightPos(-0.2);
+            vec3 lightLocalPos = GetHandLightPos(HandLightOffset_alt);
             GetHandLight(diffuse, specular, ap.game.offHand, lightLocalPos, handSampleLocalPos, -localViewDir, localTexNormal, localGeoNormal, albedo.rgb, f0_metal, roughL);
         }
 

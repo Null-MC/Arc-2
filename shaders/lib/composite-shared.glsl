@@ -1,5 +1,7 @@
-const vec3 mainHandViewPos = vec3( 0.2, -0.4, 0.2);
-const vec3 altHandViewPos  = vec3(-0.2, -0.4, 0.2);
+//const vec3 mainHandViewPos = vec3( 0.25, -0.10, 0.3);
+//const vec3 altHandViewPos  = vec3(-0.25, -0.10, 0.3);
+const float HandLightOffset_main = 0.2;
+const float HandLightOffset_alt = -0.2;
 
 
 void randomize_reflection(inout vec3 reflectRay, const in vec3 normal, const in float roughL) {
@@ -18,9 +20,9 @@ void randomize_reflection(inout vec3 reflectRay, const in vec3 normal, const in 
 }
 
 vec3 GetHandLightPos(const in float offsetX) {
-    vec3 pos = vec3(offsetX, 0.0, -0.2);
+    vec3 pos = vec3(offsetX, -0.15, -0.25);
     pos = mul3(ap.camera.viewInv, pos);
-    pos.y -= 0.32;
+    //pos.y -= 0.32;
     return pos;
 }
 

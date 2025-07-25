@@ -399,16 +399,16 @@ void main() {
                 randomize_reflection(reflectLocalDir, localTexNormal, roughness);
 
                 // TODO: in/out must be in tangent space!
-////                vec3 up = localGeoNormal.y < 0.99 ? vec3(0.0, 1.0, 0.0) : vec3(0.0, 0.0, 1.0);
-////                vec3 tan = normalize(cross(localGeoNormal, up));
-////                mat3 tbn = GetTBN(localGeoNormal, tan, 1.0);
-//                mat3 tbn = generate_tbn(localGeoNormal);
+//                vec3 up = abs(localGeoNormal.y) < 0.99 ? vec3(0.0, 1.0, 0.0) : vec3(0.0, 0.0, 1.0);
+//                vec3 tan = normalize(cross(localGeoNormal, up));
+//                mat3 tbn = GetTBN(localGeoNormal, tan, 1.0);
+////                mat3 tbn = generate_tbn(localGeoNormal);
 //
 //                vec2 noise = hash23(vec3(gl_FragCoord.xy, ap.time.frames));
 //                vec3 viewLocalDir = normalize(mat3(ap.camera.viewInv) * viewDir);
-//                vec3 vndfNormal = tbn * sample_vndf_isotropic(localTexNormal * tbn, viewLocalDir * tbn, roughL*0.01, noise);
+//                vec3 vndfNormal = normalize(tbn * sample_vndf_isotropic(normalize(localTexNormal * tbn), normalize(viewLocalDir * tbn), roughL*0.01, noise));
 //                vec3 reflectLocalDir = reflect(viewLocalDir, vndfNormal);
-//                vec3 reflectViewDir = mat3(ap.camera.view) * reflectLocalDir;
+//                vec3 reflectViewDir = normalize(mat3(ap.camera.view) * reflectLocalDir);
             #else
                 vec3 viewNormal = mat3(ap.camera.view) * localTexNormal;
                 vec3 reflectViewDir = reflect(viewDir, viewNormal);
@@ -740,6 +740,18 @@ void main() {
                 #endif
 
                 reflect_diffuse += 0.0016;
+
+                vec3 reflect_handSampleLocalPos = reflect_geoNormal*0.02 + reflect_localPos;
+
+                if (ap.game.mainHand != 0u) {
+                    vec3 reflect_lightLocalPos = GetHandLightPos(HandLightOffset_main);
+                    GetHandLight(reflect_diffuse, reflect_specular, ap.game.mainHand, reflect_lightLocalPos, reflect_handSampleLocalPos, reflectLocalDir, reflect_localTexNormal, reflect_geoNormal, reflect_hitColor.rgb, reflect_f0_metal, reflect_roughL);
+                }
+
+                if (ap.game.offHand != 0u) {
+                    vec3 reflect_lightLocalPos = GetHandLightPos(HandLightOffset_alt);
+                    GetHandLight(reflect_diffuse, reflect_specular, ap.game.offHand, reflect_lightLocalPos, reflect_handSampleLocalPos, reflectLocalDir, reflect_localTexNormal, reflect_geoNormal, reflect_hitColor.rgb, reflect_f0_metal, reflect_roughL);
+                }
 
                 float reflect_metalness = mat_metalness(reflect_f0_metal);
                 reflect_diffuse *= 1.0 - reflect_metalness * (1.0 - reflect_roughL);

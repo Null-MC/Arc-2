@@ -237,8 +237,11 @@ void iris_emitFragment() {
         albedo.a = 1.0;
     #endif
 
-    #if defined(FANCY_LAVA) && defined(RENDER_TERRAIN)
+    #ifdef RENDER_TERRAIN
         uint blockMapId = iris_getCustomId(vIn.blockId);
+    #endif
+
+    #if defined(FANCY_LAVA) && defined(RENDER_TERRAIN)
         if (blockMapId == BLOCK_LAVA) {
             vec3 worldPos = ap.camera.pos + vIn.localPos;
             vec3 viewPos = mul3(ap.camera.view, vIn.localPos);
@@ -255,6 +258,12 @@ void iris_emitFragment() {
             sss = 0.0;
         }
     #endif
+
+//    #ifdef RENDER_BLOCK
+//        if (blockMapId == BLOCK_END_PORTAL) {
+//            albedo = vec4(0.0, 0.0, 0.0, 1.0);
+//        }
+//    #endif
 
     #if LIGHTING_MODE == LIGHT_MODE_VANILLA
         vec3 viewPos = mul3(ap.camera.view, vIn.localPos);

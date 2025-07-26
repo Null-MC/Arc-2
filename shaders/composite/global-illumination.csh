@@ -24,8 +24,7 @@ uniform sampler3D texFogNoise;
 #endif
 
 #ifdef FLOODFILL_ENABLED
-	uniform sampler3D texFloodFill;
-	uniform sampler3D texFloodFill_alt;
+	uniform sampler3D texFloodFill_final;
 #endif
 
 #ifdef SHADOWS_ENABLED
@@ -53,6 +52,7 @@ uniform sampler3D texFogNoise;
 #include "/lib/voxel/voxel-sample.glsl"
 
 #include "/lib/sampling/erp.glsl"
+#include "/lib/utility/hsv.glsl"
 
 #include "/lib/noise/ign.glsl"
 #include "/lib/noise/hash.glsl"
@@ -112,6 +112,10 @@ uniform sampler3D texFogNoise;
 	#include "/lib/voxel/light-trace.glsl"
 #elif LIGHTING_MODE == LIGHT_MODE_NONE
 	#include "/lib/lightmap/sample.glsl"
+#endif
+
+#ifdef FLOODFILL_ENABLED
+	#include "/lib/voxel/floodfill-sample.glsl"
 #endif
 
 
@@ -548,17 +552,7 @@ vec3 trace_GI(const in vec3 traceOrigin, const in vec3 traceDir, const in int fa
 
 		#ifdef FLOODFILL_ENABLED
 			vec3 lpv_voxelPos = hit_voxelPos + 0.5*hitNormal;
-
-			if (voxel_isInBounds(lpv_voxelPos)) {
-				vec3 texcoord = lpv_voxelPos / VoxelBufferSize;
-				bool altFrame = ap.time.frames % 2 == 1;
-
-				vec3 lpv_light = altFrame
-					? textureLod(texFloodFill, texcoord, 0).rgb
-					: textureLod(texFloodFill_alt, texcoord, 0).rgb;
-
-				hit_diffuse += lpv_light * BLOCK_LUX;
-			}
+			hit_diffuse += floodfill_sample(lpv_voxelPos);
 		#endif
 
 		float hit_metalness = mat_metalness(hit_f0_metal);

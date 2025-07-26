@@ -54,8 +54,7 @@ uniform sampler3D texFogNoise;
     #endif
 
     #ifdef FLOODFILL_ENABLED
-        uniform sampler3D texFloodFill;
-        uniform sampler3D texFloodFill_alt;
+        uniform sampler3D texFloodFill_final;
     #endif
 #endif
 

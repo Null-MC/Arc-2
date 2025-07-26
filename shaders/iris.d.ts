@@ -29,6 +29,40 @@ declare class RendererConfig {
   render : RenderSettings;
 }
 
+declare enum DrawMode {
+    TRIANGLE,
+    TRIANGLE_FAN,
+    QUAD,
+    POINT
+}
+
+declare class IndirectDraw implements Command {
+    vertex(loc: string): IndirectDraw;
+    geometry(loc: string): IndirectDraw;
+    control(loc: string): IndirectDraw;
+    eval(loc: string): IndirectDraw;
+    fragment(loc: string): IndirectDraw;
+
+    state(state: StateReference): IndirectDraw;
+
+    target(index: number, tex: BuiltTexture | undefined): IndirectDraw;
+    target(index: number, tex: BuiltTexture | undefined, mip: number): IndirectDraw;
+    ssbo(index: number, buf: BuiltBuffer | undefined): IndirectDraw;
+    ubo(index: number, buf: BuiltBuffer | undefined): IndirectDraw;
+    define(key: string, value: string): IndirectDraw;
+    depthTest(enable: boolean): IndirectDraw;
+
+    blendFunc(
+            index: number,
+            srcRGB: BlendModeFunction,
+            dstRGB: BlendModeFunction,
+            srcA: BlendModeFunction,
+            dstA: BlendModeFunction,
+    ): IndirectDraw;
+
+    compile(): PostPass;
+}
+
 declare class PointShadowSettings {
     resolution : number;
 
@@ -316,6 +350,8 @@ declare class CommandList {
     createComposite(name : string) : Composite;
 
     createCompute(name : string) : Compute;
+
+    createIndirectDraw(name : string, buffer : BuiltGPUBuffer, mode : DrawMode, maxVertices : number) : IndirectDraw;
 
     barrier(barrier : number, state? : StateReference) : CommandList;
 

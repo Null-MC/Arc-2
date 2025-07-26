@@ -13,6 +13,10 @@ const SceneSettingsBufferSize = 128;
 let SceneSettingsBuffer: BuiltStreamingBuffer;
 let BlockMappings: BlockMap;
 
+let texFloodFill: undefined | BuiltTexture;
+let texFloodFill_alt: undefined | BuiltTexture;
+let texFloodFillReader: undefined | TextureReference;
+
 
 // TODO: temp workaround
 let renderConfig: RendererConfig;
@@ -259,6 +263,7 @@ export function configurePipeline(pipeline : PipelineConfig) {
     print(`Setting up shader [DIM: ${renderer.dimension.getPath()}]`);
 
     BlockMappings = new BlockMap();
+    BlockMappings.map('end_portal', 'BLOCK_END_PORTAL');
     BlockMappings.map('grass_block', 'BLOCK_GRASS');
     BlockMappings.map('lava', 'BLOCK_LAVA');
 
@@ -875,7 +880,7 @@ export function configurePipeline(pipeline : PipelineConfig) {
     }
 
     if (internal.FloodFillEnabled) {
-        const texFloodFill = pipeline.createImageTexture('texFloodFill', 'imgFloodFill')
+        texFloodFill = pipeline.createImageTexture('texFloodFill', 'imgFloodFill')
             .format(Format.RGBA16F)
             .width(settings.Voxel_Size)
             .height(settings.Voxel_Size)
@@ -883,13 +888,15 @@ export function configurePipeline(pipeline : PipelineConfig) {
             .clear(false)
             .build();
 
-        const texFloodFill_alt = pipeline.createImageTexture('texFloodFill_alt', 'imgFloodFill_alt')
+        texFloodFill_alt = pipeline.createImageTexture('texFloodFill_alt', 'imgFloodFill_alt')
             .format(Format.RGBA16F)
             .width(settings.Voxel_Size)
             .height(settings.Voxel_Size)
             .depth(settings.Voxel_Size)
             .clear(false)
             .build();
+
+        texFloodFillReader = pipeline.createTextureReference("texFloodFill_final", null, settings.Voxel_Size, settings.Voxel_Size, settings.Voxel_Size, Format.RGBA16F);
     }
 
     const texHistogram = pipeline.createImageTexture('texHistogram', 'imgHistogram')
@@ -1191,6 +1198,19 @@ export function configurePipeline(pipeline : PipelineConfig) {
             .compile();
     }
 
+    if (internal.FloodFillEnabled) {
+        const groupCount = Math.ceil(settings.Voxel_Size / 8);
+
+        new ShaderBuilder(postShadowQueue.createCompute('floodfill')
+                .location('composite/floodfill.csh')
+                .workGroups(groupCount, groupCount, groupCount)
+                .define('RENDER_COMPUTE', '1')
+            )
+            .ssbo(SSBO.Scene, sceneBuffer)
+            .ubo(UBO.SceneSettings, SceneSettingsBuffer)
+            .compile();
+    }
+
     postShadowQueue.end();
 
     function DiscardObjectShader(name: string, usage: ProgramUsage) {
@@ -1300,6 +1320,14 @@ export function configurePipeline(pipeline : PipelineConfig) {
         .with(s => s.define('RENDER_HAND', '1'))
         .compile();
 
+    // mainShaderOpaque('block-solid', Usage.BLOCK_ENTITY)
+    //     .with(s => s.define('RENDER_BLOCK', '1'))
+    //     .compile();
+    //
+    // mainShaderTranslucent('block-translucent', Usage.BLOCK_ENTITY_TRANSLUCENT)
+    //     .with(s => s.define('RENDER_BLOCK', '1'))
+    //     .compile();
+
     mainShaderOpaque('entity-solid', Usage.ENTITY_SOLID)
         .with(s => s.define('RENDER_ENTITY', '1'))
         .if(settings.Material_EntityTessellationEnabled, builder => builder
@@ -1363,19 +1391,6 @@ export function configurePipeline(pipeline : PipelineConfig) {
         .compile();
 
     const postRenderQueue = pipeline.forStage(Stage.POST_RENDER);
-
-    if (internal.FloodFillEnabled) {
-        const groupCount = Math.ceil(settings.Voxel_Size / 8);
-
-        new ShaderBuilder(postRenderQueue.createCompute('floodfill')
-                .location('composite/floodfill.csh')
-                .workGroups(groupCount, groupCount, groupCount)
-                .define('RENDER_COMPUTE', '1')
-            )
-            .ssbo(SSBO.Scene, sceneBuffer)
-            .ubo(UBO.SceneSettings, SceneSettingsBuffer)
-            .compile();
-    }
 
     if (settings.Lighting_VxGI_Enabled) {
         const groupCount = Math.ceil(settings.Lighting_VxGI_BufferSize / 4);
@@ -1859,9 +1874,15 @@ export function onSettingsChanged(pipeline: PipelineConfig) {
 }
 
 export function beginFrame(state : WorldState) {
+    const settings = new ShaderSettings();
+    const internal = settings.BuildInternalSettings(renderConfig);
+
     // if (isKeyDown(Keys.G)) testVal += 0.07;
     // if (isKeyDown(Keys.F)) testVal -= 0.07;
     // TEST_UBO.setFloat(0, testVal);
+
+    if (internal.FloodFillEnabled)
+        texFloodFillReader.pointTo(state.currentFrame() % 2 == 0 ? texFloodFill_alt : texFloodFill);
 
     SceneSettingsBuffer.uploadData();
 }

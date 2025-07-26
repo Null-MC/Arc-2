@@ -13,11 +13,13 @@ vec3 floodfill_sample(const in vec3 lpvPos) {
     if (!voxel_isInBounds(lpvPos)) return vec3(0.0);
 
     vec3 texcoord = lpvPos / VoxelBufferSize;
-    bool altFrame = ap.time.frames % 2 == 1;
+//    bool altFrame = ap.time.frames % 2 == 1;
+//
+//    vec3 color = altFrame
+//        ? textureLod(texFloodFill_alt, texcoord, 0).rgb
+//        : textureLod(texFloodFill, texcoord, 0).rgb;
 
-    vec3 color = altFrame
-        ? textureLod(texFloodFill_alt, texcoord, 0).rgb
-        : textureLod(texFloodFill, texcoord, 0).rgb;
+    vec3 color = textureLod(texFloodFill_final, texcoord, 0).rgb;
 
 //    color = RgbToHsv(color);
 //    //if (color.z < 1.0) color.z = pow5(color.z);
@@ -30,15 +32,17 @@ vec3 floodfill_sampleCurve(const in vec3 lpvPos, const in float power) {
     if (!voxel_isInBounds(lpvPos)) return vec3(0.0);
 
     vec3 texcoord = lpvPos / VoxelBufferSize;
-    bool altFrame = ap.time.frames % 2 == 1;
+//    bool altFrame = ap.time.frames % 2 == 1;
+//
+//    vec3 color = altFrame
+//        ? textureLod(texFloodFill_alt, texcoord, 0).rgb
+//        : textureLod(texFloodFill, texcoord, 0).rgb;
 
-    vec3 color = altFrame
-        ? textureLod(texFloodFill_alt, texcoord, 0).rgb
-        : textureLod(texFloodFill, texcoord, 0).rgb;
+    vec3 color = textureLod(texFloodFill_final, texcoord, 0).rgb;
 
-        color = RgbToHsv(color);
-        if (color.z < 1.0) color.z = pow(color.z/15.0, power)*15.0;
-        color = HsvToRgb(color);
+    color = RgbToHsv(color);
+    if (color.z < 1.0) color.z = pow(color.z/15.0, power)*15.0;
+    color = HsvToRgb(color);
 
     return color * BLOCK_LUX;
 }

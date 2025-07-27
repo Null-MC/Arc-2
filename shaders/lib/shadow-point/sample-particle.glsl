@@ -6,7 +6,8 @@ vec3 sample_AllPointLights_particle(const in vec3 localPos) {
         ivec3 lightBinPos = ivec3(floor(voxelPos / LIGHT_BIN_SIZE));
         int lightBinIndex = GetLightBinIndex(lightBinPos);
 
-        uint maxLightCount = LightBinMap[lightBinIndex].shadowLightCount;
+        uint maxLightCount = LightBinMap[lightBinIndex].lightCount;
+        maxLightCount = clamp(maxLightCount, 0u, LIGHTING_SHADOW_BIN_MAX_COUNT);
     #else
         const uint maxLightCount = LIGHTING_SHADOW_MAX_COUNT;
     #endif

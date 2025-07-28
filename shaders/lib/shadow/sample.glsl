@@ -22,9 +22,9 @@ float SampleShadow(in vec3 shadowPos, const in int shadowCascade) {
     if (saturate(shadowPos) != shadowPos) return 1.0;
 
     #ifdef SHADOW_DISTORTION_ENABLED
-        shadowPos = shadowPos * 2.0 - 1.0;
+        shadowPos.xy = shadowPos.xy * 2.0 - 1.0;
         shadowPos = shadowDistort(shadowPos);
-        shadowPos = shadowPos * 0.5 + 0.5;
+        shadowPos.xy = shadowPos.xy * 0.5 + 0.5;
     #endif
 
     vec3 shadowCoord = vec3(shadowPos.xy, shadowCascade);
@@ -74,9 +74,9 @@ vec3 SampleShadowColor(in vec3 shadowPos, const in int shadowCascade, out float 
     if (saturate(shadowPos) != shadowPos) return vec3(1.0);
 
     #ifdef SHADOW_DISTORTION_ENABLED
-        shadowPos = shadowPos * 2.0 - 1.0;
+        shadowPos.xy = shadowPos.xy * 2.0 - 1.0;
         shadowPos = shadowDistort(shadowPos);
-        shadowPos = shadowPos * 0.5 + 0.5;
+        shadowPos.xy = shadowPos.xy * 0.5 + 0.5;
     #endif
 
     vec3 shadowCoord = vec3(shadowPos.xy, shadowCascade);
@@ -158,12 +158,12 @@ float ShadowBlockerDistance(const in vec3 shadowPos, const in int shadowCascade,
         sampleShadowPos.xy += pixelOffset;
 
         #ifdef SHADOW_DISTORTION_ENABLED
-            sampleShadowPos = sampleShadowPos * 2.0 - 1.0;
+            sampleShadowPos.xy = sampleShadowPos.xy * 2.0 - 1.0;
             sampleShadowPos = shadowDistort(sampleShadowPos);
-            sampleShadowPos = sampleShadowPos * 0.5 + 0.5;
+            sampleShadowPos.xy = sampleShadowPos.xy * 0.5 + 0.5;
         #endif
 
-        float texDepth = textureLod(shadowMap, vec3(sampleShadowPos.xy + pixelOffset, shadowCascade), 0).r;
+        float texDepth = textureLod(shadowMap, vec3(sampleShadowPos.xy, shadowCascade), 0).r;
 
         float hitDist = max((sampleShadowPos.z - texDepth) * zRange - bias, 0.0);
 
@@ -182,9 +182,9 @@ vec3 SampleShadowColor_PCSS(const in vec3 shadowPos, const in int shadowCascade)
         vec3 sampleShadowPos = shadowPos;
 
         #ifdef SHADOW_DISTORTION_ENABLED
-            sampleShadowPos = sampleShadowPos * 2.0 - 1.0;
+            sampleShadowPos.xy = sampleShadowPos.xy * 2.0 - 1.0;
             sampleShadowPos = shadowDistort(sampleShadowPos);
-            sampleShadowPos = sampleShadowPos * 0.5 + 0.5;
+            sampleShadowPos.xy = sampleShadowPos.xy * 0.5 + 0.5;
         #endif
 
         float avg_depth = textureLod(texShadowBlocker, vec3(sampleShadowPos.xy, shadowCascade), 0).r;
@@ -198,7 +198,11 @@ vec3 SampleShadowColor_PCSS(const in vec3 shadowPos, const in int shadowCascade)
     //     return SampleShadowColor(shadowPos, shadowCascade);
     // }
 
-    const float minShadowPixelRadius = 0.5 * shadowPixelSize;
+    #ifdef SHADOW_DISTORTION_ENABLED
+        float minShadowPixelRadius = 0.0;//fwidth(shadowPos.x)*10.0;// * shadowPixelSize;
+    #else
+        const float minShadowPixelRadius = 0.5 * shadowPixelSize;
+    #endif
 
     vec2 pixelRadius = GetPixelRadius(blockerDistance / SHADOW_PENUMBRA_SCALE, shadowCascade);
     pixelRadius = clamp(pixelRadius, vec2(minShadowPixelRadius), maxPixelRadius);

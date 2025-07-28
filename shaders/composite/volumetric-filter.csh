@@ -13,8 +13,13 @@ uniform sampler2D TEX_TRANSMIT;
 uniform sampler2D TEX_DEPTH;
 
 #include "/lib/common.glsl"
+
 #include "/lib/sampling/depth.glsl"
 #include "/lib/sampling/gaussian.glsl"
+
+#ifdef VL_JITTER
+    #include "/lib/taa_jitter.glsl"
+#endif
 
 const int sharedBufferRes = 20;
 const int sharedBufferSize = _pow2(sharedBufferRes);
@@ -60,7 +65,15 @@ void populateSharedBuffer() {
             scatterFinal = texelFetch(TEX_SCATTER, uv, 0).rgb;
             transmitFinal = texelFetch(TEX_TRANSMIT, uv, 0).rgb;
 
-	    	float depth = texelFetch(TEX_DEPTH, uv*uv_scale, 0).r;
+            #ifdef VL_JITTER
+                vec2 uv2 = uv / vec2(viewSize);
+                jitter(uv2, viewSize);
+                ivec2 uv_depth = ivec2(uv2 * ap.game.screenSize);
+            #else
+                ivec2 uv_depth = uv * uv_scale;
+            #endif
+
+	    	float depth = texelFetch(TEX_DEPTH, uv_depth, 0).r;
 	    	depthL = linearizeDepth(depth, ap.camera.near, ap.camera.far);
 	    }
 

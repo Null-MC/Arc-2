@@ -89,6 +89,7 @@ export function setupOptions() {
             .add(asBool("LIGHTING_REFLECT_TRIANGLE", false, true))
             .add(asBool("LIGHTING_REFLECT_NOISE", true, true))
             .add(asIntRange("LIGHTING_REFLECT_MAXSTEP", 16, 4, 128, 4))
+            .add(asBool("LIGHTING_REFLECT_SRR_FALLBACK", true, true))
             .build())
         .add(new Page('LIGHTING_RT')
             .add(asInt('RT_MAX_SAMPLE_COUNT', 2, 4, 8, 12, 16, 20, 24, 28, 32, 48, 64, 0).build(16))

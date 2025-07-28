@@ -460,6 +460,8 @@ void main() {
             sample_AllPointLights(diffuse, specular, localPos, localGeoNormal, localTexNormal, albedo.rgb, f0_metal, roughL, sss);
         #endif
 
+        diffuse *= occlusion * 0.5 + 0.5;
+
         if (hasTexNormal) {
             // reflections
             #if LIGHTING_REFLECT_MODE != REFLECT_MODE_WSR

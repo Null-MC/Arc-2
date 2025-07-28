@@ -29,14 +29,16 @@ vec3 sample_AllPointLights_VL(const in vec3 localPos, const in bool isFluid) {
         float lightRange = iris_getEmission(light.block);
         lightRange *= (LIGHTING_SHADOW_RANGE * 0.01);
 
+        vec3 fragToLight = light.pos - localPos;
+        float sampleDist = length(fragToLight);
+        vec3 sampleDir = fragToLight / sampleDist;
+
+        if (sampleDist >= lightRange) continue;
+
         vec3 lightColor = iris_getLightColor(light.block).rgb;
         lightColor = RgbToLinear(lightColor);
 
         float lightSize = getLightSize(light.block);
-
-        vec3 fragToLight = light.pos - localPos;
-        float sampleDist = length(fragToLight);
-        vec3 sampleDir = fragToLight / sampleDist;
 
         if (isFluid) {
             const vec3 extinction = (VL_WaterTransmit + VL_WaterScatter) * VL_WaterDensity;

@@ -82,6 +82,7 @@ export class ShaderSettings {
     get Lighting_ReflectionNoise(): boolean {return this.getCachedBoolSetting('LIGHTING_REFLECT_NOISE');}
     get Lighting_ReflectionQuads(): boolean {return this.getCachedBoolSetting('LIGHTING_REFLECT_TRIANGLE');}
     get Lighting_ReflectionStepCount(): number {return this.getCachedIntSetting('LIGHTING_REFLECT_MAXSTEP');}
+    get Lighting_ReflectionSsrFallback(): boolean {return this.getCachedBoolSetting('LIGHTING_REFLECT_SRR_FALLBACK');}
 
     get Lighting_VolumetricResolution(): number {return this.getCachedIntSetting('LIGHTING_VL_RES');}
     get Lighting_Volumetric_ShadowsEnabled(): boolean {return this.getCachedBoolSetting('LIGHTING_VL_SHADOWS');}

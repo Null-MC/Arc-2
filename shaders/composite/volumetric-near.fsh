@@ -106,13 +106,25 @@ uniform sampler2D texSkyMultiScatter;
 
 #include "/lib/vl-shared.glsl"
 
+#ifdef VL_JITTER
+    #include "/lib/taa_jitter.glsl"
+#endif
+
 
 void main() {
     //const float stepScale = 1.0 / VL_maxSamples_near;
     const int uv_scale = int(exp2(LIGHTING_VL_RES));
+    vec2 viewSize = ap.game.screenSize / uv_scale;
 
-    ivec2 iuv = ivec2(gl_FragCoord.xy) * uv_scale;
-    float depth = texelFetch(mainDepthTex, iuv, 0).r;
+    #ifdef VL_JITTER
+        vec2 uv2 = uv;
+        jitter(uv2, viewSize);
+        ivec2 uv_depth = ivec2(uv2 * ap.game.screenSize);
+    #else
+        ivec2 uv_depth = ivec2(uv * ap.game.screenSize);
+    #endif
+
+    float depth = texelFetch(mainDepthTex, uv_depth, 0).r;
 
     #ifdef EFFECT_TAA_ENABLED
         //float dither = InterleavedGradientNoiseTime(gl_FragCoord.xy);

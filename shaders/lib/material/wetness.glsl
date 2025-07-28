@@ -2,7 +2,7 @@ float GetSkyWetness(const in vec3 localPos, const in vec3 localNormal, const in 
     const vec3 worldUp = vec3(0.0, 1.0, 0.0);
     float upF = smoothstep(-0.2, 0.2, dot(localNormal, worldUp));
 
-    float sky_wetness = max(ap.world.rain, ap.world.thunder);
+    float sky_wetness = World_GroundWetness;//max(ap.world.rain, ap.world.thunder);
     sky_wetness *= smoothstep(0.90, 0.96, lmcoord_y) * upF;
 
     float puddle = 0.7;

@@ -86,6 +86,7 @@ in vec2 uv;
 #include "/lib/noise/blue.glsl"
 
 #include "/lib/light/hcm.glsl"
+#include "/lib/light/meta.glsl"
 #include "/lib/light/fresnel.glsl"
 #include "/lib/light/sampling.glsl"
 #include "/lib/light/brdf.glsl"
@@ -115,8 +116,6 @@ in vec2 uv;
 //#elif LIGHTING_MODE == LIGHT_MODE_RT
 //    //#include "/lib/voxel/light-list.glsl"
 //#endif
-
-#include "/lib/light/meta.glsl"
 
 #if LIGHTING_MODE == LIGHT_MODE_RT || defined(HANDLIGHT_TRACE)
     #include "/lib/voxel/light-trace.glsl"
@@ -297,7 +296,7 @@ void main() {
                 #if RT_MAX_SAMPLE_COUNT > 0
                     uint maxSampleCount = clamp(binLightCount, 0, RT_MAX_SAMPLE_COUNT);
                     float bright_scale = binLightCount / float(RT_MAX_SAMPLE_COUNT);
-                #elseRT_MAX_LIGHT_COUNT
+                #else
                     uint maxSampleCount = clamp(binLightCount, 0, RT_MAX_LIGHT_COUNT);
                     const float bright_scale = 1.0;
                 #endif
@@ -319,6 +318,8 @@ void main() {
                     uint blockId = SampleVoxelBlock(light_voxelPos);
 
                     float lightRange = iris_getEmission(blockId);
+                    float lightSize = getLightSize(blockId);
+
                     vec3 lightColor = iris_getLightColor(blockId).rgb;
                     vec3 light_hsv = RgbToHsv(lightColor);
                     lightColor = HsvToRgb(vec3(light_hsv.xy, lightRange/15.0));
@@ -330,12 +331,13 @@ void main() {
 //                    float lightIntensity2 = 0.0;//clamp(light_hsv.z, EPSILON, 1.0);//mix(1.0, 0.1, light_hsv.z);
 
                     vec3 lightVec = light_LocalPos - localPos;
-                    float lightAtt = GetLightAttenuation(lightVec, lightRange);
+                    float lightDist = length(lightVec);
+                    vec3 lightDir = lightVec / lightDist;
+
+                    float lightAtt = GetLightAttenuation(lightDist, lightRange, lightSize);
                     //lightAtt *= light_hsv.z;
 
                     vec3 lightColorAtt = BLOCK_LUX * lightAtt * lightColor;
-
-                    vec3 lightDir = normalize(lightVec);
 
                     vec3 H = normalize(lightDir + localViewDir);
 
@@ -439,7 +441,7 @@ void main() {
 
             vec2 reflect_lmcoord;
             vec4 reflect_normalData, reflect_specularData;
-            vec3 reflect_voxelPos, reflect_geoNormal;
+            vec3 reflect_voxelPos, reflect_localPos, reflect_geoNormal;
             vec4 reflect_hitColor;
             float reflect_lod = 0.0;
 
@@ -450,7 +452,10 @@ void main() {
                     vec2 reflect_uv;
                     //vec2 reflect_hitCoord;
                     Quad reflect_hitQuad;
-                    if (TraceReflection(localPos + 0.1*localGeoNormal, reflectLocalDir, reflect_voxelPos, reflect_uv, reflect_hitColor, reflect_hitQuad)) {
+                    bool wsr_hit = TraceReflection(localPos + 0.1*localGeoNormal, reflectLocalDir, reflect_voxelPos, reflect_uv, reflect_hitColor, reflect_hitQuad);
+                    reflect_localPos = voxel_getLocalPosition(reflect_voxelPos);
+
+                    if (wsr_hit) {
                         reflection = reflect_hitColor;
 
                         reflect_tint = unpackUnorm4x8(reflect_hitQuad.tint).rgb;
@@ -483,8 +488,11 @@ void main() {
                     vec3 reflect_traceTint;
                     VoxelBlockFace blockFace;
                     vec3 traceStart = localPos + 0.1*localGeoNormal;
-                    if (TraceReflection(traceStart, reflectLocalDir, reflect_traceTint, reflect_voxelPos, reflect_geoNormal, reflect_uv, blockFace)) {
-                        vec3 reflect_localPos = voxel_getLocalPosition(reflect_voxelPos);
+                    bool wsr_hit = TraceReflection(traceStart, reflectLocalDir, reflect_traceTint, reflect_voxelPos, reflect_geoNormal, reflect_uv, blockFace);
+                    reflect_localPos = voxel_getLocalPosition(reflect_voxelPos);
+
+                    if (wsr_hit) {
+//                        vec3 reflect_localPos = voxel_getLocalPosition(reflect_voxelPos);
                         reflectDist = distance(traceStart, reflect_localPos);
 
                         if (blockFace.tex_id != -1u) {
@@ -543,7 +551,7 @@ void main() {
 
                 float reflect_roughL = _pow2(reflect_roughness);
 
-                vec3 reflect_localPos = voxel_getLocalPosition(reflect_voxelPos);
+                //vec3 reflect_localPos = voxel_getLocalPosition(reflect_voxelPos);
 
                 float reflect_wetness = float(ap.camera.fluid == 1);
 
@@ -798,17 +806,19 @@ void main() {
                 skyReflectColor = fma(reflection.rgb, reflect_diffuse, reflect_specular);
                 //skyReflectColor = mix(reflection.rgb * reflect_diffuse, reflect_specular, reflect_view_F);
             }
-            #ifdef WSR_SRR_FALLBACK
+            #ifdef LIGHTING_REFLECT_SRR_FALLBACK
             else {
                 // SSR fallback
-                float viewDist = length(localPos);
+                float viewDist = length(reflect_localPos);
                 //vec3 reflectViewDir = mat3(ap.camera.view) * reflectLocalDir;
-                vec3 reflectViewPos = viewPos + 0.5*viewDist*reflectViewDir;
+                vec3 reflectViewPos = mat3(ap.camera.view) * reflect_localPos;
+                vec3 reflectViewPos_offset = reflectViewPos + 0.5*viewDist*reflectViewDir;
                 vec3 reflectClipPos = unproject(ap.camera.projection, reflectViewPos) * 0.5 + 0.5;
+                vec3 reflectClipPos_offset = unproject(ap.camera.projection, reflectViewPos_offset) * 0.5 + 0.5;
 
-                vec3 clipPos = ndcPos * 0.5 + 0.5;
-                vec3 reflectRay = normalize(reflectClipPos - clipPos);
-                reflection = GetReflectionPosition(TEX_DEPTH, clipPos, reflectRay);
+                //vec3 clipPos = ndcPos * 0.5 + 0.5;
+                vec3 reflectRay = normalize(reflectClipPos_offset - reflectClipPos);
+                reflection = GetReflectionPosition(TEX_DEPTH, reflectClipPos, reflectRay);
 
                 reflectDist = ap.camera.far;
                 if (reflection.a > EPSILON) {

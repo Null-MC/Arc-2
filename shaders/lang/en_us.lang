@@ -194,6 +194,9 @@ option.LIGHTING_REFLECT_NOISE.comment=Allows surfaces to scatter reflected light
 
 option.LIGHTING_REFLECT_MAXSTEP=WSR Max Step Count
 
+option.LIGHTING_REFLECT_SRR_FALLBACK=SSR Fallback
+option.LIGHTING_REFLECT_SRR_FALLBACK.comment=Enables fallback to screen-space reflections when world-space reflections do not find a contact point.
+
 
 screen.LIGHTING_RT=Ray-Tracing
 

@@ -30,12 +30,14 @@ vec3 sample_AllPointLights_particle(const in vec3 localPos) {
         float lightRange = iris_getEmission(light.block);
         lightRange *= (LIGHTING_SHADOW_RANGE * 0.01);
 
+        vec3 fragToLight = localPos - light.pos;
+
+        if (dot(fragToLight, fragToLight) >= lightRange*lightRange) continue;
+
         vec3 lightColor = iris_getLightColor(light.block).rgb;
         lightColor = RgbToLinear(lightColor);
 
         float lightSize = getLightSize(light.block);
-
-        vec3 fragToLight = localPos - light.pos;
 
         float lightShadow = sample_PointLight(fragToLight, lightSize, lightRange, offsetBias, lightIndex);
 

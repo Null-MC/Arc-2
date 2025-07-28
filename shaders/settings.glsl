@@ -13,12 +13,11 @@
 
 #define SHADOW_VOXEL_TEST
 
-//#define WSR_SRR_FALLBACK
-
 #define HANDLIGHT_TRACE
 
 //#define VL_SOFT_SHADOW
 //#define VL_SELF_SHADOW
+//#define VL_JITTER
 #define VL_STEP_POW 100
 
 #define POINT_LIGHT_POM

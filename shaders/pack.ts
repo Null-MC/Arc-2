@@ -189,6 +189,7 @@ function applySettings(settings : ShaderSettings, internal) {
     defineGlobally('LIGHTING_REFLECT_MODE', settings.Lighting_ReflectionMode);
     defineGlobally('LIGHTING_REFLECT_MAXSTEP', settings.Lighting_ReflectionStepCount)
     if (settings.Lighting_ReflectionNoise) defineGlobally1('MATERIAL_ROUGH_REFLECT_NOISE');
+    if (settings.Lighting_ReflectionSsrFallback) defineGlobally1('LIGHTING_REFLECT_SRR_FALLBACK')
     if (settings.Lighting_ReflectionMode == ReflectionModes.WorldSpace) {
         if (settings.Lighting_ReflectionQuads) defineGlobally1('LIGHTING_REFLECT_TRIANGLE');
     }
@@ -532,6 +533,13 @@ export function configurePipeline(pipeline : PipelineConfig) {
             .clear(false)
             .build();
     }
+
+    // const texGgxDfg = pipeline.createTexture('texGgxDfg')
+    //     .format(Format.RG16F)
+    //     .width(128)
+    //     .height(128)
+    //     .clear(false)
+    //     .build();
 
     const texSkyTransmit = pipeline.createTexture('texSkyTransmit')
         .format(Format.RGB16F)
@@ -966,6 +974,12 @@ export function configurePipeline(pipeline : PipelineConfig) {
     }
 
     const screenSetupQueue = pipeline.forStage(Stage.SCREEN_SETUP);
+
+    // screenSetupQueue.createComposite('ggx-dfg')
+    //     .vertex('shared/bufferless.vsh')
+    //     .fragment('setup/ggx-dfg.fsh')
+    //     .target(0, texGgxDfg)
+    //     .compile();
 
     new ShaderBuilder(screenSetupQueue.createCompute('scene-setup')
             .location('setup/scene-setup.csh')
@@ -1881,7 +1895,7 @@ export function beginFrame(state : WorldState) {
     // if (isKeyDown(Keys.F)) testVal -= 0.07;
     // TEST_UBO.setFloat(0, testVal);
 
-    if (internal.FloodFillEnabled)
+    if (internal.FloodFillEnabled && texFloodFillReader)
         texFloodFillReader.pointTo(state.currentFrame() % 2 == 0 ? texFloodFill_alt : texFloodFill);
 
     SceneSettingsBuffer.uploadData();

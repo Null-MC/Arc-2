@@ -12,12 +12,12 @@ float SampleCloudDensity(const in vec3 worldPos) {
     float cloud_sample = detailLow + 0.06*(detailHigh);
 
     float cloud_density = 0.8;
-    cloud_density = mix(cloud_density, 1.6, ap.world.rain);
-    cloud_density = mix(cloud_density, 2.2, ap.world.thunder);
+    cloud_density = mix(cloud_density, 2.2, World_SkyWetness);
+    //cloud_density = mix(cloud_density, 2.2, ap.world.thunder);
 
     float cloud_threshold = 1.0 - Sky_CloudCoverage;
-    cloud_threshold = mix(cloud_threshold, 0.19, ap.world.rain);
-    cloud_threshold = mix(cloud_threshold, 0.15, ap.world.thunder);
+    cloud_threshold = mix(cloud_threshold, 0.19, World_SkyWetness);
+    //cloud_threshold = mix(cloud_threshold, 0.15, ap.world.thunder);
 
     float sample_density = smoothstep(cloud_threshold, 1.0, cloud_sample);
 

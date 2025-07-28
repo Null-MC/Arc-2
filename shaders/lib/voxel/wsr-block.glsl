@@ -109,8 +109,9 @@ bool TraceReflection(const in vec3 localPos, const in vec3 localDir, out vec3 ti
         tint *= exp(-waterDist * VL_WaterDensity * waterExtinction);
     }
 
+    hitPos = currPos;
+
     if (hit) {
-        hitPos = currPos;
         hitNormal = -sign(localDir) * stepAxis;
 
         if (voxelCustom_isInBounds(voxelPos)) {

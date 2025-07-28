@@ -36,19 +36,22 @@ void sample_AllPointLights(inout vec3 diffuse, inout vec3 specular, const in vec
             if (light.block == -1) continue;
         #endif
 
-        float dither = InterleavedGradientNoiseTime(ivec2(fragCoord + vec2(23.7, 37.1)*i));
-
         float lightRange = iris_getEmission(light.block);
         lightRange *= (LIGHTING_SHADOW_RANGE * 0.01);
+
+        vec3 fragToLight = light.pos - localSamplePos;
+        float sampleDist = length(fragToLight);
+        vec3 sampleDir = fragToLight / sampleDist;
+
+        if (sampleDist >= lightRange) continue;
+
+        float dither = InterleavedGradientNoiseTime(ivec2(fragCoord + vec2(23.7, 37.1)*i));
 
         vec3 lightColor = iris_getLightColor(light.block).rgb;
         lightColor = RgbToLinear(lightColor);
 
         float lightSize = getLightSize(light.block);
 
-        vec3 fragToLight = light.pos - localSamplePos;
-        float sampleDist = length(fragToLight);
-        vec3 sampleDir = fragToLight / sampleDist;
         vec3 lightDir = sampleDir;
 
         //float geo_NoLm = max(dot(localGeoNormal, sampleDir), 0.0);

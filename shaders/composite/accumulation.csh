@@ -1,7 +1,7 @@
 #version 430 core
 
-#include "/settings.glsl"
 #include "/lib/constants.glsl"
+#include "/settings.glsl"
 
 const float AccumulationMax_Diffuse = 60.0;
 const float AccumulationMax_Specular = 30.0;

@@ -13,7 +13,12 @@ uniform sampler2D TEX_TRANSMIT;
 uniform sampler2D TEX_DEPTH;
 
 #include "/lib/common.glsl"
+
 #include "/lib/sampling/depth.glsl"
+
+#ifdef VL_JITTER
+    #include "/lib/taa_jitter.glsl"
+#endif
 
 #if LIGHTING_VL_RES == 2
     const int sharedBufferRes = 4+2;
@@ -43,6 +48,15 @@ void populateSharedBuffer() {
     );
 
     ivec2 uv = uv_base + (uv_i-1) * uv_scale;
+
+    vec2 viewSize = ap.game.screenSize / uv_scale;
+
+    #ifdef VL_JITTER
+        vec2 uv2 = uv / ap.game.screenSize;
+        jitter(uv2, viewSize);
+        uv = ivec2(uv2 * ap.game.screenSize);
+    #endif
+
     ivec2 uv_shared = uv_shared_base + uv_i - 1;
 
     float depthL = ap.camera.far;
@@ -99,7 +113,16 @@ void main() {
 
 	if (any(greaterThanEqual(uv, ivec2(ap.game.screenSize)))) return;
 
-    float depth = texelFetch(TEX_DEPTH, ivec2(gl_GlobalInvocationID.xy), 0).r;
+    #ifdef VL_JITTER
+        vec2 viewSize = ap.game.screenSize / uv_scale;
+        vec2 uv2 = gl_GlobalInvocationID.xy / ap.game.screenSize;
+        jitter(uv2, viewSize);
+        ivec2 uv_depth = ivec2(uv2 * ap.game.screenSize);
+    #else
+        ivec2 uv_depth = ivec2(gl_GlobalInvocationID.xy);
+    #endif
+
+    float depth = texelFetch(TEX_DEPTH, uv_depth, 0).r;
     float depthL = linearizeDepth(depth, ap.camera.near, ap.camera.far);
 
     vec3 scatterFinal, transmitFinal;

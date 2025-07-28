@@ -44,6 +44,45 @@ void tryAddNeighborLights(inout uint lightCount, const in int binIndex, const in
 	}
 }
 
+const ivec3 offsets[] = ivec3[](
+	// nearest neighbors
+	ivec3(-1, 0, 0),
+	ivec3( 1, 0, 0),
+	ivec3( 0, 0,-1),
+	ivec3( 0, 0, 1),
+	ivec3( 0,-1, 0),
+	ivec3( 0, 1, 0),
+
+	// y=0 corners
+	ivec3(-1, 0,-1),
+	ivec3( 1, 0,-1),
+	ivec3(-1, 0, 1),
+	ivec3( 1, 0, 1),
+
+	// bottom face
+	ivec3(-1,-1,-1),
+	ivec3( 0,-1,-1),
+	ivec3( 1,-1,-1),
+	ivec3(-1,-1, 0),
+	//ivec3( 0,-1, 0),
+	ivec3( 1,-1, 0),
+	ivec3(-1,-1, 1),
+	ivec3( 0,-1, 1),
+	ivec3( 1,-1, 1),
+
+	// top face
+	ivec3(-1, 1,-1),
+	ivec3( 0, 1,-1),
+	ivec3( 1, 1,-1),
+	ivec3(-1, 1, 0),
+	//ivec3( 0, 1, 0),
+	ivec3( 1, 1, 0),
+	ivec3(-1, 1, 1),
+	ivec3( 0, 1, 1),
+	ivec3( 1, 1, 1)
+);
+
+
 void main() {
 	ivec3 lightBinPos = ivec3(gl_GlobalInvocationID);
 	if (any(greaterThanEqual(lightBinPos, ivec3(LightBinGridSize)))) return;
@@ -52,19 +91,26 @@ void main() {
 	uint lightCount = LightBinMap[binIndex].shadowLightCount;
 	lightCount = clamp(lightCount, 0u, LIGHTING_SHADOW_BIN_MAX_COUNT);
 
-	// TODO: rearrange loop to prioritize nearer bins
-	for (int _z = -2; _z <= 2; _z++) {
-		for (int _y = -2; _y <= 2; _y++) {
-			for (int _x = -2; _x <= 2; _x++) {
-				if (_x == 0 && _y == 0 && _z == 0) continue;
+	for (int i = 0; i < offsets.length(); i++) {
+		ivec3 neighborBinPos = lightBinPos + offsets[i];
+		if (any(lessThan(neighborBinPos, ivec3(0))) || any(greaterThanEqual(neighborBinPos, ivec3(LightBinGridSize)))) continue;
 
-				ivec3 neighborBinPos = lightBinPos + ivec3(_x, _y, _z);
-				if (any(lessThan(neighborBinPos, ivec3(0))) || any(greaterThanEqual(neighborBinPos, ivec3(LightBinGridSize)))) continue;
-
-				tryAddNeighborLights(lightCount, binIndex, neighborBinPos);
-			}
-		}
+		tryAddNeighborLights(lightCount, binIndex, neighborBinPos);
 	}
+
+	// TODO: rearrange loop to prioritize nearer bins
+//	for (int _z = -2; _z <= 2; _z++) {
+//		for (int _y = -2; _y <= 2; _y++) {
+//			for (int _x = -2; _x <= 2; _x++) {
+//				if (_x == 0 && _y == 0 && _z == 0) continue;
+//
+//				ivec3 neighborBinPos = lightBinPos + ivec3(_x, _y, _z);
+//				if (any(lessThan(neighborBinPos, ivec3(0))) || any(greaterThanEqual(neighborBinPos, ivec3(LightBinGridSize)))) continue;
+//
+//				tryAddNeighborLights(lightCount, binIndex, neighborBinPos);
+//			}
+//		}
+//	}
 
 	LightBinMap[binIndex].lightCount = lightCount;
 }

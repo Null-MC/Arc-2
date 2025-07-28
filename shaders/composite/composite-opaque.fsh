@@ -404,7 +404,7 @@ void main() {
                 skyIrradiance += wsgi_sample(wsgi_localPos, localTexNormal);
             #endif
 
-            diffuse += skyIrradiance * occlusion;
+            diffuse += skyIrradiance * occlusion*occlusion;
         #endif
 
         vec3 blockLighting = GetVanillaBlockLight(lmCoord.x, occlusion);

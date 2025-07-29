@@ -31,6 +31,7 @@ void main() {
     Scene_SkyPrecipitation = mix(step(1, ap.world.precipitation), Scene_SkyPrecipitation, exp(-0.4 * ap.time.delta));
 
     float weather_wetness = max(ap.world.rain * 0.7, ap.world.thunder);
+
     mixTo(World_SkyWetness, weather_wetness, -0.04, 0.40, ap.time.delta);
-    mixTo(World_GroundWetness, weather_wetness, -0.01, 0.12, ap.time.delta);
+    mixTo(World_GroundWetness, weather_wetness * step(1, ap.world.precipitation), -0.01, 0.12, ap.time.delta);
 }

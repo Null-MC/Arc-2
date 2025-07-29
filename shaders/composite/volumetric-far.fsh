@@ -226,45 +226,38 @@ void main() {
             #endif
 
             float waterDepth = EPSILON;
-            vec3 shadowSample = vec3(sample_lmcoord.y);
+            vec3 shadowSample = vec3(1.0);//vec3(sample_lmcoord.y);
             #ifdef SHADOWS_ENABLED
-                const float shadowRadius = 2.0*shadowPixelSize;
+                const float shadowRadius = 2.0;//*shadowPixelSize;
 
                 vec3 shadowViewPos = fma(shadowViewStep, vec3(i+dither), shadowViewStart);
 
                 int shadowCascade;
                 vec3 shadowPos = GetShadowSamplePos(shadowViewPos, shadowRadius, shadowCascade);
 
-                shadowSample = SampleShadowColor(shadowPos, shadowCascade, waterDepth);
-                waterDepth = max(waterDepth, EPSILON);
+                if (shadowCascade >= 0) {
+                    shadowSample = SampleShadowColor(shadowPos, shadowCascade, waterDepth);
+                    waterDepth = max(waterDepth, EPSILON);
+                }
+                else {
+                    shadowSample = vec3(0.0);
+                }
             #endif
 
 //            vec3 skyPos = getSkyPosition(sampleLocalPos);
 //            vec3 skyLighting = getValFromTLUT(texSkyTransmit, skyPos, Scene_LocalLightDir);
 //            vec3 sampleColor = lightStrength * skyLighting * shadowSample;
 
-            float skyLightF = smoothstep(0.0, 0.2, Scene_LocalLightDir.y);
-
             #if defined(SKY_CLOUDS_ENABLED) && defined(SHADOWS_CLOUD_ENABLED)
-                skyLightF *= SampleCloudShadows(sampleLocalPos);
+                if (sampleLocalPos.y+ap.camera.pos.y < cloudHeight)
+                    shadowSample *= SampleCloudShadows(sampleLocalPos);
             #endif
 
             vec3 sunTransmit, moonTransmit;
             GetSkyLightTransmission(sampleLocalPos, sunTransmit, moonTransmit);
-//            float skyLightF = smoothstep(0.0, 0.2, Scene_LocalLightDir.y);
+            float skyLightF = smoothstep(0.0, 0.08, Scene_LocalLightDir.y);
             vec3 sunSkyLight = skyLightF * SUN_LUX * sunTransmit * Scene_SunColor;
             vec3 moonSkyLight = skyLightF * MOON_LUX * moonTransmit * Scene_MoonColor;
-
-//            #if defined(SKY_CLOUDS_ENABLED) && defined(SHADOWS_CLOUD_ENABLED)
-//                // Cloud Shadows
-//                if (sampleLocalPos.y+ap.camera.pos.y < cloudHeight) {
-//                    vec3 worldPos = sampleLocalPos + ap.camera.pos;
-//                    worldPos += (cloudHeight - worldPos.y) / Scene_LocalLightDir.y * Scene_LocalLightDir;
-//
-//                    float cloudShadowDensity = SampleCloudDensity(worldPos) * 100.0;
-//                    shadowSample *= mix(1.0, exp(-VL_ShadowTransmit * cloudShadowDensity), cloudShadowF);
-//                }
-//            #endif
 
             float vs_shadowF = 1.0;
             float sampleDensity = VL_WaterDensity;

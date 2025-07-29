@@ -289,23 +289,28 @@ void main() {
         #endif
 
         // Lighting
-        vec3 skyLightAreaDir = GetAreaLightDir(localTexNormal, localViewDir, Scene_LocalLightDir, skyLight_AreaDist, skyLight_AreaSize);
-
-        vec3 H = normalize(skyLightAreaDir + -localViewDir);
-
-        float NoLm = max(dot(localTexNormal, skyLightAreaDir), 0.0);
-        float LoHm = max(dot(skyLightAreaDir, H), 0.0);
         float NoVm = max(dot(localTexNormal, -localViewDir), 0.0);
+        #ifdef WORLD_SKY_ENABLED
+            bool isDay = Scene_LocalSunDir.y > 0.0;
+            float skyLightDist = isDay ? skyLight_AreaDist : moon_distanceKm;
+            float skyLightSize = isDay ? skyLight_AreaSize : moon_radiusKm;
+            vec3 skyLightAreaDir = GetAreaLightDir(localTexNormal, localViewDir, Scene_LocalLightDir, skyLight_AreaDist, skyLight_AreaSize);
 
-        vec4 shadow_sss = vec4(vec3(1.0), 0.0);
-        #ifdef SHADOWS_ENABLED
-            shadow_sss = textureLod(TEX_SHADOW, uv, 0);
-        #endif
+            vec3 H = normalize(skyLightAreaDir + -localViewDir);
 
-        float skyLightF = smoothstep(0.0, 0.1, Scene_LocalLightDir.y);
+            float NoLm = max(dot(localTexNormal, skyLightAreaDir), 0.0);
+            float LoHm = max(dot(skyLightAreaDir, H), 0.0);
 
-        #if defined(SKY_CLOUDS_ENABLED) && defined(SHADOWS_CLOUD_ENABLED)
-            skyLightF *= SampleCloudShadows(localPosTrans);
+            vec4 shadow_sss = vec4(vec3(1.0), 0.0);
+            #ifdef SHADOWS_ENABLED
+                shadow_sss = textureLod(TEX_SHADOW, uv, 0);
+            #endif
+
+            float skyLightF = smoothstep(0.0, 0.1, Scene_LocalLightDir.y);
+
+            #if defined(SKY_CLOUDS_ENABLED) && defined(SHADOWS_CLOUD_ENABLED)
+                skyLightF *= SampleCloudShadows(localPosTrans);
+            #endif
         #endif
 
         float occlusion = texOcclusion;
@@ -320,53 +325,17 @@ void main() {
             if (tir) view_F = vec3(1.0);
         #endif
 
-        vec3 sunTransmit, moonTransmit;
-        GetSkyLightTransmission(localPosTrans, sunTransmit, moonTransmit);
-        vec3 sunLight = skyLightF * SUN_LUX * sunTransmit * Scene_SunColor;
-        vec3 moonLight = skyLightF * MOON_LUX * moonTransmit * Scene_MoonColor;
+        #ifdef WORLD_SKY_ENABLED
+            vec3 sunTransmit, moonTransmit;
+            GetSkyLightTransmission(localPosTrans, sunTransmit, moonTransmit);
+            vec3 sunLight = skyLightF * SUN_LUX * sunTransmit * Scene_SunColor;
+            vec3 moonLight = skyLightF * MOON_LUX * moonTransmit * Scene_MoonColor;
 
-        float NoL_sun = dot(localTexNormal, Scene_LocalSunDir);
-        float NoL_moon = -NoL_sun;
+            float NoL_sun = dot(localTexNormal, Scene_LocalSunDir);
+            float NoL_moon = -NoL_sun;
+        #endif
 
         // TODO: VL_SELF_SHADOW
-
-//        float sss_diffuse = max((NoL_sun + sss) / (1.0 + sss), 0.0);
-//        vec3 sss_shadow = mix(shadow_sss.rgb * step(0.0, dot(localGeoNormal, Scene_LocalLightDir)), vec3(shadow_sss.w), sss);
-
-//        vec3 skyLightFinal = sunLight * sss_diffuse + moonLight * max(NoL_moon, 0.0);
-
-//        vec3 skyLightDiffuse = skyLightFinal * sss_shadow * SampleLightDiffuse(NoVm, NoLm, LoHm, roughL);
-
-
-        //vec3 skyLight_NoLm = sunLight * max(NoL_sun, 0.0) + moonLight * max(NoL_moon, 0.0);
-
-        //vec3 skyLightDiffuse = skyLight_NoLm * shadow_sss.rgb * SampleLightDiffuse(NoVm, NoLm, LoHm, roughL);
-
-        // SSS
-//        if (sss > EPSILON) {
-//            const float sss_G = 0.24;
-//
-//            vec3 sss_skyIrradiance = SampleSkyIrradiance(localTexNormal, lmCoord.y);
-//
-//            float VoL_sun = dot(localViewDir, Scene_LocalSunDir);
-//            vec3 sss_phase_sun = max(HG(VoL_sun, sss_G), 0.0) * abs(NoL_sun) * sunLight;
-//            vec3 sss_phase_moon = max(HG(-VoL_sun, sss_G), 0.0) * abs(NoL_moon) * moonLight;
-//            vec3 sss_skyLight = (2.0*PI) * sss_shadow * (sss_phase_sun + sss_phase_moon)
-//                              + sss_skyIrradiance * phaseIso;
-//
-//            skyLightDiffuse += sss * sss_skyLight * saturate(1.0 - NoL_sun);// * exp(-1.0 * (1.0 - albedo.rgb));
-//        }
-//        const float sss_G = 0.24;
-//
-//        vec3 sss_skyIrradiance = SampleSkyIrradiance(localViewDir, lmCoord.y);
-//
-//        float VoL_sun = dot(localViewDir, Scene_LocalSunDir);
-//        vec3 sss_phase_sun = max(HG(VoL_sun, sss_G), 0.0) * abs(NoL_sun) * sunLight;
-//        vec3 sss_phase_moon = max(HG(-VoL_sun, sss_G), 0.0) * abs(NoL_moon) * moonLight;
-//        vec3 sss_skyLight = shadow_sss.w * (sss_phase_sun + sss_phase_moon)
-//                          + phaseIso * sss_skyIrradiance * occlusion;
-//
-//        skyLightDiffuse = mix(skyLightDiffuse, sss_skyLight * PI, sss);
 
         vec3 diffuse = vec3(0.0);
         vec3 specular = vec3(0.0);

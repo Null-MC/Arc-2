@@ -24,7 +24,7 @@ void main() {
 
     #ifdef POST_PURKINJE_ENABLED
         float avg_ev = log2(max(Scene_AvgExposure, 1.0e-8));
-        float ev_norm = saturate(unmix(-1.0, 16.0, avg_ev));
+        float ev_norm = saturate(unmix(Scene_PostExposureMin, Scene_PostExposureMax, avg_ev));
 
         float purkinje_strength = 1.0 - ev_norm;
         //if (gl_FragCoord.x > ap.game.screenSize.x/2)

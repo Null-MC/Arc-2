@@ -40,7 +40,7 @@ const float SUN_LUX = 130000.0;
 
 const float MOON_SIZE = 3.4;
 const float MOON_LUMINANCE = 8000.0; //4000.0;
-const float MOON_LUX = 256.0;
+const float MOON_LUX = 16.0;
 
 const float STAR_LUMINANCE = 64.00;
 

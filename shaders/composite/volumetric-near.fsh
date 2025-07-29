@@ -263,12 +263,9 @@ void main() {
             vec3 sunSkyLight = skyLightF * SUN_LUX * sunTransmit * Scene_SunColor;
             vec3 moonSkyLight = skyLightF * MOON_LUX * moonTransmit * Scene_MoonColor;
 
-            //float cloudShadow = 1.0;
             #if defined(SKY_CLOUDS_ENABLED) && defined(SHADOWS_CLOUD_ENABLED)
-                // Cloud Shadows
-                if (sampleLocalPos.y+ap.camera.pos.y < cloudHeight) {
+                if (sampleLocalPos.y+ap.camera.pos.y < cloudHeight)
                     shadowSample *= SampleCloudShadows(sampleLocalPos);
-                }
             #endif
 
             //float vs_shadowF = 1.0;

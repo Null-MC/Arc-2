@@ -634,7 +634,7 @@ void main() {
             vec3 vlTransmit = textureLod(texTransmitFinal, uv, 0).rgb;
         #endif
 
-        colorFinal = colorFinal * vlTransmit + vlScatter * BufferLumScale;
+        colorFinal = fma(colorFinal, vlTransmit, vlScatter * BufferLumScale);
     #endif
 
     vec4 weather = textureLod(texParticleTranslucent, uv, 0);

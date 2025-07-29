@@ -25,6 +25,7 @@ uniform sampler3D texFogNoise;
 
     uniform sampler2D texSkyView;
     uniform sampler2D texSkyTransmit;
+    uniform sampler2D texSkyMultiScatter;
     uniform sampler2D texSkyIrradiance;
 
     #ifdef WORLD_END
@@ -198,6 +199,7 @@ in vec2 uv;
     #endif
 
     #include "/lib/composite-shared.glsl"
+    #include "/lib/vl-shared.glsl"
 #endif
 
 #include "/lib/taa_jitter.glsl"
@@ -431,9 +433,27 @@ void main() {
 //            vec3 reflectMoon = MOON_LUX * moon(reflectLocalDir, -Scene_LocalSunDir) * moonTransmit * Scene_MoonColor;
 //            skyReflectColor += shadow_sss.rgb * (reflectSun + reflectMoon);
 
-            vec3 skyReflectColor = renderSky(localPos, reflectLocalDir, true) * Scene_SkyBrightnessSmooth;
+            vec3 skyReflectColor = renderSky(localPos, reflectLocalDir, true);
 
-//            vec3 reflectIrraidance = SampleSkyIrradiance(reflectLocalDir, lmCoord.y);
+            #ifdef SKY_CLOUDS_ENABLED
+                vec3 cloud_localPos;
+                float cloudDensity, cloud_shadowSun, cloud_shadowMoon;
+                vl_sampleClouds(reflectLocalDir, cloud_localPos, cloudDensity, cloud_shadowSun, cloud_shadowMoon);
+
+                float VoL_sun = dot(reflectLocalDir, Scene_LocalSunDir);
+                float miePhase_sun = getMiePhase(VoL_sun, 0.2);
+                float miePhase_moon = getMiePhase(-VoL_sun, 0.2);
+
+                vec3 scattering = vec3(0.0);
+                vec3 transmittance = vec3(1.0);
+                vl_renderClouds(transmittance, scattering, miePhase_sun, miePhase_moon, cloud_localPos, cloudDensity, cloud_shadowSun, cloud_shadowMoon);
+                skyReflectColor = skyReflectColor * transmittance + scattering;
+            #endif
+
+            skyReflectColor *= Scene_SkyBrightnessSmooth;
+
+
+        //            vec3 reflectIrraidance = SampleSkyIrradiance(reflectLocalDir, lmCoord.y);
 //            skyReflectColor = mix(skyReflectColor, reflectIrraidance, roughL);
 
             vec4 reflection = vec4(0.0);

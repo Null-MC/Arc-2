@@ -1553,13 +1553,14 @@ export function configurePipeline(pipeline : PipelineConfig) {
             .compile();
     }
 
-    // finalFlipper.flip();
+    finalFlipper.flip();
 
     new ShaderBuilder(postRenderQueue.createComposite('composite-opaque')
             .vertex('shared/bufferless.vsh')
             .fragment('composite/composite-opaque.fsh')
             .target(0, finalFlipper.getWriteTexture())
-            .blendFunc(0, Func.SRC_ALPHA, Func.ONE_MINUS_SRC_ALPHA, Func.ONE, Func.ZERO)
+            //.blendFunc(0, Func.SRC_ALPHA, Func.ONE_MINUS_SRC_ALPHA, Func.ONE, Func.ZERO)
+            .define('TEX_SRC', finalFlipper.getReadName())
             .define('TEX_SHADOW', texShadow_src)
             .define('TEX_SSAO', 'texSSAO_final')
         )

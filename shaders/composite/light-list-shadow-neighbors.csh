@@ -99,18 +99,18 @@ void main() {
 	}
 
 	// TODO: rearrange loop to prioritize nearer bins
-//	for (int _z = -2; _z <= 2; _z++) {
-//		for (int _y = -2; _y <= 2; _y++) {
-//			for (int _x = -2; _x <= 2; _x++) {
-//				if (_x == 0 && _y == 0 && _z == 0) continue;
-//
-//				ivec3 neighborBinPos = lightBinPos + ivec3(_x, _y, _z);
-//				if (any(lessThan(neighborBinPos, ivec3(0))) || any(greaterThanEqual(neighborBinPos, ivec3(LightBinGridSize)))) continue;
-//
-//				tryAddNeighborLights(lightCount, binIndex, neighborBinPos);
-//			}
-//		}
-//	}
+	for (int _z = -2; _z <= 2; _z++) {
+		for (int _y = -2; _y <= 2; _y++) {
+			for (int _x = -2; _x <= 2; _x++) {
+				if (abs(_x) <= 1 && abs(_y) <= 1 && abs(_z) <= 1) continue;
+
+				ivec3 neighborBinPos = lightBinPos + ivec3(_x, _y, _z);
+				if (any(lessThan(neighborBinPos, ivec3(0))) || any(greaterThanEqual(neighborBinPos, ivec3(LightBinGridSize)))) continue;
+
+				tryAddNeighborLights(lightCount, binIndex, neighborBinPos);
+			}
+		}
+	}
 
 	LightBinMap[binIndex].lightCount = lightCount;
 }

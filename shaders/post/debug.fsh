@@ -100,6 +100,7 @@ void main() {
                 color = textureLod(TEX_SSAO, previewCoord, 0).rrr;
             #elif DEBUG_VIEW == DEBUG_VIEW_VL
                 color = textureLod(texScatterVL, previewCoord, 0).rgb;
+                color = color / (color + 1.0);
             #elif DEBUG_VIEW == DEBUG_VIEW_RT
                 color = textureLod(texDiffuseRT, previewCoord, 0).rgb;
             #elif DEBUG_VIEW == DEBUG_VIEW_ACCUMULATION

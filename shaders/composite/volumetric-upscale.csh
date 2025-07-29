@@ -79,7 +79,7 @@ void populateSharedBuffer() {
 void getNearestValues(const in float depthL, out vec3 scatterFinal, out vec3 transmitFinal) {
     ivec2 uv_base = ivec2(gl_LocalInvocationID.xy) / uv_scale + 1;
 
-    float nearestDiff = 999.9;
+    float nearestDiff = 9.9e6;
     scatterFinal = vec3(0.0);
     transmitFinal = vec3(1.0);
 

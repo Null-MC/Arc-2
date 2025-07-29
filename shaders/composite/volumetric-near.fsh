@@ -138,6 +138,7 @@ void main() {
     vec3 localPos = mul3(ap.camera.viewInv, viewPos);
 
     float len = length(localPos);
+    vec3 localViewDir = localPos / len;
 
     vec3 waterAmbientBase = VL_WaterAmbient * Scene_SkyIrradianceUp;
     bool isInFluid = ap.camera.fluid == 1;
@@ -154,7 +155,6 @@ void main() {
 
     float bias = len * 0.004;
 
-    vec3 localViewDir = localPos / len;
     vec3 traceEnd = vec3(0.0);
 //    vec3 traceEnd = max(len - bias, 0.0) * localViewDir;
 //    if (len > far)
@@ -474,10 +474,8 @@ void main() {
     #ifdef SKY_CLOUDS_ENABLED
         if (depth == 1.0 && ap.camera.fluid == 0) {
             float endWorldY = sampleLocalPosLast.y + ap.camera.pos.y;
-            //endWorldY -= (1.0-dither) * stepLocal.y;
 
             if (endWorldY <= cloudHeight && cloudDensity > 0.0)
-            //if (sign(endWorldY - cloudHeight) != sign(ap.camera.pos - cloudHeight) && cloudDensity > 0.0)
                 vl_renderClouds(transmittance, scattering, miePhase_sun, miePhase_moon, cloud_localPos, cloudDensity, cloud_shadowSun, cloud_shadowMoon);
         }
     #endif

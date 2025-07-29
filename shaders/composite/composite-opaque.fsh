@@ -8,6 +8,7 @@ layout(location = 0) out vec4 outColor;
 
 in vec2 uv;
 
+uniform sampler2D TEX_SRC;
 uniform sampler2D mainDepthTex;
 uniform sampler2D solidDepthTex;
 
@@ -187,7 +188,7 @@ void main() {
     ivec2 iuv = ivec2(gl_FragCoord.xy);
     float depthTrans = texelFetch(mainDepthTex, iuv, 0).r;
     vec4 albedo = texelFetch(texDeferredOpaque_Color, iuv, 0);
-    vec4 colorFinal = vec4(0.0);
+    vec3 colorFinal = texelFetch(TEX_SRC, iuv, 0).rgb * BufferLumScale;
 
     float depthOpaque = 1.0;
     if (albedo.a > EPSILON) {
@@ -607,9 +608,8 @@ void main() {
 
         ApplyWetness_albedo(albedo.rgb, porosity, wetness);
 
-        colorFinal.rgb = fma(diffuse, albedo.rgb, specular);
+        colorFinal = fma(diffuse, albedo.rgb, specular);
         //colorFinal = mix(albedo.rgb * diffuse, specular, view_F);
-        colorFinal.a = 1.0;
 
         // float viewDist = length(localPos);
         // float fogF = smoothstep(fogStart, fogEnd, viewDist);
@@ -619,13 +619,13 @@ void main() {
     #ifdef EFFECT_VL_ENABLED
         vec3 vlScatter = textureLod(texScatterVL, uv, 0).rgb;
         vec3 vlTransmit = textureLod(texTransmitVL, uv, 0).rgb;
-        colorFinal.rgb = fma(colorFinal.rgb, vlTransmit, vlScatter * BufferLumScale);
+        colorFinal = fma(colorFinal, vlTransmit, vlScatter * BufferLumScale);
     #endif
 
     vec4 particles = textureLod(texParticleOpaque, uv, 0);
-    colorFinal.rgb = mix(colorFinal.rgb, particles.rgb * BufferLumScale, saturate(particles.a));
+    colorFinal = mix(colorFinal, particles.rgb * BufferLumScale, saturate(particles.a));
 
-    colorFinal.rgb = clamp(colorFinal.rgb * BufferLumScaleInv, 0.0, 65000.0);
+    colorFinal = clamp(colorFinal * BufferLumScaleInv, 0.0, 65000.0);
 
-    outColor = colorFinal;
+    outColor = vec4(colorFinal, 1.0);
 }

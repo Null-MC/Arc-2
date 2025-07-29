@@ -11,7 +11,7 @@ float SampleCloudDensity(const in vec3 worldPos) {
     float detailHigh = 1.0 - textureLod(texFogNoise, vec3(samplePos * 0.005, time+0.2).xzy, 0).r;
     float cloud_sample = detailLow + 0.06*(detailHigh);
 
-    float cloud_density = 0.8;
+    float cloud_density = 1.4;
     cloud_density = mix(cloud_density, 2.2, World_SkyWetness);
     //cloud_density = mix(cloud_density, 2.2, ap.world.thunder);
 
@@ -19,7 +19,7 @@ float SampleCloudDensity(const in vec3 worldPos) {
     cloud_threshold = mix(cloud_threshold, 0.19, World_SkyWetness);
     //cloud_threshold = mix(cloud_threshold, 0.15, ap.world.thunder);
 
-    float sample_density = smoothstep(cloud_threshold, 1.0, cloud_sample);
+    float sample_density = smoothstep(_pow2(cloud_threshold), 1.0, cloud_sample);
 
     return pow(sample_density, 0.5) * cloud_density;
 }

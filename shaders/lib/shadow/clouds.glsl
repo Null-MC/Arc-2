@@ -1,4 +1,4 @@
-const float CloudShadowDepth = 300.0;
+const float CloudShadowDepth = 200.0;
 const float CloudShadowMinF = 0.0;
 //const float CloudShadowHorizonF = 0.5;
 

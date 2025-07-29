@@ -476,8 +476,8 @@ void main() {
             float endWorldY = sampleLocalPosLast.y + ap.camera.pos.y;
             //endWorldY -= (1.0-dither) * stepLocal.y;
 
-            //if (endWorldY <= cloudHeight && cloudDensity > 0.0)
-            if (sign(endWorldY - cloudHeight) != sign(ap.camera.pos - cloudHeight) && cloudDensity > 0.0)
+            if (endWorldY <= cloudHeight && cloudDensity > 0.0)
+            //if (sign(endWorldY - cloudHeight) != sign(ap.camera.pos - cloudHeight) && cloudDensity > 0.0)
                 vl_renderClouds(transmittance, scattering, miePhase_sun, miePhase_moon, cloud_localPos, cloudDensity, cloud_shadowSun, cloud_shadowMoon);
         }
     #endif

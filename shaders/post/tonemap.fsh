@@ -22,6 +22,15 @@ void main() {
     float exposureF = clamp(Scene_AvgExposure, Scene_PostExposureMin, Scene_PostExposureMax);
     ApplyAutoExposure(color, exposureF);
 
+    #ifdef POST_PURKINJE_ENABLED
+        float avg_ev = log2(max(Scene_AvgExposure, 1.0e-8));
+        float ev_norm = saturate(unmix(-1.0, 16.0, avg_ev));
+
+        float purkinje_strength = 1.0 - ev_norm;
+        //if (gl_FragCoord.x > ap.game.screenSize.x/2)
+            color = PurkinjeShift(color, purkinje_strength);
+    #endif
+
     color = LINEAR_RGB_TO_REC2020 * color;
 
     //color = tonemap_jodieReinhard(color);
@@ -32,14 +41,6 @@ void main() {
     //color = tonemap_Commerce(color);
 
     //color = color / (color + 0.155) * 1.019;
-
-    #ifdef POST_PURKINJE_ENABLED
-        float avg_ev = log2(max(Scene_AvgExposure, 1.0e-8));
-        float ev_norm = saturate(unmix(avg_ev, -1.0, 8.0));
-
-        float purkinje_strength = mix(0.5, 0.3, ev_norm);
-        color = PurkinjeShift(color, purkinje_strength);
-    #endif
 
     color = REC2020_TO_SRGB * color;
 

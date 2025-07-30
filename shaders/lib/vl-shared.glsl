@@ -46,8 +46,8 @@
         GetSkyLightTransmission(cloud_localPos, sunTransmit, moonTransmit);
 
         float skyLightF = smoothstep(0.0, 0.08, Scene_LocalLightDir.y);
-        vec3 sunSkyLight = skyLightF * SUN_LUX * sunTransmit * Scene_SunColor * cloud_shadowSun;
-        vec3 moonSkyLight = skyLightF * MOON_LUX * moonTransmit * Scene_MoonColor * cloud_shadowMoon;
+        vec3 sunSkyLight = skyLightF * SUN_LUMINANCE * sunTransmit * Scene_SunColor * cloud_shadowSun;
+        vec3 moonSkyLight = skyLightF * MOON_LUMINANCE * moonTransmit * Scene_MoonColor * cloud_shadowMoon;
 
         vec3 skyPos = getSkyPosition(cloud_localPos);
 

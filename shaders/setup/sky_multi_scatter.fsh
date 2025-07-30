@@ -127,5 +127,5 @@ void main() {
     getMulScattValues(pos, sunDir, lum, f_ms);
 
     vec3 psi = lum  / (1.0 - f_ms); 
-    outColor = vec4(psi * BufferLumScaleInv, 1.0);
+    outColor = vec4(psi, 1.0);
 }

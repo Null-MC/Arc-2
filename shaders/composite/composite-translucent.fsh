@@ -8,6 +8,7 @@ layout(location = 0) out vec4 outColor;
 in vec2 uv;
 
 uniform sampler2D TEX_SRC;
+uniform sampler2D texGlint;
 
 uniform sampler2D mainDepthTex;
 uniform sampler2D solidDepthTex;
@@ -225,6 +226,9 @@ void main() {
         vec3 localPosTrans = mul3(ap.camera.viewInv, viewPosTrans);
 
         albedo.rgb = RgbToLinear(albedo.rgb);
+
+        vec3 glint = texelFetch(texGlint, iuv, 0).rgb;
+        albedo.rgb += glint * 8.0;
 
         vec3 localTexNormal = normalize(texNormalData * 2.0 - 1.0);
 

@@ -611,6 +611,13 @@ export function configurePipeline(pipeline : PipelineConfig) {
         .height(screenHeight)
         .build();
 
+    const texGlint = pipeline.createTexture('texGlint')
+        .format(Format.RGBA8)
+        .clearColor(0.0, 0.0, 0.0, 0.0)
+        .width(screenWidth)
+        .height(screenHeight)
+        .build();
+
     const texDeferredOpaque_Color = pipeline.createTexture('texDeferredOpaque_Color')
         .format(Format.RGBA8)
         .clearColor(0.0, 0.0, 0.0, 0.0)
@@ -1299,11 +1306,11 @@ export function configurePipeline(pipeline : PipelineConfig) {
     pipeline.createObjectShader('glint', Usage.ENTITY_GLINT)
         .vertex("gbuffer/glint.vsh")
         .fragment("gbuffer/glint.fsh")
-        .target(0, texDeferredOpaque_Color)
-        .blendFunc(0, Func.ONE, Func.ONE, Func.ZERO, Func.ONE)
+        .target(0, texGlint)
+        //.blendFunc(0, Func.ONE, Func.ONE, Func.ZERO, Func.ONE)
         //.define('RENDER_TRANSLUCENT', '1')
-        .define('RENDER_ENTITY', '1')
-        .define('RENDER_GLINT', '1')
+        //.define('RENDER_ENTITY', '1')
+        //.define('RENDER_GLINT', '1')
         .compile();
 
     mainShaderOpaque('basic', Usage.BASIC)

@@ -140,7 +140,7 @@ void main() {
     float len = length(localPos);
     vec3 localViewDir = localPos / len;
 
-    vec3 waterAmbientBase = VL_WaterAmbient * Scene_SkyIrradianceUp;
+    vec3 waterAmbientBase = VL_WaterAmbient / VL_maxSamples_near * Scene_SkyIrradianceUp;
     bool isInFluid = ap.camera.fluid == 1;
 
 //    if (!isInFluid && Scene_SkyFogDensityF < EPSILON) {
@@ -188,6 +188,8 @@ void main() {
 //    if (len > far)
 //        traceEnd = traceEnd * (far / len);
 
+    float stepDist = length(traceEnd) / VL_maxSamples_near;
+
     if (isInFluid || Scene_SkyFogDensityF > 0.0) {
         vec3 shadowViewStart = mul3(ap.celestial.view, vec3(0.0));
         vec3 shadowViewEnd = mul3(ap.celestial.view, traceEnd);
@@ -207,7 +209,7 @@ void main() {
             //vec3 sampleLocalPos = iF * stepLocal;
             vec3 sampleLocalPos = mix(localPosStart, traceEnd, stepF);
 
-            float stepDist = length(sampleLocalPos - sampleLocalPosLast);
+            //float stepDist = length(sampleLocalPos - sampleLocalPosLast);
 
             vec2 sample_lmcoord = vec2(0.0, 1.0);
             #ifdef VOXEL_PROVIDED
@@ -260,8 +262,8 @@ void main() {
             vec3 sunTransmit, moonTransmit;
             GetSkyLightTransmission(sampleLocalPos, sunTransmit, moonTransmit);
             float skyLightF = smoothstep(0.0, 0.08, Scene_LocalLightDir.y);
-            vec3 sunSkyLight = skyLightF * SUN_LUX * sunTransmit * Scene_SunColor;
-            vec3 moonSkyLight = skyLightF * MOON_LUX * moonTransmit * Scene_MoonColor;
+            vec3 sunSkyLight = skyLightF * SUN_LUMINANCE * sunTransmit * Scene_SunColor;
+            vec3 moonSkyLight = skyLightF * MOON_LUMINANCE * moonTransmit * Scene_MoonColor;
 
             #if defined(SKY_CLOUDS_ENABLED) && defined(SHADOWS_CLOUD_ENABLED)
                 if (sampleLocalPos.y+ap.camera.pos.y < cloudHeight)

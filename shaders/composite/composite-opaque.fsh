@@ -9,6 +9,7 @@ layout(location = 0) out vec4 outColor;
 in vec2 uv;
 
 uniform sampler2D TEX_SRC;
+uniform sampler2D texGlint;
 uniform sampler2D mainDepthTex;
 uniform sampler2D solidDepthTex;
 
@@ -224,6 +225,9 @@ void main() {
         #endif
 
         albedo.rgb = RgbToLinear(albedo.rgb);
+
+        vec3 glint = texelFetch(texGlint, iuv, 0).rgb;
+        albedo.rgb += glint * 8.0;
 
         vec3 data_r = unpackUnorm4x8(data.r).rgb;
         vec3 localGeoNormal = normalize(fma(data_r, vec3(2.0), vec3(-1.0)));

@@ -820,14 +820,14 @@ export function configurePipeline(pipeline : PipelineConfig) {
 
         if (settings.Effect_SSAO_Enabled) {
             pipeline.createImageTexture('texAccumOcclusion_opaque', 'imgAccumOcclusion_opaque')
-                .format(Format.R16F)
+                .format(Format.RG16F)
                 .width(screenWidth)
                 .height(screenHeight)
                 .clear(false)
                 .build();
 
             pipeline.createImageTexture('texAccumOcclusion_opaque_alt', 'imgAccumOcclusion_opaque_alt')
-                .format(Format.R16F)
+                .format(Format.RG16F)
                 .width(screenWidth)
                 .height(screenHeight)
                 .clear(false)

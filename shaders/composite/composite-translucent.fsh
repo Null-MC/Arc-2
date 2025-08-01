@@ -534,7 +534,7 @@ void main() {
         //finalColor.a = min(finalColor.a + maxOf(specular), 1.0);
         //finalColor.a = mix(finalColor.a, 1.0, maxOf(view_F));
 
-        finalColor.rgb += glint * GLINT_LUX;
+        finalColor.rgb += glint*glint * GLINT_LUX;
 
         // Refraction
         float linearDist = length(localPosOpaque - localPosTrans);

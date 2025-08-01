@@ -617,7 +617,7 @@ void main() {
         colorFinal = fma(diffuse, albedo.rgb, specular);
         //colorFinal = mix(albedo.rgb * diffuse, specular, view_F);
 
-        colorFinal += glint * GLINT_LUX;
+        colorFinal += glint*glint * GLINT_LUX;
 
         // float viewDist = length(localPos);
         // float fogF = smoothstep(fogStart, fogEnd, viewDist);

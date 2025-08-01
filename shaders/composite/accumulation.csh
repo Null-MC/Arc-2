@@ -24,8 +24,8 @@ layout(rgba16f) uniform writeonly image2D IMG_ACCUM_SPECULAR_ALT;
 layout(rgba16f) uniform writeonly image2D IMG_ACCUM_POSITION_ALT;
 
 #if defined(EFFECT_SSAO_ENABLED) && !defined(RENDER_TRANSLUCENT)
-    layout(r16f) uniform writeonly image2D IMG_ACCUM_OCCLUSION;
-    layout(r16f) uniform writeonly image2D IMG_ACCUM_OCCLUSION_ALT;
+    layout(rg16f) uniform writeonly image2D IMG_ACCUM_OCCLUSION;
+    layout(rg16f) uniform writeonly image2D IMG_ACCUM_OCCLUSION_ALT;
 #endif
 
 uniform sampler2D TEX_DEPTH;
@@ -69,67 +69,77 @@ void main() {
     // uv2 += getJitterOffset(ap.time.frames);
 
     float depth = texelFetch(TEX_DEPTH, iuv, 0).r;
+
     uint data_g = texelFetch(TEX_DEFERRED_DATA, iuv, 0).g;
     float roughness = unpackUnorm4x8(data_g).x;
     float roughL = _pow2(roughness);
 
-    vec4 specularLength = textureLod(texSpecularRT, uv, 0);
-    float parallaxOffset = specularLength.a * (1.0 - roughness);
+    float parallaxOffset = 0.0;
+    #if LIGHTING_MODE == LIGHT_MODE_RT || LIGHTING_REFLECT_MODE == REFLECT_MODE_WSR
+        vec4 specularLength = textureLod(texSpecularRT, uv, 0);
+        parallaxOffset = specularLength.a * (1.0 - roughness);
+    #endif
 
     // TODO: add velocity buffer
     vec3 velocity = vec3(0.0); //textureLod(BUFFER_VELOCITY, uv, 0).xyz;
 
     vec3 clipPos = vec3(uv, depth) * 2.0 - 1.0;
-
     vec3 viewPos = unproject(ap.camera.projectionInv, clipPos);
-    vec3 viewPosSpec = viewPos + parallaxOffset * normalize(viewPos);
-
     vec3 localPos = mul3(ap.camera.viewInv, viewPos);
-    vec3 localPosSpec = mul3(ap.camera.viewInv, viewPosSpec);
 
     vec3 localOffset = (ap.camera.pos - ap.temporal.pos) - velocity;
+
     vec3 localPosPrev = localPos + localOffset;
-    vec3 localPosPrevSpec = localPosSpec + localOffset;
-
     vec3 viewPosPrev = mul3(ap.temporal.view, localPosPrev);
-    vec3 viewPosPrevSpec = mul3(ap.temporal.view, localPosPrevSpec);
-
-    vec3 viewPosPrevSpec2 = viewPosPrevSpec - parallaxOffset * normalize(viewPosPrevSpec);
-
     vec3 clipPosPrev = unproject(ap.temporal.projection, viewPosPrev);
-    vec3 clipPosPrevSpec = unproject(ap.temporal.projection, viewPosPrevSpec2);
-
     vec2 uvLast = clipPosPrev.xy * 0.5 + 0.5;
-    vec2 uvLastSpec = clipPosPrevSpec.xy * 0.5 + 0.5;
 
+    #if LIGHTING_MODE == LIGHT_MODE_RT || LIGHTING_REFLECT_MODE == REFLECT_MODE_WSR
+        vec3 viewPosSpec = viewPos + parallaxOffset * normalize(viewPos);
+        vec3 localPosSpec = mul3(ap.camera.viewInv, viewPosSpec);
+        vec3 localPosPrevSpec = localPosSpec + localOffset;
+
+        vec3 viewPosPrevSpec = mul3(ap.temporal.view, localPosPrevSpec);
+        vec3 viewPosPrevSpec2 = viewPosPrevSpec - parallaxOffset * normalize(viewPosPrevSpec);
+
+        vec3 clipPosPrevSpec = unproject(ap.temporal.projection, viewPosPrevSpec2);
+        vec2 uvLastSpec = clipPosPrevSpec.xy * 0.5 + 0.5;
+    #endif
 
     bool altFrame = (ap.time.frames % 2) == 1;
-
-    vec4 previousDiffuse, previousSpecular;
-    vec3 localPosLast;
-
     vec2 rtBufferSize = 0.5 * ap.game.screenSize;
 
+    vec3 localPosLast;
     if (altFrame) {
-        previousDiffuse = sample_CatmullRom_RGBA(TEX_ACCUM_DIFFUSE, uvLast, rtBufferSize);
-        previousSpecular = sample_CatmullRom_RGBA(TEX_ACCUM_SPECULAR, uvLastSpec, rtBufferSize);
         localPosLast = textureLod(TEX_ACCUM_POSITION, uvLast, 0).rgb;
     }
     else {
-        previousDiffuse = sample_CatmullRom_RGBA(TEX_ACCUM_DIFFUSE_ALT, uvLast, rtBufferSize);
-        previousSpecular = sample_CatmullRom_RGBA(TEX_ACCUM_SPECULAR_ALT, uvLastSpec, rtBufferSize);
         localPosLast = textureLod(TEX_ACCUM_POSITION_ALT, uvLast, 0).rgb;
     }
+
+    #if LIGHTING_MODE == LIGHT_MODE_RT || LIGHTING_REFLECT_MODE == REFLECT_MODE_WSR
+        vec4 previousDiffuse, previousSpecular;
+        if (altFrame) {
+            previousDiffuse = sample_CatmullRom_RGBA(TEX_ACCUM_DIFFUSE, uvLast, rtBufferSize);
+            previousSpecular = sample_CatmullRom_RGBA(TEX_ACCUM_SPECULAR, uvLastSpec, rtBufferSize);
+        }
+        else {
+            previousDiffuse = sample_CatmullRom_RGBA(TEX_ACCUM_DIFFUSE_ALT, uvLast, rtBufferSize);
+            previousSpecular = sample_CatmullRom_RGBA(TEX_ACCUM_SPECULAR_ALT, uvLastSpec, rtBufferSize);
+        }
+    #endif
 
     #if defined(EFFECT_SSAO_ENABLED) && !defined(RENDER_TRANSLUCENT)
         vec2 aoBufferSize = 0.5 * ap.game.screenSize;
 
-        float previousOcclusion;
+        vec2 previousOcclusion;
         if (altFrame) {
-            previousOcclusion = sample_CatmullRom(TEX_ACCUM_OCCLUSION, uvLast, aoBufferSize);
+            previousOcclusion = textureLod(TEX_ACCUM_OCCLUSION, uvLast, 0).rg;
+            //previousOcclusion = sample_CatmullRom(TEX_ACCUM_OCCLUSION, uvLast, aoBufferSize);
         }
         else {
-            previousOcclusion = sample_CatmullRom(TEX_ACCUM_OCCLUSION_ALT, uvLast, aoBufferSize);
+            previousOcclusion = textureLod(TEX_ACCUM_OCCLUSION_ALT, uvLast, 0).rg;
+            //previousOcclusion = sample_CatmullRom(TEX_ACCUM_OCCLUSION_ALT, uvLast, aoBufferSize);
         }
     #endif
 
@@ -138,24 +148,21 @@ void main() {
     float offsetThreshold = depthL * 0.02;
     float offsetThresholdSpec = (depthL + parallaxOffset) * 0.02;
 
-    float counterF = 1.0;
-    if (saturate(uvLast) != uvLast) counterF = 0.0;
-    if (distance(localPosPrev, localPosLast) > offsetThreshold) counterF = 0.0;
-    float counter = previousDiffuse.a * counterF + 1.0;
-
-    float counterSpecF = 1.0;
-    if (saturate(uvLastSpec) != uvLastSpec) counterSpecF = 0.0;
-    vec3 viewPosLastSpec = mul3(ap.temporal.view, localPosLast);
-    viewPosLastSpec += parallaxOffset * normalize(viewPosLastSpec);
-    if (distance(viewPosPrevSpec, viewPosLastSpec) > offsetThresholdSpec) counterSpecF = 0.0;
-    float counterSpec = previousSpecular.a * counterSpecF + 1.0;
-
-    vec3 diffuse = vec3(0.0);
-    vec3 specular = vec3(0.0);
-
     #if LIGHTING_MODE == LIGHT_MODE_RT || LIGHTING_REFLECT_MODE == REFLECT_MODE_WSR
-        diffuse = textureLod(texDiffuseRT, uv, 0).rgb;
-        specular = specularLength.rgb;// textureLod(texSpecularRT, uv, 0).rgb;
+        float counterF = 1.0;
+        if (saturate(uvLast) != uvLast) counterF = 0.0;
+        if (distance(localPosPrev, localPosLast) > offsetThreshold) counterF = 0.0;
+        float counter = previousDiffuse.a * counterF + 1.0;
+
+        float counterSpecF = 1.0;
+        if (saturate(uvLastSpec) != uvLastSpec) counterSpecF = 0.0;
+        vec3 viewPosLastSpec = mul3(ap.temporal.view, localPosLast);
+        viewPosLastSpec += parallaxOffset * normalize(viewPosLastSpec);
+        if (distance(viewPosPrevSpec, viewPosLastSpec) > offsetThresholdSpec) counterSpecF = 0.0;
+        float counterSpec = previousSpecular.a * counterSpecF + 1.0;
+
+        vec3 diffuse = textureLod(texDiffuseRT, uv, 0).rgb;
+        vec3 specular = specularLength.rgb;// textureLod(texSpecularRT, uv, 0).rgb;
 
         //if (uv.x > 0.5) {
             vec2 rtPixelSize = 1.0 / rtBufferSize;
@@ -194,39 +201,53 @@ void main() {
         float occlusion = textureLod(TEX_SSAO, uv, 0).r;
     #endif
 
-    float diffuseCounter = clamp(counter, 1.0, 1.0 + AccumulationMax_Diffuse);
-    vec3 diffuseFinal = mix(previousDiffuse.rgb, diffuse, 1.0 / diffuseCounter);
+    #if LIGHTING_MODE == LIGHT_MODE_RT || LIGHTING_REFLECT_MODE == REFLECT_MODE_WSR
+        float diffuseCounter = clamp(counter, 1.0, 1.0 + AccumulationMax_Diffuse);
+        vec3 diffuseFinal = mix(previousDiffuse.rgb, diffuse, 1.0 / diffuseCounter);
 
-    float specularCounter = clamp(counterSpec, 1.0, 1.0 + AccumulationMax_Specular * roughL);
-    vec3 specularFinal = mix(previousSpecular.rgb, specular, 1.0 / specularCounter);
+        float specularCounter = clamp(counterSpec, 1.0, 1.0 + AccumulationMax_Specular * roughL);
+        vec3 specularFinal = mix(previousSpecular.rgb, specular, 1.0 / specularCounter);
 
-    diffuseFinal = clamp(diffuseFinal, 0.0, 65000.0);
-    specularFinal = clamp(specularFinal, 0.0, 65000.0);
+        diffuseFinal = clamp(diffuseFinal, 0.0, 65000.0);
+        specularFinal = clamp(specularFinal, 0.0, 65000.0);
+    #endif
 
     #if defined(EFFECT_SSAO_ENABLED) && !defined(RENDER_TRANSLUCENT)
-        float occlusionCounter = clamp(counter, 1.0, 1.0 + AccumulationMax_Occlusion);
-        float occlusionFinal = mix(previousOcclusion, occlusion, 1.0 / diffuseCounter);
+        float counterOcclusionF = 1.0;
+        if (saturate(uvLast) != uvLast) counterOcclusionF = 0.0;
+        if (distance(localPosPrev, localPosLast) > offsetThreshold) counterOcclusionF = 0.0;
+        float occlusionCounter = previousOcclusion.g * counterOcclusionF + 1.0;
+        occlusionCounter = clamp(occlusionCounter, 1.0, 1.0 + AccumulationMax_Occlusion);
+
+        float occlusionFinal = mix(previousOcclusion.r, occlusion, 1.0 / occlusionCounter);
 
         occlusionFinal = saturate(occlusionFinal);
     #endif
 
     if (altFrame) {
-        imageStore(IMG_ACCUM_DIFFUSE_ALT,  iuv, vec4(diffuseFinal, counter));
-        imageStore(IMG_ACCUM_SPECULAR_ALT, iuv, vec4(specularFinal, counterSpec));
         imageStore(IMG_ACCUM_POSITION_ALT, iuv, vec4(localPos, 1.0));
     }
     else {
-        imageStore(IMG_ACCUM_DIFFUSE,  iuv, vec4(diffuseFinal, counter));
-        imageStore(IMG_ACCUM_SPECULAR, iuv, vec4(specularFinal, counterSpec));
         imageStore(IMG_ACCUM_POSITION, iuv, vec4(localPos, 1.0));
     }
 
-    #if defined(EFFECT_SSAO_ENABLED) && !defined(RENDER_TRANSLUCENT)
+    #if LIGHTING_MODE == LIGHT_MODE_RT || LIGHTING_REFLECT_MODE == REFLECT_MODE_WSR
         if (altFrame) {
-            imageStore(IMG_ACCUM_OCCLUSION_ALT,  iuv, vec4(vec3(occlusionFinal), 1.0));
+            imageStore(IMG_ACCUM_DIFFUSE_ALT,  iuv, vec4(diffuseFinal, counter));
+            imageStore(IMG_ACCUM_SPECULAR_ALT, iuv, vec4(specularFinal, counterSpec));
         }
         else {
-            imageStore(IMG_ACCUM_OCCLUSION,  iuv, vec4(vec3(occlusionFinal), 1.0));
+            imageStore(IMG_ACCUM_DIFFUSE,  iuv, vec4(diffuseFinal, counter));
+            imageStore(IMG_ACCUM_SPECULAR, iuv, vec4(specularFinal, counterSpec));
+        }
+    #endif
+
+    #if defined(EFFECT_SSAO_ENABLED) && !defined(RENDER_TRANSLUCENT)
+        if (altFrame) {
+            imageStore(IMG_ACCUM_OCCLUSION_ALT,  iuv, vec4(occlusionFinal, occlusionCounter, 0.0, 1.0));
+        }
+        else {
+            imageStore(IMG_ACCUM_OCCLUSION,  iuv, vec4(occlusionFinal, occlusionCounter, 0.0, 1.0));
         }
     #endif
 }

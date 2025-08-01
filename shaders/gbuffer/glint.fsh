@@ -18,8 +18,7 @@ void iris_emitFragment() {
     vec4 mColor = vec4(1.0);
     iris_modifyBase(mUV, mColor, mLight);
 
-    vec4 albedo = iris_sampleBaseTex(mUV);
-    albedo.rgb = RgbToLinear(albedo.rgb);// * GLINT_LUX;
+    mUV *= GLINT_SCALE;
 
-    outColor = albedo;
+    outColor = vec4(iris_sampleBaseTex(mUV).rgb, 1.0);
 }

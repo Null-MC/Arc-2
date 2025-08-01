@@ -1307,10 +1307,7 @@ export function configurePipeline(pipeline : PipelineConfig) {
         .vertex("gbuffer/glint.vsh")
         .fragment("gbuffer/glint.fsh")
         .target(0, texGlint)
-        //.blendFunc(0, Func.ONE, Func.ONE, Func.ZERO, Func.ONE)
-        //.define('RENDER_TRANSLUCENT', '1')
-        //.define('RENDER_ENTITY', '1')
-        //.define('RENDER_GLINT', '1')
+        .blendOff(0)
         .compile();
 
     mainShaderOpaque('basic', Usage.BASIC)

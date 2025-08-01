@@ -226,9 +226,6 @@ void main() {
 
         albedo.rgb = RgbToLinear(albedo.rgb);
 
-        vec3 glint = texelFetch(texGlint, iuv, 0).rgb;
-        albedo.rgb += glint * 8.0;
-
         vec3 data_r = unpackUnorm4x8(data.r).rgb;
         vec3 localGeoNormal = normalize(fma(data_r, vec3(2.0), vec3(-1.0)));
 
@@ -246,6 +243,11 @@ void main() {
         vec2 lmCoord = data_b.rg;
         float texOcclusion = data_b.b;
         float porosity = data_b.a;
+
+        vec3 glint = texelFetch(texGlint, iuv, 0).rgb;
+        glint = RgbToLinear(glint);
+
+        albedo.rgb = saturate(albedo.rgb + glint);
 
         bool is_trans_fluid = iris_hasFluid(trans_blockId);
 
@@ -614,6 +616,8 @@ void main() {
 
         colorFinal = fma(diffuse, albedo.rgb, specular);
         //colorFinal = mix(albedo.rgb * diffuse, specular, view_F);
+
+        colorFinal += glint * GLINT_LUX;
 
         // float viewDist = length(localPos);
         // float fogF = smoothstep(fogStart, fogEnd, viewDist);

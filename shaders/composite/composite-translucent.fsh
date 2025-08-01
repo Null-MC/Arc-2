@@ -227,9 +227,6 @@ void main() {
 
         albedo.rgb = RgbToLinear(albedo.rgb);
 
-        vec3 glint = texelFetch(texGlint, iuv, 0).rgb;
-        albedo.rgb += glint * 8.0;
-
         vec3 localTexNormal = normalize(texNormalData * 2.0 - 1.0);
 
         vec3 data_r = unpackUnorm4x8(data.r).rgb;
@@ -250,6 +247,11 @@ void main() {
 
         //lmCoord = _pow3(lmCoord);
         float roughL = _pow2(roughness);
+
+        vec3 glint = texelFetch(texGlint, iuv, 0).rgb;
+        glint = RgbToLinear(glint);
+
+        albedo.rgb = saturate(albedo.rgb + glint);
 
         is_fluid = iris_hasFluid(blockId);
 
@@ -531,6 +533,8 @@ void main() {
         //finalColor.rgb = mix(albedo.rgb * diffuse * albedo.a, specular, view_F);
         //finalColor.a = min(finalColor.a + maxOf(specular), 1.0);
         //finalColor.a = mix(finalColor.a, 1.0, maxOf(view_F));
+
+        finalColor.rgb += glint * GLINT_LUX;
 
         // Refraction
         float linearDist = length(localPosOpaque - localPosTrans);

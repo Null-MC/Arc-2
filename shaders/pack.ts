@@ -404,7 +404,27 @@ export function configurePipeline(pipeline : PipelineConfig) {
         new NamespacedId("pink_stained_glass_pane")));
 
     blockTags.map("TAG_LIGHT_FLICKER", pipeline.createTag(new NamespacedId("arc", "light_flicker"),
+        new NamespacedId("campfire"),
+        new NamespacedId("soul_campfire"),
+        new NamespacedId("candle"),
+        new NamespacedId("white_candle"),
+        new NamespacedId("light_gray_candle"),
+        new NamespacedId("gray_candle"),
+        new NamespacedId("black_candle"),
+        new NamespacedId("brown_candle"),
+        new NamespacedId("red_candle"),
+        new NamespacedId("orange_candle"),
+        new NamespacedId("yellow_candle"),
+        new NamespacedId("lime_candle"),
+        new NamespacedId("green_candle"),
+        new NamespacedId("cyan_candle"),
+        new NamespacedId("light_blue_candle"),
+        new NamespacedId("blue_candle"),
+        new NamespacedId("purple_candle"),
+        new NamespacedId("magenta_candle"),
+        new NamespacedId("pink_candle"),
         new NamespacedId("fire"),
+        new NamespacedId("soul_fire"),
         new NamespacedId("jack_o_lantern"),
         new NamespacedId("lantern"),
         new NamespacedId("torch"),
@@ -1910,6 +1930,7 @@ export function onSettingsChanged(pipeline: PipelineConfig) {
         .appendFloat(settings.Post_ExposureMax)
         .appendFloat(settings.Post_ExposureSpeed)
         .appendFloat(settings.Post_ExposureOffset)
+        .appendFloat(settings.Post_ToneMap_Brightness)
         .appendFloat(settings.Post_ToneMap_Contrast)
         .appendFloat(settings.Post_ToneMap_LinearStart)
         .appendFloat(settings.Post_ToneMap_LinearLength)

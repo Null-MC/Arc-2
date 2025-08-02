@@ -119,6 +119,7 @@ export class ShaderSettings {
     get Post_ExposureMax(): number {return this.getCachedFloatSetting("POST_EXPOSURE_MAX");}
     get Post_ExposureSpeed(): number {return this.getCachedFloatSetting("POST_EXPOSURE_SPEED");}
     get Post_ExposureOffset(): number {return this.getCachedFloatSetting("POST_EXPOSURE_OFFSET");}
+    get Post_ToneMap_Brightness(): number {return this.getCachedFloatSetting("POST_TONEMAP_BRIGHTNESS");}
     get Post_ToneMap_Contrast(): number {return this.getCachedFloatSetting("POST_TONEMAP_CONTRAST");}
     get Post_ToneMap_LinearStart(): number {return this.getCachedFloatSetting("POST_TONEMAP_LINEAR_START");}
     get Post_ToneMap_LinearLength(): number {return this.getCachedFloatSetting("POST_TONEMAP_LINEAR_LENGTH");}

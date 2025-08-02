@@ -70,6 +70,12 @@ const float BufferLumScale = 1000.0;
 
 const vec3 WhiteWorld_Value = vec3(0.8);
 
+#ifdef WORLD_NETHER
+	const float World_MinAmbientLight = 6.0;
+#else
+	const float World_MinAmbientLight = 0.0016;
+#endif
+
 
 // DO NOT EDIT
 const float shadowMapResolution = float(SHADOW_RESOLUTION);
@@ -111,6 +117,7 @@ const float BufferLumScaleInv = 1.0 / BufferLumScale;
 		float Scene_PostExposureMax;
 		float Scene_PostExposureSpeed;
 		float Post_ExposureOffset;
+		float Post_Tonemap_Brightness;
 		float Post_Tonemap_Contrast;
 		float Post_Tonemap_LinearStart;
 		float Post_Tonemap_LinearLength;

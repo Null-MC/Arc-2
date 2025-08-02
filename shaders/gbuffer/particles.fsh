@@ -266,7 +266,8 @@ void iris_emitFragment() {
     #endif
 
     //vec3 diffuse = skyLightF * (sun_light + moon_light) * shadowSample;
-    vec3 diffuse = skyLightDiffuse + blockLighting + 0.0016 * occlusion;
+    vec3 diffuse = skyLightDiffuse + blockLighting;
+    diffuse += World_MinAmbientLight * occlusion;
 
     float metalness = mat_metalness(f0_metal);
     diffuse *= 1.0 - metalness * (1.0 - roughL);

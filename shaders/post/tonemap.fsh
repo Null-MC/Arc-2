@@ -43,6 +43,10 @@ void main() {
 
     //color = color / (color + 0.155) * 1.019;
 
+    float lum = luminance(color);
+    float new_lum = pow(lum, 1.0/Post_Tonemap_Brightness);
+    color *= new_lum / lum;
+
     color = REC2020_TO_SRGB * color;
 
     outColor = color;

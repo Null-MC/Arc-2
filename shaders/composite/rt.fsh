@@ -766,7 +766,7 @@ void main() {
                     reflect_diffuse += voxelLight;// * cloudShadowF;// * SampleLightDiffuse(NoVm, 1.0, 1.0, roughL);
                 #endif
 
-                reflect_diffuse += 0.0016;
+                reflect_diffuse += World_MinAmbientLight;
 
                 vec3 reflect_handSampleLocalPos = reflect_geoNormal*0.02 + reflect_localPos;
 

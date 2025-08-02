@@ -392,7 +392,7 @@ void main() {
             diffuse += (1.0/PI) * sss_phase * shadow_sss.w * (sunLight + moonLight) * exp(-2.0 * (1.000001 - albedo.rgb));
         #endif
 
-        diffuse += 0.0016 * occlusion;
+        diffuse += World_MinAmbientLight * occlusion;
 
         #if defined(WORLD_SKY_ENABLED) && !defined(WORLD_END)
             vec3 skyIrradiance = SampleSkyIrradiance(localTexNormal, lmCoord.y);

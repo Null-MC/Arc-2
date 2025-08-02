@@ -129,22 +129,18 @@ void main() {
 
     vec3 traceEnd = clamp(len - bias, 0.0, far) * localViewDir;
 
-    float stepDist = length(traceEnd) / VL_maxSamples_near;
+    //float stepDist = length(traceEnd) / VL_maxSamples_near;
 
     const vec3 localPosStart = vec3(0.0);
 
     for (int i = 0; i < VL_maxSamples_near; i++) {
         float iF = min(i + dither, VL_maxSamples_near-1);
         float stepF = saturate(iF / (VL_maxSamples_near-1));
-
-        #if VL_STEP_POW != 100
-            const float VL_StepPower = VL_STEP_POW * 0.01;
-            stepF = pow(stepF, VL_StepPower);
-        #endif
+        stepF = pow(stepF, 2.2);
 
         vec3 sampleLocalPos = mix(localPosStart, traceEnd, stepF);
 
-        //float stepDist = length(sampleLocalPos - sampleLocalPosLast);
+        float stepDist = length(sampleLocalPos - sampleLocalPosLast);
 
         float sampleDensity = SampleSmokeNoise(sampleLocalPos);
         sampleDensity *= Scene_SkyFogDensityF;
@@ -232,14 +228,14 @@ void main() {
 //        #endif
 
 
-        float mieDensity = sampleDensity + EPSILON;
+        float mieDensity = sampleDensity * stepDist + EPSILON;
         float mieScattering = mieScatteringF * mieDensity;
         float mieAbsorption = mieAbsorptionF * mieDensity;
         float extinction = mieScattering + mieAbsorption;
 
-        float sampleTransmittance = exp(-extinction * stepDist);
+        float sampleTransmittance = exp(-extinction);
 
-        vec3 ambient = vec3(VL_MinLight);
+        vec3 ambient = 0.1 * RgbToLinear(vec3(0.678, 0.424, 0.294));
 
         vec3 mieInScattering = mieScattering * (ambient + sampleLit);
 

@@ -459,7 +459,7 @@ vec3 trace_GI(const in vec3 traceOrigin, const in vec3 traceDir, const in int fa
 
 			hit_diffuse += wsgi_sample_nearest(hit_bufferPos_n, hitNormal, WSGI_CASCADE) * BufferLumScale;
 
-			//hit_diffuse += 0.0016;
+			//hit_diffuse += World_MinAmbientLight;
 		#else
 			//hit_diffuse += SampleSkyIrradiance(hitNormal, hit_lmcoord.y);
 		#endif

@@ -387,7 +387,7 @@ void main() {
         #endif
 
         diffuse += skyIrradiance;
-        diffuse += 0.0016 * occlusion;
+        diffuse += World_MinAmbientLight * occlusion;
 
         #ifdef ACCUM_ENABLED
             bool altFrame = (ap.time.frames % 2) == 1;

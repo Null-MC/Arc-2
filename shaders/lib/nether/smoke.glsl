@@ -4,7 +4,7 @@ float SampleSmokeNoise(const in vec3 localPos) {
     vec3 worldPos = localPos + ap.camera.pos;
     worldPos.xz *= 0.25;
 
-    float density = 4.0;
+    float density = 2.0;
 
     if (viewDist < 128.0) {
         vec3 samplePos = worldPos * 0.043;

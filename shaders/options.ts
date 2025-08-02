@@ -152,6 +152,7 @@ export function setupOptions() {
             .build())
         .add(new Page("POST_TONEMAP")
             //.add("Uchimura ToneMap")
+            .add(asFloatRange("POST_TONEMAP_BRIGHTNESS", 1.00, 0.05, 2.0, 0.05, false))
             .add(asFloatRange("POST_TONEMAP_CONTRAST", 0.98, 0.02, 2.0, 0.02, false))
             .add(asFloatRange("POST_TONEMAP_LINEAR_START", 0.08, 0.02, 1.0, 0.02, false))
             .add(asFloatRange("POST_TONEMAP_LINEAR_LENGTH", 0.30, 0.02, 1.0, 0.02, false))

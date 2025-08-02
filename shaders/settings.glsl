@@ -16,6 +16,8 @@
 
 #define HANDLIGHT_TRACE
 
+#define LIGHT_FLICKERING
+
 //#define VL_SOFT_SHADOW
 //#define VL_SELF_SHADOW
 //#define VL_JITTER

@@ -362,10 +362,10 @@ export function configurePipeline(pipeline : PipelineConfig) {
         new NamespacedId("pale_moss_carpet"),
         new NamespacedId("moss_carpet")));
 
-    blockTags.map("TAG_NON_POINT_LIGHT", pipeline.createTag(new NamespacedId("arc", "non_point_lights"),
-        new NamespacedId("firefly_bush"),
-        new NamespacedId("lava"),
-        new NamespacedId("magma_block")));
+    // blockTags.map("TAG_NON_POINT_LIGHT", pipeline.createTag(new NamespacedId("arc", "non_point_lights"),
+    //     new NamespacedId("firefly_bush"),
+    //     new NamespacedId("lava"),
+    //     new NamespacedId("magma_block")));
 
     blockTags.map("TAG_TINTS_LIGHT", pipeline.createTag(new NamespacedId("arc", "tints_light"),
         new NamespacedId("minecraft", "glass_blocks"),
@@ -402,6 +402,15 @@ export function configurePipeline(pipeline : PipelineConfig) {
         new NamespacedId("magenta_stained_glass_pane"),
         new NamespacedId("pink_stained_glass"),
         new NamespacedId("pink_stained_glass_pane")));
+
+    blockTags.map("TAG_LIGHT_FLICKER", pipeline.createTag(new NamespacedId("arc", "light_flicker"),
+        new NamespacedId("fire"),
+        new NamespacedId("jack_o_lantern"),
+        new NamespacedId("lantern"),
+        new NamespacedId("torch"),
+        new NamespacedId("wall_torch"),
+        new NamespacedId("soul_torch"),
+        new NamespacedId("soul_wall_torch")));
 
     setLightColorEx('#8053d1', 'amethyst_cluster');
     setLightColorEx('#3e2d1f', 'brown_mushroom');

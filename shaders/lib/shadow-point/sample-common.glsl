@@ -1,3 +1,21 @@
+const float LightFlickerStrength = 0.4;
+
+
+float GetLightFlicker(const in vec3 lightLocalPos) {
+    vec3 seed_pos = floor(lightLocalPos + ap.camera.pos);
+    float seed_time = ap.time.elapsed * 6.0;
+
+    float t1 = floor(seed_time);
+    float n1 = hash44(vec4(seed_pos, t1)).x;
+    float n2 = hash44(vec4(seed_pos, t1+1)).x;
+
+    float nF = fract(seed_time);
+    nF = smoothstep(0.0, 1.0, nF);
+
+    float flicker = mix(n1, n2, nF);
+    return _pow2(flicker) * LightFlickerStrength + (1.0 - LightFlickerStrength);
+}
+
 #ifdef LIGHTING_SHADOW_PCSS
     float sample_PointLightDepth(const in vec3 sampleDir, const in uint index) {
         float depth = texture(pointLight, vec4(sampleDir, index)).r;

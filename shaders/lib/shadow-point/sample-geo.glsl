@@ -48,17 +48,27 @@ void sample_AllPointLights(inout vec3 diffuse, inout vec3 specular, const in vec
         float dither = InterleavedGradientNoiseTime(ivec2(fragCoord + vec2(23.7, 37.1)*i));
 
         vec3 lightColor = iris_getLightColor(light.block).rgb;
-        lightColor = RgbToLinear(lightColor);
-
+        bool lightFlicker = iris_hasTag(light.block, TAG_LIGHT_FLICKER);
         float lightSize = getLightSize(light.block);
 
+        lightColor = RgbToLinear(lightColor);
         vec3 lightDir = sampleDir;
 
         //float geo_NoLm = max(dot(localGeoNormal, sampleDir), 0.0);
         float geo_NoLm = step(0.0, dot(localGeoNormal, lightDir));
         float bias = offsetBias + _pow2(dither) * sss * 0.4;
 
-        float lightShadow = sample_PointLight(-fragToLight, lightSize, lightRange, bias, lightIndex);
+        float lightShadow = 1.0;
+        #ifdef LIGHT_FLICKERING
+            if (lightFlicker) {
+                float flicker = GetLightFlicker(light.pos);
+
+                lightShadow *= flicker;
+                //lightRange *= flicker;
+            }
+        #endif
+
+        lightShadow *= sample_PointLight(-fragToLight, lightSize, lightRange, bias, lightIndex);
 
         float NoL = dot(localTexNormal, lightDir);
         float NoLm = max(NoL, 0.0);
@@ -83,49 +93,64 @@ void sample_AllPointLights(inout vec3 diffuse, inout vec3 specular, const in vec
         specular += NoLm * S * lightFinal;
     }
 
-    #if defined(LIGHTING_SHADOW_BIN_ENABLED) && defined(LIGHTING_SHADOW_VOXEL_FILL)
-        // sample non-shadow lights
-        uint offset = maxLightCount;
-        maxLightCount = offset + LightBinMap[lightBinIndex].lightCount;
-        for (uint i = offset; i < LIGHTING_SHADOW_BIN_MAX_COUNT; i++) {
-            if (i >= maxLightCount) break;
-
-            vec3 voxelPos = GetLightVoxelPos(LightBinMap[lightBinIndex].lightList[i].voxelIndex) + 0.5;
-            uint blockId = SampleVoxelBlock(voxelPos);
-
-            float lightRange = iris_getEmission(blockId);
-            lightRange *= (LIGHTING_SHADOW_RANGE * 0.01);
-
-            vec3 lightColor = iris_getLightColor(blockId).rgb;
-            lightColor = RgbToLinear(lightColor);
-
-            float lightSize = getLightSize(light.block);
-
-            vec3 lightLocalPos = voxel_getLocalPosition(voxelPos);
-            vec3 fragToLight = lightLocalPos - localSamplePos;
-            float sampleDist = length(fragToLight);
-            vec3 sampleDir = fragToLight / sampleDist;
-            vec3 lightDir = sampleDir;
-
-            float geo_facing = step(0.0, dot(localGeoNormal, sampleDir));
-            float light_att = GetLightAttenuation(sampleDist, lightRange, lightSize);
-            float lightShadow = geo_facing * light_att;
-
-            vec3 H = normalize(lightDir + localViewDir);
-
-            float NoLm = max(dot(localTexNormal, lightDir), 0.0);
-            float NoHm = max(dot(localTexNormal, H), 0.0);
-            float LoHm = max(dot(lightDir, H), 0.0);
-            float VoHm = max(dot(localViewDir, H), 0.0);
-
-            const bool isUnderWater = false;
-            vec3 F = material_fresnel(albedo, f0_metal, roughL, VoHm, isUnderWater);
-            vec3 D = SampleLightDiffuse(NoVm, NoLm, LoHm, roughL) * (1.0 - F);
-            vec3 S = SampleLightSpecular(NoLm, NoHm, NoVm, F, roughL);
-
-            vec3 lightFinal = BLOCK_LUX * NoLm * lightShadow * lightColor;
-            diffuse  += D * lightFinal;
-            specular += S * lightFinal;
-        }
-    #endif
+//    #if defined(LIGHTING_SHADOW_BIN_ENABLED) && defined(LIGHTING_SHADOW_VOXEL_FILL)
+//        // sample non-shadow lights
+//        uint offset = maxLightCount;
+//        maxLightCount = offset + LightBinMap[lightBinIndex].lightCount;
+//        for (uint i = offset; i < LIGHTING_SHADOW_BIN_MAX_COUNT; i++) {
+//            if (i >= maxLightCount) break;
+//
+//            vec3 voxelPos = GetLightVoxelPos(LightBinMap[lightBinIndex].lightList[i].voxelIndex) + 0.5;
+//            uint blockId = SampleVoxelBlock(voxelPos);
+//
+//            float lightRange = iris_getEmission(blockId);
+//            lightRange *= (LIGHTING_SHADOW_RANGE * 0.01);
+//
+//            vec3 lightColor = iris_getLightColor(blockId).rgb;
+//            lightColor = RgbToLinear(lightColor);
+//
+//            float lightSize = getLightSize(light.block);
+//
+//            bool lightFlicker = iris_hasTag(blockId, TAG_LIGHT_FLICKER);
+//
+//            vec3 lightLocalPos = voxel_getLocalPosition(voxelPos);
+//            vec3 fragToLight = lightLocalPos - localSamplePos;
+//            float sampleDist = length(fragToLight);
+//            vec3 sampleDir = fragToLight / sampleDist;
+//            vec3 lightDir = sampleDir;
+//
+//            float geo_facing = step(0.0, dot(localGeoNormal, sampleDir));
+//            float light_att = GetLightAttenuation(sampleDist, lightRange, lightSize);
+//            float lightShadow = geo_facing * light_att;
+//
+//            //if (lightFlicker) {
+//                vec3 seed_pos = floor(lightLocalPos + ap.camera.pos);
+//                float seed_time = ap.time.elapsed * 10.0;
+//
+//                float t1 = floor(seed_time);
+//                float n1 = hash14(vec4(seed_pos, t1));
+//                float n2 = hash14(vec4(seed_pos, t1+1));
+//                float nF = fract(seed_time);
+//
+//                float flicker = 0.0;//mix(n1, n2, nF);
+//                lightShadow *= flicker;
+//            //}
+//
+//            vec3 H = normalize(lightDir + localViewDir);
+//
+//            float NoLm = max(dot(localTexNormal, lightDir), 0.0);
+//            float NoHm = max(dot(localTexNormal, H), 0.0);
+//            float LoHm = max(dot(lightDir, H), 0.0);
+//            float VoHm = max(dot(localViewDir, H), 0.0);
+//
+//            const bool isUnderWater = false;
+//            vec3 F = material_fresnel(albedo, f0_metal, roughL, VoHm, isUnderWater);
+//            vec3 D = SampleLightDiffuse(NoVm, NoLm, LoHm, roughL) * (1.0 - F);
+//            vec3 S = SampleLightSpecular(NoLm, NoHm, NoVm, F, roughL);
+//
+//            vec3 lightFinal = BLOCK_LUX * NoLm * lightShadow * lightColor;
+//            diffuse  += D * lightFinal;
+//            specular += S * lightFinal;
+//        }
+//    #endif
 }

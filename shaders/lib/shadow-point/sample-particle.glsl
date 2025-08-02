@@ -35,39 +35,50 @@ vec3 sample_AllPointLights_particle(const in vec3 localPos) {
         if (dot(fragToLight, fragToLight) >= lightRange*lightRange) continue;
 
         vec3 lightColor = iris_getLightColor(light.block).rgb;
-        lightColor = RgbToLinear(lightColor);
-
+        bool lightFlicker = iris_hasTag(light.block, TAG_LIGHT_FLICKER);
         float lightSize = getLightSize(light.block);
 
-        float lightShadow = sample_PointLight(fragToLight, lightSize, lightRange, offsetBias, lightIndex);
+        lightColor = RgbToLinear(lightColor);
+
+        float lightShadow = 1.0;
+        #ifdef LIGHT_FLICKERING
+            if (lightFlicker) {
+                float flicker = GetLightFlicker(light.pos);
+
+                lightShadow *= flicker;
+                //lightRange *= flicker;
+            }
+        #endif
+
+        lightShadow *= sample_PointLight(fragToLight, lightSize, lightRange, offsetBias, lightIndex);
 
         lighting += lightShadow * lightColor;
     }
 
-    #if defined(LIGHTING_SHADOW_BIN_ENABLED) && defined(LIGHTING_SHADOW_VOXEL_FILL)
-        // sample non-shadow lights
-        uint offset = maxLightCount;
-        maxLightCount = offset + LightBinMap[lightBinIndex].lightCount;
-        for (uint i = offset; i < LIGHTING_SHADOW_BIN_MAX_COUNT; i++) {
-            if (i >= maxLightCount) break;
-
-            vec3 voxelPos = GetLightVoxelPos(LightBinMap[lightBinIndex].lightList[i].voxelIndex) + 0.5;
-            uint blockId = SampleVoxelBlock(voxelPos);
-
-            float lightRange = iris_getEmission(blockId);
-            lightRange *= (LIGHTING_SHADOW_RANGE * 0.01);
-
-            vec3 lightColor = iris_getLightColor(blockId).rgb;
-            lightColor = RgbToLinear(lightColor);
-
-            vec3 lightLocalPos = voxel_getLocalPosition(voxelPos);
-            float sampleDist = distance(lightLocalPos, localPos);
-
-            float light_att = GetLightAttenuation(sampleDist, lightRange);
-
-            lighting += light_att * lightColor;
-        }
-    #endif
+//    #if defined(LIGHTING_SHADOW_BIN_ENABLED) && defined(LIGHTING_SHADOW_VOXEL_FILL)
+//        // sample non-shadow lights
+//        uint offset = maxLightCount;
+//        maxLightCount = offset + LightBinMap[lightBinIndex].lightCount;
+//        for (uint i = offset; i < LIGHTING_SHADOW_BIN_MAX_COUNT; i++) {
+//            if (i >= maxLightCount) break;
+//
+//            vec3 voxelPos = GetLightVoxelPos(LightBinMap[lightBinIndex].lightList[i].voxelIndex) + 0.5;
+//            uint blockId = SampleVoxelBlock(voxelPos);
+//
+//            float lightRange = iris_getEmission(blockId);
+//            lightRange *= (LIGHTING_SHADOW_RANGE * 0.01);
+//
+//            vec3 lightColor = iris_getLightColor(blockId).rgb;
+//            lightColor = RgbToLinear(lightColor);
+//
+//            vec3 lightLocalPos = voxel_getLocalPosition(voxelPos);
+//            float sampleDist = distance(lightLocalPos, localPos);
+//
+//            float light_att = GetLightAttenuation(sampleDist, lightRange);
+//
+//            lighting += light_att * lightColor;
+//        }
+//    #endif
 
     return BLOCK_LUX * lighting;
 }

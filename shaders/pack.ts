@@ -1635,17 +1635,32 @@ export function configurePipeline(pipeline : PipelineConfig) {
 
     const vlNearStage = postRenderQueue.subList('VL-near');
 
-    new ShaderBuilder(vlNearStage.createComposite('volumetric-near')
-            .vertex('shared/bufferless.vsh')
-            .fragment('composite/volumetric-near.fsh')
-            .target(0, texScatterVL)
-            .target(1, texTransmitVL)
-        )
-        .ssbo(SSBO.Scene, sceneBuffer)
-        .if(internal.LightListsEnabled, builder => builder
-            .ssbo(SSBO.LightList, lightListBuffer))
-        .ubo(UBO.SceneSettings, SceneSettingsBuffer)
-        .compile();
+    if (renderConfig.dimension.getPath() == 'the_nether') {
+        new ShaderBuilder(vlNearStage.createComposite('volumetric-near-nether')
+                .vertex('shared/bufferless.vsh')
+                .fragment('nether/volumetric-near.fsh')
+                .target(0, texScatterVL)
+                .target(1, texTransmitVL)
+            )
+            .ssbo(SSBO.Scene, sceneBuffer)
+            .if(internal.LightListsEnabled, builder => builder
+                .ssbo(SSBO.LightList, lightListBuffer))
+            .ubo(UBO.SceneSettings, SceneSettingsBuffer)
+            .compile();
+    }
+    else {
+        new ShaderBuilder(vlNearStage.createComposite('volumetric-near')
+                .vertex('shared/bufferless.vsh')
+                .fragment('composite/volumetric-near.fsh')
+                .target(0, texScatterVL)
+                .target(1, texTransmitVL)
+            )
+            .ssbo(SSBO.Scene, sceneBuffer)
+            .if(internal.LightListsEnabled, builder => builder
+                .ssbo(SSBO.LightList, lightListBuffer))
+            .ubo(UBO.SceneSettings, SceneSettingsBuffer)
+            .compile();
+    }
 
     vlNearStage.barrier(IMAGE_BIT);
 

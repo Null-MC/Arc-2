@@ -9,13 +9,6 @@ const float AccumulationMax_Occlusion = 15.0;
 
 layout (local_size_x = 16, local_size_y = 16, local_size_z = 1) in;
 
-//const int sharedBufferRes = 20;
-//const int sharedBufferSize = sharedBufferRes*sharedBufferRes;
-
-//shared float gaussianBuffer[5];
-//shared vec3 sharedOcclusionBuffer[sharedBufferSize];
-//shared float sharedDepthBuffer[sharedBufferSize];
-
 layout(rgba16f) uniform writeonly image2D IMG_ACCUM_DIFFUSE;
 layout(rgba16f) uniform writeonly image2D IMG_ACCUM_SPECULAR;
 layout(rgba16f) uniform writeonly image2D IMG_ACCUM_POSITION;
@@ -146,23 +139,30 @@ void main() {
     float depthL = linearizeDepth(depth, ap.camera.near, ap.camera.far);
 
     float offsetThreshold = depthL * 0.02;
-    float offsetThresholdSpec = (depthL + parallaxOffset) * 0.02;
 
     #if LIGHTING_MODE == LIGHT_MODE_RT || LIGHTING_REFLECT_MODE == REFLECT_MODE_WSR
-        float counterF = 1.0;
-        if (saturate(uvLast) != uvLast) counterF = 0.0;
-        if (distance(localPosPrev, localPosLast) > offsetThreshold) counterF = 0.0;
-        float counter = previousDiffuse.a * counterF + 1.0;
+        float counterDiffuseF = 1.0;
+        if (saturate(uvLast) != uvLast) counterDiffuseF = 0.0;
+
+        if (distance(localPosPrev, localPosLast) > offsetThreshold) counterDiffuseF = 0.0;
+
+        float counterDiffuse = previousDiffuse.a * counterDiffuseF + 1.0;
+        counterDiffuse = clamp(counterDiffuse, 1.0, 1.0 + AccumulationMax_Diffuse);
 
         float counterSpecF = 1.0;
         if (saturate(uvLastSpec) != uvLastSpec) counterSpecF = 0.0;
+
         vec3 viewPosLastSpec = mul3(ap.temporal.view, localPosLast);
         viewPosLastSpec += parallaxOffset * normalize(viewPosLastSpec);
+
+        float offsetThresholdSpec = (depthL + parallaxOffset) * 0.02;
         if (distance(viewPosPrevSpec, viewPosLastSpec) > offsetThresholdSpec) counterSpecF = 0.0;
+
         float counterSpec = previousSpecular.a * counterSpecF + 1.0;
+        counterSpec = clamp(counterSpec, 1.0, 1.0 + AccumulationMax_Specular * roughL);
 
         vec3 diffuse = textureLod(texDiffuseRT, uv, 0).rgb;
-        vec3 specular = specularLength.rgb;// textureLod(texSpecularRT, uv, 0).rgb;
+        vec3 specular = specularLength.rgb;
 
         //if (uv.x > 0.5) {
             vec2 rtPixelSize = 1.0 / rtBufferSize;
@@ -189,26 +189,19 @@ void main() {
             blurColor     += (b+d+f+h) * 0.0625;
             blurColor     += (j+k+l+m) * 0.125;
 
-            diffuse = mix(diffuse, blurColor, 1.0 / counter);
+            diffuse = mix(diffuse, blurColor, 1.0 / counterDiffuse);
         //}
     #endif
-
-//    #ifdef EFFECT_SSGI_ENABLED
-//        diffuse += sampleSharedBuffer(depthL);
-//    #endif
 
     #if defined(EFFECT_SSAO_ENABLED) && !defined(RENDER_TRANSLUCENT)
         float occlusion = textureLod(TEX_SSAO, uv, 0).r;
     #endif
 
     #if LIGHTING_MODE == LIGHT_MODE_RT || LIGHTING_REFLECT_MODE == REFLECT_MODE_WSR
-        float diffuseCounter = clamp(counter, 1.0, 1.0 + AccumulationMax_Diffuse);
-        vec3 diffuseFinal = mix(previousDiffuse.rgb, diffuse, 1.0 / diffuseCounter);
-
-        float specularCounter = clamp(counterSpec, 1.0, 1.0 + AccumulationMax_Specular * roughL);
-        vec3 specularFinal = mix(previousSpecular.rgb, specular, 1.0 / specularCounter);
-
+        vec3 diffuseFinal = mix(previousDiffuse.rgb, diffuse, 1.0 / counterDiffuse);
         diffuseFinal = clamp(diffuseFinal, 0.0, 65000.0);
+
+        vec3 specularFinal = mix(previousSpecular.rgb, specular, 1.0 / counterSpec);
         specularFinal = clamp(specularFinal, 0.0, 65000.0);
     #endif
 
@@ -216,11 +209,11 @@ void main() {
         float counterOcclusionF = 1.0;
         if (saturate(uvLast) != uvLast) counterOcclusionF = 0.0;
         if (distance(localPosPrev, localPosLast) > offsetThreshold) counterOcclusionF = 0.0;
+
         float occlusionCounter = previousOcclusion.g * counterOcclusionF + 1.0;
         occlusionCounter = clamp(occlusionCounter, 1.0, 1.0 + AccumulationMax_Occlusion);
 
         float occlusionFinal = mix(previousOcclusion.r, occlusion, 1.0 / occlusionCounter);
-
         occlusionFinal = saturate(occlusionFinal);
     #endif
 
@@ -233,11 +226,11 @@ void main() {
 
     #if LIGHTING_MODE == LIGHT_MODE_RT || LIGHTING_REFLECT_MODE == REFLECT_MODE_WSR
         if (altFrame) {
-            imageStore(IMG_ACCUM_DIFFUSE_ALT,  iuv, vec4(diffuseFinal, counter));
+            imageStore(IMG_ACCUM_DIFFUSE_ALT,  iuv, vec4(diffuseFinal, counterDiffuse));
             imageStore(IMG_ACCUM_SPECULAR_ALT, iuv, vec4(specularFinal, counterSpec));
         }
         else {
-            imageStore(IMG_ACCUM_DIFFUSE,  iuv, vec4(diffuseFinal, counter));
+            imageStore(IMG_ACCUM_DIFFUSE,  iuv, vec4(diffuseFinal, counterDiffuse));
             imageStore(IMG_ACCUM_SPECULAR, iuv, vec4(specularFinal, counterSpec));
         }
     #endif

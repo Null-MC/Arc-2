@@ -39,6 +39,7 @@ void main() {
     //color = tonemap_AgX(color);
     color = tonemap_Uchimura(color);
     //color = tonemap_Commerce(color);
+    //color = tonemap_SEUS(color);
 
     //color = color / (color + 0.155) * 1.019;
 

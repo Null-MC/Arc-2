@@ -161,3 +161,33 @@ vec3 tonemap_Commerce(vec3 color) {
     float g = 1.0 / (desaturation * (peak - newPeak) + 1.0);
     return mix(vec3(newPeak), color, g);
 }
+
+vec3 tonemap_SEUS(in vec3 color) {
+    color *= 1.1;
+
+    const float TONEMAP_CURVE = 1.5;
+    const float GAMMA = 1.0;
+
+    color = pow(color, vec3(TONEMAP_CURVE));
+    color = color / (1.0 + color);
+    color = pow(color, vec3((1.0 / GAMMA) / TONEMAP_CURVE));
+
+    // color = color * color * (3.0 - 2.0 * color);
+    // color = pow(color, vec3(0.7));
+    const float a = 0.3;
+    float l = a * a * (3.0 - 2.0 * a);
+
+    vec3 c = color * (1.0 - a) + a;
+
+    color = c * c * (3.0 - 2.0 * c);
+    color -= l;
+    color /= 1.0 - l;
+    color = max(vec3(0.0), color);
+    color = pow(color, vec3(1.0));
+
+    c = color;
+    color = mix(color, c * c * (3.0 - 2.0 * c), vec3(0.2));
+    // color = pow(color, vec3(0.95));
+
+    return color;
+}

@@ -638,7 +638,7 @@ void main() {
 
 	ivec3 bufferPos;
 	bufferPos.z = i_voxel / (4*4);
-	bufferPos.y = (i_voxel - bufferPos.z) / 4;
+	bufferPos.y = i_voxel / 4 % 4;
 	bufferPos.x = i_voxel % 4;
 
 	bufferPos += ivec3(gl_WorkGroupID) * 4;

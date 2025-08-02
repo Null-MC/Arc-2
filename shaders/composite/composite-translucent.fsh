@@ -383,7 +383,7 @@ void main() {
                 skyIrradiance = vec3(0.0);
             #endif
 
-            skyIrradiance += wsgi_sample(wsgi_localPos, localTexNormal);
+            skyIrradiance += wsgi_sample(wsgi_localPos, localTexNormal) / PI;
         #endif
 
         diffuse += skyIrradiance;

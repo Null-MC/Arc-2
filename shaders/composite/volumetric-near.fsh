@@ -332,7 +332,7 @@ void main() {
             #ifdef LIGHTING_VL_SHADOWS
                 #if LIGHTING_MODE == LIGHT_MODE_SHADOWS
                     vec3 blockLight = sample_AllPointLights_VL(sampleLocalPos, isInFluid);
-                    sampleLit += blockLight;
+                    sampleLit += blockLight * 8.0;
                 #elif LIGHTING_MODE == LIGHT_MODE_RT
                     vec3 voxelPos = voxel_GetBufferPosition(sampleLocalPos);
                     ivec3 lightBinPos = ivec3(floor(voxelPos / LIGHT_BIN_SIZE));

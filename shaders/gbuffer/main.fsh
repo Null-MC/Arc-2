@@ -167,6 +167,12 @@ void iris_emitFragment() {
         lmcoord.x = 0.0;
     #endif
 
+    #ifdef RENDER_LIGHTNING
+        albedo = vec4(1.0);
+        emission = 1.0;
+        lmcoord.x = 0.0;
+    #endif
+
     #if MATERIAL_FORMAT != MAT_NONE
         #if defined(RENDER_PARALLAX) && MATERIAL_PARALLAX_TYPE == POM_TYPE_SHARP
             if (!skipParallax) {

@@ -45,6 +45,11 @@ export class ShaderBuilder<T extends Shader<T, X>, X> {
         return this;
     }
 
+    define(key: string) {
+        this.shader.define(key, '1');
+        return this;
+    }
+
     compile(): void {
         this.shader.compile();
     }

@@ -1328,17 +1328,6 @@ export function configurePipeline(pipeline : PipelineConfig) {
     //     .blendOff(2)
     //     .build());
 
-    mainShaderOpaque('emissive', Usage.EMISSIVE)
-        .with(s => s.define('RENDER_EMISSIVE', '1'))
-        .compile();
-
-    pipeline.createObjectShader('glint', Usage.ENTITY_GLINT)
-        .vertex("gbuffer/glint.vsh")
-        .fragment("gbuffer/glint.fsh")
-        .target(0, texGlint)
-        .blendOff(0)
-        .compile();
-
     mainShaderOpaque('basic', Usage.BASIC)
         .compile();
 
@@ -1397,6 +1386,22 @@ export function configurePipeline(pipeline : PipelineConfig) {
             .with(shader => shader
                 .control('gbuffer/main.tcs')
                 .eval('gbuffer/main.tes')))
+        .compile();
+
+    mainShaderOpaque('emissive', Usage.EMISSIVE)
+        .define('RENDER_ENTITY')
+        .define('RENDER_EMISSIVE')
+        .compile();
+
+    pipeline.createObjectShader('glint', Usage.ENTITY_GLINT)
+        .vertex("gbuffer/glint.vsh")
+        .fragment("gbuffer/glint.fsh")
+        .target(0, texGlint)
+        .blendOff(0)
+        .compile();
+
+    mainShaderTranslucent('emissive', Usage.LIGHTNING)
+        .with(s => s.define('RENDER_LIGHTNING', '1'))
         .compile();
 
     function particleShader(name: string, usage: ProgramUsage) : ShaderBuilder<ObjectShader, BuiltObjectShader> {

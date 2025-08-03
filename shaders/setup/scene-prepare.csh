@@ -25,7 +25,7 @@ uniform sampler2D solidDepthTex;
 void main() {
 	#ifdef WORLD_END
 		Scene_SunColor = vec3(0.0);
-		Scene_MoonColor = blackbody(3800.0);
+		Scene_MoonColor = RgbToLinear(vec3(0.824, 0.459, 0.824)); //blackbody(3800.0);
 	#elif defined (WORLD_SKY_ENABLED)
 		float sunTemp = Sky_SunTemp;
 

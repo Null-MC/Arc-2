@@ -1,8 +1,8 @@
 const float endSun_radiusKm = 2000.0;
-const float endSun_distanceKm = 20000.0;
+const float endSun_distanceKm = 48000.0;
 const float endSun_axisTilt = 0.8;
 const float endSun_rotationSpeed = 0.0128;
-const float endSun_luminance = 2000.0;
+const float endSun_luminance = 80000.0;
 
 const float endEarth_radiusKm = 6378.0;
 const float endEarth_distanceKm = 40000.0;
@@ -26,7 +26,7 @@ vec3 renderEndSun(const in vec3 viewLocalDir, const in vec3 endSunLocalPos, cons
     vec3 albedo = textureLod(texEndSun, erp_uv, 0).rgb;
     albedo = RgbToLinear(albedo.rgb);
 
-    return albedo * endSun_luminance;
+    return albedo * endSun_luminance * luminance(albedo);
 }
 
 vec3 renderEndEarth(const in vec3 viewLocalDir, const in vec3 endEarthLocalPos, const in float endEarthHitDist) {

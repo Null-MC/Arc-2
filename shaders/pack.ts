@@ -1126,6 +1126,7 @@ export function configurePipeline(pipeline : PipelineConfig) {
                 .vertex('gbuffer/shadow-celestial.vsh')
                 .fragment('gbuffer/shadow-celestial.fsh')
                 .target(0, texShadowColor)
+                .blendOff(0)
                 .define('RENDER_SHADOW', '1')
             )
             .ssbo(SSBO.Scene, sceneBuffer);

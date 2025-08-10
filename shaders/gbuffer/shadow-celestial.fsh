@@ -13,8 +13,6 @@ layout(location = 0) out vec4 outColor;
 
 
 void iris_emitFragment() {
-    const float alphaThreshold = 0.2;
-
     #if defined(RENDER_TERRAIN) && defined(RENDER_TRANSLUCENT)
         bool isFluid = iris_hasFluid(vIn.blockId);
 
@@ -24,10 +22,17 @@ void iris_emitFragment() {
         }
         else {
             outColor = iris_sampleBaseTex(vIn.uv) * vIn.color;
+
+            const float alphaThreshold = (1.5/255.0);
             if (outColor.a < alphaThreshold) discard;
+            //outColor.rgb = vec3(1,0,0);
         }
     #else
+        const float alphaThreshold = 0.2;
+
         outColor = iris_sampleBaseTex(vIn.uv) * vIn.color;
         if (outColor.a < alphaThreshold) discard;
     #endif
+
+    outColor.a = 1.0;
 }

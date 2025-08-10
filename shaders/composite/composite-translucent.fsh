@@ -579,7 +579,11 @@ void main() {
         }
 
         if (!is_fluid) {
-            colorOpaque *= mix(vec3(1.0), albedo.rgb, sqrt(albedo.a));
+            //colorOpaque *= mix(vec3(1.0), albedo.rgb, sqrt(albedo.a));
+            // tint while preserving luminance
+            float lum = luminance(colorOpaque);
+            colorOpaque *= albedo.rgb;
+            colorOpaque *= lum / (luminance(colorOpaque) + EPSILON);
         }
 
 //        colorFinal = mix(colorOpaque, finalColor.rgb, finalColor.a);

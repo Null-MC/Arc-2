@@ -1952,7 +1952,7 @@ export function beginFrame(state : WorldState) {
     // TEST_UBO.setFloat(0, testVal);
 
     if (internal.FloodFillEnabled && texFloodFillReader)
-        texFloodFillReader.pointTo(state.currentFrame() % 2 == 0 ? texFloodFill_alt : texFloodFill);
+        texFloodFillReader.pointTo(state.currentFrame() % 2 == 0 ? texFloodFill : texFloodFill_alt);
 
     SceneSettingsBuffer.uploadData();
 }
